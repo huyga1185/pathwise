@@ -11,5 +11,4 @@ import java.lang.annotation.Target;
 @Target(ElementType.FIELD)
 @Constraint(validatedBy = PhoneNumberValidator.class)
 public @interface ValidPhoneNumber {
-
 }

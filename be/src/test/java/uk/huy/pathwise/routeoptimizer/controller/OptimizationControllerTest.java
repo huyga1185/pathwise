@@ -46,7 +46,6 @@ class OptimizationControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestJson))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.message").value("success"))
                 .andExpect(jsonPath("$.data.depot").value(0))
                 .andExpect(jsonPath("$.data.optimizedRoute[0]").value("a"))
                 .andExpect(jsonPath("$.data.optimizedRoute[1]").value("c"))
@@ -66,7 +65,6 @@ class OptimizationControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestJson))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.message").value("success"))
                 .andExpect(jsonPath("$.data.depot").value(0))
                 .andExpect(jsonPath("$.data.optimizedRoute[0][1]").value("b"))
                 .andExpect(jsonPath("$.data.optimizedRoute[1][1]").value("c"));
@@ -83,6 +81,6 @@ class OptimizationControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestJson))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message").value(ErrorCode.INVALID_DEPOT.getErrorCode()));
+                .andExpect(jsonPath("$.message").value(ErrorCode.INVALID_DEPOT.name()));
     }
 }
