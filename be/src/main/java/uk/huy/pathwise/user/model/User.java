@@ -3,6 +3,7 @@ package uk.huy.pathwise.user.model;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.Instant;
 
@@ -33,6 +34,6 @@ public class User {
     private Instant createdAt;
 
     @Column(name = "updated_at", nullable = false)
-    @CreationTimestamp
+    @UpdateTimestamp
     private Instant updatedAt;
 }

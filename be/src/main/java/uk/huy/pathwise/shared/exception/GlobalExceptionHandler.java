@@ -17,7 +17,7 @@ import java.util.*;
 public class GlobalExceptionHandler {
     private final Environment env;
 
-    public GlobalExceptionHandler(final Environment env) {
+    public GlobalExceptionHandler(Environment env) {
         this.env = env;
     }
 

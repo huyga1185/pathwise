@@ -8,8 +8,10 @@ import lombok.Getter;
 public enum ErrorCode {
     EMAIL_EXISTED(400),
     INVALID_DEPOT( 400),
+    INVALID_EMAIL_OR_PASSWORD(400),
     COULD_NOT_FIND_CHEAPEST_ROUTE(400),
     COULD_NOT_FIND_ADDRESS(400),
+    COULD_NOT_FIND_USER(400),
     SERVER_ERROR( 500);
     private final int httpCode;
 }
