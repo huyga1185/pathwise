@@ -8,7 +8,6 @@ jobs:
         image: mariadb:11
         env:
           MARIADB_ROOT_PASSWORD: root
-          MARIADB_DATABASE: pathwise
         ports:
           - 3306:3306
         options: >-
@@ -18,6 +17,8 @@ jobs:
           --health-retries=5
     steps:
       - uses: actions/checkout@v4
+      - name: init schema
+        run: mysql -h 127.0.0.1 -uroot -proot < be/db/db.sql
       - uses: actions/setup-java@v4
         with:
           java-version: '21'

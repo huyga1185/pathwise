@@ -1,4 +1,4 @@
-CREATE DATABASE pathwise;
+CREATE DATABASE IF NOT EXISTS pathwise;
 
 USE pathwise;
 
