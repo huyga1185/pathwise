@@ -1,0 +1,12 @@
+CREATE DATABASE pathwise;
+
+USE pathwise;
+
+CREATE TABLE users (
+	id BIGINT AUTO_INCREMENT PRIMARY KEY,
+	email VARCHAR(255) NOT NULL UNIQUE,
+	password VARCHAR(255) NOT NULL,
+	phone_number VARCHAR(20),
+	created_at DATETIME NOT NULL,
+	updated_at DATETIME NOT NULL
+);

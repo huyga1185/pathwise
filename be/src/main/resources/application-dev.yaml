@@ -1,0 +1,4 @@
+logging:
+  level:
+    uk.huy.to: debug
+    org.springframework.web.client.RestClient: debug
