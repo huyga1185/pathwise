@@ -10,11 +10,12 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.MariaDBDialect
         format_sql: true
-    show-sql: true
+        jdbc:
+          time_zone: UTC
     open-in-view: false
 
 api:
-  user-agent: transit-optimization/1.0 (https://huy-vu.uk/)
+  user-agent: PathWise/1.0 (https://huy-vu.uk/)
   geocoding:
     nominatim-base-url: https://nominatim.openstreetmap.org
   matrix:
