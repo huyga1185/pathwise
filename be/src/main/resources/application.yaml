@@ -1,10 +1,7 @@
 spring:
   application:
-    name: to
+    name: pathwise
   datasource:
-    url: jdbc:mariadb://localhost:3306/pathwise?connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true
-    username: root
-    password: matkhau0biet
     driver-class-name: org.mariadb.jdbc.Driver
   jpa:
     hibernate:
