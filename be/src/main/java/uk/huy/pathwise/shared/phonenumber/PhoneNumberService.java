@@ -3,6 +3,7 @@ package uk.huy.pathwise.shared.phonenumber;
 import com.google.i18n.phonenumbers.NumberParseException;
 import com.google.i18n.phonenumbers.PhoneNumberUtil;
 import com.google.i18n.phonenumbers.Phonenumber;
+import org.mapstruct.Named;
 import org.springframework.stereotype.Service;
 
 import java.util.EnumSet;
@@ -25,6 +26,7 @@ public class PhoneNumberService {
         return phoneNumberUtil.parse(raw, REGION);
     }
 
+    @Named("toE164")
     public String toE164(String raw) throws NumberParseException {
         return phoneNumberUtil.format(
                 parseToPhoneNumber(raw),
