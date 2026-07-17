@@ -28,25 +28,18 @@ public class PhoneNumberService {
 
     @Named("toE164")
     public String toE164(String raw) throws NumberParseException {
+        if (raw == null) return null;
         return phoneNumberUtil.format(
                 parseToPhoneNumber(raw),
                 PhoneNumberUtil.PhoneNumberFormat.E164);
     }
 
+    @Named("toNational")
     public String toNational(String e164) throws NumberParseException {
+        if (e164 == null) return null;
         return phoneNumberUtil.format(
-                parseToPhoneNumber(e164),
-                PhoneNumberUtil.PhoneNumberFormat.NATIONAL);
-    }
-
-    public boolean isValid(String raw) {
-        try {
-            Phonenumber.PhoneNumber parsedPhoneNumber = parseToPhoneNumber(raw);
-            return phoneNumberUtil.isValidNumberForRegion(parsedPhoneNumber, REGION)
-                    && ALLOWED.contains(phoneNumberUtil.getNumberType(parsedPhoneNumber));
-        } catch (NumberParseException ignored) {
-            return false;
-        }
+                    parseToPhoneNumber(e164),
+                    PhoneNumberUtil.PhoneNumberFormat.NATIONAL);
     }
 
     public PhoneCheck check(String raw) {
