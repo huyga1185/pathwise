@@ -11,3 +11,14 @@ CREATE TABLE users (
 	created_at DATETIME NOT NULL,
 	updated_at DATETIME NOT NULL
 );
+
+CREATE TABLE refresh_tokens (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    token CHAR(64) NOT NULL UNIQUE,
+    user_id BIGINT NOT NULL,
+    family_id CHAR(36) NOT NULL,
+    state VARCHAR(25) NOT NULL,
+    expires_at DATETIME NOT NULL,
+    created_at DATETIME NOT NULL,
+    updated_at DATETIME NOT NULL,
+)
