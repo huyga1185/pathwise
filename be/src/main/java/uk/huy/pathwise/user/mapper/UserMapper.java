@@ -6,6 +6,7 @@ import uk.huy.pathwise.user.dto.request.UserModificationRequest;
 import uk.huy.pathwise.user.dto.response.AdminGetUserResponse;
 import uk.huy.pathwise.user.dto.response.GetUserResponse;
 import uk.huy.pathwise.user.model.User;
+import uk.huy.pathwise.shared.identity.UserIdentity;
 
 @Mapper(componentModel = "spring",
         unmappedTargetPolicy = ReportingPolicy.IGNORE,
@@ -20,4 +21,6 @@ public interface UserMapper {
 
     @Mapping(target = "phoneNumber", source = "phoneNumber", qualifiedByName = "toNational")
     AdminGetUserResponse toAdminGetUserResponse(User user);
+
+    UserIdentity toUserIdentity(User user);
 }
