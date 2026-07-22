@@ -1,9 +1,10 @@
-package uk.huy.pathwise.routeoptimizer.geocoding;
+package uk.huy.pathwise.routeoptimizer.geocoding.nominatimprovider;
 
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
+import uk.huy.pathwise.routeoptimizer.geocoding.GeocodingProvider;
 import uk.huy.pathwise.shared.exception.AppException;
 import uk.huy.pathwise.shared.exception.ErrorCode;
 import uk.huy.pathwise.routeoptimizer.model.Coordinate;
@@ -13,7 +14,7 @@ import java.util.List;
 
 @Component
 @Qualifier("NominatimGeocodingProvider")
-public class NominatimGeocodingProvider implements GeocodingProvider{
+public class NominatimGeocodingProvider implements GeocodingProvider {
     private final RestClient restClient;
 
     public NominatimGeocodingProvider(@Qualifier("nominatimRestClient") RestClient restClient) {

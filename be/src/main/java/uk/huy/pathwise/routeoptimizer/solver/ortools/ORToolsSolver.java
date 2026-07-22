@@ -1,9 +1,10 @@
-package uk.huy.pathwise.routeoptimizer.solver;
+package uk.huy.pathwise.routeoptimizer.solver.ortools;
 
 import com.google.ortools.Loader;
 import com.google.ortools.constraintsolver.*;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
+import uk.huy.pathwise.routeoptimizer.solver.SolverProvider;
 import uk.huy.pathwise.shared.exception.AppException;
 import uk.huy.pathwise.shared.exception.ErrorCode;
 

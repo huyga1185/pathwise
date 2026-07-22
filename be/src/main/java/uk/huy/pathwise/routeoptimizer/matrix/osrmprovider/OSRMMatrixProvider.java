@@ -1,8 +1,9 @@
-package uk.huy.pathwise.routeoptimizer.matrix;
+package uk.huy.pathwise.routeoptimizer.matrix.osrmprovider;
 
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
+import uk.huy.pathwise.routeoptimizer.matrix.MatrixProvider;
 import uk.huy.pathwise.routeoptimizer.model.Coordinate;
 
 import java.util.List;

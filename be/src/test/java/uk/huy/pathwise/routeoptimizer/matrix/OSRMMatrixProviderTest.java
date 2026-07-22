@@ -6,6 +6,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.web.client.RestClient;
+import uk.huy.pathwise.routeoptimizer.matrix.osrmprovider.OSRMMatrixProvider;
 import uk.huy.pathwise.routeoptimizer.model.Coordinate;
 
 import java.util.List;

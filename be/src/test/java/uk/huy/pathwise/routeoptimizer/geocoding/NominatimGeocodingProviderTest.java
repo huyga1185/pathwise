@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.web.client.RestClient;
+import uk.huy.pathwise.routeoptimizer.geocoding.nominatimprovider.NominatimGeocodingProvider;
 import uk.huy.pathwise.shared.exception.AppException;
 import uk.huy.pathwise.shared.exception.ErrorCode;
 import uk.huy.pathwise.routeoptimizer.model.Coordinate;

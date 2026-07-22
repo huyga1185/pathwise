@@ -1,4 +1,4 @@
-package uk.huy.pathwise.routeoptimizer.geocoding;
+package uk.huy.pathwise.routeoptimizer.matrix.osrmprovider;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -6,18 +6,19 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.web.client.RestClient;
 
 @Configuration
-public class GeocodingConfig {
+public class OSRMMatrixProviderConfig {
     @Bean
-    RestClient nominatimRestClient(
+    RestClient osrmRestClient(
             RestClient.Builder builder,
-            @Value("${api.geocoding.nominatim-base-url}") String nominatimBaseUrl,
+            @Value("${api.matrix.osrm-base-url}") String osrmBaseUrl,
             @Value("${api.user-agent}") String userAgent) {
         return builder
                 .clone()
-                .baseUrl(nominatimBaseUrl)
+                .baseUrl(osrmBaseUrl)
                 .defaultHeader("User-Agent", userAgent)
+                .defaultHeader("Accept-Encoding", "identity")
                 .requestInterceptor((request, body, execution) -> {
-                    System.out.println(">>> Geocoding URI: " + request.getURI());
+                    System.out.println(">>> OSRM URI: " + request.getURI());
                     return execution.execute(request, body);
                 })
                 .build();
