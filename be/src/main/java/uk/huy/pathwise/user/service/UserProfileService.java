@@ -5,9 +5,10 @@ import uk.huy.pathwise.shared.pagination.PageResponse;
 import uk.huy.pathwise.user.dto.request.UserModificationRequest;
 import uk.huy.pathwise.user.dto.response.AdminGetUserResponse;
 import uk.huy.pathwise.user.dto.response.GetUserResponse;
+import uk.huy.pathwise.shared.identity.UserIdentity;
 
 public interface UserProfileService {
-    void updateUser(long id, UserModificationRequest request);
-    GetUserResponse getUser(long id);
+    void updateUser(UserIdentity identity, UserModificationRequest request);
+    GetUserResponse getUser(UserIdentity identity);
     PageResponse<AdminGetUserResponse> getListUser(Pageable pageable);
 }

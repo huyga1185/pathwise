@@ -15,6 +15,7 @@ import uk.huy.pathwise.user.dto.response.AdminGetUserResponse;
 import uk.huy.pathwise.user.dto.response.GetUserResponse;
 import uk.huy.pathwise.user.mapper.UserMapper;
 import uk.huy.pathwise.user.model.User;
+import uk.huy.pathwise.shared.identity.UserIdentity;
 import uk.huy.pathwise.user.repository.UserRepository;
 
 import java.util.Optional;
@@ -51,8 +52,9 @@ public class UserService implements UserAccountService, UserProfileService {
 
     @Override
     @Transactional
-    public void updateUser(long id, UserModificationRequest request) {
-        User user = getUserById(id);
+    public void updateUser(UserIdentity identity, UserModificationRequest request) {
+        if (identity == null) throw new NullPointerException("Identity is null");
+        User user = getUserById(identity.id());
         userMapper.update(user, request);
         userRepository.save(user);
     }
@@ -82,16 +84,19 @@ public class UserService implements UserAccountService, UserProfileService {
     }
 
     @Override
-    public boolean isUserValid(String email, String password) {
+    public Optional<UserIdentity> findUserByCredentials(String email, String password) {
+        if (email == null) throw new NullPointerException("Email is null");
+        if (password == null) throw new NullPointerException("Password is null");
         Optional<User> user = userRepository.findByEmail(email);
-        // user ? empty -> do nothing : present -> run {lambda ? true -> present : false -> empty} -> isPresent()
-        return user.filter(value -> passwordEncoder.matches(password, value.getPassword()))
-                .isPresent();
+        if (user.isEmpty()) return Optional.empty();
+        if (!passwordEncoder.matches(password, user.get().getPassword())) return Optional.empty();
+        return Optional.of(userMapper.toUserIdentity(user.get()));
     }
 
     @Override
-    public GetUserResponse getUser(long id) {
-        User user = getUserById(id);
+    public GetUserResponse getUser(UserIdentity identity) {
+        if (identity == null) throw new NullPointerException("Identity is null");
+        User user = getUserById(identity.id());
         return userMapper.toGetUserResponse(user);
     }
 
