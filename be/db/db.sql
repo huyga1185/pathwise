@@ -18,7 +18,14 @@ CREATE TABLE refresh_tokens (
     user_id BIGINT NOT NULL,
     family_id CHAR(36) NOT NULL,
     state VARCHAR(25) NOT NULL,
+    user_agent VARCHAR(255),
+    ip_address VARCHAR(255),
+    rotated_at DATETIME,
     expires_at DATETIME NOT NULL,
     created_at DATETIME NOT NULL,
     updated_at DATETIME NOT NULL,
-)
+    CONSTRAINT fk_users_id_refresh_tokens_id
+                            FOREIGN KEY (user_id)
+                            REFERENCES users(id),
+    INDEX idx_family_id(family_id)
+);
