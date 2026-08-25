@@ -4,7 +4,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import uk.huy.pathwise.shared.exception.AppException;
+import uk.huy.pathwise.core.exception.AppException;
+import uk.huy.pathwise.core.pagination.PaginationValidator;
 
 import java.util.HashSet;
 import java.util.Set;
