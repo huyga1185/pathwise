@@ -7,12 +7,13 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import uk.huy.pathwise.routeoptimizer.geocoding.GeocodingProvider;
-import uk.huy.pathwise.routeoptimizer.matrix.MatrixProvider;
+import uk.huy.pathwise.routeoptimizer.infrastructure.geocoding.GeocodingProvider;
+import uk.huy.pathwise.routeoptimizer.infrastructure.matrix.MatrixProvider;
+import uk.huy.pathwise.routeoptimizer.infrastructure.routeoptimizationpipeline.RouteOptimizationPipeline;
 import uk.huy.pathwise.routeoptimizer.model.Coordinate;
-import uk.huy.pathwise.routeoptimizer.solver.SolverProvider;
-import uk.huy.pathwise.shared.exception.AppException;
-import uk.huy.pathwise.shared.exception.ErrorCode;
+import uk.huy.pathwise.routeoptimizer.infrastructure.solver.SolverProvider;
+import uk.huy.pathwise.core.exception.AppException;
+import uk.huy.pathwise.core.exception.ErrorCode;
 
 import java.util.ArrayList;
 import java.util.List;

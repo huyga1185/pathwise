@@ -20,3 +20,9 @@ api:
     nominatim-base-url: https://nominatim.openstreetmap.org
   matrix:
     osrm-base-url: http://router.project-osrm.org
+
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false

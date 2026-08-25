@@ -10,4 +10,5 @@ public interface UserAccountService {
     void updateUserEmail(long id, String newEmail);
     void deleteUser(long id);
     Optional<UserIdentity> findUserByCredentials(String email, String password);
+    Optional<UserIdentity> findUserById(long id);
 }

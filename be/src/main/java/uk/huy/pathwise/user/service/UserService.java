@@ -6,14 +6,14 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import uk.huy.pathwise.shared.exception.AppException;
-import uk.huy.pathwise.shared.exception.ErrorCode;
-import uk.huy.pathwise.shared.pagination.PageResponse;
-import uk.huy.pathwise.shared.pagination.PaginationValidator;
+import uk.huy.pathwise.core.exception.AppException;
+import uk.huy.pathwise.core.exception.ErrorCode;
+import uk.huy.pathwise.core.pagination.PageResponse;
+import uk.huy.pathwise.core.pagination.PaginationValidator;
 import uk.huy.pathwise.user.dto.request.UserModificationRequest;
 import uk.huy.pathwise.user.dto.response.AdminGetUserResponse;
 import uk.huy.pathwise.user.dto.response.GetUserResponse;
-import uk.huy.pathwise.user.mapper.UserMapper;
+import uk.huy.pathwise.user.infrastructure.mapper.UserMapper;
 import uk.huy.pathwise.user.model.User;
 import uk.huy.pathwise.shared.identity.UserIdentity;
 import uk.huy.pathwise.user.repository.UserRepository;
@@ -91,6 +91,12 @@ public class UserService implements UserAccountService, UserProfileService {
         if (user.isEmpty()) return Optional.empty();
         if (!passwordEncoder.matches(password, user.get().getPassword())) return Optional.empty();
         return Optional.of(userMapper.toUserIdentity(user.get()));
+    }
+
+    @Override
+    public Optional<UserIdentity> findUserById(long id) {
+        Optional<User> user = userRepository.findById(id);
+        return user.map(value -> new UserIdentity(value.getId(), value.getEmail(), value.getRole()));
     }
 
     @Override

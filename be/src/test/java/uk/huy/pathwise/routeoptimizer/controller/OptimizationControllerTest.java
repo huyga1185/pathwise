@@ -11,8 +11,8 @@ import uk.huy.pathwise.routeoptimizer.dto.request.OptimizationRequest;
 import uk.huy.pathwise.routeoptimizer.dto.response.OptimizationMultiVehicleResponse;
 import uk.huy.pathwise.routeoptimizer.dto.response.OptimizationResponse;
 import uk.huy.pathwise.routeoptimizer.service.OptimizationService;
-import uk.huy.pathwise.shared.exception.AppException;
-import uk.huy.pathwise.shared.exception.ErrorCode;
+import uk.huy.pathwise.core.exception.AppException;
+import uk.huy.pathwise.core.exception.ErrorCode;
 
 import java.util.List;
 

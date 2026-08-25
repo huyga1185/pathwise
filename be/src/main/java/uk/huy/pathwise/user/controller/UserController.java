@@ -5,7 +5,7 @@ import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
-import uk.huy.pathwise.shared.response.ApiResponse;
+import uk.huy.pathwise.core.apiresponse.ApiResponse;
 import uk.huy.pathwise.user.dto.request.UserModificationRequest;
 import uk.huy.pathwise.user.dto.response.GetUserResponse;
 import uk.huy.pathwise.shared.identity.UserIdentity;
