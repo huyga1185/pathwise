@@ -19,7 +19,7 @@
 | Schema | Flyway quản lý schema (T02): `db/migration/V1__baseline.sql` gồm `users` và `refresh_tokens`, `baseline-on-migrate` cho DB tạo trước từ `db.sql` [Verified-run: DB trống và DB có sẵn đều pass Hibernate validate]. `be/db/db.sql` đã xoá (T01). `application.yaml` dùng `ddl-auto: validate`; file local `application-dev.yaml` (gitignored) vẫn đặt `update` và chủ dự án phải tự sửa (F-32). |
 | Cấu hình | `application.yaml` (chung) + `application-dev.yaml` (gitignored, chứa secret thật: SMTP, JWT secrets, DB). |
 | Build | `develop` compile được [Verified-run]. Refactor OTP/token đã commit trong T00 (`810d71d`). |
-| Test | **72/72 pass**, gồm unit test, test provider dùng mock, `OptimizationControllerTest` (chạy qua security thật) và `ToApplicationTests` (Testcontainers MariaDB 11.8 + Redis 7.4) [Verified-run, branch `task/T01-test-infra`]. `./mvnw test` chỉ cần Docker. CI trên GitHub chưa kiểm chứng (cần push). |
+| Test | **72/72 pass**, gồm unit test, test provider dùng mock, `OptimizationControllerTest` (chạy qua security thật) và `ToApplicationTests` (Testcontainers MariaDB 11.8 + Redis 7.4) [Verified-run]. `./mvnw test` chỉ cần Docker. CI GitHub Actions xanh ở `62b7a85`. |
 
 ### Module
 
@@ -54,7 +54,7 @@ Nhóm: (1) nghiệp vụ/hiểu sai yêu cầu · (2) implementation · (3) ki�
 | F-04 | High | 2 | `OtpTokenManager` trả `expiresAfter = Instant.ofEpochSecond(300)` (= 1970-01-01T00:05Z). Cookie nhận `Max-Age` âm → Spring bỏ `Max-Age` → thành session cookie (chạy được do may mắn). Test `OtpTokenManagerTest` **assert đúng giá trị sai**. | `OtpTokenManager.java`, `OtpTokenManagerTest.java:56` [Verified-code] | Đã sửa (T00): `expiresAfter = now + TTL`, test cập nhật |
 | F-05 | High | 1 | Đổi mật khẩu **không thu hồi session** nào; không yêu cầu mật khẩu cũ. | `AuthService.updateUserPassword` [Verified-code] | Mở → T15 |
 | F-06 | High | 5 | Mọi `@WebMvcTest` fail: `JwtAuthFilter`/`ClientDetailFilter` được annotate `@Configuration` nên bị nạp vào slice nhưng dependency (`AccessTokenService`/`Manager`) thì không. | Surefire: `NoSuchBeanDefinitionException ... jwtAuthFilter` [Verified-run] | Đã sửa (T01): filter không còn là bean, `SecurityConfig` tự khởi tạo; slice test dùng `@Import(SecurityConfig)` + mock `AccessTokenManager` + `spring-boot-starter-security-test` |
-| F-07 | High | 5 | CI không thể xanh: `contextLoads` cần Redis, SMTP, `token.jwt.*` secrets — workflow chỉ cung cấp MariaDB. | `.github/workflows/test.yaml` [Verified-code; chưa xem kết quả trên GitHub] | Đã sửa ở local (T01): test dùng Testcontainers và profile `test`, CI chỉ chạy `./mvnw test`; chờ xác nhận trên GitHub sau khi push |
+| F-07 | High | 5 | CI không thể xanh: `contextLoads` cần Redis, SMTP, `token.jwt.*` secrets — workflow chỉ cung cấp MariaDB. | `.github/workflows/test.yaml` [Verified-code; chưa xem kết quả trên GitHub] | Đã sửa (T01) [Verified-run]: GitHub Actions `test` xanh ở `62b7a85` (run 39666360032) |
 | F-08 | Medium | 1 | Danh sách session trả cả token ACTIVE đã hết hạn; "session id" là id của refresh-token row, đổi sau mỗi lần refresh; không có API thu hồi từng session. | `RefreshTokenManager.getListInfoByUserId` [Verified-code] | Mở → T11 |
 | F-09 | Medium | 2 | TTL OTP hardcode 300 s trong `RedisOtpStore`, trong khi email hiển thị `otp.expiration-time` → có thể lệch. Cooldown 60 s và 3 lần thử cũng hardcode. | `RedisOtpStore.java`, `VerifyOtp.lua` [Verified-code] | Mở → T12 |
 | F-10 | Medium | 2 | Nếu gửi email lỗi, OTP và cooldown vẫn còn trong Redis → user phải chờ 60 s dù không nhận được mã. | `AuthService.getUpdateUserPasswordToken` [Verified-code] | Mở → T12 |
@@ -147,3 +147,4 @@ Nhóm: (1) nghiệp vụ/hiểu sai yêu cầu · (2) implementation · (3) ki�
 | 2026-10-22 | branch `task/T02-flyway` | T02 | Thêm Flyway (`spring-boot-starter-flyway`, `flyway-mysql`) và V1 baseline; kiểm chứng trên MariaDB 11 với DB trống và DB có sẵn. Thêm F-31, F-32. Unit test 67/67 pass. |
 | 2026-10-22 | branch `task/T02-flyway` | — | D-35: ghim MariaDB 11.8 LTS; CI đổi `mariadb:11` thành `mariadb:11.8`. Ghi nhận: MariaDB native của chủ dự án là 13.0.2 chưa chạy `mariadb-upgrade` (lỗi môi trường, không phải lỗi repo). |
 | 2026-10-22 | branch `task/T01-test-infra` | T01 | F-06, F-07 (local) đã sửa; F-12 kiểm chứng bằng chạy thật (403). Thêm Testcontainers, profile `test`, `FakeEmailSender`, `AbstractIntegrationTest`; xoá `be/db/db.sql`. Test 72/72 pass. |
+| 2026-10-22 | `62b7a85` | T01 | Merge vào `develop`; CI GitHub Actions xanh, F-07 xác nhận đã sửa. |
