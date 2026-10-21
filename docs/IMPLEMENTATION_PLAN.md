@@ -12,7 +12,7 @@
 - Definition of Done (áp dụng cho mọi task):
   1. `./mvnw test` xanh, kể cả test mới. Từ T01 trở đi, lệnh này chỉ cần Docker. Từ T06 trở đi, check `ci` trên PR phải xanh.
   2. Acceptance criteria của task đều được kiểm chứng bằng test hoặc ghi chú cách kiểm.
-  3. Cập nhật `CURRENT_STATE.md` (trạng thái F-xx liên quan), `API_SPEC.md` (cột Hiện trạng), `DATA_MODEL.md` nếu có migration.
+  3. Làm đủ **checklist docs trong `AGENTS.md`** (CURRENT_STATE, API_SPEC, DATA_MODEL, DECISIONS, IMPLEMENTATION_PLAN), cập nhật trong cùng PR với code, và liệt kê kết quả trong mô tả PR.
   4. Không thêm dependency, module hoặc mũi tên phụ thuộc ngoài những gì task cho phép.
 - **File nóng**: các file dưới đây không cho hai task chạy song song cùng sửa. Task sửa file nóng phải đứng trong chuỗi tuần tự của track.
   `SecurityConfig`, `ErrorCode`, `GlobalExceptionHandler`, `AuthController`, `AuthService`, `pom.xml`, `application*.yaml`, `.github/**`, `compose*.yaml`, `be/Dockerfile`, `db/migration/*` (mỗi task chỉ tạo đúng file version đã được cấp).

@@ -37,7 +37,32 @@ docker compose --profile app up -d --build    # chạy toàn bộ stack trong co
 
 - Không test nào được gọi dịch vụ ngoài thật. Dùng `MockRestServiceServer` hoặc fake provider, và `FakeEmailSender`.
 - Tên test theo dạng `method_whenCondition_expectedResult`. Sửa bug thì kèm test tái hiện bug đó.
-- Task chỉ xong khi `./mvnw test` xanh **và** đã cập nhật docs theo Definition of Done (`IMPLEMENTATION_PLAN.md` §0).
+- Task chỉ xong khi `./mvnw test` xanh **và** đã làm đủ checklist bên dưới.
+
+## Checklist bắt buộc trước khi kết thúc task / trước khi commit
+
+Áp dụng cho **mọi** thay đổi code (kể cả fix nhỏ hoặc việc được yêu cầu ngoài plan). Docs phải được cập nhật **trong cùng commit/PR** với code. Đối chiếu bằng cách **đọc code thật** (grep mapping, xem DTO và migration), không dựa vào trí nhớ hay mô tả task.
+
+1. **`docs/CURRENT_STATE.md`**
+   - Đổi cột Trạng thái của mọi F-xx đã sửa hoặc thay đổi, kèm task ID. Không xoá dòng.
+   - Thêm lỗi mới phát hiện thành F-xx mới, ghi mức bằng chứng (`[Verified-run]`, `[Verified-code]`, `[Risk]`).
+   - Nếu build hoặc kết quả test thay đổi thì sửa §1 (dòng Build, Test, mô tả module bị ảnh hưởng).
+   - Thêm một dòng vào §5 "Lịch sử cập nhật" (ngày, commit, task, thay đổi).
+2. **`docs/API_SPEC.md`**: nếu đụng controller, DTO, `SecurityConfig`, `ErrorCode` hoặc handler lỗi.
+   - Chạy `grep -rnE "@(Request|Get|Post|Put|Patch|Delete)Mapping" be/src/main/java` và so với spec.
+   - Cập nhật cột Hiện trạng (✅ chỉ khi khớp spec **và** có test; còn lệch thì 🟡 kèm mô tả khác biệt cụ thể).
+   - Cập nhật §0 "Tình trạng implementation" (prefix, format lỗi, mã HTTP, endpoint ngoài spec).
+   - Khác spec có chủ đích thì sửa spec trong cùng PR và ghi lý do.
+3. **`docs/DATA_MODEL.md`**: nếu có migration hoặc đổi entity/Redis key. Bảng hoặc cột phải khớp file migration; cập nhật bảng version ở §4.
+4. **`docs/DECISIONS.md`**: nếu phát sinh quyết định mới. Ghi Proposed và hỏi chủ dự án; không tự đánh Approved.
+5. **`docs/IMPLEMENTATION_PLAN.md`**: nếu phạm vi, dependency hoặc ước lượng của task thay đổi.
+6. **Báo cáo cuối task** phải liệt kê từng file ở mục 1–5: đã cập nhật gì, hoặc "không cần vì …". Không được bỏ qua im lặng.
+
+## Commit
+
+- **Không** thêm attribution của AI vào commit hoặc PR (không có `Co-Authored-By: Claude…`, không có "Generated with…"). Author là chủ dự án.
+- Index có thể đang chứa thay đổi do người khác stage sẵn. Commit bằng `git commit -- <danh sách file>` hoặc kiểm tra `git diff --cached --name-only` trước khi commit. Không commit file không thuộc task.
+- Không push khi chủ dự án chưa yêu cầu.
 
 ## Quy ước code
 
