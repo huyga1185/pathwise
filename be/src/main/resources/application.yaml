@@ -13,6 +13,10 @@ spring:
         jdbc:
           time_zone: UTC
     open-in-view: false
+  flyway:
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+    baseline-version: 1
 
 api:
   user-agent: PathWise/1.0 (https://huy-vu.uk/)

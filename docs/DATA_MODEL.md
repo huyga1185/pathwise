@@ -200,7 +200,7 @@ Version được cấp trước — agent **không** tự chọn số khác:
 
 | Version | File | Task | Nội dung |
 |---|---|---|---|
-| V1 | `V1__baseline.sql` | T02 | Nội dung `be/db/db.sql` hiện tại (bỏ `CREATE DATABASE`/`USE`). `baseline-on-migrate` cho DB dev đã có. |
+| V1 | `V1__baseline.sql` | T02 ✓ | Nội dung `be/db/db.sql` (bỏ `CREATE DATABASE`/`USE`). `baseline-on-migrate` cho DB tạo trước từ `db.sql`. **Đã tạo.** |
 | V2 | `V2__stores_and_user_tenancy.sql` | T13 | Bảng `stores`; cột mới của `users`; chuyển dữ liệu (§5); index refresh_tokens; đổi timestamp sang `DATETIME(6)`. |
 | V3 | `V3__store_invitations.sql` | T16 | Bảng `store_invitations`. |
 | V4 | `V4__vehicles.sql` | T20 | Bảng `vehicles`. |

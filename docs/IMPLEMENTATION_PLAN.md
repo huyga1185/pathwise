@@ -102,7 +102,7 @@ Bảng dependency (→ nghĩa là "phải xong trước"):
 
 ### T02. Thêm Flyway và baseline migration
 - **Tầng:** Must · **Ước lượng:** 0,5 ngày · **Quyết định:** P-01
-- **Phạm vi:** thêm dependency `flyway-core` và `flyway-mysql`; tạo `db/migration/V1__baseline.sql` (lấy từ `be/db/db.sql`, bỏ `CREATE DATABASE`/`USE`); bật `baseline-on-migrate`; đặt `ddl-auto: validate` cho cả profile dev (ghi chú cho chủ dự án: sửa file local `application-dev.yaml`, vì file này gitignored).
+- **Phạm vi:** thêm dependency `spring-boot-starter-flyway` và `flyway-mysql` (Spring Boot 4 tách auto-configuration ra module riêng, nên chỉ thêm `flyway-core` thì Flyway không tự chạy); tạo `db/migration/V1__baseline.sql` (lấy từ `be/db/db.sql`, bỏ `CREATE DATABASE`/`USE`); bật `baseline-on-migrate`; đặt `ddl-auto: validate` cho cả profile dev (ghi chú cho chủ dự án: sửa file local `application-dev.yaml`, vì file này gitignored).
 - **Không thuộc phạm vi:** bảng mới; xoá `be/db/db.sql` (T01 xoá sau khi CI không còn dùng).
 - **Acceptance criteria:** chạy với DB trống tạo đúng 2 bảng; chạy với DB dev hiện có không lỗi (baseline); Hibernate validate pass.
 
