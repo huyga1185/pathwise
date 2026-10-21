@@ -1,10 +1,11 @@
-package uk.huy.pathwise.auth.token.opaque.refreshtoken.service;
+package uk.huy.pathwise.auth.token.opaque.refreshtoken.manager;
 
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NonNull;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import uk.huy.pathwise.auth.infastructure.hash.Hasher;
 import uk.huy.pathwise.auth.infastructure.hash.SHA256Hasher;
 import uk.huy.pathwise.auth.token.opaque.infrastructure.OpaqueTokenGenerator;
 import uk.huy.pathwise.auth.token.opaque.refreshtoken.dto.RefreshTokenDetail;
@@ -21,26 +22,26 @@ import java.util.*;
 
 @Service
 @Slf4j
-public class RefreshTokenService {
+public class RefreshTokenManager {
     private final RefreshTokenRepository refreshTokenRepository;
     private final Duration expirationTime;
-    private final SHA256Hasher sha256Hasher;
+    private final Hasher hasher;
     private final OpaqueTokenGenerator opaqueTokenGenerator;
 
-    public RefreshTokenService(RefreshTokenRepository refreshTokenRepository,
+    public RefreshTokenManager(RefreshTokenRepository refreshTokenRepository,
                                @Value("${token.expiration-time:14d}") Duration expirationTime,
-                               SHA256Hasher sha256Hasher,
+                               Hasher hasher,
                                OpaqueTokenGenerator opaqueTokenGenerator) {
         this.refreshTokenRepository = refreshTokenRepository;
         this.expirationTime = expirationTime;
-        this.sha256Hasher = sha256Hasher;
+        this.hasher = hasher;
         this.opaqueTokenGenerator = opaqueTokenGenerator;
     }
 
     @Transactional
     public RefreshTokenGenerationDetail generateToken(long id, ClientDetail clientDetail) {
         String rawToken = opaqueTokenGenerator.generateOpaqueToken();
-        String hashedToken = sha256Hasher.hashString(rawToken);
+        String hashedToken = hasher.hashString(rawToken);
         RefreshToken refreshToken = RefreshToken.builder()
                 .token(hashedToken)
                 .userAgent(clientDetail != null && clientDetail.userAgent() != null ? clientDetail.userAgent() : null)
@@ -57,7 +58,7 @@ public class RefreshTokenService {
     @Transactional
     public Optional<RefreshTokenRotationDetail> rotateToken(String rawRefreshToken, ClientDetail detail) {
         if (rawRefreshToken == null || rawRefreshToken.isEmpty()) return Optional.empty();
-        String hashedToken = sha256Hasher.hashString(rawRefreshToken);
+        String hashedToken = hasher.hashString(rawRefreshToken);
         Optional<RefreshToken> found = refreshTokenRepository.findByTokenForUpdate(hashedToken);
         if (found.isEmpty()) return Optional.empty();
 
@@ -72,12 +73,14 @@ public class RefreshTokenService {
 
     private Optional<RefreshTokenRotationDetail> handleUsed(RefreshToken token, ClientDetail detail) {
         if (token == null) return Optional.empty();
+
         if (token.getRotatedAt() == null) {
             log.error("Used refresh token does not have rotated at. tokenId={}", token.getId());
             return Optional.empty();
         }
 
         boolean withinGrace = token.getRotatedAt().plusSeconds(3).isAfter(Instant.now());
+
         if (!withinGrace) {
             refreshTokenRepository.revokeFamily(token.getFamilyId());
             logReuse("Used refresh token reused", token, detail);
@@ -85,15 +88,19 @@ public class RefreshTokenService {
         }
 
         List<RefreshToken> actives = refreshTokenRepository.findByFamilyIdAndState(token.getFamilyId(), RefreshTokenState.ACTIVE);
+
         if (actives.isEmpty()) {
             log.error("Non-revoked family has a USED token but no ACTIVE token. familyId={}", token.getFamilyId());
             return Optional.empty();
         }
+
         if (actives.size() > 1) {
             log.error("Refresh token family has more than one active token. familyId={}", token.getFamilyId());
             return Optional.empty();
         }
+
         RefreshToken active = actives.getFirst();
+
         return rotate(active, detail, active.getExpiresAt());
     }
 
@@ -106,7 +113,7 @@ public class RefreshTokenService {
 
         String newRawToken = opaqueTokenGenerator.generateOpaqueToken();
         RefreshToken child = RefreshToken.builder()
-                .token(sha256Hasher.hashString(newRawToken))
+                .token(hasher.hashString(newRawToken))
                 .userId(current.getUserId())
                 .familyId(current.getFamilyId())
                 .userAgent(detail.userAgent())
@@ -134,7 +141,7 @@ public class RefreshTokenService {
     @Transactional
     public void revokeToken(String rawToken) {
         if (rawToken == null || rawToken.isEmpty()) return;
-        Optional<RefreshToken> token = refreshTokenRepository.findByTokenForUpdate(sha256Hasher.hashString(rawToken));
+        Optional<RefreshToken> token = refreshTokenRepository.findByTokenForUpdate(hasher.hashString(rawToken));
         if (token.isEmpty()) return;
         RefreshToken refreshToken = token.get();
         refreshTokenRepository.revokeFamily(refreshToken.getFamilyId());

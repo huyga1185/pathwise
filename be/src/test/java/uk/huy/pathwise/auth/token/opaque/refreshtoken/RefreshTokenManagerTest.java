@@ -1,4 +1,4 @@
-package uk.huy.pathwise.auth.token.refreshtoken;
+package uk.huy.pathwise.auth.token.opaque.refreshtoken;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -6,15 +6,16 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import uk.huy.pathwise.auth.infastructure.hash.Hasher;
 import uk.huy.pathwise.auth.infastructure.hash.SHA256Hasher;
 import uk.huy.pathwise.auth.model.ClientDetail;
 import uk.huy.pathwise.auth.token.opaque.infrastructure.OpaqueTokenGenerator;
 import uk.huy.pathwise.auth.token.opaque.infrastructure.SecureRandomOpaqueTokenGenerator;
 import uk.huy.pathwise.auth.token.opaque.refreshtoken.dto.RefreshTokenGenerationDetail;
 import uk.huy.pathwise.auth.token.opaque.refreshtoken.dto.RefreshTokenRotationDetail;
+import uk.huy.pathwise.auth.token.opaque.refreshtoken.manager.RefreshTokenManager;
 import uk.huy.pathwise.auth.token.opaque.refreshtoken.model.RefreshToken;
 import uk.huy.pathwise.auth.token.opaque.refreshtoken.repository.RefreshTokenRepository;
-import uk.huy.pathwise.auth.token.opaque.refreshtoken.service.RefreshTokenService;
 
 import java.time.Duration;
 import java.util.List;
@@ -25,21 +26,21 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-public class RefreshTokenServiceTest {
+public class RefreshTokenManagerTest {
     @Mock
     private RefreshTokenRepository refreshTokenRepository;
 
     private final OpaqueTokenGenerator opaqueTokenGenerator = new SecureRandomOpaqueTokenGenerator();
 
-    private SHA256Hasher sha256Hasher;
+    private Hasher sha256Hasher;
 
-    private RefreshTokenService refreshTokenService;
+    private RefreshTokenManager refreshTokenManager;
 
     @BeforeEach
     void setUp() {
         this.sha256Hasher = new SHA256Hasher();
 
-        this.refreshTokenService = new RefreshTokenService(refreshTokenRepository,
+        this.refreshTokenManager = new RefreshTokenManager(refreshTokenRepository,
                 Duration.ofDays(14),
                 this.sha256Hasher,
                 opaqueTokenGenerator);
@@ -47,7 +48,7 @@ public class RefreshTokenServiceTest {
 
     @Test
     public void generateToken_whenAllArgumentsIsValid_returnRefreshTokenGenerationDetail() {
-        RefreshTokenGenerationDetail detail = refreshTokenService.generateToken(1, new ClientDetail("UA-TEST", "0.0.0.0"));
+        RefreshTokenGenerationDetail detail = refreshTokenManager.generateToken(1, new ClientDetail("UA-TEST", "0.0.0.0"));
 
         assertThat(detail).isNotNull();
         assertThat(detail.token()).isNotBlank();
@@ -70,7 +71,7 @@ public class RefreshTokenServiceTest {
 
     @Test
     public void generateToken_whenClientDetailIsNull_returnRefreshTokenGenerationDetail() {
-        RefreshTokenGenerationDetail detail = refreshTokenService.generateToken(1L, null);
+        RefreshTokenGenerationDetail detail = refreshTokenManager.generateToken(1L, null);
 
         assertThat(detail).isNotNull();
         assertThat(detail.token()).isNotBlank();
@@ -93,7 +94,7 @@ public class RefreshTokenServiceTest {
 
     @Test
     public void generateToken_whenClientDetailFieldsAreNull_returnRefreshTokenGenerator() {
-        RefreshTokenGenerationDetail detail = refreshTokenService.generateToken(1L, new ClientDetail(null, null));
+        RefreshTokenGenerationDetail detail = refreshTokenManager.generateToken(1L, new ClientDetail(null, null));
 
         assertThat(detail).isNotNull();
         assertThat(detail.token()).isNotBlank();
@@ -124,7 +125,7 @@ public class RefreshTokenServiceTest {
 
         when(refreshTokenRepository.findByTokenForUpdate(hashedToken)).thenReturn(Optional.of(tempRt));
 
-        refreshTokenService.revokeToken(rawToken);
+        refreshTokenManager.revokeToken(rawToken);
 
         ArgumentCaptor<String> argumentCaptor = ArgumentCaptor.forClass(String.class);
 
@@ -143,7 +144,7 @@ public class RefreshTokenServiceTest {
 
     @Test
     public void revokeToken_whenRawTokenIsNull_return() {
-        refreshTokenService.revokeToken(null);
+        refreshTokenManager.revokeToken(null);
 
         verify(refreshTokenRepository, never()).findByTokenForUpdate(any());
         verify(refreshTokenRepository, never()).revokeFamily(any());
@@ -151,7 +152,7 @@ public class RefreshTokenServiceTest {
 
     @Test
     public void revokeToken_whenRawTokenIsEmpty_return() {
-        refreshTokenService.revokeToken("");
+        refreshTokenManager.revokeToken("");
 
         verify(refreshTokenRepository, never()).findByTokenForUpdate(any());
         verify(refreshTokenRepository, never()).revokeFamily(any());
@@ -164,7 +165,7 @@ public class RefreshTokenServiceTest {
 
         when(refreshTokenRepository.findByTokenForUpdate(hashedToken)).thenReturn(Optional.empty());
 
-        refreshTokenService.revokeToken(rawToken);
+        refreshTokenManager.revokeToken(rawToken);
 
         ArgumentCaptor<String> hashedTokenCapture = ArgumentCaptor.forClass(String.class);
 
@@ -178,7 +179,7 @@ public class RefreshTokenServiceTest {
 
     @Test
     public void rotateToken_whenRawTokenIsNull_returnEmpty() {
-        Optional<RefreshTokenRotationDetail> result = refreshTokenService.rotateToken(null, null);
+        Optional<RefreshTokenRotationDetail> result = refreshTokenManager.rotateToken(null, null);
 
         assertThat(result).isEmpty();
 
@@ -187,7 +188,7 @@ public class RefreshTokenServiceTest {
 
     @Test
     public void rotateToken_whenRawTokenIsEmpty_returnEmpty() {
-        Optional<RefreshTokenRotationDetail> result = refreshTokenService.rotateToken("", null);
+        Optional<RefreshTokenRotationDetail> result = refreshTokenManager.rotateToken("", null);
 
         assertThat(result).isEmpty();
 
@@ -202,7 +203,7 @@ public class RefreshTokenServiceTest {
                 .thenReturn(Optional.empty());
 
         Optional<RefreshTokenRotationDetail> result =
-                refreshTokenService.rotateToken(
+                refreshTokenManager.rotateToken(
                         rawToken,
                         new ClientDetail("UA", "IP")
                 );

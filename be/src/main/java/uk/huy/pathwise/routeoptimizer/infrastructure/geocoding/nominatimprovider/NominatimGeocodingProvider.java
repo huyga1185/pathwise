@@ -47,7 +47,7 @@ public class NominatimGeocodingProvider implements GeocodingProvider {
                 Thread.sleep(1000);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
-                throw new AppException(ErrorCode.SERVER_ERROR);
+                throw new AppException(ErrorCode.INTERNAL_ERROR);
             }
         }
         return rs;

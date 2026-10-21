@@ -1,5 +1,6 @@
 package uk.huy.pathwise.auth.controller;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.CacheControl;
 import org.springframework.http.HttpHeaders;
@@ -31,18 +32,20 @@ public class AuthController {
     private final AuthService authService;
     private final AuthCookieBuilder authCookieBuilder;
 
-    private static final String REFRESH_TOKEN_COOKIE = "refreshToken";
-    private static final String UPDATE_USER_PASSWORD_COOKIE = "updateUserPassword";
+    private final String REFRESH_TOKEN_COOKIE = "refreshToken";
+    private final String UPDATE_USER_PASSWORD_ROUTE = "/auth/update-password";
+    private final String UPDATE_USER_PASSWORD_COOKIE = "updateUserPassword";
+    private final String UPDATE_USER_PASSWORD_TICKET = "updateUserPasswordTicket";
 
     @PostMapping("/register")
-    public ResponseEntity<Void> register(@RequestBody RegisterRequest request) {
+    public ResponseEntity<Void> register(@Valid @RequestBody RegisterRequest request) {
         authService.register(request);
         return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/log-in")
     public ResponseEntity<ApiResponse<Map<String, String>>> logIn(@CurrentClient ClientDetail clientDetail,
-                                                                  @RequestBody LogInRequest request) {
+                                                                  @Valid @RequestBody LogInRequest request) {
         LogInResponse logInResponse = authService.logIn(clientDetail, request);
         ResponseCookie cookie = authCookieBuilder.createSecureCookie(REFRESH_TOKEN_COOKIE,
                 logInResponse.refreshToken().token(),
@@ -94,7 +97,7 @@ public class AuthController {
 
     @PostMapping("/update-password/verify")
     public ResponseEntity<Void> verifyUserPasswordToken(@AuthenticationPrincipal UserIdentity identity,
-                                                        @RequestBody VerifyOtpRequest verifyOtpRequest) {
+                                                        @Valid @RequestBody VerifyOtpRequest verifyOtpRequest) {
         VerifyOtpResponse verifyOtpResponse = authService.verifyUpdateUserPasswordOtp(identity, verifyOtpRequest);
         return ResponseEntity.noContent()
                 .cacheControl(CacheControl.noStore())
@@ -102,22 +105,32 @@ public class AuthController {
                 .header(HttpHeaders.SET_COOKIE,
                         authCookieBuilder.createSecureCookie(UPDATE_USER_PASSWORD_COOKIE,
                                 verifyOtpResponse.token(),
-                                "/auth/update-password",
-                                verifyOtpResponse.expiresAt()).toString())
+                                UPDATE_USER_PASSWORD_ROUTE,
+                                verifyOtpResponse.expiresAfter()).toString())
+                .header(HttpHeaders.SET_COOKIE,
+                        authCookieBuilder.createSecureCookie(UPDATE_USER_PASSWORD_TICKET,
+                                verifyOtpResponse.ticket(),
+                                UPDATE_USER_PASSWORD_ROUTE,
+                                verifyOtpResponse.expiresAfter()).toString())
                 .build();
     }
 
     @PostMapping("/update-password")
     public ResponseEntity<Void> updateUserPassword(@CookieValue(UPDATE_USER_PASSWORD_COOKIE) String token,
-                                                   @RequestBody UpdateUserPasswordRequest request,
+                                                   @CookieValue(UPDATE_USER_PASSWORD_TICKET) String ticket,
+                                                   @Valid @RequestBody UpdateUserPasswordRequest request,
                                                    @AuthenticationPrincipal UserIdentity identity) {
-        authService.updateUserPassword(identity, token, request);
+        authService.updateUserPassword(identity, ticket, token, request);
         return ResponseEntity.noContent()
                 .header(HttpHeaders.PRAGMA, "no-cache")
                 .header(HttpHeaders.SET_COOKIE,
                         authCookieBuilder.removeSecureCookie(UPDATE_USER_PASSWORD_COOKIE,
                                 null,
-                                "/auth/update-password").toString())
+                                UPDATE_USER_PASSWORD_ROUTE).toString())
+                .header(HttpHeaders.SET_COOKIE,
+                        authCookieBuilder.removeSecureCookie(UPDATE_USER_PASSWORD_TICKET,
+                                null,
+                                UPDATE_USER_PASSWORD_ROUTE).toString())
                 .build();
     }
 }

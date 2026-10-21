@@ -11,7 +11,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.filter.OncePerRequestFilter;
-import uk.huy.pathwise.auth.token.jwt.service.AccessTokenService;
+import uk.huy.pathwise.auth.token.jwt.manager.AccessTokenManager;
 import uk.huy.pathwise.shared.identity.UserIdentity;
 
 import java.io.IOException;
@@ -21,7 +21,7 @@ import java.util.Optional;
 @Configuration
 @RequiredArgsConstructor
 public class JwtAuthFilter extends OncePerRequestFilter {
-    private final AccessTokenService accessTokenService;
+    private final AccessTokenManager accessTokenManager;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
@@ -34,7 +34,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         }
 
         String token = header.substring(7);
-        Optional<UserIdentity> identity = accessTokenService.verifyAccessToken(token);
+        Optional<UserIdentity> identity = accessTokenManager.verifyAccessToken(token);
         if (identity.isEmpty()) {
             filterChain.doFilter(request, response);
             return;

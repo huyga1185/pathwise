@@ -1,7 +1,7 @@
-package uk.huy.pathwise.auth.token.jwt.service;
+package uk.huy.pathwise.auth.token.jwt.manager;
 
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 import uk.huy.pathwise.auth.token.jwt.infrastructure.dto.JwtClaimsSet;
 import uk.huy.pathwise.auth.token.jwt.infrastructure.generator.JwtTokenGenerator;
 import uk.huy.pathwise.shared.identity.UserIdentity;
@@ -10,10 +10,11 @@ import uk.huy.pathwise.shared.identity.UserRole;
 import java.util.Map;
 import java.util.Optional;
 
-@Service
-public class AccessTokenService {
+@Component
+public class AccessTokenManager {
     private final JwtTokenGenerator jwtTokenGenerator;
-    public AccessTokenService(@Qualifier("hmacAccessTokenGenerator") JwtTokenGenerator jwtTokenGenerator) {
+
+    public AccessTokenManager(@Qualifier("hmacAccessTokenGenerator") JwtTokenGenerator jwtTokenGenerator) {
         this.jwtTokenGenerator = jwtTokenGenerator;
     }
 

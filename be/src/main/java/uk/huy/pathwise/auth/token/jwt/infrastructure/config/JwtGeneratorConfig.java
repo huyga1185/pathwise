@@ -21,15 +21,4 @@ public class JwtGeneratorConfig {
                 expirationTime,
                 issuer);
     }
-
-    @Bean
-    public JwtTokenGenerator hmacOtpTokenGenerator(@Value("${token.jwt.otp-token-secret}") String secretKey,
-                                               @Value("${token.jwt.otp-token-hasing-algorithm:HS256}") String algorithm,
-                                               @Value("${token.jwt.otp-token-expiration-time:14m}") Duration expirationTime,
-                                               @Value("${token.jwt.otp-token-issuer:#{null}}") String issuer) {
-        return new HMACJwtTokenGenerator(JWSAlgorithm.parse(algorithm),
-                secretKey,
-                expirationTime,
-                issuer);
-    }
 }

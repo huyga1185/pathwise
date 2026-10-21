@@ -18,6 +18,6 @@ public enum ErrorCode {
     COULD_NOT_FIND_CHEAPEST_ROUTE(400),
     COULD_NOT_FIND_ADDRESS(400),
     COULD_NOT_FIND_USER(400),
-    SERVER_ERROR( 500);
+    INTERNAL_ERROR(500);
     private final int httpCode;
 }
