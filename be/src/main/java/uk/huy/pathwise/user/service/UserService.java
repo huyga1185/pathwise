@@ -31,7 +31,7 @@ public class UserService implements UserAccountService, UserProfileService {
 
     private User getUserById (long id) {
         return userRepository.findById(id)
-                .orElseThrow(() -> new AppException(ErrorCode.COULD_NOT_FIND_USER));
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
     }
 
     private void checkUserEmailExisted(String email) {

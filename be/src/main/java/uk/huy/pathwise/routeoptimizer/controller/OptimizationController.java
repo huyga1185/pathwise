@@ -15,7 +15,7 @@ import uk.huy.pathwise.core.apiresponse.ApiResponse;
 
 @RestController
 @AllArgsConstructor
-@RequestMapping("/route/optimize")
+@RequestMapping("/api/v1/route/optimize")
 public class OptimizationController {
     private final OptimizationService optimizationService;
 

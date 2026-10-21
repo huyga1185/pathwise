@@ -13,7 +13,7 @@ import uk.huy.pathwise.user.service.UserProfileService;
 
 @RestController
 @AllArgsConstructor
-@RequestMapping("/users")
+@RequestMapping("/api/v1/users")
 public class UserController {
     private final UserProfileService userService;
 

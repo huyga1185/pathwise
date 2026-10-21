@@ -15,7 +15,7 @@ import uk.huy.pathwise.user.service.UserProfileService;
 
 @RestController
 @AllArgsConstructor
-@RequestMapping("/admin/users")
+@RequestMapping("/api/v1/admin/users")
 public class AdminUserController {
     private final UserProfileService userService;
 

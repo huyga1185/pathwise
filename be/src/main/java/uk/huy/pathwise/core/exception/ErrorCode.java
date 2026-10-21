@@ -6,9 +6,9 @@ import lombok.Getter;
 @AllArgsConstructor
 @Getter
 public enum ErrorCode {
-    EMAIL_EXISTED(400),
+    EMAIL_EXISTED(409),
     INVALID_DEPOT( 400),
-    INVALID_EMAIL_OR_PASSWORD(400),
+    INVALID_EMAIL_OR_PASSWORD(401),
     INVALID_SORT_FIELD(400),
     INVALID_PHONE_NUMBER(400),
     INVALID_TOKEN(401),
@@ -17,7 +17,19 @@ public enum ErrorCode {
     COULD_NOT_UPDATE_USER_PASSWORD(400),
     COULD_NOT_FIND_CHEAPEST_ROUTE(400),
     COULD_NOT_FIND_ADDRESS(400),
-    COULD_NOT_FIND_USER(400),
-    INTERNAL_ERROR(500);
+    /** @deprecated replaced by {@link #USER_NOT_FOUND}; kept because error codes are only ever added. */
+    @Deprecated
+    COULD_NOT_FIND_USER(404),
+    INTERNAL_ERROR(500),
+    VALIDATION_ERROR(400),
+    MALFORMED_REQUEST(400),
+    UNAUTHORIZED(401),
+    FORBIDDEN(403),
+    NOT_FOUND(404),
+    USER_NOT_FOUND(404),
+    METHOD_NOT_ALLOWED(405),
+    CONFLICT(409),
+    GEOCODING_PROVIDER_ERROR(502),
+    ROUTING_PROVIDER_ERROR(502);
     private final int httpCode;
 }

@@ -114,7 +114,8 @@ Không bắt buộc module nào cũng đủ thư mục; chỉ tạo khi có nộ
   ```
   Profile `dev` được thêm `exception`, `stackTrace`. Không profile nào khác lộ chi tiết nội bộ.
 - Map chuẩn: 400 validation/request sai · 401 chưa xác thực/token sai/sai thông tin đăng nhập · 403 không đủ quyền · 404 không tồn tại **hoặc thuộc store khác** · 409 xung đột trạng thái/trùng/optimistic lock · 422 vi phạm business rule hợp lệ cú pháp (ví dụ publish plan chưa tối ưu) · 429 rate limit/cooldown · 502/503 provider ngoài lỗi/hết thời gian · 500 lỗi không lường trước.
-- `AuthenticationEntryPoint` và `AccessDeniedHandler` của Security ghi cùng format.
+- `AuthenticationEntryPoint` và `AccessDeniedHandler` của Security ghi cùng format: `JsonAuthenticationEntryPoint`, `JsonAccessDeniedHandler` (trong `auth.infrastructure.security`), cùng dùng `ErrorResponseFactory` với `GlobalExceptionHandler`.
+- **Quy tắc:** những gì `SecurityConfig` hoặc `GlobalExceptionHandler` cần (filter, entry point, `ErrorResponseFactory`) **không là Spring bean** mà được khởi tạo trực tiếp. Lý do: `@WebMvcTest` chỉ nạp controller, advice, filter và cấu hình MVC; một `@Component` thường sẽ thiếu trong slice và làm hỏng mọi controller test.
 - Provider ngoài: timeout kết nối/đọc cấu hình (mặc định 3 s / 10 s); lỗi → `ExternalServiceException` → 502 `ROUTING_PROVIDER_ERROR` hoặc `GEOCODING_PROVIDER_ERROR`.
 
 ## 6. Authentication & authorization
@@ -271,7 +272,7 @@ Chọn implementation bằng property (`routing.geocoding.provider=nominatim`), 
 | Tầng | Công cụ | Phạm vi bắt buộc |
 |---|---|---|
 | Unit | JUnit 5 + Mockito + AssertJ | Service (business rule, quyền), manager token/OTP, solver (ma trận nhỏ cố định, kiểm tra capacity/time window/drop), state machine plan/stop, mapper có logic. |
-| Web slice | `@WebMvcTest` + `@Import(SecurityConfig.class)` + `@MockitoBean AccessTokenManager` (stub token → `UserIdentity`, gửi header `Authorization: Bearer …` để đi qua filter thật). Mẫu: `OptimizationControllerTest`. | Mỗi controller: validation → 400 + code, chưa đăng nhập → 401, sai role → 403, happy path, cookie/header web vs mobile. |
+| Web slice | `@WebMvcTest` + `@Import(SecurityConfig.class)` + `@MockitoBean AccessTokenManager` (stub token → `UserIdentity`, gửi header `Authorization: Bearer …` để đi qua filter thật). Mẫu: `OptimizationControllerTest`, `ErrorHandlingWebMvcTest`. Controller có DTO dùng custom validator thì `@Import` thêm bean mà validator cần (ví dụ `PhoneNumberProcessor`), nếu không validator lỗi và test có thể pass sai lý do (500). | Mỗi controller: validation → 400 + code, chưa đăng nhập → 401, sai role → 403, happy path, cookie/header web vs mobile. |
 | Integration | `@SpringBootTest` + **Testcontainers** MariaDB + Redis (P-21); `EmailSender` thay bằng fake lưu email để đọc OTP; `MatrixProvider` fake | Luồng auth đầy đủ, Lua OTP, Flyway migrate, tenant isolation, plan lifecycle end-to-end, optimistic lock. |
 | Hợp đồng provider | `MockRestServiceServer` | Parse response/lỗi Nominatim, OSRM (đã có, giữ). |
 

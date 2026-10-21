@@ -19,7 +19,7 @@
 | Schema | Flyway quản lý schema (T02): `db/migration/V1__baseline.sql` gồm `users` và `refresh_tokens`, `baseline-on-migrate` cho DB tạo trước từ `db.sql` [Verified-run: DB trống và DB có sẵn đều pass Hibernate validate]. `be/db/db.sql` đã xoá (T01). `application.yaml` dùng `ddl-auto: validate`; file local `application-dev.yaml` (gitignored) vẫn đặt `update` và chủ dự án phải tự sửa (F-32). |
 | Cấu hình | `application.yaml` (chung) + `application-dev.yaml` (gitignored, chứa secret thật: SMTP, JWT secrets, DB). |
 | Build | `develop` compile được [Verified-run]. Refactor OTP/token đã commit trong T00 (`810d71d`). |
-| Test | **72/72 pass**, gồm unit test, test provider dùng mock, `OptimizationControllerTest` (chạy qua security thật) và `ToApplicationTests` (Testcontainers MariaDB 11.8 + Redis 7.4) [Verified-run]. `./mvnw test` chỉ cần Docker. CI GitHub Actions xanh ở `62b7a85`. |
+| Test | **89/89 pass** [Verified-run, branch `task/T03-error-handling`]: unit test, test provider dùng mock, slice test qua security thật (`OptimizationControllerTest`, `ErrorHandlingWebMvcTest`) và `ToApplicationTests` (Testcontainers). `./mvnw test` chỉ cần Docker. CI GitHub Actions xanh ở `62b7a85` (T01). |
 
 ### Module
 
@@ -59,10 +59,10 @@ Nhóm: (1) nghiệp vụ/hiểu sai yêu cầu · (2) implementation · (3) ki�
 | F-09 | Medium | 2 | TTL OTP hardcode 300 s trong `RedisOtpStore`, trong khi email hiển thị `otp.expiration-time` → có thể lệch. Cooldown 60 s và 3 lần thử cũng hardcode. | `RedisOtpStore.java`, `VerifyOtp.lua` [Verified-code] | Mở → T12 |
 | F-10 | Medium | 2 | Nếu gửi email lỗi, OTP và cooldown vẫn còn trong Redis → user phải chờ 60 s dù không nhận được mã. | `AuthService.getUpdateUserPasswordToken` [Verified-code] | Mở → T12 |
 | F-11 | Medium | 3 | Hai interface chồng chéo: `OtpStore` (javadoc mô tả là "facade/manager", thực tế làm cả generate + store + cooldown) và `OtpManager` (stub trả `null`, chưa dùng). | `otp/store`, `otp/manager` [Verified-code] | Mở → T00/T12 |
-| F-12 | Medium | 3 | Lỗi do Spring Security (chưa đăng nhập, token sai) không đi qua `GlobalExceptionHandler`; không cấu hình `AuthenticationEntryPoint` → body/HTTP status không theo format chung (nhiều khả năng 403 thay vì 401). | `SecurityConfig` [Risk — cần test] | Mở → T03. [Verified-run, T01]: request không có token nhận 403 (không phải 401), body rỗng |
+| F-12 | Medium | 3 | Lỗi do Spring Security (chưa đăng nhập, token sai) không đi qua `GlobalExceptionHandler`; không cấu hình `AuthenticationEntryPoint` → body/HTTP status không theo format chung (nhiều khả năng 403 thay vì 401). | `SecurityConfig` [Risk — cần test] | Đã sửa (T03): `JsonAuthenticationEntryPoint`/`JsonAccessDeniedHandler` trả 401/403 theo format chung [Verified-run] |
 | F-13 | Medium | 4 | `GET /auth/update-password` có side effect (gửi email) — vi phạm ngữ nghĩa HTTP, dễ bị prefetch/CSRF kích hoạt. | `AuthController` [Verified-code] | Mở → T15 (thay endpoint) |
 | F-14 | Medium | 4 | Cookie không đặt `SameSite`; CSRF đã tắt; endpoint `/auth/refresh` dùng cookie → có thể bị kích hoạt cross-site. | `AuthCookieBuilder` [Verified-code] | Mở → T10 |
-| F-15 | Medium | 2 | Đăng ký trùng email đồng thời → `DataIntegrityViolationException` → 500 (check-then-insert không atomic). Không chuẩn hoá hoa/thường email ở tầng ứng dụng. | `UserService.createUser` [Verified-code] | Mở → T03, T13 |
+| F-15 | Medium | 2 | Đăng ký trùng email đồng thời → `DataIntegrityViolationException` → 500 (check-then-insert không atomic). Không chuẩn hoá hoa/thường email ở tầng ứng dụng. | `UserService.createUser` [Verified-code] | Một phần (T03): `DataIntegrityViolationException` → 409 `CONFLICT` [Verified-run]; chuẩn hoá email còn ở T13 |
 | F-16 | Medium | 4 | Route optimizer: request không có validation (`@Valid` thiếu, list rỗng/null → NPE/500); geocode tuần tự + `Thread.sleep(1000)` mỗi địa chỉ trên request thread; `System.out.println` trong interceptor; không timeout HTTP client; OSRM trả `null` → NPE. | `routeoptimizer/**` [Verified-code] | Mở → T21, T22, T27 |
 | F-17 | Medium | 1 | Route optimizer chỉ tối ưu theo **khoảng cách**, không có time window/capacity/ca; không lưu kết quả; `/route/optimize` yêu cầu đăng nhập nhưng không gắn với store. Không khớp D-04/D-05. | `ORToolsSolver`, `OptimizationController` [Verified-code] | Mở → T22–T27 (Replace) |
 | F-18 | Medium | 3 | Qualifier không nhất quán: `@Qualifier("ORToolSolver")` trên class nhưng inject `@Qualifier("ORToolsSolver")` — chỉ chạy được vì Spring fallback theo bean name. | `ORToolsSolver`, `RouteOptimizationPipelineConfig` [Verified-code] | Mở → T27 |
@@ -71,7 +71,7 @@ Nhóm: (1) nghiệp vụ/hiểu sai yêu cầu · (2) implementation · (3) ki�
 | F-21 | Low | 4 | `ClientDetailFilter` tin `X-Forwarded-For` vô điều kiện → IP trong danh sách session có thể bị giả mạo. | [Verified-code] | Mở → T41 |
 | F-22 | Low | 2 | `SecureRandomOtpGenerator` gọi `Security.setProperty(...)` toàn cục trong constructor. | [Verified-code] | Mở → T12 |
 | F-23 | Low | 1 | Template email OTP ghi "login request" và "valid for N **seconds**" cho luồng đổi mật khẩu; tiếng Anh. | `templates/email/otp.html` [Verified-code] | Mở → T12 |
-| F-24 | Low | 4 | `ErrorCode` dùng 400 cho "not found" (`COULD_NOT_FIND_USER`), `INVALID_EMAIL_OR_PASSWORD` 400 thay vì 401. | `ErrorCode.java` [Verified-code] | Mở → T03 |
+| F-24 | Low | 4 | `ErrorCode` dùng 400 cho "not found" (`COULD_NOT_FIND_USER`), `INVALID_EMAIL_OR_PASSWORD` 400 thay vì 401. | `ErrorCode.java` [Verified-code] | Đã sửa (T03): `INVALID_EMAIL_OR_PASSWORD` 401, `EMAIL_EXISTED` 409, thêm `USER_NOT_FOUND` 404 (`COULD_NOT_FIND_USER` deprecated) [Verified-run] |
 | F-25 | Low | 2 | `UserService.deleteUser` sẽ lỗi FK nếu user có refresh token (FK không cascade). Hiện không có endpoint gọi. | `db.sql` [Verified-code] | Mở → ghi chú, không có task (không có use case) |
 | F-26 | Low | 4 | Claim `role` trong JWT được set bằng enum object (`Map.of("role", identity.role())`); đọc lại bằng `getClaimAsString` — chưa có test chứng minh Nimbus serialize enum thành string. | `AccessTokenManager` [Risk] | Đã kiểm chứng (T00): `AccessTokenManagerTest` round-trip pass, không phải lỗi |
 | F-27 | Low | 4 | Lịch sử git (commit đầu `53239c0`) từng chứa username/password DB trong `application.yaml`. `application-dev.yaml` hiện tại (gitignored) chứa secret SMTP/JWT thật. | `git show 173bd14` [Verified-run] | Khuyến nghị: đổi mật khẩu DB nếu từng dùng ở nơi khác; không có task code |
@@ -79,6 +79,7 @@ Nhóm: (1) nghiệp vụ/hiểu sai yêu cầu · (2) implementation · (3) ki�
 | F-30 | Low | 3 | Entity `RefreshToken` dùng `@JoinColumn` cho cột thường (`familyId`, `userAgent`, `ipAddress`) thay vì `@Column`; chạy được nhờ naming strategy mặc định (camelCase → snake_case). | `RefreshToken.java` [Verified-code] | Mở → T10 |
 | F-31 | Info | 4 | Flyway 11 cảnh báo MariaDB 11.8 (image `mariadb:11`) mới hơn bản đã kiểm định (11.7). Migration vẫn chạy bình thường. | Log khởi động [Verified-run] | Đã xử lý một phần: CI ghim `mariadb:11.8` (D-35); Testcontainers và compose làm ở T01, T05 |
 | F-32 | Low | 3 | `application-dev.yaml` local (gitignored) vẫn đặt `ddl-auto: update`, đè lên `validate`. Dev có thể tạo schema lệch với migration. | Đọc file local [Verified-code] | Mở: chủ dự án tự sửa; T05 tạo `application-dev.example.yaml` dùng `validate` |
+| F-33 | Medium | 2 | Path không tồn tại và sai HTTP method rơi vào handler `Exception` chung nên trả 500 thay vì 404/405. | `GlobalExceptionHandler` trước T03 [Verified-code] | Đã sửa (T03): thêm handler `NoResourceFoundException` → 404, `HttpRequestMethodNotSupportedException` → 405 [Verified-run] |
 | F-29 | Info | 4 | Race đã biết: hai request refresh đồng thời trong grace 3 s nhận hai token khác nhau; nếu browser giữ token "cũ hơn" thì lần refresh sau (>3 s) bị coi là reuse → revoke family (đăng xuất). | `RefreshTokenManager.handleUsed` [Risk] | Chấp nhận cho MVP; ghi trong ARCHITECTURE |
 
 ## 3. Điểm làm tốt (giữ lại)
@@ -96,7 +97,7 @@ Nhóm: (1) nghiệp vụ/hiểu sai yêu cầu · (2) implementation · (3) ki�
 | Thành phần | Phân loại | Lý do / việc cần làm | Task |
 |---|---|---|---|
 | `core.apiresponse.ApiResponse` | Keep | Envelope `{message?, data}` dùng tiếp. | — |
-| `core.exception.*` | Modify | Đổi field `message`→`code` (P-03), map HTTP status đúng, xử lý `DataIntegrityViolation`, lỗi Security, lỗi provider. | T03 |
+| `core.exception.*` | Modify | Đổi field `message`→`code` (P-03), map HTTP status đúng, xử lý `DataIntegrityViolation`, lỗi Security, lỗi provider. | T03 ✓ |
 | `core.pagination.*` | Keep | | — |
 | `core.statestore.*` | Keep | Nền cho các store Redis. | — |
 | `shared.identity.UserIdentity/UserRole` | Modify | Thêm `storeId`; role → `ADMIN, OWNER, DISPATCHER, DRIVER`. | T13, T17 |
@@ -148,3 +149,4 @@ Nhóm: (1) nghiệp vụ/hiểu sai yêu cầu · (2) implementation · (3) ki�
 | 2026-10-22 | branch `task/T02-flyway` | — | D-35: ghim MariaDB 11.8 LTS; CI đổi `mariadb:11` thành `mariadb:11.8`. Ghi nhận: MariaDB native của chủ dự án là 13.0.2 chưa chạy `mariadb-upgrade` (lỗi môi trường, không phải lỗi repo). |
 | 2026-10-22 | branch `task/T01-test-infra` | T01 | F-06, F-07 (local) đã sửa; F-12 kiểm chứng bằng chạy thật (403). Thêm Testcontainers, profile `test`, `FakeEmailSender`, `AbstractIntegrationTest`; xoá `be/db/db.sql`. Test 72/72 pass. |
 | 2026-10-22 | `62b7a85` | T01 | Merge vào `develop`; CI GitHub Actions xanh, F-07 xác nhận đã sửa. |
+| 2026-10-22 | branch `task/T03-error-handling` | T03 | Prefix `/api/v1`, error body `{code, details}`, 401/403 JSON từ Security, map HTTP status theo spec. F-12, F-24, F-33 đã sửa; F-15 một phần. Test 89/89 pass. |

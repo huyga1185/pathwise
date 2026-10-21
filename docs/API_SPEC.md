@@ -4,13 +4,13 @@
 > Mọi quyết định nền tảng của contract này đã được duyệt (`DECISIONS.md`, 2026-10-22). Frontend web và Flutter có thể dựa vào tài liệu này để thiết kế song song (D-09).
 > Khi implementation khác spec: sửa code cho khớp spec, **hoặc** cập nhật spec trong cùng PR kèm lý do. Không để lệch.
 
-## 0. Tình trạng implementation so với spec (cập nhật 2026-10-22, `develop` tại `8225a87`)
+## 0. Tình trạng implementation so với spec (cập nhật 2026-10-22, sau T03)
 
-- Code **chưa** dùng prefix `/api/v1` (P-02). Mọi path hiện tại bắt đầu bằng `/auth`, `/users`, `/admin/users`, `/route/optimize`. T03 sẽ đổi.
-- Body lỗi hiện là `{message, detail, exception?, stackTrace?}`, trong đó `message` chứa mã lỗi. Spec quy định `{code, details}` (P-03), T03 sẽ đổi. Lỗi từ Spring Security chưa theo format chung (F-12): request không có hoặc sai access token hiện nhận **403 body rỗng** (đã kiểm chứng ở T01), spec quy định 401 `UNAUTHORIZED`.
-- Mã HTTP hiện tại còn khác spec: sai thông tin đăng nhập trả 400 (spec: 401), không tìm thấy user trả 400 (spec: 404), trùng email trả 400 (spec: 409) (F-24).
+- ✅ Mọi endpoint đã dùng prefix `/api/v1` (P-02).
+- ✅ Body lỗi đã theo `{code, details?}`, kể cả lỗi từ Spring Security: thiếu hoặc sai access token trả 401 `UNAUTHORIZED`, sai role trả 403 `FORBIDDEN`. `exception`/`stackTrace` chỉ có ở profile `dev` (P-03). Có slice test kiểm chứng (`ErrorHandlingWebMvcTest`).
+- ✅ Mã HTTP đã khớp §9 cho các lỗi hiện có: sai đăng nhập 401, không tìm thấy user 404 (`USER_NOT_FOUND`), trùng email 409, JSON hỏng 400 `MALFORMED_REQUEST`, path không tồn tại 404 `NOT_FOUND`, sai method 405 `METHOD_NOT_ALLOWED`, vi phạm ràng buộc DB 409 `CONFLICT`, thiếu cookie credential 401 `INVALID_TOKEN`.
 - Các mục §4 đến §8 (store, fleet, geocoding, jobs, plans, driver) **chưa có endpoint nào trong code**.
-- Endpoint đang có trong code nhưng **không thuộc spec**, sẽ bị xoá ở T27: `POST /route/optimize` (TSP theo danh sách địa chỉ) và `POST /route/optimize/k` (VRP theo số xe).
+- Endpoint đang có trong code nhưng **không thuộc spec**, sẽ bị xoá ở T27: `POST /api/v1/route/optimize` và `POST /api/v1/route/optimize/k`. Mã lỗi riêng của chúng (`INVALID_DEPOT`, `COULD_NOT_FIND_*`) cũng bỏ theo.
 - Cột "Hiện trạng" chỉ có ở §2 và §3. Ký hiệu: ✅ khớp spec và đã có test · 🟡 có nhưng khác spec hoặc có lỗi · ❌ chưa có.
 
 ## 1. Quy ước chung
@@ -28,20 +28,20 @@
 
 | Method & path | Quyền | Request | Response | Lỗi chính | Hiện trạng |
 |---|---|---|---|---|---|
-| `POST /register` | P | `{email, password(8–72), storeName(1–150), fullName?}` | 201 `{data:{email, status:"PENDING_VERIFICATION"}}`; gửi OTP `VERIFY_EMAIL` | 400 validation · 409 `EMAIL_EXISTED` · 429 | 🟡 `POST /auth/register` `{email, password}` → 204; không có store, không xác thực email; trùng email trả 400 |
+| `POST /register` | P | `{email, password(8–72), storeName(1–150), fullName?}` | 201 `{data:{email, status:"PENDING_VERIFICATION"}}`; gửi OTP `VERIFY_EMAIL` | 400 validation · 409 `EMAIL_EXISTED` · 429 | 🟡 `POST /api/v1/auth/register` `{email, password}` → 204 (spec: 201); không có store, không xác thực email; trùng email trả 409 ✓ |
 | `POST /email/verify` | P | `{email, otp}` | 204 | 400 `INVALID_OTP` · 409 `EMAIL_ALREADY_VERIFIED` | ❌ |
 | `POST /email/verify/resend` | P | `{email}` | 204 (luôn, không tiết lộ email tồn tại) | 429 `RATE_LIMITED` | ❌ |
-| `POST /log-in` | P | `{email, password}` | 200 `LoginResponse` (+ cookie nếu web) | 401 `INVALID_EMAIL_OR_PASSWORD` · 403 `EMAIL_NOT_VERIFIED` · 403 `ACCOUNT_DISABLED` · 429 | 🟡 `POST /auth/log-in` → `{data:{accessToken}}`; refresh token chỉ có trong cookie (`Path=/auth/refresh`); sai thông tin trả 400 |
-| `POST /refresh` | P | web: cookie · mobile: `{refreshToken}` | 200 `TokenResponse` (+ cookie mới nếu web) | 401 `INVALID_TOKEN` | 🟡 `POST /auth/refresh` (chỉ cookie) → `{data:"<accessToken>"}` (chuỗi, khác dạng log-in); không kiểm tra hạn token (F-02) |
-| `POST /log-out` | P | web: cookie · mobile: `{refreshToken}` | 204 (idempotent; xoá cookie nếu web) | — | 🟡 `POST /auth/log-out`: yêu cầu access token và cookie, nhưng browser không gửi cookie tới path này nên luôn 400 (F-03) |
-| `GET /sessions` | A | — | 200 `[SessionResponse]` | — | 🟡 `GET /auth/sessions` → `{data:{listSession:[{id, userAgent, ipAddress, expiresAt, createdAt}]}}`; `id` là id refresh token (đổi sau mỗi refresh), gồm cả token hết hạn (F-08) |
+| `POST /log-in` | P | `{email, password}` | 200 `LoginResponse` (+ cookie nếu web) | 401 `INVALID_EMAIL_OR_PASSWORD` · 403 `EMAIL_NOT_VERIFIED` · 403 `ACCOUNT_DISABLED` · 429 | 🟡 `POST /api/v1/auth/log-in` → `{data:{accessToken}}`; refresh token chỉ có trong cookie (`Path=/api/v1/auth/refresh`); sai thông tin trả 401 ✓ |
+| `POST /refresh` | P | web: cookie · mobile: `{refreshToken}` | 200 `TokenResponse` (+ cookie mới nếu web) | 401 `INVALID_TOKEN` | 🟡 `POST /api/v1/auth/refresh` (chỉ cookie; thiếu cookie trả 401 `INVALID_TOKEN` ✓) → `{data:"<accessToken>"}` (chuỗi, khác dạng log-in); không kiểm tra hạn token (F-02) |
+| `POST /log-out` | P | web: cookie · mobile: `{refreshToken}` | 204 (idempotent; xoá cookie nếu web) | — | 🟡 `POST /api/v1/auth/log-out`: yêu cầu access token và cookie, nhưng browser không gửi cookie tới path này nên luôn 401 `INVALID_TOKEN` (F-03) |
+| `GET /sessions` | A | — | 200 `[SessionResponse]` | — | 🟡 `GET /api/v1/auth/sessions` → `{data:{listSession:[{id, userAgent, ipAddress, expiresAt, createdAt}]}}`; `id` là id refresh token (đổi sau mỗi refresh), gồm cả token hết hạn (F-08) |
 | `DELETE /sessions/{sessionId}` | A | — | 204 | 404 `SESSION_NOT_FOUND` | ❌ |
 | `POST /sessions/revoke-others` | A | — | 204 | — | ❌ |
 | `POST /password/forgot` | P | `{email}` | 204 (luôn); gửi OTP `RESET_PASSWORD` nếu email ACTIVE | 429 | ❌ |
 | `POST /password/reset/verify` | P | `{email, otp}` | 200 `{data:{resetToken, expiresAt}}` | 400 `INVALID_OTP` | ❌ |
 | `POST /password/reset` | P | `{resetToken, newPassword}` | 204; revoke **mọi** session | 400 `INVALID_TOKEN` | ❌ |
-| `POST /password/change/otp` | A | `{currentPassword}` | 204; gửi OTP `CHANGE_PASSWORD` | 400 `INVALID_CURRENT_PASSWORD` · 429 `OTP_COOLDOWN` | 🟡 hiện là `GET /auth/update-password`: gửi OTP, **không** kiểm tra mật khẩu cũ; T15 thay thế |
-| `PUT /password` | A | `{otp, newPassword}` | 204; revoke mọi session **khác** | 400 `INVALID_OTP` | 🟡 hiện là 2 request: `POST /auth/update-password/verify {otp}` (set cookie token và ticket) rồi `POST /auth/update-password {password}`. Token đã gắn userId từ T00; chưa thu hồi session; T15 thay thế |
+| `POST /password/change/otp` | A | `{currentPassword}` | 204; gửi OTP `CHANGE_PASSWORD` | 400 `INVALID_CURRENT_PASSWORD` · 429 `OTP_COOLDOWN` | 🟡 hiện là `GET /api/v1/auth/update-password`: gửi OTP, **không** kiểm tra mật khẩu cũ; T15 thay thế |
+| `PUT /password` | A | `{otp, newPassword}` | 204; revoke mọi session **khác** | 400 `INVALID_OTP` | 🟡 hiện là 2 request: `POST /api/v1/auth/update-password/verify {otp}` (set cookie token và ticket) rồi `POST /api/v1/auth/update-password {password}`. Token đã gắn userId từ T00; chưa thu hồi session; T15 thay thế |
 
 ```jsonc
 // LoginResponse.data
@@ -65,9 +65,9 @@ Ghi chú:
 
 | Method & path | Quyền | Request | Response | Hiện trạng |
 |---|---|---|---|---|
-| `GET /users/me` | A | — | `{id, email, fullName, phoneNumber, role, storeId, status, canDrive}` | 🟡 `GET /users/me` → `{id, email, phoneNumber}`; thiếu fullName, role, storeId, status, canDrive |
-| `PUT /users/me` | A | `{fullName?, phoneNumber?}` (số VN, lưu E.164, trả dạng national) | 204 | 🟡 `PUT /users/me` `{phoneNumber}`; chưa có fullName |
-| `GET /admin/users` | AD | paging; sort `id,email,createdAt,updatedAt` | Page `{id, email, phoneNumber, role, storeId, status, createdAt, updatedAt}` | 🟡 `GET /admin/users` → `{id, email, phoneNumber, role, createdAt, updatedAt}`; thiếu storeId, status; role vẫn là `ADMIN/USER` |
+| `GET /users/me` | A | — | `{id, email, fullName, phoneNumber, role, storeId, status, canDrive}` | 🟡 `GET /api/v1/users/me` → `{id, email, phoneNumber}`; thiếu fullName, role, storeId, status, canDrive |
+| `PUT /users/me` | A | `{fullName?, phoneNumber?}` (số VN, lưu E.164, trả dạng national) | 204 | 🟡 `PUT /api/v1/users/me` `{phoneNumber}`; chưa có fullName |
+| `GET /admin/users` | AD | paging; sort `id,email,createdAt,updatedAt` | Page `{id, email, phoneNumber, role, storeId, status, createdAt, updatedAt}` | 🟡 `GET /api/v1/admin/users` → `{id, email, phoneNumber, role, createdAt, updatedAt}`; thiếu storeId, status; role vẫn là `ADMIN/USER` |
 
 ## 4. Store — `/api/v1/store`, `/api/v1/invitations`
 
@@ -231,8 +231,11 @@ Người gọi phải có `role=DRIVER` hoặc `canDrive=true` (D-21), và chỉ
 | `GEOCODING_BUSY` | 503 | | `GEOCODING_PROVIDER_ERROR` | 502 |
 | `ROUTING_PROVIDER_ERROR` | 502 | | `INTERNAL_ERROR` | 500 |
 | `PLAN_BUSY` | 409 | | `STOPS_NOT_GEOCODED` | 422 |
+| `CONFLICT` | 409 | | `METHOD_NOT_ALLOWED` | 405 |
 | `SHIFT_OVERLAP` | 422 | | | |
 
 Mã bị bỏ so với hiện tại: `INVALID_DEPOT`, `COULD_NOT_FIND_CHEAPEST_ROUTE`, `COULD_NOT_FIND_ADDRESS`, `COULD_NOT_UPDATE_USER_PASSWORD` (thay bằng mã cụ thể hơn khi endpoint cũ bị xoá). `COULD_NOT_FIND_USER` → `USER_NOT_FOUND` (404).
+
+`CONFLICT` (vi phạm ràng buộc DB không có mã nghiệp vụ riêng, ví dụ hai request đăng ký đồng thời) và `METHOD_NOT_ALLOWED` được thêm ở T03 để không có lỗi framework nào rơi vào 500.
 
 Validation detail codes (trong `details[].code`) dùng UPPER_SNAKE, ví dụ `EMAIL_REQUIRED`, `INVALID_EMAIL_FORMAT`, `INVALID_PASSWORD_LENGTH`, `PHONE_NUMBER_WRONG_REGION`.

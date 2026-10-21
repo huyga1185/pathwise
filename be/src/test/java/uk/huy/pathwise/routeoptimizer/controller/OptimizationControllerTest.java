@@ -51,13 +51,13 @@ class OptimizationControllerTest {
     }
 
     @Test
-    void postOptimize_whenNoAccessToken_rejectRequest() throws Exception {
-        // Current behaviour without an AuthenticationEntryPoint is 403; T03 changes this to 401 UNAUTHORIZED (F-12).
-        mockMvc.perform(post("/route/optimize")
+    void postOptimize_whenNoAccessToken_return401Unauthorized() throws Exception {
+        mockMvc.perform(post("/api/v1/route/optimize")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"addresses":["a","b"],"depot":0}"""))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
     }
 
     @Test
@@ -71,7 +71,7 @@ class OptimizationControllerTest {
         when(optimizationService.optimizeRoute(any(OptimizationRequest.class)))
                 .thenReturn(serviceResult);
 
-        mockMvc.perform(post("/route/optimize")
+        mockMvc.perform(post("/api/v1/route/optimize")
                         .header(HttpHeaders.AUTHORIZATION, BEARER)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestJson))
@@ -91,7 +91,7 @@ class OptimizationControllerTest {
         when(optimizationService.optimizeRouteForKVehicle(any(OptimizationMultiVehicleRequest.class)))
                 .thenReturn(serviceResult);
 
-        mockMvc.perform(post("/route/optimize/k")
+        mockMvc.perform(post("/api/v1/route/optimize/k")
                         .header(HttpHeaders.AUTHORIZATION, BEARER)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestJson))
@@ -108,11 +108,11 @@ class OptimizationControllerTest {
         when(optimizationService.optimizeRoute(any(OptimizationRequest.class)))
                 .thenThrow(new AppException(ErrorCode.INVALID_DEPOT));
 
-        mockMvc.perform(post("/route/optimize")
+        mockMvc.perform(post("/api/v1/route/optimize")
                         .header(HttpHeaders.AUTHORIZATION, BEARER)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestJson))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message").value(ErrorCode.INVALID_DEPOT.name()));
+                .andExpect(jsonPath("$.code").value(ErrorCode.INVALID_DEPOT.name()));
     }
 }

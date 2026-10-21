@@ -26,14 +26,15 @@ import uk.huy.pathwise.shared.identity.UserIdentity;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/auth")
+@RequestMapping("/api/v1/auth")
 @RequiredArgsConstructor
 public class AuthController {
     private final AuthService authService;
     private final AuthCookieBuilder authCookieBuilder;
 
     private final String REFRESH_TOKEN_COOKIE = "refreshToken";
-    private final String UPDATE_USER_PASSWORD_ROUTE = "/auth/update-password";
+    private final String REFRESH_TOKEN_COOKIE_PATH = "/api/v1/auth/refresh";
+    private final String UPDATE_USER_PASSWORD_ROUTE = "/api/v1/auth/update-password";
     private final String UPDATE_USER_PASSWORD_COOKIE = "updateUserPassword";
     private final String UPDATE_USER_PASSWORD_TICKET = "updateUserPasswordTicket";
 
@@ -49,7 +50,7 @@ public class AuthController {
         LogInResponse logInResponse = authService.logIn(clientDetail, request);
         ResponseCookie cookie = authCookieBuilder.createSecureCookie(REFRESH_TOKEN_COOKIE,
                 logInResponse.refreshToken().token(),
-                "/auth/refresh",
+                REFRESH_TOKEN_COOKIE_PATH,
                 logInResponse.refreshToken().expiresAt());
         return ResponseEntity.ok()
                 .cacheControl(CacheControl.noStore())
@@ -64,7 +65,7 @@ public class AuthController {
         RefreshTokenResponse response = authService.refreshToken(refreshToken, clientDetail);
         ResponseCookie cookie = authCookieBuilder.createSecureCookie(REFRESH_TOKEN_COOKIE,
                 response.refreshTokenRotationDetail().token(),
-                "/auth/refresh",
+                REFRESH_TOKEN_COOKIE_PATH,
                 response.refreshTokenRotationDetail().expiresAt());
         return ResponseEntity.ok()
                 .cacheControl(CacheControl.noStore())
@@ -79,7 +80,7 @@ public class AuthController {
         return ResponseEntity.noContent()
                 .cacheControl(CacheControl.noStore())
                 .header(HttpHeaders.PRAGMA, "no-cache")
-                .header(HttpHeaders.SET_COOKIE, authCookieBuilder.removeSecureCookie(REFRESH_TOKEN_COOKIE, "removed", "/auth/refresh").toString())
+                .header(HttpHeaders.SET_COOKIE, authCookieBuilder.removeSecureCookie(REFRESH_TOKEN_COOKIE, "removed", REFRESH_TOKEN_COOKIE_PATH).toString())
                 .build();
     }
 
