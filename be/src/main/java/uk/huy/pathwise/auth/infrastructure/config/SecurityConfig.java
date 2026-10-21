@@ -11,13 +11,13 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import uk.huy.pathwise.auth.infrastructure.filter.ClientDetailFilter;
 import uk.huy.pathwise.auth.infrastructure.filter.JwtAuthFilter;
+import uk.huy.pathwise.auth.token.jwt.manager.AccessTokenManager;
 
 @Configuration
 @EnableMethodSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
-    private final JwtAuthFilter jwtAuthFilter;
-    private final ClientDetailFilter clientDetailFilter;
+    private final AccessTokenManager accessTokenManager;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) {
@@ -33,8 +33,8 @@ public class SecurityConfig {
                         .anyRequest().authenticated())
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .addFilterBefore(clientDetailFilter, UsernamePasswordAuthenticationFilter.class)
-                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(new ClientDetailFilter(), UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(new JwtAuthFilter(accessTokenManager), UsernamePasswordAuthenticationFilter.class)
                 .build();
     }
 }

@@ -6,7 +6,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NonNull;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -18,7 +17,10 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 
-@Configuration
+/**
+ * Not a Spring bean on purpose: it is instantiated by {@code SecurityConfig} so that it only runs inside
+ * the security filter chain (not also as a servlet filter) and is not picked up by {@code @WebMvcTest} slices.
+ */
 @RequiredArgsConstructor
 public class JwtAuthFilter extends OncePerRequestFilter {
     private final AccessTokenManager accessTokenManager;

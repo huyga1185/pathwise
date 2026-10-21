@@ -6,13 +6,14 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NonNull;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.web.filter.OncePerRequestFilter;
 import uk.huy.pathwise.auth.model.ClientDetail;
 
 import java.io.IOException;
 
-@Configuration
+/**
+ * Not a Spring bean on purpose: see {@link JwtAuthFilter}.
+ */
 @Slf4j
 public class ClientDetailFilter extends OncePerRequestFilter {
     @Override

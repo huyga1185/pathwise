@@ -7,7 +7,7 @@
 ## 0. Tình trạng implementation so với spec (cập nhật 2026-10-22, `develop` tại `8225a87`)
 
 - Code **chưa** dùng prefix `/api/v1` (P-02). Mọi path hiện tại bắt đầu bằng `/auth`, `/users`, `/admin/users`, `/route/optimize`. T03 sẽ đổi.
-- Body lỗi hiện là `{message, detail, exception?, stackTrace?}`, trong đó `message` chứa mã lỗi. Spec quy định `{code, details}` (P-03), T03 sẽ đổi. Lỗi 401/403 từ Spring Security chưa theo format chung (F-12).
+- Body lỗi hiện là `{message, detail, exception?, stackTrace?}`, trong đó `message` chứa mã lỗi. Spec quy định `{code, details}` (P-03), T03 sẽ đổi. Lỗi từ Spring Security chưa theo format chung (F-12): request không có hoặc sai access token hiện nhận **403 body rỗng** (đã kiểm chứng ở T01), spec quy định 401 `UNAUTHORIZED`.
 - Mã HTTP hiện tại còn khác spec: sai thông tin đăng nhập trả 400 (spec: 401), không tìm thấy user trả 400 (spec: 404), trùng email trả 400 (spec: 409) (F-24).
 - Các mục §4 đến §8 (store, fleet, geocoding, jobs, plans, driver) **chưa có endpoint nào trong code**.
 - Endpoint đang có trong code nhưng **không thuộc spec**, sẽ bị xoá ở T27: `POST /route/optimize` (TSP theo danh sách địa chỉ) và `POST /route/optimize/k` (VRP theo số xe).

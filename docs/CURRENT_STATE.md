@@ -16,10 +16,10 @@
 | Stack | Spring Boot 4.1.0, Java 21, Maven wrapper, Lombok, MapStruct 1.6.3, Spring Security, JPA/Hibernate (MariaDB), Spring Data Redis, Spring Mail (Brevo SMTP), Thymeleaf (template email), Nimbus JOSE JWT, OR-Tools 9.11, libphonenumber, springdoc 3.0.3. |
 | Cấu trúc repo | `be/` (backend duy nhất), `.github/workflows/test.yaml`. Không có frontend. |
 | Tài liệu | `AGENTS.md`, `CLAUDE.md` và `docs/*` (commit `17b44d2`). Trước đó chỉ có `be/HELP.md` (mẫu Spring Initializr). |
-| Schema | Flyway quản lý schema (T02): `db/migration/V1__baseline.sql` gồm `users` và `refresh_tokens`, `baseline-on-migrate` cho DB tạo trước từ `db.sql` [Verified-run: DB trống và DB có sẵn đều pass Hibernate validate]. `be/db/db.sql` vẫn còn vì CI đang dùng, T01 sẽ xoá. `application.yaml` dùng `ddl-auto: validate`; file local `application-dev.yaml` (gitignored) vẫn đặt `update` và chủ dự án phải tự sửa (F-32). |
+| Schema | Flyway quản lý schema (T02): `db/migration/V1__baseline.sql` gồm `users` và `refresh_tokens`, `baseline-on-migrate` cho DB tạo trước từ `db.sql` [Verified-run: DB trống và DB có sẵn đều pass Hibernate validate]. `be/db/db.sql` đã xoá (T01). `application.yaml` dùng `ddl-auto: validate`; file local `application-dev.yaml` (gitignored) vẫn đặt `update` và chủ dự án phải tự sửa (F-32). |
 | Cấu hình | `application.yaml` (chung) + `application-dev.yaml` (gitignored, chứa secret thật: SMTP, JWT secrets, DB). |
-| Build | `develop` (`8225a87`) compile được [Verified-run]. Refactor OTP/token đã được commit trong T00 (`810d71d`). |
-| Test | 67/67 pass, gồm mọi unit test và test provider dùng mock [Verified-run, 2026-10-22]. **Chưa pass:** `OptimizationControllerTest` (3 error, F-06) và `ToApplicationTests` (cần DB, Redis, SMTP, secret; F-07). Cả hai được sửa ở T01. CI trên GitHub sau lần push `8225a87`: chưa kiểm tra, nhiều khả năng đỏ vì F-07. |
+| Build | `develop` compile được [Verified-run]. Refactor OTP/token đã commit trong T00 (`810d71d`). |
+| Test | **72/72 pass**, gồm unit test, test provider dùng mock, `OptimizationControllerTest` (chạy qua security thật) và `ToApplicationTests` (Testcontainers MariaDB 11.8 + Redis 7.4) [Verified-run, branch `task/T01-test-infra`]. `./mvnw test` chỉ cần Docker. CI trên GitHub chưa kiểm chứng (cần push). |
 
 ### Module
 
@@ -53,13 +53,13 @@ Nhóm: (1) nghiệp vụ/hiểu sai yêu cầu · (2) implementation · (3) ki�
 | F-03 | High | 4 | **Logout không hoạt động từ browser**: cookie `refreshToken` có `Path=/auth/refresh` nên không được gửi tới `/auth/log-out` → `MissingRequestCookieException` → 400. Ngoài ra `/auth/log-out` không nằm trong `permitAll` → cần access token còn hạn mới logout được. | `AuthController`, `SecurityConfig` [Verified-code, theo RFC 6265 path matching] | Mở → T10 |
 | F-04 | High | 2 | `OtpTokenManager` trả `expiresAfter = Instant.ofEpochSecond(300)` (= 1970-01-01T00:05Z). Cookie nhận `Max-Age` âm → Spring bỏ `Max-Age` → thành session cookie (chạy được do may mắn). Test `OtpTokenManagerTest` **assert đúng giá trị sai**. | `OtpTokenManager.java`, `OtpTokenManagerTest.java:56` [Verified-code] | Đã sửa (T00): `expiresAfter = now + TTL`, test cập nhật |
 | F-05 | High | 1 | Đổi mật khẩu **không thu hồi session** nào; không yêu cầu mật khẩu cũ. | `AuthService.updateUserPassword` [Verified-code] | Mở → T15 |
-| F-06 | High | 5 | Mọi `@WebMvcTest` fail: `JwtAuthFilter`/`ClientDetailFilter` được annotate `@Configuration` nên bị nạp vào slice nhưng dependency (`AccessTokenService`/`Manager`) thì không. | Surefire: `NoSuchBeanDefinitionException ... jwtAuthFilter` [Verified-run] | Mở → T01 |
-| F-07 | High | 5 | CI không thể xanh: `contextLoads` cần Redis, SMTP, `token.jwt.*` secrets — workflow chỉ cung cấp MariaDB. | `.github/workflows/test.yaml` [Verified-code; chưa xem kết quả trên GitHub] | Mở → T01 |
+| F-06 | High | 5 | Mọi `@WebMvcTest` fail: `JwtAuthFilter`/`ClientDetailFilter` được annotate `@Configuration` nên bị nạp vào slice nhưng dependency (`AccessTokenService`/`Manager`) thì không. | Surefire: `NoSuchBeanDefinitionException ... jwtAuthFilter` [Verified-run] | Đã sửa (T01): filter không còn là bean, `SecurityConfig` tự khởi tạo; slice test dùng `@Import(SecurityConfig)` + mock `AccessTokenManager` + `spring-boot-starter-security-test` |
+| F-07 | High | 5 | CI không thể xanh: `contextLoads` cần Redis, SMTP, `token.jwt.*` secrets — workflow chỉ cung cấp MariaDB. | `.github/workflows/test.yaml` [Verified-code; chưa xem kết quả trên GitHub] | Đã sửa ở local (T01): test dùng Testcontainers và profile `test`, CI chỉ chạy `./mvnw test`; chờ xác nhận trên GitHub sau khi push |
 | F-08 | Medium | 1 | Danh sách session trả cả token ACTIVE đã hết hạn; "session id" là id của refresh-token row, đổi sau mỗi lần refresh; không có API thu hồi từng session. | `RefreshTokenManager.getListInfoByUserId` [Verified-code] | Mở → T11 |
 | F-09 | Medium | 2 | TTL OTP hardcode 300 s trong `RedisOtpStore`, trong khi email hiển thị `otp.expiration-time` → có thể lệch. Cooldown 60 s và 3 lần thử cũng hardcode. | `RedisOtpStore.java`, `VerifyOtp.lua` [Verified-code] | Mở → T12 |
 | F-10 | Medium | 2 | Nếu gửi email lỗi, OTP và cooldown vẫn còn trong Redis → user phải chờ 60 s dù không nhận được mã. | `AuthService.getUpdateUserPasswordToken` [Verified-code] | Mở → T12 |
 | F-11 | Medium | 3 | Hai interface chồng chéo: `OtpStore` (javadoc mô tả là "facade/manager", thực tế làm cả generate + store + cooldown) và `OtpManager` (stub trả `null`, chưa dùng). | `otp/store`, `otp/manager` [Verified-code] | Mở → T00/T12 |
-| F-12 | Medium | 3 | Lỗi do Spring Security (chưa đăng nhập, token sai) không đi qua `GlobalExceptionHandler`; không cấu hình `AuthenticationEntryPoint` → body/HTTP status không theo format chung (nhiều khả năng 403 thay vì 401). | `SecurityConfig` [Risk — cần test] | Mở → T03 |
+| F-12 | Medium | 3 | Lỗi do Spring Security (chưa đăng nhập, token sai) không đi qua `GlobalExceptionHandler`; không cấu hình `AuthenticationEntryPoint` → body/HTTP status không theo format chung (nhiều khả năng 403 thay vì 401). | `SecurityConfig` [Risk — cần test] | Mở → T03. [Verified-run, T01]: request không có token nhận 403 (không phải 401), body rỗng |
 | F-13 | Medium | 4 | `GET /auth/update-password` có side effect (gửi email) — vi phạm ngữ nghĩa HTTP, dễ bị prefetch/CSRF kích hoạt. | `AuthController` [Verified-code] | Mở → T15 (thay endpoint) |
 | F-14 | Medium | 4 | Cookie không đặt `SameSite`; CSRF đã tắt; endpoint `/auth/refresh` dùng cookie → có thể bị kích hoạt cross-site. | `AuthCookieBuilder` [Verified-code] | Mở → T10 |
 | F-15 | Medium | 2 | Đăng ký trùng email đồng thời → `DataIntegrityViolationException` → 500 (check-then-insert không atomic). Không chuẩn hoá hoa/thường email ở tầng ứng dụng. | `UserService.createUser` [Verified-code] | Mở → T03, T13 |
@@ -110,7 +110,7 @@ Nhóm: (1) nghiệp vụ/hiểu sai yêu cầu · (2) implementation · (3) ki�
 | `auth.otp.*` | Refactor | Gộp `OtpStore` (Redis primitive) + `OtpManager` (orchestration: generate, cooldown, gửi email, verify); purpose là enum; TTL cấu hình. | T00, T12 |
 | `auth...otptoken.*` | Modify | Bind subject (userId); TTL đúng; dùng cho reset password (P-06). | T00, T14 |
 | `auth.email.*` | Extend | Template theo purpose (verify email, reset, change password, invitation); tiếng Việt. | T12, T16 |
-| `auth.infastructure.filter.*` | Refactor | Bỏ `@Configuration`, đăng ký đúng cách; sửa tên package. | T01, T04 |
+| `auth.infrastructure.filter.*` | Refactor | Bỏ `@Configuration`, filter do `SecurityConfig` khởi tạo; sửa tên package. | T01 ✓, T04 ✓ |
 | `auth.infastructure.config.SecurityConfig` | Modify | Entry point/access denied JSON, permitAll mới, CORS. | T03, T10, T41 |
 | `routeoptimizer.infrastructure.geocoding` | Modify | Bỏ geocode hàng loạt; dùng cho endpoint search có rate limit + cache. | T21 |
 | `routeoptimizer.infrastructure.matrix` | Modify | Trả distance + duration; timeout; lỗi provider rõ ràng. | T22 |
@@ -122,8 +122,8 @@ Nhóm: (1) nghiệp vụ/hiểu sai yêu cầu · (2) implementation · (3) ki�
 | `core.job` (mới) | Extend | Job framework inline/async dùng chung (D-19). | T24, T29 |
 | Module `planning` (mới) | Extend | Plan, route, stop, optimize, publish, trạng thái. | T24–T26 |
 | Module `driver` (mới — hoặc controller trong `planning`) | Extend | API tài xế, vị trí. | T30–T33 |
-| `be/db/db.sql` | Replace | Đã có Flyway `V1__baseline.sql` (T02). File cũ giữ đến khi CI chuyển xong rồi xoá (T01). | T02 ✓, T01 |
-| CI workflow | Replace | T01 sửa tối thiểu để CI xanh; T06 thay bằng `ci.yml` và `quality.yml`; T07 thêm `image.yml`. | T01, T06, T07 |
+| `be/db/db.sql` | Replace | Đã thay bằng Flyway `V1__baseline.sql` (T02) và xoá file cũ (T01). | T02 ✓, T01 ✓ |
+| CI workflow | Replace | T01 ✓ sửa tối thiểu để CI xanh (`./mvnw test` + Testcontainers); T06 thay bằng `ci.yml` và `quality.yml`; T07 thêm `image.yml`. | T01, T06, T07 |
 | Container & deployment | Extend | Dockerfile multi-stage, `compose.yaml` có profiles `app`/`routing`, `compose.prod.yaml`, runbook deploy thủ công. | T05, T07, T08 |
 | Rate limiting | Extend | | T40 |
 
@@ -146,3 +146,4 @@ Nhóm: (1) nghiệp vụ/hiểu sai yêu cầu · (2) implementation · (3) ki�
 | 2026-10-22 | — | — | Đối chiếu lại cột Hiện trạng của `API_SPEC.md` với code: sửa đánh dấu sai ở `/admin/users`, ghi chi tiết dạng response thực tế, thêm §0 tổng hợp khác biệt. |
 | 2026-10-22 | branch `task/T02-flyway` | T02 | Thêm Flyway (`spring-boot-starter-flyway`, `flyway-mysql`) và V1 baseline; kiểm chứng trên MariaDB 11 với DB trống và DB có sẵn. Thêm F-31, F-32. Unit test 67/67 pass. |
 | 2026-10-22 | branch `task/T02-flyway` | — | D-35: ghim MariaDB 11.8 LTS; CI đổi `mariadb:11` thành `mariadb:11.8`. Ghi nhận: MariaDB native của chủ dự án là 13.0.2 chưa chạy `mariadb-upgrade` (lỗi môi trường, không phải lỗi repo). |
+| 2026-10-22 | branch `task/T01-test-infra` | T01 | F-06, F-07 (local) đã sửa; F-12 kiểm chứng bằng chạy thật (403). Thêm Testcontainers, profile `test`, `FakeEmailSender`, `AbstractIntegrationTest`; xoá `be/db/db.sql`. Test 72/72 pass. |

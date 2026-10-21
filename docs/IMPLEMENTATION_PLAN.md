@@ -109,7 +109,7 @@ Bảng dependency (→ nghĩa là "phải xong trước"):
 ### T01. Hạ tầng test và CI
 - **Tầng:** Must · **Ước lượng:** 1 ngày · **Quyết định:** P-20, P-21
 - **Phạm vi:**
-  - F-06: bỏ `@Configuration` trên `JwtAuthFilter`/`ClientDetailFilter`, chuyển thành `@Component` và thêm `FilterRegistrationBean` với `setEnabled(false)` cho từng filter.
+  - F-06: bỏ `@Configuration` trên `JwtAuthFilter`/`ClientDetailFilter`. Filter **không** là bean; `SecurityConfig` tự khởi tạo (`new JwtAuthFilter(accessTokenManager)`). Không dùng `@Component` + `FilterRegistrationBean` như dự tính ban đầu, vì `@WebMvcTest` vẫn nạp mọi bean kiểu `Filter`. Thêm `spring-boot-starter-security-test` (Spring Boot 4 cần module này để slice test có `HttpSecurity`).
   - Thêm `spring-boot-testcontainers`, `testcontainers` (`mariadb`, `junit-jupiter`); container MariaDB dùng image `mariadb:11.8` (D-35); Redis dùng `GenericContainer` (`redis:7`) với `@ServiceConnection`.
   - Tạo `src/test/resources/application-test.yaml` với secret giả. Tạo bean test `FakeEmailSender` lưu email để test đọc OTP.
   - Base class `AbstractIntegrationTest`.

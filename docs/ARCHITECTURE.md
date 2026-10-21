@@ -271,7 +271,7 @@ Chọn implementation bằng property (`routing.geocoding.provider=nominatim`), 
 | Tầng | Công cụ | Phạm vi bắt buộc |
 |---|---|---|
 | Unit | JUnit 5 + Mockito + AssertJ | Service (business rule, quyền), manager token/OTP, solver (ma trận nhỏ cố định, kiểm tra capacity/time window/drop), state machine plan/stop, mapper có logic. |
-| Web slice | `@WebMvcTest` + `@Import(SecurityConfig…)` + `@MockitoBean` | Mỗi controller: validation → 400 + code, chưa đăng nhập → 401, sai role → 403, happy path, cookie/header web vs mobile. |
+| Web slice | `@WebMvcTest` + `@Import(SecurityConfig.class)` + `@MockitoBean AccessTokenManager` (stub token → `UserIdentity`, gửi header `Authorization: Bearer …` để đi qua filter thật). Mẫu: `OptimizationControllerTest`. | Mỗi controller: validation → 400 + code, chưa đăng nhập → 401, sai role → 403, happy path, cookie/header web vs mobile. |
 | Integration | `@SpringBootTest` + **Testcontainers** MariaDB + Redis (P-21); `EmailSender` thay bằng fake lưu email để đọc OTP; `MatrixProvider` fake | Luồng auth đầy đủ, Lua OTP, Flyway migrate, tenant isolation, plan lifecycle end-to-end, optimistic lock. |
 | Hợp đồng provider | `MockRestServiceServer` | Parse response/lỗi Nominatim, OSRM (đã có, giữ). |
 

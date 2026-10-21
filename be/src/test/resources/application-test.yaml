@@ -1,0 +1,27 @@
+# Test profile: dummy values only. Datasource and Redis come from Testcontainers (@ServiceConnection).
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: validate
+  mail:
+    host: localhost
+    port: 1025
+
+mail:
+  otp:
+    sender:
+      address: no-reply@pathwise.test
+      name: PathWise Test
+
+token:
+  jwt:
+    # 256-bit all-zero key, test only
+    access-token-secret: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+
+service:
+  identity:
+    app-url: http://localhost
+    app-name: PathWise
+    company-name: PathWise
+    company-url: http://localhost
+    company-address: Test
