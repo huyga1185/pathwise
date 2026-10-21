@@ -1,4 +1,4 @@
-package uk.huy.pathwise.auth.infastructure.resolver;
+package uk.huy.pathwise.auth.infrastructure.resolver;
 
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
@@ -10,7 +10,7 @@ import org.springframework.web.bind.support.WebDataBinderFactory;
 import org.springframework.web.context.request.NativeWebRequest;
 import org.springframework.web.method.support.HandlerMethodArgumentResolver;
 import org.springframework.web.method.support.ModelAndViewContainer;
-import uk.huy.pathwise.auth.infastructure.annotation.CurrentClient;
+import uk.huy.pathwise.auth.infrastructure.annotation.CurrentClient;
 import uk.huy.pathwise.auth.model.ClientDetail;
 
 @Component

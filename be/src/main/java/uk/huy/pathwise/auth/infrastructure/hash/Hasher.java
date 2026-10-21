@@ -1,4 +1,4 @@
-package uk.huy.pathwise.auth.infastructure.hash;
+package uk.huy.pathwise.auth.infrastructure.hash;
 
 /**
  * Defines a general-purpose contract for one-way string hashing and verification

@@ -7,7 +7,7 @@ import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.data.redis.core.types.Expiration;
 import org.springframework.stereotype.Component;
 import org.springframework.core.io.Resource;
-import uk.huy.pathwise.auth.infastructure.hash.Hasher;
+import uk.huy.pathwise.auth.infrastructure.hash.Hasher;
 import uk.huy.pathwise.auth.otp.dto.Otp;
 import uk.huy.pathwise.auth.otp.infrastructure.generator.OtpGenerator;
 import uk.huy.pathwise.auth.otp.infrastructure.exception.OtpException;

@@ -1,4 +1,4 @@
-package uk.huy.pathwise.auth.infastructure.filter;
+package uk.huy.pathwise.auth.infrastructure.filter;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;

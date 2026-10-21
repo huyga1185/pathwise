@@ -66,7 +66,7 @@ Nhóm: (1) nghiệp vụ/hiểu sai yêu cầu · (2) implementation · (3) ki�
 | F-17 | Medium | 1 | Route optimizer chỉ tối ưu theo **khoảng cách**, không có time window/capacity/ca; không lưu kết quả; `/route/optimize` yêu cầu đăng nhập nhưng không gắn với store. Không khớp D-04/D-05. | `ORToolsSolver`, `OptimizationController` [Verified-code] | Mở → T22–T27 (Replace) |
 | F-18 | Medium | 3 | Qualifier không nhất quán: `@Qualifier("ORToolSolver")` trên class nhưng inject `@Qualifier("ORToolsSolver")` — chỉ chạy được vì Spring fallback theo bean name. | `ORToolsSolver`, `RouteOptimizationPipelineConfig` [Verified-code] | Mở → T27 |
 | F-19 | Medium | 3 | Bean `hmacOtpTokenGenerator` + config `token.jwt.otp-token-secret` và DTO `GeneratedOtpToken` không còn được dùng sau refactor nhưng vẫn bắt buộc khi khởi động. | `JwtGeneratorConfig` [Verified-code] | Đã sửa (T00) |
-| F-20 | Low | 3 | Package `auth.infastructure` sai chính tả (các module khác dùng `infrastructure`). | [Verified-code] | Mở → T04 |
+| F-20 | Low | 3 | Package `auth.infastructure` sai chính tả (các module khác dùng `infrastructure`). | [Verified-code] | Đã sửa (T04) |
 | F-21 | Low | 4 | `ClientDetailFilter` tin `X-Forwarded-For` vô điều kiện → IP trong danh sách session có thể bị giả mạo. | [Verified-code] | Mở → T41 |
 | F-22 | Low | 2 | `SecureRandomOtpGenerator` gọi `Security.setProperty(...)` toàn cục trong constructor. | [Verified-code] | Mở → T12 |
 | F-23 | Low | 1 | Template email OTP ghi "login request" và "valid for N **seconds**" cho luồng đổi mật khẩu; tiếng Anh. | `templates/email/otp.html` [Verified-code] | Mở → T12 |

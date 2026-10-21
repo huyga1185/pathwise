@@ -2,7 +2,7 @@ package uk.huy.pathwise.auth.token.opaque.otptoken.manager;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
-import uk.huy.pathwise.auth.infastructure.hash.Hasher;
+import uk.huy.pathwise.auth.infrastructure.hash.Hasher;
 import uk.huy.pathwise.auth.token.opaque.infrastructure.OpaqueTokenGenerator;
 import uk.huy.pathwise.auth.token.opaque.otptoken.dto.OtpToken;
 import uk.huy.pathwise.auth.token.opaque.otptoken.statestore.OtpTokenStore;

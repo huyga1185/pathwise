@@ -6,7 +6,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import uk.huy.pathwise.auth.infastructure.hash.Hasher;
+import uk.huy.pathwise.auth.infrastructure.hash.Hasher;
 import uk.huy.pathwise.auth.token.opaque.infrastructure.OpaqueTokenGenerator;
 import uk.huy.pathwise.auth.token.opaque.otptoken.dto.OtpToken;
 import uk.huy.pathwise.auth.token.opaque.otptoken.manager.OtpTokenManager;

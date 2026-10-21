@@ -1,4 +1,4 @@
-package uk.huy.pathwise.auth.infastructure.config;
+package uk.huy.pathwise.auth.infrastructure.config;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -9,8 +9,8 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import uk.huy.pathwise.auth.infastructure.filter.ClientDetailFilter;
-import uk.huy.pathwise.auth.infastructure.filter.JwtAuthFilter;
+import uk.huy.pathwise.auth.infrastructure.filter.ClientDetailFilter;
+import uk.huy.pathwise.auth.infrastructure.filter.JwtAuthFilter;
 
 @Configuration
 @EnableMethodSecurity

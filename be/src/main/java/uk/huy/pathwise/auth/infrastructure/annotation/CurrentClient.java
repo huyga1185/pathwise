@@ -1,4 +1,4 @@
-package uk.huy.pathwise.auth.infastructure.annotation;
+package uk.huy.pathwise.auth.infrastructure.annotation;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

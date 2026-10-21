@@ -1,4 +1,4 @@
-package uk.huy.pathwise.auth.infastructure.builder;
+package uk.huy.pathwise.auth.infrastructure.builder;
 
 import org.springframework.http.ResponseCookie;
 import org.springframework.stereotype.Component;
