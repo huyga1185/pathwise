@@ -141,3 +141,4 @@ Nhóm: (1) nghiệp vụ/hiểu sai yêu cầu · (2) implementation · (3) ki�
 | 2026-10-22 | `17b44d2` | — | Thêm bộ tài liệu. |
 | 2026-10-22 | `810d71d` | T00 | F-00, F-01 (vá), F-04, F-19 đã sửa; F-26 kiểm chứng không phải lỗi. Unit test 67/67 pass. |
 | 2026-10-22 | `8225a87` | T04 | F-20 đã sửa. |
+| 2026-10-22 | — | — | Đối chiếu lại cột Hiện trạng của `API_SPEC.md` với code: sửa đánh dấu sai ở `/admin/users`, ghi chi tiết dạng response thực tế, thêm §0 tổng hợp khác biệt. |
