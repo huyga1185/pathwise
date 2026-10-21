@@ -1,6 +1,7 @@
 # CURRENT_STATE — Hiện trạng đã xác minh & gap analysis
 
-> Khảo sát ngày 2026-10-21 trên branch `develop`, HEAD `de34fcc`, **kèm thay đổi chưa commit** (refactor OTP/token, ~33 file).
+> Khảo sát ban đầu ngày 2026-10-21 trên `develop` tại `de34fcc`, kèm refactor OTP/token chưa commit.
+> **Cập nhật lần cuối: 2026-10-22, `develop` tại `8225a87`** (đã push), sau T00 và T04. Lịch sử cập nhật: §5.
 > Mọi phát hiện ghi rõ mức độ bằng chứng:
 > - **[Verified-run]** — đã kiểm chứng bằng compile/chạy test.
 > - **[Verified-code]** — xác nhận bằng đọc code (hành vi suy ra chắc chắn từ code/spec).
@@ -14,30 +15,30 @@
 |---|---|
 | Stack | Spring Boot 4.1.0, Java 21, Maven wrapper, Lombok, MapStruct 1.6.3, Spring Security, JPA/Hibernate (MariaDB), Spring Data Redis, Spring Mail (Brevo SMTP), Thymeleaf (template email), Nimbus JOSE JWT, OR-Tools 9.11, libphonenumber, springdoc 3.0.3. |
 | Cấu trúc repo | `be/` (backend duy nhất), `.github/workflows/test.yaml`. Không có frontend. |
-| Tài liệu | Trước session này chỉ có `be/HELP.md` (mẫu Spring Initializr). Các file `PROJECT.md`, `PLAN.md`, `TASKS.md`, `AGENTS.md`, `CLAUDE.md` mà brief nhắc tới **không tồn tại**. |
+| Tài liệu | `AGENTS.md`, `CLAUDE.md` và `docs/*` (commit `17b44d2`). Trước đó chỉ có `be/HELP.md` (mẫu Spring Initializr). |
 | Schema | `be/db/db.sql` viết tay: `users`, `refresh_tokens`. Không có migration tool. Prod `ddl-auto: validate`, dev `ddl-auto: update`. |
 | Cấu hình | `application.yaml` (chung) + `application-dev.yaml` (gitignored, chứa secret thật: SMTP, JWT secrets, DB). |
-| Build | Working tree **không compile** [Verified-run]. HEAD compile được [Verified-run]. |
-| Test (HEAD) | 34 test chạy: 31 pass, 3 error (`OptimizationControllerTest`) [Verified-run]. Không chạy: `ToApplicationTests` (cần DB+Redis+secret), `NominatimGeocodingProviderTest`, `OSRMMatrixProviderTest`, `RouteOptimizationPipelineTest` (dùng mock, không cần mạng — chưa chạy trong session). |
+| Build | `develop` (`8225a87`) compile được [Verified-run]. Refactor OTP/token đã được commit trong T00 (`810d71d`). |
+| Test | 67/67 pass, gồm mọi unit test và test provider dùng mock [Verified-run, 2026-10-22]. **Chưa pass:** `OptimizationControllerTest` (3 error, F-06) và `ToApplicationTests` (cần DB, Redis, SMTP, secret; F-07). Cả hai được sửa ở T01. CI trên GitHub sau lần push `8225a87`: chưa kiểm tra, nhiều khả năng đỏ vì F-07. |
 
 ### Module
 
 | Module | Nội dung | Ghi chú |
 |---|---|---|
-| `core` | `ApiResponse`, `ErrorCode`/`AppException`/`GlobalExceptionHandler`, `PageResponse`/`PaginationValidator`, `StateStore`/`RedisStateStore` (mới, chưa commit). | Nền tảng hợp lý. |
+| `core` | `ApiResponse`, `ErrorCode`/`AppException`/`GlobalExceptionHandler`, `PageResponse`/`PaginationValidator`, `StateStore`/`RedisStateStore`. | Nền tảng hợp lý. |
 | `shared.identity` | `UserIdentity(id, email, role)`, `UserRole {ADMIN, USER}`. | Hợp đồng giữa `auth` và `user`. |
 | `user` | Entity `User`, `UserService` (implements `UserAccountService` cho auth + `UserProfileService` cho controller), `UserController` (`/users/me`), `AdminUserController` (`/admin/users`), MapStruct mapper, validator số điện thoại VN. | Ổn, cần mở rộng cho store/role/status. |
-| `auth` | `AuthController` (`/auth/*`), `AuthService` (orchestrator), JWT access token (HMAC), refresh token opaque xoay vòng theo family (MariaDB, pessimistic lock), OTP (Redis + Lua), OTP token opaque (Redis, GETDEL), email OTP (Thymeleaf + JavaMail), filter JWT/ClientDetail. | Phần lớn công sức nằm ở đây; refactor đang dở. |
+| `auth` | `AuthController` (`/auth/*`), `AuthService` (orchestrator), JWT access token (HMAC), refresh token opaque xoay vòng theo family (MariaDB, pessimistic lock), OTP (Redis + Lua), OTP token opaque (Redis, GETDEL), email OTP (Thymeleaf + JavaMail), filter JWT/ClientDetail (package `auth.infrastructure`). | Phần lớn công sức nằm ở đây. Refactor đã commit; `OtpManager`/`InternalOtpManager` vẫn là stub chưa dùng (F-11, T12). |
 | `routeoptimizer` | `POST /route/optimize` (TSP), `POST /route/optimize/k` (VRP theo số xe). Pipeline: Nominatim geocode tuần tự (sleep 1 s/địa chỉ) → OSRM table (distance) → OR-Tools. Không lưu DB. | Prototype stateless; không khớp mô hình sản phẩm (D-04, D-05). |
 
-### Luồng auth hiện có (sau refactor chưa commit)
+### Luồng auth hiện có (tại `8225a87`)
 
 1. `POST /auth/register {email, password}` → tạo user role USER (không xác thực email).
 2. `POST /auth/log-in` → JWT access token (body) + refresh token (cookie `refreshToken`, `Path=/auth/refresh`).
 3. `POST /auth/refresh` (cookie) → xoay vòng, grace 3 s cho request đồng thời, reuse → revoke family.
 4. `POST /auth/log-out` (cookie + yêu cầu access token) → revoke family.
 5. `GET /auth/sessions` → list refresh token ACTIVE của user.
-6. Đổi mật khẩu 3 bước: `GET /auth/update-password` (gửi OTP) → `POST /auth/update-password/verify {otp}` (set cookie token+ticket) → `POST /auth/update-password {password}` (cookie).
+6. Đổi mật khẩu 3 bước: `GET /auth/update-password` (gửi OTP) → `POST /auth/update-password/verify {otp}` (set cookie token+ticket, token gắn userId) → `POST /auth/update-password {password}` (cookie; từ chối token của user khác).
 
 ## 2. Phát hiện
 
@@ -131,3 +132,12 @@ Nhóm: (1) nghiệp vụ/hiểu sai yêu cầu · (2) implementation · (3) ki�
 - Cookie `refreshToken` đổi path; luồng đổi mật khẩu thay hoàn toàn.
 - `UserRole.USER` bị bỏ. Dữ liệu cũ không được giữ, dev phải reset DB (D-29).
 - `/route/optimize`, `/route/optimize/k` bị xoá.
+
+## 5. Lịch sử cập nhật
+
+| Ngày | Commit | Task | Thay đổi trạng thái |
+|---|---|---|---|
+| 2026-10-21 | `de34fcc` + WIP | — | Khảo sát ban đầu. |
+| 2026-10-22 | `17b44d2` | — | Thêm bộ tài liệu. |
+| 2026-10-22 | `810d71d` | T00 | F-00, F-01 (vá), F-04, F-19 đã sửa; F-26 kiểm chứng không phải lỗi. Unit test 67/67 pass. |
+| 2026-10-22 | `8225a87` | T04 | F-20 đã sửa. |
