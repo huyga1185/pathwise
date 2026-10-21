@@ -47,6 +47,7 @@
 | D-32 | Môi trường dev dùng container ở hai mức. (1) **Mặc định**: compose chỉ chạy hạ tầng (MariaDB, Redis, Mailpit), app chạy từ IDE hoặc `./mvnw`. (2) **Bản chạy đủ từ A đến Z**: profile `app` build app từ **Dockerfile multi-stage** và chạy toàn bộ stack trong container. | `compose.yaml` ở root, có profiles. |
 | D-33 | OSRM và Nominatim self-host (dữ liệu Việt Nam) nằm trong compose dưới profile **`routing`**, **mặc định tắt**, bật khi demo. | Base URL của provider cấu hình qua env (D-25). |
 | D-34 | Quy trình branch: `task/*` → PR vào `develop` (CI bắt buộc) → image `develop` / `develop-<sha>` cho **staging**. `develop` → PR vào `main` kèm tag `v*` → image `x.y.z` / `latest` cho **prod**. | Bảo vệ branch `develop` và `main` (chủ dự án tự cấu hình trên GitHub theo hướng dẫn của T06). |
+| D-35 | **Ghim MariaDB 11.8 (LTS)** cho mọi môi trường: CI, Testcontainers, compose dev, compose prod. Image luôn ghi rõ `mariadb:11.8`, không dùng tag trôi như `mariadb:11` hay `latest`. Dev local dùng MariaDB trong compose, cổng host mặc định **3307** (biến `MARIADB_PORT`) để không xung đột với MariaDB native ở 3306. | Loại bỏ lỗi do lệch version (MariaDB native 13.0 chưa `mariadb-upgrade` làm Flyway lỗi). Nâng version phải là quyết định mới. |
 
 **Nguyên tắc chung chủ dự án đặt ra:** làm phương án đơn giản trước, nhưng **luôn thiết kế để mở rộng được mà không phải đập đi xây lại** (D-19, D-20, D-26). Mỗi khi chọn phương án tối giản, agent phải giữ sẵn điểm mở rộng: interface, cột dữ liệu, hoặc contract.
 

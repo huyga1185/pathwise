@@ -301,7 +301,7 @@ Quy tắc:
 
 | Service | Profile | Ghi chú |
 |---|---|---|
-| `mariadb` (11) | mặc định | Có volume và healthcheck. |
+| `mariadb` (`mariadb:11.8`, D-35) | mặc định | Có volume và healthcheck. Cổng host `${MARIADB_PORT:-3307}`. |
 | `redis` (7) | mặc định | Bật persistence AOF; mọi key đều có TTL nên mất dữ liệu cũng chấp nhận được. |
 | `mailpit` | mặc định | SMTP giả ở cổng 1025, giao diện web ở 8025 để xem email OTP và lời mời khi dev. |
 | `app` | `app` | Build từ `be/Dockerfile` (target `runtime`), phụ thuộc mariadb và redis ở trạng thái healthy, đọc `.env`. Đây là bản chạy đủ từ A đến Z. |

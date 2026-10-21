@@ -77,7 +77,7 @@ Nhóm: (1) nghiệp vụ/hiểu sai yêu cầu · (2) implementation · (3) ki�
 | F-27 | Low | 4 | Lịch sử git (commit đầu `53239c0`) từng chứa username/password DB trong `application.yaml`. `application-dev.yaml` hiện tại (gitignored) chứa secret SMTP/JWT thật. | `git show 173bd14` [Verified-run] | Khuyến nghị: đổi mật khẩu DB nếu từng dùng ở nơi khác; không có task code |
 | F-28 | Low | 5 | Không có test cho `AuthService`, `AuthController`, `UserService`, Lua script OTP, `JwtAuthFilter`, `HMACJwtTokenGenerator`. | [Verified-code] | Mở → T01, các task auth |
 | F-30 | Low | 3 | Entity `RefreshToken` dùng `@JoinColumn` cho cột thường (`familyId`, `userAgent`, `ipAddress`) thay vì `@Column`; chạy được nhờ naming strategy mặc định (camelCase → snake_case). | `RefreshToken.java` [Verified-code] | Mở → T10 |
-| F-31 | Info | 4 | Flyway 11 cảnh báo MariaDB 11.8 (image `mariadb:11`) mới hơn bản đã kiểm định (11.7). Migration vẫn chạy bình thường. | Log khởi động [Verified-run] | Theo dõi; ghim `mariadb:11.7` trong compose/CI nếu gặp lỗi (T05, T06) |
+| F-31 | Info | 4 | Flyway 11 cảnh báo MariaDB 11.8 (image `mariadb:11`) mới hơn bản đã kiểm định (11.7). Migration vẫn chạy bình thường. | Log khởi động [Verified-run] | Đã xử lý một phần: CI ghim `mariadb:11.8` (D-35); Testcontainers và compose làm ở T01, T05 |
 | F-32 | Low | 3 | `application-dev.yaml` local (gitignored) vẫn đặt `ddl-auto: update`, đè lên `validate`. Dev có thể tạo schema lệch với migration. | Đọc file local [Verified-code] | Mở: chủ dự án tự sửa; T05 tạo `application-dev.example.yaml` dùng `validate` |
 | F-29 | Info | 4 | Race đã biết: hai request refresh đồng thời trong grace 3 s nhận hai token khác nhau; nếu browser giữ token "cũ hơn" thì lần refresh sau (>3 s) bị coi là reuse → revoke family (đăng xuất). | `RefreshTokenManager.handleUsed` [Risk] | Chấp nhận cho MVP; ghi trong ARCHITECTURE |
 
@@ -145,3 +145,4 @@ Nhóm: (1) nghiệp vụ/hiểu sai yêu cầu · (2) implementation · (3) ki�
 | 2026-10-22 | `8225a87` | T04 | F-20 đã sửa. |
 | 2026-10-22 | — | — | Đối chiếu lại cột Hiện trạng của `API_SPEC.md` với code: sửa đánh dấu sai ở `/admin/users`, ghi chi tiết dạng response thực tế, thêm §0 tổng hợp khác biệt. |
 | 2026-10-22 | branch `task/T02-flyway` | T02 | Thêm Flyway (`spring-boot-starter-flyway`, `flyway-mysql`) và V1 baseline; kiểm chứng trên MariaDB 11 với DB trống và DB có sẵn. Thêm F-31, F-32. Unit test 67/67 pass. |
+| 2026-10-22 | branch `task/T02-flyway` | — | D-35: ghim MariaDB 11.8 LTS; CI đổi `mariadb:11` thành `mariadb:11.8`. Ghi nhận: MariaDB native của chủ dự án là 13.0.2 chưa chạy `mariadb-upgrade` (lỗi môi trường, không phải lỗi repo). |

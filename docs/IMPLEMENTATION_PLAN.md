@@ -110,7 +110,7 @@ Bảng dependency (→ nghĩa là "phải xong trước"):
 - **Tầng:** Must · **Ước lượng:** 1 ngày · **Quyết định:** P-20, P-21
 - **Phạm vi:**
   - F-06: bỏ `@Configuration` trên `JwtAuthFilter`/`ClientDetailFilter`, chuyển thành `@Component` và thêm `FilterRegistrationBean` với `setEnabled(false)` cho từng filter.
-  - Thêm `spring-boot-testcontainers`, `testcontainers` (`mariadb`, `junit-jupiter`); Redis dùng `GenericContainer` (`redis:7`) với `@ServiceConnection`.
+  - Thêm `spring-boot-testcontainers`, `testcontainers` (`mariadb`, `junit-jupiter`); container MariaDB dùng image `mariadb:11.8` (D-35); Redis dùng `GenericContainer` (`redis:7`) với `@ServiceConnection`.
   - Tạo `src/test/resources/application-test.yaml` với secret giả. Tạo bean test `FakeEmailSender` lưu email để test đọc OTP.
   - Base class `AbstractIntegrationTest`.
   - Sửa `ToApplicationTests` (context load bằng Testcontainers) và `OptimizationControllerTest` (chạy cùng security).
@@ -138,7 +138,8 @@ Bảng dependency (→ nghĩa là "phải xong trước"):
   - `be/Dockerfile` multi-stage `build` → `extract` → `runtime` theo `ARCHITECTURE.md` §12.1: user không phải root, `HEALTHCHECK`, `.dockerignore`.
   - Thêm `spring-boot-starter-actuator`, chỉ expose `health`, có liveness/readiness (cấu hình trong `application.yaml`). **Không sửa `SecurityConfig`**: `permitAll` cho `/actuator/health/**` do T03 thêm, để tránh xung đột khi T03 và T05 chạy song song.
   - `compose.yaml` ở root theo §12.2 với service mặc định (mariadb, redis, mailpit) và profile `app`. Chưa làm profile `routing` (T08).
-  - `.env.example`, `be/src/main/resources/application-dev.example.yaml` (không chứa secret, SMTP trỏ tới mailpit, Redis/DB trỏ tới compose). Thêm `.env` vào `.gitignore`.
+  - `.env.example`, `be/src/main/resources/application-dev.example.yaml` (không chứa secret, `ddl-auto: validate`, SMTP trỏ tới mailpit, DB trỏ tới `localhost:3307`, Redis trỏ tới compose). Image `mariadb:11.8` (D-35).
+  - README có mục Troubleshooting: dùng MariaDB native thay compose mà Flyway báo "Unable to check whether schema is empty" sau khi nâng cấp MariaDB thì chạy `mariadb-upgrade`; khuyến nghị dùng DB trong compose. Thêm `.env` vào `.gitignore`.
   - Cấu hình qua biến môi trường cho mọi secret (`SPRING_DATASOURCE_*`, `SPRING_MAIL_*`, `TOKEN_JWT_ACCESS_TOKEN_SECRET`, ...).
   - `README.md` ở root: yêu cầu môi trường, 2 cách chạy (IDE + hạ tầng, hoặc A–Z), chạy test, xem email trên mailpit.
 - **Không thuộc phạm vi:** workflow (T06, T07), OSRM/Nominatim local (T08), `compose.prod.yaml` (T07).
