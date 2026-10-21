@@ -1,0 +1,93 @@
+# DECISIONS — Nhật ký quyết định
+
+> Trạng thái:
+> - **Approved**: chủ dự án đã phê duyệt (có ghi ngày).
+> - **Proposed**: Tech Lead đề xuất, **chưa được phê duyệt**. Coding agent chỉ triển khai theo Proposed khi task trong `IMPLEMENTATION_PLAN.md` tham chiếu tới nó.
+> - **Superseded**: đã bị thay thế (có ghi ID thay thế).
+>
+> Không sửa nội dung của quyết định đã Approved. Muốn đổi thì thêm quyết định mới và đánh dấu quyết định cũ là Superseded.
+>
+> Tình trạng ngày 2026-10-22: **mọi quyết định đã được duyệt**, không còn mục Proposed hay câu hỏi mở nào.
+
+## 1. Quyết định sản phẩm (Approved 2026-10-21/22)
+
+| ID | Quyết định | Hệ quả chính |
+|---|---|---|
+| D-01 | PathWise là SaaS đa tenant cho **cửa hàng có đội tài xế riêng**. | Mọi dữ liệu nghiệp vụ thuộc về một `store`, nên bắt buộc tenant isolation. |
+| D-02 | **1 user ↔ tối đa 1 store.** | Cột `users.store_id` (chỉ nullable cho ADMIN). Không có bảng membership. |
+| D-03 | Vai trò trong store gồm **OWNER, DISPATCHER, DRIVER**, cộng thêm **ADMIN** của nền tảng. | Thay enum `UserRole {ADMIN, USER}`. Ma trận quyền ở P-08. |
+| D-04 | Lập kế hoạch **ad-hoc**: không có danh mục đơn hàng lâu dài. Mỗi lần lập là một **RoutePlan được lưu lại** (stops, gán tài xế/xe, trạng thái từng điểm). | Có các bảng `route_plans`, `route_plan_routes`, `route_plan_stops`. Không có bảng `orders`. |
+| D-05 | Ràng buộc tối ưu bắt buộc: **time window mỗi điểm, tải trọng xe, giới hạn ca/quãng đường mỗi tài xế**. | Cần ma trận duration (thời gian) ngoài ma trận distance. Solver là VRPTW có capacity. |
+| D-06 | Trong MVP, tài xế xem được tuyến được giao, cập nhật trạng thái điểm, gửi vị trí và có dẫn đường. | Có bộ API riêng cho tài xế. |
+| D-07 | Dẫn đường: **deep link Google/Apple Maps là mức bắt buộc** (cũng là phương án fallback). Turn-by-turn là Should. | Must: trả toạ độ theo thứ tự. Should: thêm endpoint directions. |
+| D-08 | Vị trí tài xế dùng **polling trước**, realtime push để sau. | MVP không có WebSocket. |
+| D-09 | Client gồm **web và Flutter**. Plan này **chỉ làm backend**. Mục tiêu trước mắt là chốt **API contract** để frontend làm song song. | `API_SPEC.md` là sản phẩm bàn giao cho frontend. |
+| D-10 | Provider: **tạm dùng Nominatim** và OSRM. Khi demo thật cho khách thì chuyển sang **Google**. | Giữ abstraction provider. Google để sau MVP (I-03). |
+| D-11 | Auth bắt buộc: xác thực email khi đăng ký, quên mật khẩu, thu hồi session khi đổi mật khẩu, đăng xuất từng thiết bị. | |
+| D-12 | Mốc MVP **dưới 1 tháng**. Nhân lực: 1 developer cùng nhiều coding agent. | Phân tầng Must/Should/Could chặt chẽ. |
+| D-13 | **Tiếp tục bản refactor đang dở** (OTP và token) và sửa lỗi của nó. | Task T00. |
+| D-14 | Refresh token: **web nhận qua HttpOnly cookie, mobile nhận qua body**. | Cơ chế phân biệt ở P-04. |
+| D-15 | Chỉ **OWNER được tự đăng ký**. Store được tạo cùng lúc, trong một giao dịch. | Request đăng ký có `storeName`. |
+| D-16 | DISPATCHER và DRIVER vào hệ thống **qua lời mời bằng email**, người được mời tự đặt mật khẩu. | Bảng `store_invitations`. |
+| D-17 | Đổi mật khẩu khi đang đăng nhập cần **mật khẩu cũ + OTP qua email**. | Luồng chi tiết ở P-05. |
+| D-18 | **Server geocode địa chỉ, chạy nền khi lưu plan.** Stop có thể kèm sẵn toạ độ (dispatcher chấm trên bản đồ) thì bỏ qua bước geocode. Stop geocode thất bại thì dispatcher sửa địa chỉ hoặc chấm toạ độ. Plan chỉ optimize được khi mọi stop đã có toạ độ. | Thay thế P-10. Mỗi stop có `geocodeStatus`. Cần cơ chế job (D-19). |
+| D-19 | **Cơ chế job chạy nền dùng chung.** Geocode chạy nền ngay từ MVP. Optimize dùng **contract dạng job** (trả `202` kèm `jobId`), nhưng trong MVP chạy ngay trong request. Sau này chuyển sang chạy nền chỉ bằng cấu hình, không đổi API. Giới hạn MVP: ≤ 100 stop, ≤ 20 route mỗi plan. | Sửa đổi P-12. Thêm bảng `background_jobs`, cột `route_plans.processing_status`. |
+| D-20 | **Mỗi store có 1 depot mặc định, từng plan được ghi đè.** Phải thiết kế sẵn để mở rộng ra nhiều kho hoặc multi-depot: mỗi route có điểm bắt đầu và kết thúc riêng trong schema, và solver nhận start/end theo từng xe. | Đóng Q-01. |
+| D-21 | **OWNER và DISPATCHER được gán route** nếu bật cờ `canDrive`. API tài xế mở cho `role=DRIVER` hoặc `canDrive=true`. | Đóng Q-02. P-18 bị Superseded. |
+| D-22 | Web và API chạy **cùng site** dưới domain `huy-vu.uk`. Giá trị `SameSite` của cookie cấu hình qua biến môi trường (mặc định `Strict`). | Đóng Q-05. |
+| D-23 | Một tài xế được nằm trong nhiều plan trong cùng ngày, nhưng **publish bị từ chối nếu ca chồng giờ** với một plan đã publish khác. Áp dụng cho cả tài xế và xe. | Đóng Q-03. Thêm mã lỗi `SHIFT_OVERLAP`. |
+| D-24 | Chỉnh tay route sau optimize ở mức **Should**, nhưng **có sẵn trong API contract** để frontend thiết kế trước. | Đóng Q-07. |
+| D-25 | Rate limit Nominatim (1 req/s) và base URL đều **cấu hình được**, có thể tắt rate limit khi tự host Nominatim để demo. | Bổ sung cho P-11. |
+| D-26 | Vị trí tài xế: contract nhận **một lô điểm**. Backend tách interface `LocationSink`. MVP chỉ lưu điểm cuối, sau này có thể thêm lưu lịch sử mà không đổi API. | Bổ sung cho P-15. |
+| D-27 | Lời mời hết hạn sau **7 ngày**. | Đóng Q-04. |
+| D-28 | Email gửi người dùng viết bằng **tiếng Việt**. | NFR-07. |
+| D-29 | **Không giữ dữ liệu cũ.** Dev xoá DB rồi chạy lại migration từ V1. Migration V2 không chuyển dữ liệu và giả định bảng `users` đang trống. | Đóng Q-06. P-22 bị Superseded. |
+| D-30 | **CI/CD và container thuộc M0 (Must).** | Task T05, T06, T07 nằm trong M0. T42 được gộp vào. |
+| D-31 | GitHub Actions gồm: **CI build + test cho mỗi PR và mỗi lần push lên `develop`/`main`** (check bắt buộc trước khi merge); **kiểm tra chất lượng**: báo cáo coverage JaCoCo, Dependabot, dependency review trên PR, quét secret (gitleaks), quét lỗ hổng image (Trivy); **build và push image** lên `ghcr.io`. **Không làm auto-deploy**: chủ dự án tự pull image về VPS và setup. | Có runbook deploy thủ công, không có workflow deploy. |
+| D-32 | Môi trường dev dùng container ở hai mức. (1) **Mặc định**: compose chỉ chạy hạ tầng (MariaDB, Redis, Mailpit), app chạy từ IDE hoặc `./mvnw`. (2) **Bản chạy đủ từ A đến Z**: profile `app` build app từ **Dockerfile multi-stage** và chạy toàn bộ stack trong container. | `compose.yaml` ở root, có profiles. |
+| D-33 | OSRM và Nominatim self-host (dữ liệu Việt Nam) nằm trong compose dưới profile **`routing`**, **mặc định tắt**, bật khi demo. | Base URL của provider cấu hình qua env (D-25). |
+| D-34 | Quy trình branch: `task/*` → PR vào `develop` (CI bắt buộc) → image `develop` / `develop-<sha>` cho **staging**. `develop` → PR vào `main` kèm tag `v*` → image `x.y.z` / `latest` cho **prod**. | Bảo vệ branch `develop` và `main` (chủ dự án tự cấu hình trên GitHub theo hướng dẫn của T06). |
+
+**Nguyên tắc chung chủ dự án đặt ra:** làm phương án đơn giản trước, nhưng **luôn thiết kế để mở rộng được mà không phải đập đi xây lại** (D-19, D-20, D-26). Mỗi khi chọn phương án tối giản, agent phải giữ sẵn điểm mở rộng: interface, cột dữ liệu, hoặc contract.
+
+## 2. Quyết định kỹ thuật (Approved 2026-10-22, trừ khi có ghi chú khác)
+
+| ID | Quyết định | Lý do |
+|---|---|---|
+| P-01 | Quản lý schema bằng **Flyway**. `V1__baseline.sql` lấy từ `be/db/db.sql`. Dùng `ddl-auto: validate` ở mọi profile. | Sắp thêm nhiều bảng. `ddl-auto: update` ở dev làm schema bị lệch. |
+| P-02 | Prefix **`/api/v1`** cho mọi endpoint. | Chưa có client nào, nên đổi bây giờ là rẻ nhất. Cho phép ra `/api/v2` song song về sau. |
+| P-03 | Error body có dạng `{code, details?}`, các field `exception`/`stackTrace` chỉ có ở profile dev. Lỗi 401/403 từ Spring Security cũng dùng format này. | Hiện `message` thực chất là mã lỗi, và lỗi từ filter không đi qua handler chung. |
+| P-04 | Header **`X-Client-Platform: mobile`** thì refresh token đi qua body. Không có header thì refresh token đi qua cookie `refreshToken` (`HttpOnly; Secure; SameSite=<config>; Path=/api/v1/auth`). | Thực hiện D-14. |
+| P-05 | Đổi mật khẩu gồm 2 request: (1) `POST /auth/password/change/otp {currentPassword}`, sai mật khẩu thì không gửi OTP; (2) `PUT /auth/password {otp, newPassword}`, OTP gắn với userId, thành công thì thu hồi các session khác. | Chặn việc dùng access token bị lộ để spam email. |
+| P-06 | Quên mật khẩu gồm 3 bước: `forgot {email}` (luôn trả 204) → `reset/verify {email, otp}` (trả `resetToken` dùng 1 lần, hạn 10 phút, gắn userId) → `reset {resetToken, newPassword}` (thu hồi **mọi** session). | Báo lỗi OTP sớm. Dùng lại `OtpTokenManager`. |
+| P-07 | **Session = refresh token family.** `familyId` là sessionId công khai. | Không cần thêm bảng. Sau này chuyển sang bảng `auth_sessions` vẫn giữ được API. |
+| P-08 | Ma trận quyền theo `ARCHITECTURE.md` §6.3 (đã cập nhật theo D-21). | |
+| P-09 | JWT chứa claim `sub` (userId), `email`, `role`, `storeId`, `sid` (sessionId), `canDrive`. Đổi role hoặc vô hiệu hoá user có hiệu lực chậm tối đa 14 phút. Vô hiệu hoá thì thu hồi refresh token ngay. | Không phải truy vấn DB ở mỗi request. |
+| P-10 | ~~Client gửi toạ độ, optimize không geocode.~~ | **Superseded bởi D-18.** |
+| P-11 | Endpoint `GET /geocoding/search` và job geocode dùng chung: rate limit toàn cục 1 req/s (có thể tắt, D-25), cache Redis theo query trong 24 giờ. | Tuân thủ usage policy của Nominatim. |
+| P-12 | ~~Optimize đồng bộ.~~ | **Sửa đổi bởi D-19:** contract dạng job, MVP chạy ngay trong request, vẫn giữ giới hạn 100/20. |
+| P-13 | Solver được **bỏ điểm (drop) kèm penalty** và trả về danh sách điểm chưa xếp. Plan vẫn publish được nhưng có cảnh báo. | Có time window và capacity thì bài toán rất dễ vô nghiệm. |
+| P-14 | Đơn vị: mét, giây, capacity là số nguyên. Time window dùng `LocalTime` theo timezone của store (mặc định `Asia/Ho_Chi_Minh`). DB lưu UTC. | |
+| P-15 | Vị trí tài xế: chỉ giữ điểm cuối trong Redis (TTL 10 phút), qua `LocationSink` (D-26). | |
+| P-16 | Rate limit cho log-in, register, các endpoint gửi OTP/email, forgot: fixed window trong Redis, tính theo IP và theo email. | |
+| P-17 | Đổi tên package `auth.infastructure` thành `auth.infrastructure`. Task làm riêng một mình. | |
+| P-18 | ~~1 user = 1 role, OWNER không lái.~~ | **Superseded bởi D-21.** |
+| P-19 | Email luôn được chuẩn hoá bằng `trim().toLowerCase()`. | |
+| P-20 | Filter không gắn `@Configuration` và không tự đăng ký thành servlet filter. | Đây là nguyên nhân làm hỏng mọi `@WebMvcTest` (đã kiểm chứng). |
+| P-21 | Test tích hợp dùng **Testcontainers** (MariaDB + Redis). Email dùng `FakeEmailSender`. | CI và máy dev chỉ cần Docker. |
+| P-22 | ~~Migration V2 chuyển user `USER` thành OWNER.~~ | **Superseded bởi D-29.** |
+
+## 3. Ý tưởng chưa phê duyệt (KHÔNG triển khai)
+
+| ID | Ý tưởng | Ghi chú |
+|---|---|---|
+| I-01 | Gợi ý địa điểm từ những địa điểm user đã dùng. | Khác với cache bắt buộc ở P-11. |
+| I-02 | Thanh toán QR (VietQR) tại điểm giao, có thể kèm xác thực thanh toán. | Chủ dự án: nếu không kịp thì bỏ. |
+| I-03 | Implementation provider dùng Google. | Hướng đã có (D-10), chưa có thời điểm và API key. |
+| I-04 | Đẩy vị trí realtime qua WebSocket/SSE. | Làm sau D-08. |
+| I-05 | Lưu lịch sử lộ trình tài xế. | Điểm mở rộng đã có sẵn (D-26). |
+| I-06 | Nhiều kho có quản lý và multi-depot VRP. | Điểm mở rộng đã có sẵn (D-20). |
+
+## 4. Câu hỏi mở
+
+Không còn câu hỏi mở. Q-01 → Q-07 đã được đóng bởi D-20 → D-24, D-27 và D-29.
