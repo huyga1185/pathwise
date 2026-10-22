@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 # Multi-stage image (ARCHITECTURE.md §12.1). Build context: be/
 
-FROM maven:3.9-eclipse-temurin-21 AS build
+FROM maven:3.9-eclipse-temurin-26 AS build
 WORKDIR /workspace
 # Resolve dependencies in their own layer so source-only changes reuse it.
 COPY .mvn/ .mvn/
@@ -12,7 +12,7 @@ COPY src/ src/
 RUN ./mvnw -B -q package -DskipTests \
     && cp target/pathwise-*.jar app.jar
 
-FROM maven:3.9-eclipse-temurin-21 AS extract
+FROM maven:3.9-eclipse-temurin-26 AS extract
 WORKDIR /workspace
 COPY --from=build /workspace/app.jar app.jar
 RUN java -Djarmode=tools -jar app.jar extract --layers --launcher --destination extracted
