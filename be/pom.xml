@@ -5,7 +5,7 @@
 	<parent>
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
-		<version>4.1.0</version>
+		<version>4.1.1</version>
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>uk.huy</groupId>
@@ -16,6 +16,8 @@
 		<org.mapstruct.version>1.6.3</org.mapstruct.version>
 		<org.projectlombok.lombok-mapstruct-binding.version>0.2.0</org.projectlombok.lombok-mapstruct-binding.version>
 		<jacoco.version>0.8.13</jacoco.version>
+		<!-- Overrides Boot 4.1.1's Tomcat 11.0.24: CRITICAL CVEs fixed in 11.0.25+ (F-34). Remove once Boot manages >= 11.0.25. -->
+		<tomcat.version>11.0.27</tomcat.version>
 		<!-- Filled by jacoco:prepare-agent; empty default keeps surefire working when JaCoCo is skipped. -->
 		<argLine></argLine>
 	</properties>
