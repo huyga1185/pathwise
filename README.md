@@ -44,7 +44,7 @@ Mọi email khi dev được gửi tới Mailpit: mở http://localhost:8025.
 
 ## Đóng góp
 
-Quy trình branch, CI và cấu hình branch protection: `docs/CONTRIBUTING.md`.
+Quy trình branch và CI: `docs/CONTRIBUTING.md`.
 
 ## Troubleshooting
 
