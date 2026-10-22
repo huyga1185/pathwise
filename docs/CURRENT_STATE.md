@@ -1,7 +1,7 @@
 # CURRENT_STATE — Hiện trạng đã xác minh & gap analysis
 
 > Khảo sát ban đầu ngày 2026-10-21 trên `develop` tại `de34fcc`, kèm refactor OTP/token chưa commit.
-> **Cập nhật lần cuối: 2026-10-22, `develop` tại `8225a87`** (đã push), sau T00 và T04. Lịch sử cập nhật: §5.
+> **Cập nhật lần cuối: 2026-10-22, `develop` tại `b33e9be`** (chưa push), sau T00, T04, T02, T01 và T03. Lịch sử cập nhật: §5.
 > Mọi phát hiện ghi rõ mức độ bằng chứng:
 > - **[Verified-run]** — đã kiểm chứng bằng compile/chạy test.
 > - **[Verified-code]** — xác nhận bằng đọc code (hành vi suy ra chắc chắn từ code/spec).
@@ -72,12 +72,12 @@ Nhóm: (1) nghiệp vụ/hiểu sai yêu cầu · (2) implementation · (3) ki�
 | F-22 | Low | 2 | `SecureRandomOtpGenerator` gọi `Security.setProperty(...)` toàn cục trong constructor. | [Verified-code] | Mở → T12 |
 | F-23 | Low | 1 | Template email OTP ghi "login request" và "valid for N **seconds**" cho luồng đổi mật khẩu; tiếng Anh. | `templates/email/otp.html` [Verified-code] | Mở → T12 |
 | F-24 | Low | 4 | `ErrorCode` dùng 400 cho "not found" (`COULD_NOT_FIND_USER`), `INVALID_EMAIL_OR_PASSWORD` 400 thay vì 401. | `ErrorCode.java` [Verified-code] | Đã sửa (T03): `INVALID_EMAIL_OR_PASSWORD` 401, `EMAIL_EXISTED` 409, thêm `USER_NOT_FOUND` 404 (`COULD_NOT_FIND_USER` deprecated) [Verified-run] |
-| F-25 | Low | 2 | `UserService.deleteUser` sẽ lỗi FK nếu user có refresh token (FK không cascade). Hiện không có endpoint gọi. | `db.sql` [Verified-code] | Mở → ghi chú, không có task (không có use case) |
+| F-25 | Low | 2 | `UserService.deleteUser` sẽ lỗi FK nếu user có refresh token (FK không cascade). Hiện không có endpoint gọi. | `db/migration/V1__baseline.sql` (trước đây `db.sql`) [Verified-code] | Mở → ghi chú, không có task (không có use case) |
 | F-26 | Low | 4 | Claim `role` trong JWT được set bằng enum object (`Map.of("role", identity.role())`); đọc lại bằng `getClaimAsString` — chưa có test chứng minh Nimbus serialize enum thành string. | `AccessTokenManager` [Risk] | Đã kiểm chứng (T00): `AccessTokenManagerTest` round-trip pass, không phải lỗi |
 | F-27 | Low | 4 | Lịch sử git (commit đầu `53239c0`) từng chứa username/password DB trong `application.yaml`. `application-dev.yaml` hiện tại (gitignored) chứa secret SMTP/JWT thật. | `git show 173bd14` [Verified-run] | Khuyến nghị: đổi mật khẩu DB nếu từng dùng ở nơi khác; không có task code |
 | F-28 | Low | 5 | Không có test cho `AuthService`, `AuthController`, `UserService`, Lua script OTP, `JwtAuthFilter`, `HMACJwtTokenGenerator`. | [Verified-code] | Mở → T01, các task auth |
 | F-30 | Low | 3 | Entity `RefreshToken` dùng `@JoinColumn` cho cột thường (`familyId`, `userAgent`, `ipAddress`) thay vì `@Column`; chạy được nhờ naming strategy mặc định (camelCase → snake_case). | `RefreshToken.java` [Verified-code] | Mở → T10 |
-| F-31 | Info | 4 | Flyway 11 cảnh báo MariaDB 11.8 (image `mariadb:11`) mới hơn bản đã kiểm định (11.7). Migration vẫn chạy bình thường. | Log khởi động [Verified-run] | Đã xử lý một phần: CI ghim `mariadb:11.8` (D-35); Testcontainers và compose làm ở T01, T05 |
+| F-31 | Info | 4 | Flyway 11 cảnh báo MariaDB 11.8 (image `mariadb:11`) mới hơn bản đã kiểm định (11.7). Migration vẫn chạy bình thường. | Log khởi động [Verified-run] | Đã xử lý một phần: CI ghim `mariadb:11.8` (D-35); Testcontainers ghim `mariadb:11.8` (T01 ✓); compose còn lại ở T05 |
 | F-32 | Low | 3 | `application-dev.yaml` local (gitignored) vẫn đặt `ddl-auto: update`, đè lên `validate`. Dev có thể tạo schema lệch với migration. | Đọc file local [Verified-code] | Mở: chủ dự án tự sửa; T05 tạo `application-dev.example.yaml` dùng `validate` |
 | F-33 | Medium | 2 | Path không tồn tại và sai HTTP method rơi vào handler `Exception` chung nên trả 500 thay vì 404/405. | `GlobalExceptionHandler` trước T03 [Verified-code] | Đã sửa (T03): thêm handler `NoResourceFoundException` → 404, `HttpRequestMethodNotSupportedException` → 405 [Verified-run] |
 | F-29 | Info | 4 | Race đã biết: hai request refresh đồng thời trong grace 3 s nhận hai token khác nhau; nếu browser giữ token "cũ hơn" thì lần refresh sau (>3 s) bị coi là reuse → revoke family (đăng xuất). | `RefreshTokenManager.handleUsed` [Risk] | Chấp nhận cho MVP; ghi trong ARCHITECTURE |
@@ -150,3 +150,4 @@ Nhóm: (1) nghiệp vụ/hiểu sai yêu cầu · (2) implementation · (3) ki�
 | 2026-10-22 | branch `task/T01-test-infra` | T01 | F-06, F-07 (local) đã sửa; F-12 kiểm chứng bằng chạy thật (403). Thêm Testcontainers, profile `test`, `FakeEmailSender`, `AbstractIntegrationTest`; xoá `be/db/db.sql`. Test 72/72 pass. |
 | 2026-10-22 | `62b7a85` | T01 | Merge vào `develop`; CI GitHub Actions xanh, F-07 xác nhận đã sửa. |
 | 2026-10-22 | branch `task/T03-error-handling` | T03 | Prefix `/api/v1`, error body `{code, details}`, 401/403 JSON từ Security, map HTTP status theo spec. F-12, F-24, F-33 đã sửa; F-15 một phần. Test 89/89 pass. |
+| 2026-10-22 | — | — | Rà soát checklist docs sau T01: sửa header file, F-25 (bằng chứng trỏ `V1__baseline.sql`), F-31 (Testcontainers đã ghim ở T01); header `DATA_MODEL.md` hết trỏ `db.sql`; plan T01 ghi đúng image `redis:7.4`. |

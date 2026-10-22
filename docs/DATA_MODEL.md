@@ -1,6 +1,6 @@
 # DATA_MODEL — Mô hình dữ liệu mục tiêu
 
-> Hiện trạng: chỉ có `users`, `refresh_tokens` (`be/db/db.sql`). Mọi bảng khác là **mục tiêu**, chưa tồn tại.
+> Hiện trạng: chỉ có `users`, `refresh_tokens` (`db/migration/V1__baseline.sql`). Mọi bảng khác là **mục tiêu**, chưa tồn tại.
 > Dựa trên D-01..D-05, D-15, D-16, D-18..D-21, P-01, P-07, P-14 (đã Approved). Dữ liệu cũ không được giữ (D-29).
 > Quy ước: `BIGINT AUTO_INCREMENT` id; timestamp sự kiện `DATETIME(6)` lưu UTC (`hibernate.jdbc.time_zone: UTC`, Java `Instant`); toạ độ `DOUBLE`; khoảng cách mét `INT`, thời lượng giây `INT`; enum lưu `VARCHAR` (`@Enumerated(STRING)`); bảng thuộc store luôn có `store_id NOT NULL` + FK + index.
 
