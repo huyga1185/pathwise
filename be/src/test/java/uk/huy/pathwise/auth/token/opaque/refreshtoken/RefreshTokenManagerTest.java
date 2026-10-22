@@ -15,9 +15,11 @@ import uk.huy.pathwise.auth.token.opaque.refreshtoken.dto.RefreshTokenGeneration
 import uk.huy.pathwise.auth.token.opaque.refreshtoken.dto.RefreshTokenRotationDetail;
 import uk.huy.pathwise.auth.token.opaque.refreshtoken.manager.RefreshTokenManager;
 import uk.huy.pathwise.auth.token.opaque.refreshtoken.model.RefreshToken;
+import uk.huy.pathwise.auth.token.opaque.refreshtoken.model.RefreshTokenState;
 import uk.huy.pathwise.auth.token.opaque.refreshtoken.repository.RefreshTokenRepository;
 
 import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -215,5 +217,59 @@ public class RefreshTokenManagerTest {
 
         verify(refreshTokenRepository, never())
                 .save(any());
+    }
+
+    @Test
+    public void rotateToken_whenActiveTokenValid_markUsedAndIssueChild() {
+        String rawToken = "ABCD";
+        RefreshToken active = token(RefreshTokenState.ACTIVE, Instant.now().plus(Duration.ofDays(1)));
+        when(refreshTokenRepository.findByTokenForUpdate(sha256Hasher.hashString(rawToken))).thenReturn(Optional.of(active));
+
+        Optional<RefreshTokenRotationDetail> result = refreshTokenManager.rotateToken(rawToken, new ClientDetail("UA", "IP"));
+
+        assertThat(result).isPresent();
+        assertThat(active.getState()).isEqualTo(RefreshTokenState.USED);
+        assertThat(active.getRotatedAt()).isNotNull();
+        verify(refreshTokenRepository, times(2)).save(any());
+    }
+
+    @Test
+    public void rotateToken_whenActiveTokenExpired_markExpiredAndReturnEmpty() {
+        String rawToken = "ABCD";
+        RefreshToken expired = token(RefreshTokenState.ACTIVE, Instant.now().minusSeconds(1));
+        when(refreshTokenRepository.findByTokenForUpdate(sha256Hasher.hashString(rawToken))).thenReturn(Optional.of(expired));
+
+        Optional<RefreshTokenRotationDetail> result = refreshTokenManager.rotateToken(rawToken, new ClientDetail("UA", "IP"));
+
+        assertThat(result).isEmpty();
+        assertThat(expired.getState()).isEqualTo(RefreshTokenState.EXPIRED);
+        verify(refreshTokenRepository).save(expired);
+        verify(refreshTokenRepository, times(1)).save(any());
+    }
+
+    @Test
+    public void rotateToken_whenUsedWithinGraceButActiveExpired_markActiveExpiredAndReturnEmpty() {
+        String rawToken = "ABCD";
+        RefreshToken used = token(RefreshTokenState.USED, Instant.now().plus(Duration.ofDays(1)));
+        used.setRotatedAt(Instant.now());
+        RefreshToken active = token(RefreshTokenState.ACTIVE, Instant.now().minusSeconds(1));
+        when(refreshTokenRepository.findByTokenForUpdate(sha256Hasher.hashString(rawToken))).thenReturn(Optional.of(used));
+        when(refreshTokenRepository.findByFamilyIdAndState("FAMILY", RefreshTokenState.ACTIVE)).thenReturn(List.of(active));
+
+        Optional<RefreshTokenRotationDetail> result = refreshTokenManager.rotateToken(rawToken, new ClientDetail("UA", "IP"));
+
+        assertThat(result).isEmpty();
+        assertThat(active.getState()).isEqualTo(RefreshTokenState.EXPIRED);
+        verify(refreshTokenRepository, never()).revokeFamily(any());
+    }
+
+    private static RefreshToken token(RefreshTokenState state, Instant expiresAt) {
+        return RefreshToken.builder()
+                .token("hash")
+                .userId(1L)
+                .familyId("FAMILY")
+                .state(state)
+                .expiresAt(expiresAt)
+                .build();
     }
 }

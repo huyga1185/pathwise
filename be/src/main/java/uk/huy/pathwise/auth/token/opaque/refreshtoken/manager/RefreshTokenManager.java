@@ -6,7 +6,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import uk.huy.pathwise.auth.infrastructure.hash.Hasher;
-import uk.huy.pathwise.auth.infrastructure.hash.SHA256Hasher;
 import uk.huy.pathwise.auth.token.opaque.infrastructure.OpaqueTokenGenerator;
 import uk.huy.pathwise.auth.token.opaque.refreshtoken.dto.RefreshTokenDetail;
 import uk.huy.pathwise.auth.token.opaque.refreshtoken.dto.RefreshTokenGenerationDetail;
@@ -64,7 +63,7 @@ public class RefreshTokenManager {
 
         RefreshToken token = found.get();
         return switch (token.getState()) {
-            case ACTIVE -> rotate(token, detail, Instant.now().plus(expirationTime));
+            case ACTIVE -> markExpiredIfOverdue(token) ? Optional.empty() : rotate(token, detail, Instant.now().plus(expirationTime));
             case USED -> handleUsed(token, detail);
             case EXPIRED -> Optional.empty();
             case REVOKED -> { logReuse("Revoked refresh token reused", token, detail); yield Optional.empty(); }
@@ -100,8 +99,19 @@ public class RefreshTokenManager {
         }
 
         RefreshToken active = actives.getFirst();
+        if (markExpiredIfOverdue(active)) return Optional.empty();
 
         return rotate(active, detail, active.getExpiresAt());
+    }
+
+    /**
+     * Marks an ACTIVE token whose lifetime is over as EXPIRED (the state is committed with the caller's transaction).
+     */
+    private boolean markExpiredIfOverdue(RefreshToken token) {
+        if (token.getExpiresAt().isAfter(Instant.now())) return false;
+        token.setState(RefreshTokenState.EXPIRED);
+        refreshTokenRepository.save(token);
+        return true;
     }
 
     private Optional<RefreshTokenRotationDetail> rotate(RefreshToken current,

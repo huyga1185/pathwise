@@ -4,10 +4,12 @@ import com.nimbusds.jose.JWSAlgorithm;
 import org.junit.jupiter.api.Test;
 import uk.huy.pathwise.auth.token.jwt.infrastructure.generator.nimbus.hmacgenerator.HMACJwtTokenGenerator;
 import uk.huy.pathwise.auth.token.jwt.manager.AccessTokenManager;
+import uk.huy.pathwise.auth.token.jwt.dto.IssuedAccessToken;
 import uk.huy.pathwise.shared.identity.UserIdentity;
 import uk.huy.pathwise.shared.identity.UserRole;
 
 import java.time.Duration;
+import java.time.Instant;
 import java.util.Base64;
 import java.util.Optional;
 
@@ -23,7 +25,7 @@ class AccessTokenManagerTest {
     void verifyAccessToken_whenTokenGenerated_returnSameIdentity() {
         UserIdentity identity = new UserIdentity(7L, "admin@pathwise.test", UserRole.ADMIN);
 
-        String token = accessTokenManager.generateAccessToken(identity);
+        String token = accessTokenManager.generateAccessToken(identity).token();
         Optional<UserIdentity> verified = accessTokenManager.verifyAccessToken(token);
 
         assertThat(verified).contains(identity);
@@ -35,8 +37,19 @@ class AccessTokenManagerTest {
                 Base64.getEncoder().encodeToString("another-secret-another-secret-32".getBytes()),
                 Duration.ofMinutes(14), null));
 
-        String token = other.generateAccessToken(new UserIdentity(7L, "a@pathwise.test", UserRole.USER));
+        String token = other.generateAccessToken(new UserIdentity(7L, "a@pathwise.test", UserRole.USER)).token();
 
         assertThat(accessTokenManager.verifyAccessToken(token)).isEmpty();
+    }
+
+    @Test
+    void generateAccessToken_whenIssued_expiresAtMatchesConfiguredLifetime() {
+        Instant before = Instant.now();
+
+        IssuedAccessToken issued = accessTokenManager.generateAccessToken(new UserIdentity(7L, "a@pathwise.test", UserRole.USER));
+
+        assertThat(issued.expiresAt())
+                .isAfter(before.plus(Duration.ofMinutes(14)).minusSeconds(2))
+                .isBeforeOrEqualTo(Instant.now().plus(Duration.ofMinutes(14)));
     }
 }
