@@ -25,6 +25,20 @@ api:
   matrix:
     osrm-base-url: http://router.project-osrm.org
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      probes:
+        enabled: true
+  health:
+    # SMTP outages must not mark the whole service DOWN; email failures are handled per request.
+    mail:
+      enabled: false
+
 springdoc:
   api-docs:
     enabled: false

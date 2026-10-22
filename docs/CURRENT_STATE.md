@@ -13,13 +13,13 @@
 
 | Hạng mục | Hiện trạng |
 |---|---|
-| Stack | Spring Boot 4.1.0, Java 21, Maven wrapper, Lombok, MapStruct 1.6.3, Spring Security, JPA/Hibernate (MariaDB), Spring Data Redis, Spring Mail (Brevo SMTP), Thymeleaf (template email), Nimbus JOSE JWT, OR-Tools 9.11, libphonenumber, springdoc 3.0.3. |
-| Cấu trúc repo | `be/` (backend duy nhất), `.github/workflows/test.yaml`. Không có frontend. |
+| Stack | Spring Boot 4.1.0, Java 21, Maven wrapper, Lombok, MapStruct 1.6.3, Spring Security, Spring Boot Actuator (chỉ `health`, T05), JPA/Hibernate (MariaDB), Spring Data Redis, Spring Mail (Brevo SMTP), Thymeleaf (template email), Nimbus JOSE JWT, OR-Tools 9.11, libphonenumber, springdoc 3.0.3. |
+| Cấu trúc repo | `be/` (backend duy nhất, có `be/Dockerfile` multi-stage), `compose.yaml` ở root (hạ tầng + profile `app`), `README.md`, `.github/workflows/test.yaml`. Không có frontend. |
 | Tài liệu | `AGENTS.md`, `CLAUDE.md` và `docs/*` (commit `17b44d2`). Trước đó chỉ có `be/HELP.md` (mẫu Spring Initializr). |
 | Schema | Flyway quản lý schema (T02): `db/migration/V1__baseline.sql` gồm `users` và `refresh_tokens`, `baseline-on-migrate` cho DB tạo trước từ `db.sql` [Verified-run: DB trống và DB có sẵn đều pass Hibernate validate]. `be/db/db.sql` đã xoá (T01). `application.yaml` dùng `ddl-auto: validate`; file local `application-dev.yaml` (gitignored) vẫn đặt `update` và chủ dự án phải tự sửa (F-32). |
-| Cấu hình | `application.yaml` (chung) + `application-dev.yaml` (gitignored, chứa secret thật: SMTP, JWT secrets, DB). |
+| Cấu hình | `application.yaml` (chung) + `application-dev.yaml` (gitignored, chứa secret thật: SMTP, JWT secrets, DB). Mẫu không chứa secret: `application-dev.example.yaml` (trỏ tới hạ tầng compose) và `.env.example` (biến cho compose và container app); `.env` gitignored (T05). |
 | Build | `develop` compile được [Verified-run]. Refactor OTP/token đã commit trong T00 (`810d71d`). |
-| Test | **89/89 pass** [Verified-run, branch `task/T03-error-handling`]: unit test, test provider dùng mock, slice test qua security thật (`OptimizationControllerTest`, `ErrorHandlingWebMvcTest`) và `ToApplicationTests` (Testcontainers). `./mvnw test` chỉ cần Docker. CI GitHub Actions xanh ở `62b7a85` (T01). |
+| Test | **89/89 pass** [Verified-run, branch `task/T03-error-handling`]: unit test, test provider dùng mock, slice test qua security thật (`OptimizationControllerTest`, `ErrorHandlingWebMvcTest`) và `ToApplicationTests` (Testcontainers). `./mvnw test` chỉ cần Docker. CI GitHub Actions xanh sau T03 (run 39713873474, push `develop` tới `4111d8f`). |
 
 ### Module
 
@@ -77,8 +77,8 @@ Nhóm: (1) nghiệp vụ/hiểu sai yêu cầu · (2) implementation · (3) ki�
 | F-27 | Low | 4 | Lịch sử git (commit đầu `53239c0`) từng chứa username/password DB trong `application.yaml`. `application-dev.yaml` hiện tại (gitignored) chứa secret SMTP/JWT thật. | `git show 173bd14` [Verified-run] | Khuyến nghị: đổi mật khẩu DB nếu từng dùng ở nơi khác; không có task code |
 | F-28 | Low | 5 | Không có test cho `AuthService`, `AuthController`, `UserService`, Lua script OTP, `JwtAuthFilter`, `HMACJwtTokenGenerator`. | [Verified-code] | Mở → T01, các task auth |
 | F-30 | Low | 3 | Entity `RefreshToken` dùng `@JoinColumn` cho cột thường (`familyId`, `userAgent`, `ipAddress`) thay vì `@Column`; chạy được nhờ naming strategy mặc định (camelCase → snake_case). | `RefreshToken.java` [Verified-code] | Mở → T10 |
-| F-31 | Info | 4 | Flyway 11 cảnh báo MariaDB 11.8 (image `mariadb:11`) mới hơn bản đã kiểm định (11.7). Migration vẫn chạy bình thường. | Log khởi động [Verified-run] | Đã xử lý một phần: CI ghim `mariadb:11.8` (D-35); Testcontainers ghim `mariadb:11.8` (T01 ✓); compose còn lại ở T05 |
-| F-32 | Low | 3 | `application-dev.yaml` local (gitignored) vẫn đặt `ddl-auto: update`, đè lên `validate`. Dev có thể tạo schema lệch với migration. | Đọc file local [Verified-code] | Mở: chủ dự án tự sửa; T05 tạo `application-dev.example.yaml` dùng `validate` |
+| F-31 | Info | 4 | Flyway 11 cảnh báo MariaDB 11.8 (image `mariadb:11`) mới hơn bản đã kiểm định (11.7). Migration vẫn chạy bình thường. | Log khởi động [Verified-run] | Đã xử lý một phần: CI ghim `mariadb:11.8` (D-35); Testcontainers ghim `mariadb:11.8` (T01 ✓); compose ghim `mariadb:11.8` (T05 ✓). Cảnh báo của Flyway vẫn còn vì Flyway chưa kiểm định 11.8; chấp nhận, migration chạy bình thường [Verified-run, T05] |
+| F-32 | Low | 3 | `application-dev.yaml` local (gitignored) vẫn đặt `ddl-auto: update`, đè lên `validate`. Dev có thể tạo schema lệch với migration. | Đọc file local [Verified-code] | Đã sửa (T05): `application-dev.example.yaml` dùng `validate`; file local của chủ dự án đã đổi sang `validate` và trỏ tới MariaDB/Redis trong compose [Verified-run: app profile dev khởi động, Flyway "up to date"] |
 | F-33 | Medium | 2 | Path không tồn tại và sai HTTP method rơi vào handler `Exception` chung nên trả 500 thay vì 404/405. | `GlobalExceptionHandler` trước T03 [Verified-code] | Đã sửa (T03): thêm handler `NoResourceFoundException` → 404, `HttpRequestMethodNotSupportedException` → 405 [Verified-run] |
 | F-29 | Info | 4 | Race đã biết: hai request refresh đồng thời trong grace 3 s nhận hai token khác nhau; nếu browser giữ token "cũ hơn" thì lần refresh sau (>3 s) bị coi là reuse → revoke family (đăng xuất). | `RefreshTokenManager.handleUsed` [Risk] | Chấp nhận cho MVP; ghi trong ARCHITECTURE |
 
@@ -125,7 +125,7 @@ Nhóm: (1) nghiệp vụ/hiểu sai yêu cầu · (2) implementation · (3) ki�
 | Module `driver` (mới — hoặc controller trong `planning`) | Extend | API tài xế, vị trí. | T30–T33 |
 | `be/db/db.sql` | Replace | Đã thay bằng Flyway `V1__baseline.sql` (T02) và xoá file cũ (T01). | T02 ✓, T01 ✓ |
 | CI workflow | Replace | T01 ✓ sửa tối thiểu để CI xanh (`./mvnw test` + Testcontainers); T06 thay bằng `ci.yml` và `quality.yml`; T07 thêm `image.yml`. | T01, T06, T07 |
-| Container & deployment | Extend | Dockerfile multi-stage, `compose.yaml` có profiles `app`/`routing`, `compose.prod.yaml`, runbook deploy thủ công. | T05, T07, T08 |
+| Container & deployment | Extend | Dockerfile multi-stage, `compose.yaml` có profiles `app`/`routing`, `compose.prod.yaml`, runbook deploy thủ công. T05 ✓: Dockerfile, `compose.yaml` (hạ tầng + `app`), `.env.example`, README; còn `routing` (T08), `compose.prod.yaml` (T07). | T05 ✓, T07, T08 |
 | Rate limiting | Extend | | T40 |
 
 ### Breaking changes (chấp nhận được vì chưa có client)
@@ -153,3 +153,5 @@ Nhóm: (1) nghiệp vụ/hiểu sai yêu cầu · (2) implementation · (3) ki�
 | 2026-10-22 | — | — | Rà soát checklist docs sau T01: sửa header file, F-25 (bằng chứng trỏ `V1__baseline.sql`), F-31 (Testcontainers đã ghim ở T01); header `DATA_MODEL.md` hết trỏ `db.sql`; plan T01 ghi đúng image `redis:7.4`. |
 | 2026-10-22 | — | T03 | Ghi quy tắc "thành phần của `SecurityConfig`/`GlobalExceptionHandler` không là Spring bean" (T03 đã đưa vào `ARCHITECTURE.md` §5) thành P-23 trong `DECISIONS.md`, chủ dự án đã duyệt. F-03 ghi nhận mã lỗi mới sau T03; §1 (bảng Module, luồng auth) cập nhật path `/api/v1`. |
 | 2026-10-22 | — | — | `ARCHITECTURE.md` §5 thêm 405 vào danh sách map chuẩn. Thêm `.env.example` (chỉ placeholder, không secret) và `.env` vào `.gitignore`, làm trước một phần phạm vi T05. |
+| 2026-10-22 | `4111d8f` | T03 | CI GitHub Actions xanh sau khi push `develop` (run 39713873474, chủ dự án xác nhận). T03 hoàn tất. |
+| 2026-10-22 | branch `task/T05-containers` | T05 | Thêm actuator (`health`, probes), `be/Dockerfile`, `be/.dockerignore`, `compose.yaml`, `application-dev.example.yaml`, README; `.env.example` đổi sang tên biến theo docs. F-31 compose ✓, F-32 đã sửa (local của chủ dự án chuyển sang compose). Kiểm chứng: repo sạch `cp .env.example .env && compose --profile app up` → health `UP` (app khởi động ~8 s sau khi DB healthy), Flyway migrate V1, image chạy uid 999, không có `application-dev*`; đổi source Java thì layer dependency dùng cache; compose hạ tầng + `./mvnw spring-boot:run` profile dev chạy được. Test 89/89 pass. |

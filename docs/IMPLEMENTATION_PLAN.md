@@ -139,7 +139,7 @@ Bảng dependency (→ nghĩa là "phải xong trước"):
   - Thêm `spring-boot-starter-actuator`, chỉ expose `health`, có liveness/readiness (cấu hình trong `application.yaml`). **Không sửa `SecurityConfig`**: `permitAll` cho `/actuator/health/**` do T03 thêm, để tránh xung đột khi T03 và T05 chạy song song.
   - `compose.yaml` ở root theo §12.2 với service mặc định (mariadb, redis, mailpit) và profile `app`. Chưa làm profile `routing` (T08).
   - `.env.example`, `be/src/main/resources/application-dev.example.yaml` (không chứa secret, `ddl-auto: validate`, SMTP trỏ tới mailpit, DB trỏ tới `localhost:3307`, Redis trỏ tới compose). Image `mariadb:11.8` (D-35).
-  - README có mục Troubleshooting: dùng MariaDB native thay compose mà Flyway báo "Unable to check whether schema is empty" sau khi nâng cấp MariaDB thì chạy `mariadb-upgrade`; khuyến nghị dùng DB trong compose. Thêm `.env` vào `.gitignore` (**đã làm trước trên `develop`**, cùng bản `.env.example` đầu tiên; T05 rà lại cho khớp `compose.yaml`).
+  - README có mục Troubleshooting: dùng MariaDB native thay compose mà Flyway báo "Unable to check whether schema is empty" sau khi nâng cấp MariaDB thì chạy `mariadb-upgrade`; khuyến nghị dùng DB trong compose. Thêm `.env` vào `.gitignore` (đã làm trước trên `develop` ở `4111d8f`; T05 cập nhật `.env.example` cho khớp `compose.yaml`).
   - Cấu hình qua biến môi trường cho mọi secret (`SPRING_DATASOURCE_*`, `SPRING_MAIL_*`, `TOKEN_JWT_ACCESS_TOKEN_SECRET`, ...).
   - `README.md` ở root: yêu cầu môi trường, 2 cách chạy (IDE + hạ tầng, hoặc A–Z), chạy test, xem email trên mailpit.
 - **Không thuộc phạm vi:** workflow (T06, T07), OSRM/Nominatim local (T08), `compose.prod.yaml` (T07).
