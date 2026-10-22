@@ -19,7 +19,7 @@
 | Schema | Flyway quản lý schema (T02): `db/migration/V1__baseline.sql` gồm `users` và `refresh_tokens`, `baseline-on-migrate` cho DB tạo trước từ `db.sql` [Verified-run: DB trống và DB có sẵn đều pass Hibernate validate]. `be/db/db.sql` đã xoá (T01). `application.yaml` dùng `ddl-auto: validate`; file local `application-dev.yaml` (gitignored) vẫn đặt `update` và chủ dự án phải tự sửa (F-32). |
 | Cấu hình | `application.yaml` (chung) + `application-dev.yaml` (gitignored, chứa secret thật: SMTP, JWT secrets, DB). |
 | Build | `develop` compile được [Verified-run]. Refactor OTP/token đã commit trong T00 (`810d71d`). |
-| Test | **89/89 pass** [Verified-run, branch `task/T03-error-handling`]: unit test, test provider dùng mock, slice test qua security thật (`OptimizationControllerTest`, `ErrorHandlingWebMvcTest`) và `ToApplicationTests` (Testcontainers). `./mvnw test` chỉ cần Docker. CI GitHub Actions xanh ở `62b7a85` (T01). |
+| Test | **89/89 pass** [Verified-run, branch `task/T03-error-handling`]: unit test, test provider dùng mock, slice test qua security thật (`OptimizationControllerTest`, `ErrorHandlingWebMvcTest`) và `ToApplicationTests` (Testcontainers). `./mvnw test` chỉ cần Docker. CI GitHub Actions xanh sau T03 (run 39713873474, push `develop` tới `4111d8f`). |
 
 ### Module
 
@@ -153,3 +153,4 @@ Nhóm: (1) nghiệp vụ/hiểu sai yêu cầu · (2) implementation · (3) ki�
 | 2026-10-22 | — | — | Rà soát checklist docs sau T01: sửa header file, F-25 (bằng chứng trỏ `V1__baseline.sql`), F-31 (Testcontainers đã ghim ở T01); header `DATA_MODEL.md` hết trỏ `db.sql`; plan T01 ghi đúng image `redis:7.4`. |
 | 2026-10-22 | — | T03 | Ghi quy tắc "thành phần của `SecurityConfig`/`GlobalExceptionHandler` không là Spring bean" (T03 đã đưa vào `ARCHITECTURE.md` §5) thành P-23 trong `DECISIONS.md`, chủ dự án đã duyệt. F-03 ghi nhận mã lỗi mới sau T03; §1 (bảng Module, luồng auth) cập nhật path `/api/v1`. |
 | 2026-10-22 | — | — | `ARCHITECTURE.md` §5 thêm 405 vào danh sách map chuẩn. Thêm `.env.example` (chỉ placeholder, không secret) và `.env` vào `.gitignore`, làm trước một phần phạm vi T05. |
+| 2026-10-22 | `4111d8f` | T03 | CI GitHub Actions xanh sau khi push `develop` (run 39713873474, chủ dự án xác nhận). T03 hoàn tất. |
