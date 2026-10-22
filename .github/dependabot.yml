@@ -1,5 +1,5 @@
 # Weekly dependency updates (ARCHITECTURE.md §12.3). PRs target develop (D-34).
-# Note: GitHub reads this file from the default branch (main), so it takes effect once develop is merged into main.
+# Note: GitHub reads this file from the default branch (main), so changes take effect once merged into main.
 version: 2
 updates:
   - package-ecosystem: maven
@@ -7,13 +7,26 @@ updates:
     target-branch: develop
     schedule:
       interval: weekly
+    groups:
+      # One PR for all minor/patch bumps; major bumps stay separate so they get a closer look.
+      maven-minor-patch:
+        update-types: [minor, patch]
   - package-ecosystem: github-actions
     directory: /
     target-branch: develop
     schedule:
       interval: weekly
+    groups:
+      github-actions:
+        patterns: ['*']
   - package-ecosystem: docker
     directory: /be
     target-branch: develop
     schedule:
       interval: weekly
+    ignore:
+      # The Java version of the images (21) is part of the stack: changing it is a decision, not a routine bump.
+      - dependency-name: eclipse-temurin
+        update-types: ['version-update:semver-major']
+      # Floating tag 3.9-eclipse-temurin-21 already picks up patches on rebuild; Dependabot only proposes JDK changes.
+      - dependency-name: maven

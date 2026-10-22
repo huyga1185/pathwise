@@ -323,7 +323,7 @@ Cách dùng:
 | `ci.yml` | `pull_request` vào `develop`/`main`; `push` lên `develop`/`main` | `./mvnw -B verify` (compile, test bằng Testcontainers, JaCoCo report). Upload test report và coverage làm artifact, ghi tóm tắt coverage vào job summary. **Đây là check bắt buộc.** |
 | `quality.yml` | `pull_request` | `actions/dependency-review-action` (chặn dependency mới có lỗ hổng high trở lên); `gitleaks` quét secret. |
 | `image.yml` | `push` lên `develop`; tag `v*` | Build image multi-stage (Buildx, cache GHA), quét bằng **Trivy** (fail khi có lỗ hổng CRITICAL đã có bản sửa), push lên `ghcr.io/<owner>/pathwise`. Tag cho `develop`: `develop`, `develop-<shortsha>`. Tag cho `v*`: `x.y.z`, `x.y`, `latest`. Dùng `GITHUB_TOKEN` với quyền `packages: write`, không cần secret khác. |
-| `dependabot.yml` | theo lịch hằng tuần | Ecosystem `maven`, `github-actions`, `docker`. |
+| `dependabot.yml` | theo lịch hằng tuần | Ecosystem `maven`, `github-actions`, `docker`. Gộp PR: Maven minor/patch thành một PR, GitHub Actions thành một PR. Không đề xuất đổi phiên bản Java của Docker image (bỏ qua major `eclipse-temurin` và image `maven`). |
 
 - Không có workflow deploy (D-31). Chủ dự án deploy thủ công theo `docs/DEPLOYMENT.md`: `docker compose -f compose.prod.yaml pull && up -d`.
 - Coverage: MVP chỉ báo cáo, **chưa đặt ngưỡng chặn**. Ngưỡng sẽ thêm sau T43 khi coverage đã ổn định. (Đây là điểm mở rộng: thêm rule `jacoco:check` mà không đổi workflow.)

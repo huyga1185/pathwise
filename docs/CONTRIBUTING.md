@@ -13,11 +13,14 @@
 |---|---|---|---|
 | `ci` | PR vào `develop`/`main`; push lên `develop`/`main` | `./mvnw -B verify` (test bằng Testcontainers + JaCoCo). Artifact `test-reports` và `coverage-report`; bảng coverage trong job summary. | **Có** (check `ci`) |
 | `quality` | Mọi PR | `dependency-review` (chặn dependency mới có lỗ hổng high trở lên), `gitleaks` (quét secret trong các commit của PR). | Khuyến nghị |
-| Dependabot | Hằng tuần | Cập nhật `maven` (`be/`), `github-actions`, `docker` (`be/Dockerfile`); PR vào `develop`. | — |
+| `image` | Push lên `develop`; tag `v*` | Build image, Trivy (chặn CRITICAL có bản sửa), push `ghcr.io/huyga1185/pathwise`: `develop`, `develop-<sha>` hoặc `x.y.z`, `x.y`, `latest`. Xem `docs/DEPLOYMENT.md`. | — (chạy sau merge) |
+| Dependabot | Hằng tuần | Cập nhật `maven` (`be/`), `github-actions`, `docker` (`be/Dockerfile`); PR vào `develop`. Maven minor/patch gộp một PR, GitHub Actions gộp một PR; không đề xuất đổi Java của Docker image. | — |
 
 - Run cũ của cùng một PR bị huỷ khi có commit mới (concurrency group).
 - Coverage hiện chỉ báo cáo, chưa có ngưỡng chặn.
-- GitHub chỉ đọc `.github/dependabot.yml` trên branch mặc định (`main`), nên Dependabot bắt đầu chạy sau lần merge `develop` vào `main` đầu tiên.
+- GitHub chỉ đọc `.github/dependabot.yml` trên branch mặc định (`main`): thay đổi cấu hình Dependabot chỉ có hiệu lực sau khi vào `main`.
+- PR Dependabot đụng action chỉ dùng trong `image.yml` (`docker/*`) không được kiểm tra trên PR; merge từng cái và xem run `image`.
+- Bản phát hành: PR `develop` → `main` (chọn *Create a merge commit*), rồi tag `vX.Y.Z` trên `main` (D-34). Chỉ làm khi quyết định release.
 
 ## 3. Khi `gitleaks` báo lỗi
 
