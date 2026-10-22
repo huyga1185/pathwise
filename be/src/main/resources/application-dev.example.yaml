@@ -1,0 +1,38 @@
+# Copy to application-dev.yaml (git-ignored) and run with profile "dev".
+# Points at the infrastructure from `docker compose up -d` with the defaults in .env.example.
+# No real secret here: replace the JWT key before sharing a dev database with anyone.
+spring:
+  datasource:
+    url: jdbc:mariadb://localhost:3307/pathwise
+    username: root
+    password: pathwise-dev
+  jpa:
+    hibernate:
+      ddl-auto: validate # schema is owned by Flyway; never "update"
+  data:
+    redis:
+      host: localhost
+      port: 6380
+  mail:
+    # Mailpit: read emails at http://localhost:8025
+    host: localhost
+    port: 1025
+
+mail:
+  otp:
+    sender:
+      address: no-reply@pathwise.local
+      name: PathWise
+
+token:
+  jwt:
+    # Base64, at least 256 bits. Dev-only all-zero key; generate a real one with: openssl rand -base64 32
+    access-token-secret: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+
+service:
+  identity:
+    app-url: http://localhost:8080
+    app-name: PathWise
+    company-name: PathWise
+    company-url: http://localhost:8080
+    company-address: Local dev
