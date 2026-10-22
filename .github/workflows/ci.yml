@@ -1,0 +1,60 @@
+# Required check before merging into develop/main (ARCHITECTURE.md §12.3, D-31).
+name: ci
+
+on:
+  pull_request:
+    branches: [develop, main]
+  push:
+    branches: [develop, main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: be
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: maven
+      # Integration tests start MariaDB 11.8 and Redis via Testcontainers (Docker is available on ubuntu-latest).
+      - name: Build and test
+        run: ./mvnw -B -ntp verify
+      - name: Coverage summary
+        if: always() && hashFiles('be/target/site/jacoco/jacoco.csv') != ''
+        run: |
+          awk -F, 'NR > 1 { im += $4; ic += $5; bm += $6; bc += $7; lm += $8; lc += $9 }
+            function pct(c, m) { return (c + m) ? sprintf("%.1f%%", 100 * c / (c + m)) : "n/a" }
+            END {
+              print "### Coverage (JaCoCo)"
+              print ""
+              print "| Counter | Covered | Total | % |"
+              print "|---|---|---|---|"
+              printf "| Line | %d | %d | %s |\n", lc, lc + lm, pct(lc, lm)
+              printf "| Branch | %d | %d | %s |\n", bc, bc + bm, pct(bc, bm)
+              printf "| Instruction | %d | %d | %s |\n", ic, ic + im, pct(ic, im)
+            }' target/site/jacoco/jacoco.csv >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports
+          path: be/target/surefire-reports/
+          if-no-files-found: ignore
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: be/target/site/jacoco/
+          if-no-files-found: ignore
