@@ -49,13 +49,15 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
       - name: Trivy report (HIGH, CRITICAL)
-        uses: aquasecurity/trivy-action@0.28.0
+        # Pinned to an immutable commit: trivy-action tags < 0.35.0 were force-pushed to malware (GHSA-69fq-xp46-6x23).
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           image-ref: ${{ env.IMAGE }}:scan
           severity: HIGH,CRITICAL
           format: table
           output: trivy-report.txt
           exit-code: '0'
+          version: v0.70.0
       - name: Write Trivy report to job summary
         if: always()
         run: |
@@ -67,12 +69,14 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
       # Gate: fail on CRITICAL vulnerabilities that already have a fix.
       - name: Trivy gate (CRITICAL with fix)
-        uses: aquasecurity/trivy-action@0.28.0
+        # Pinned to an immutable commit: trivy-action tags < 0.35.0 were force-pushed to malware (GHSA-69fq-xp46-6x23).
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           image-ref: ${{ env.IMAGE }}:scan
           severity: CRITICAL
           ignore-unfixed: true
           exit-code: '1'
+          skip-setup-trivy: true # reuse the Trivy installed by the previous step
       - uses: docker/login-action@v3
         with:
           registry: ghcr.io
