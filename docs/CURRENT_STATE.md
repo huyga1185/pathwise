@@ -14,12 +14,12 @@
 | Hạng mục | Hiện trạng |
 |---|---|
 | Stack | Spring Boot 4.1.0, Java 21, Maven wrapper, Lombok, MapStruct 1.6.3, Spring Security, Spring Boot Actuator (chỉ `health`, T05), JPA/Hibernate (MariaDB), Spring Data Redis, Spring Mail (Brevo SMTP), Thymeleaf (template email), Nimbus JOSE JWT, OR-Tools 9.11, libphonenumber, springdoc 3.0.3. |
-| Cấu trúc repo | `be/` (backend duy nhất, có `be/Dockerfile` multi-stage), `compose.yaml` ở root (hạ tầng + profile `app`), `README.md`, `.github/workflows/test.yaml`. Không có frontend. |
-| Tài liệu | `AGENTS.md`, `CLAUDE.md` và `docs/*` (commit `17b44d2`). Trước đó chỉ có `be/HELP.md` (mẫu Spring Initializr). |
+| Cấu trúc repo | `be/` (backend duy nhất, có `be/Dockerfile` multi-stage), `compose.yaml` ở root (hạ tầng + profile `app`), `README.md`, `.github/workflows/ci.yml` và `quality.yml`, `.github/dependabot.yml` (T06). Không có frontend. |
+| Tài liệu | `AGENTS.md`, `CLAUDE.md` và `docs/*` (commit `17b44d2`); `docs/CONTRIBUTING.md` (quy trình branch, CI, branch protection; T06). Trước đó chỉ có `be/HELP.md` (mẫu Spring Initializr). |
 | Schema | Flyway quản lý schema (T02): `db/migration/V1__baseline.sql` gồm `users` và `refresh_tokens`, `baseline-on-migrate` cho DB tạo trước từ `db.sql` [Verified-run: DB trống và DB có sẵn đều pass Hibernate validate]. `be/db/db.sql` đã xoá (T01). `application.yaml` dùng `ddl-auto: validate`; file local `application-dev.yaml` (gitignored) vẫn đặt `update` và chủ dự án phải tự sửa (F-32). |
 | Cấu hình | `application.yaml` (chung) + `application-dev.yaml` (gitignored, chứa secret thật: SMTP, JWT secrets, DB). Mẫu không chứa secret: `application-dev.example.yaml` (trỏ tới hạ tầng compose) và `.env.example` (biến cho compose và container app); `.env` gitignored (T05). |
 | Build | `develop` compile được [Verified-run]. Refactor OTP/token đã commit trong T00 (`810d71d`). |
-| Test | **89/89 pass** [Verified-run, branch `task/T03-error-handling`]: unit test, test provider dùng mock, slice test qua security thật (`OptimizationControllerTest`, `ErrorHandlingWebMvcTest`) và `ToApplicationTests` (Testcontainers). `./mvnw test` chỉ cần Docker. CI GitHub Actions xanh sau T03 (run 39713873474, push `develop` tới `4111d8f`). |
+| Test | **89/89 pass** [Verified-run, branch `task/T03-error-handling`]: unit test, test provider dùng mock, slice test qua security thật (`OptimizationControllerTest`, `ErrorHandlingWebMvcTest`) và `ToApplicationTests` (Testcontainers). `./mvnw test` chỉ cần Docker. Coverage JaCoCo (`./mvnw verify`, T06): line 53,1%, branch 46,6% [Verified-run], chỉ báo cáo, chưa có ngưỡng. CI GitHub Actions xanh sau T03 (run 39713873474, push `develop` tới `4111d8f`). |
 
 ### Module
 
@@ -124,7 +124,7 @@ Nhóm: (1) nghiệp vụ/hiểu sai yêu cầu · (2) implementation · (3) ki�
 | Module `planning` (mới) | Extend | Plan, route, stop, optimize, publish, trạng thái. | T24–T26 |
 | Module `driver` (mới — hoặc controller trong `planning`) | Extend | API tài xế, vị trí. | T30–T33 |
 | `be/db/db.sql` | Replace | Đã thay bằng Flyway `V1__baseline.sql` (T02) và xoá file cũ (T01). | T02 ✓, T01 ✓ |
-| CI workflow | Replace | T01 ✓ sửa tối thiểu để CI xanh (`./mvnw test` + Testcontainers); T06 thay bằng `ci.yml` và `quality.yml`; T07 thêm `image.yml`. | T01, T06, T07 |
+| CI workflow | Replace | T01 ✓ sửa tối thiểu để CI xanh (`./mvnw test` + Testcontainers); T06 ✓ thay bằng `ci.yml` (verify + JaCoCo), `quality.yml` (dependency review, gitleaks), `dependabot.yml`; T07 thêm `image.yml`. | T01 ✓, T06 ✓, T07 |
 | Container & deployment | Extend | Dockerfile multi-stage, `compose.yaml` có profiles `app`/`routing`, `compose.prod.yaml`, runbook deploy thủ công. T05 ✓: Dockerfile, `compose.yaml` (hạ tầng + `app`), `.env.example`, README; còn `routing` (T08), `compose.prod.yaml` (T07). | T05 ✓, T07, T08 |
 | Rate limiting | Extend | | T40 |
 
@@ -155,3 +155,4 @@ Nhóm: (1) nghiệp vụ/hiểu sai yêu cầu · (2) implementation · (3) ki�
 | 2026-10-22 | — | — | `ARCHITECTURE.md` §5 thêm 405 vào danh sách map chuẩn. Thêm `.env.example` (chỉ placeholder, không secret) và `.env` vào `.gitignore`, làm trước một phần phạm vi T05. |
 | 2026-10-22 | `4111d8f` | T03 | CI GitHub Actions xanh sau khi push `develop` (run 39713873474, chủ dự án xác nhận). T03 hoàn tất. |
 | 2026-10-22 | branch `task/T05-containers` | T05 | Thêm actuator (`health`, probes), `be/Dockerfile`, `be/.dockerignore`, `compose.yaml`, `application-dev.example.yaml`, README; `.env.example` đổi sang tên biến theo docs. F-31 compose ✓, F-32 đã sửa (local của chủ dự án chuyển sang compose). Kiểm chứng: repo sạch `cp .env.example .env && compose --profile app up` → health `UP` (app khởi động ~8 s sau khi DB healthy), Flyway migrate V1, image chạy uid 999, không có `application-dev*`; đổi source Java thì layer dependency dùng cache; compose hạ tầng + `./mvnw spring-boot:run` profile dev chạy được. Test 89/89 pass. |
+| 2026-10-22 | branch `task/T06-ci` | T06 | `test.yaml` thay bằng `ci.yml`, `quality.yml`, `dependabot.yml` (PR vào `develop`); JaCoCo 0.8.13 chỉ report (surefire nối `@{argLine}` để giữ agent của JaCoCo cùng mockito agent); `docs/CONTRIBUTING.md`. Kiểm chứng local: actionlint sạch; `./mvnw verify` 89/89 pass, có `jacoco.csv` và bảng coverage; gitleaks phát hiện AWS key giả (2 finding), toàn bộ lịch sử repo không có finding. Acceptance trên GitHub (PR thử, PR chứa secret giả) chờ chủ dự án mở PR. |

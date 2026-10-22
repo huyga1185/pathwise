@@ -1,0 +1,36 @@
+# Quality gates on pull requests (ARCHITECTURE.md §12.3, D-31).
+name: quality
+
+on:
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  dependency-review:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # Blocks new dependencies with known vulnerabilities of severity high or above.
+      - uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: high
+
+  gitleaks:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write # the action comments on the offending lines
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      # Scans the commits of the pull request for secrets. Free for personal accounts (no license key).
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

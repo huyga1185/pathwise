@@ -42,6 +42,10 @@ Chỉ cần Docker: test tích hợp tự bật MariaDB và Redis bằng Testcon
 
 Mọi email khi dev được gửi tới Mailpit: mở http://localhost:8025.
 
+## Đóng góp
+
+Quy trình branch, CI và cấu hình branch protection: `docs/CONTRIBUTING.md`.
+
 ## Troubleshooting
 
 **Flyway báo "Unable to check whether schema is empty" khi dùng MariaDB cài trên máy (không phải container).** Thường xảy ra sau khi nâng cấp MariaDB mà chưa chạy `mariadb-upgrade`, nên bảng hệ thống còn ở định dạng cũ. Chạy `sudo mariadb-upgrade` rồi khởi động lại MariaDB. Khuyến nghị dùng MariaDB trong compose (đã ghim `mariadb:11.8`, D-35) để tránh lệch version.
