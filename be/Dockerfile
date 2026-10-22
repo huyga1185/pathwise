@@ -18,7 +18,7 @@ COPY --from=build /workspace/app.jar app.jar
 RUN java -Djarmode=tools -jar app.jar extract --layers --launcher --destination extracted
 
 # Ubuntu-based JRE: OR-Tools needs glibc, so no Alpine.
-FROM eclipse-temurin:21-jre AS runtime
+FROM eclipse-temurin:25-jre AS runtime
 RUN groupadd --system app && useradd --system --gid app --no-create-home app
 WORKDIR /app
 COPY --from=extract --chown=app:app /workspace/extracted/dependencies/ ./
