@@ -1,0 +1,3 @@
+# T06 acceptance: FAKE credentials to verify that gitleaks blocks the PR. Do not merge.
+aws_access_key_id = AKIAZ7Q3X5W2R8T4Y6UP
+aws_secret_access_key = q8Zr1Lw5Xv0Tn3Kp7Hs2Jd9Fb4Mc6Ye1Ua0Ig5Ox
