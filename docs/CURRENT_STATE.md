@@ -27,18 +27,18 @@
 |---|---|---|
 | `core` | `ApiResponse`, `ErrorCode`/`AppException`/`GlobalExceptionHandler`, `PageResponse`/`PaginationValidator`, `StateStore`/`RedisStateStore`. | Nền tảng hợp lý. |
 | `shared.identity` | `UserIdentity(id, email, role)`, `UserRole {ADMIN, USER}`. | Hợp đồng giữa `auth` và `user`. |
-| `user` | Entity `User`, `UserService` (implements `UserAccountService` cho auth + `UserProfileService` cho controller), `UserController` (`/users/me`), `AdminUserController` (`/admin/users`), MapStruct mapper, validator số điện thoại VN. | Ổn, cần mở rộng cho store/role/status. |
-| `auth` | `AuthController` (`/auth/*`), `AuthService` (orchestrator), JWT access token (HMAC), refresh token opaque xoay vòng theo family (MariaDB, pessimistic lock), OTP (Redis + Lua), OTP token opaque (Redis, GETDEL), email OTP (Thymeleaf + JavaMail), filter JWT/ClientDetail (package `auth.infrastructure`). | Phần lớn công sức nằm ở đây. Refactor đã commit; `OtpManager`/`InternalOtpManager` vẫn là stub chưa dùng (F-11, T12). |
-| `routeoptimizer` | `POST /route/optimize` (TSP), `POST /route/optimize/k` (VRP theo số xe). Pipeline: Nominatim geocode tuần tự (sleep 1 s/địa chỉ) → OSRM table (distance) → OR-Tools. Không lưu DB. | Prototype stateless; không khớp mô hình sản phẩm (D-04, D-05). |
+| `user` | Entity `User`, `UserService` (implements `UserAccountService` cho auth + `UserProfileService` cho controller), `UserController` (`/api/v1/users/me`), `AdminUserController` (`/api/v1/admin/users`), MapStruct mapper, validator số điện thoại VN. | Ổn, cần mở rộng cho store/role/status. |
+| `auth` | `AuthController` (`/api/v1/auth/*`), `AuthService` (orchestrator), JWT access token (HMAC), refresh token opaque xoay vòng theo family (MariaDB, pessimistic lock), OTP (Redis + Lua), OTP token opaque (Redis, GETDEL), email OTP (Thymeleaf + JavaMail), filter JWT/ClientDetail (package `auth.infrastructure`). | Phần lớn công sức nằm ở đây. Refactor đã commit; `OtpManager`/`InternalOtpManager` vẫn là stub chưa dùng (F-11, T12). |
+| `routeoptimizer` | `POST /api/v1/route/optimize` (TSP), `POST /api/v1/route/optimize/k` (VRP theo số xe). Pipeline: Nominatim geocode tuần tự (sleep 1 s/địa chỉ) → OSRM table (distance) → OR-Tools. Không lưu DB. | Prototype stateless; không khớp mô hình sản phẩm (D-04, D-05). |
 
-### Luồng auth hiện có (tại `8225a87`)
+### Luồng auth hiện có (tại `b33e9be`, sau T03)
 
-1. `POST /auth/register {email, password}` → tạo user role USER (không xác thực email).
-2. `POST /auth/log-in` → JWT access token (body) + refresh token (cookie `refreshToken`, `Path=/auth/refresh`).
-3. `POST /auth/refresh` (cookie) → xoay vòng, grace 3 s cho request đồng thời, reuse → revoke family.
-4. `POST /auth/log-out` (cookie + yêu cầu access token) → revoke family.
-5. `GET /auth/sessions` → list refresh token ACTIVE của user.
-6. Đổi mật khẩu 3 bước: `GET /auth/update-password` (gửi OTP) → `POST /auth/update-password/verify {otp}` (set cookie token+ticket, token gắn userId) → `POST /auth/update-password {password}` (cookie; từ chối token của user khác).
+1. `POST /api/v1/auth/register {email, password}` → tạo user role USER (không xác thực email).
+2. `POST /api/v1/auth/log-in` → JWT access token (body) + refresh token (cookie `refreshToken`, `Path=/api/v1/auth/refresh`).
+3. `POST /api/v1/auth/refresh` (cookie) → xoay vòng, grace 3 s cho request đồng thời, reuse → revoke family.
+4. `POST /api/v1/auth/log-out` (cookie + yêu cầu access token) → revoke family.
+5. `GET /api/v1/auth/sessions` → list refresh token ACTIVE của user.
+6. Đổi mật khẩu 3 bước: `GET /api/v1/auth/update-password` (gửi OTP) → `POST /api/v1/auth/update-password/verify {otp}` (set cookie token+ticket, token gắn userId) → `POST /api/v1/auth/update-password {password}` (cookie; từ chối token của user khác).
 
 ## 2. Phát hiện
 
@@ -50,7 +50,7 @@ Nhóm: (1) nghiệp vụ/hiểu sai yêu cầu · (2) implementation · (3) ki�
 | F-00 | Critical | 2 | Working tree không compile: `ErrorCode.SERVER_ERROR` bị xoá nhưng vẫn dùng. | `NominatimGeocodingProvider.java:50` [Verified-run] | Đã sửa (T00): thêm `INTERNAL_ERROR(500)` |
 | F-01 | Critical | 2 | **OTP token không bind user** (regression của refactor). `OtpTokenManager.generateToken(purpose)` lưu key `otpToken:{ticket}:{purpose}`; `updateUserPassword` lấy userId từ JWT. Kẻ có access token bị lộ của nạn nhân có thể tự verify OTP trên tài khoản của mình rồi đổi mật khẩu nạn nhân. Bản HEAD có bind identity. | `OtpTokenManager.java`, `AuthService.updateUserPassword` [Verified-code] | Đã vá (T00): token lưu `{userId}:{hash}`, `AuthService` so userId; T15 thay luồng |
 | F-02 | High | 2 | Refresh token **hết hạn vẫn xoay vòng được**: `rotateToken` không kiểm tra `expiresAt`; trạng thái `EXPIRED` không bao giờ được gán. Nhánh grace cũng rotate token active mà không kiểm tra hạn. | `RefreshTokenManager.rotateToken/handleUsed` [Verified-code] | Mở → T10 |
-| F-03 | High | 4 | **Logout không hoạt động từ browser**: cookie `refreshToken` có `Path=/auth/refresh` nên không được gửi tới `/auth/log-out` → `MissingRequestCookieException` → 400. Ngoài ra `/auth/log-out` không nằm trong `permitAll` → cần access token còn hạn mới logout được. | `AuthController`, `SecurityConfig` [Verified-code, theo RFC 6265 path matching] | Mở → T10 |
+| F-03 | High | 4 | **Logout không hoạt động từ browser**: cookie `refreshToken` có `Path=/auth/refresh` nên không được gửi tới `/auth/log-out` → `MissingRequestCookieException` → 400. Ngoài ra `/auth/log-out` không nằm trong `permitAll` → cần access token còn hạn mới logout được. | `AuthController`, `SecurityConfig` [Verified-code, theo RFC 6265 path matching] | Mở → T10. Sau T03: path thành `/api/v1/auth/refresh` và `/api/v1/auth/log-out`, lỗi vẫn còn nhưng thiếu cookie giờ trả 401 `INVALID_TOKEN` thay vì 400 [Verified-code] |
 | F-04 | High | 2 | `OtpTokenManager` trả `expiresAfter = Instant.ofEpochSecond(300)` (= 1970-01-01T00:05Z). Cookie nhận `Max-Age` âm → Spring bỏ `Max-Age` → thành session cookie (chạy được do may mắn). Test `OtpTokenManagerTest` **assert đúng giá trị sai**. | `OtpTokenManager.java`, `OtpTokenManagerTest.java:56` [Verified-code] | Đã sửa (T00): `expiresAfter = now + TTL`, test cập nhật |
 | F-05 | High | 1 | Đổi mật khẩu **không thu hồi session** nào; không yêu cầu mật khẩu cũ. | `AuthService.updateUserPassword` [Verified-code] | Mở → T15 |
 | F-06 | High | 5 | Mọi `@WebMvcTest` fail: `JwtAuthFilter`/`ClientDetailFilter` được annotate `@Configuration` nên bị nạp vào slice nhưng dependency (`AccessTokenService`/`Manager`) thì không. | Surefire: `NoSuchBeanDefinitionException ... jwtAuthFilter` [Verified-run] | Đã sửa (T01): filter không còn là bean, `SecurityConfig` tự khởi tạo; slice test dùng `@Import(SecurityConfig)` + mock `AccessTokenManager` + `spring-boot-starter-security-test` |
@@ -151,3 +151,4 @@ Nhóm: (1) nghiệp vụ/hiểu sai yêu cầu · (2) implementation · (3) ki�
 | 2026-10-22 | `62b7a85` | T01 | Merge vào `develop`; CI GitHub Actions xanh, F-07 xác nhận đã sửa. |
 | 2026-10-22 | branch `task/T03-error-handling` | T03 | Prefix `/api/v1`, error body `{code, details}`, 401/403 JSON từ Security, map HTTP status theo spec. F-12, F-24, F-33 đã sửa; F-15 một phần. Test 89/89 pass. |
 | 2026-10-22 | — | — | Rà soát checklist docs sau T01: sửa header file, F-25 (bằng chứng trỏ `V1__baseline.sql`), F-31 (Testcontainers đã ghim ở T01); header `DATA_MODEL.md` hết trỏ `db.sql`; plan T01 ghi đúng image `redis:7.4`. |
+| 2026-10-22 | — | T03 | Ghi quy tắc "thành phần của `SecurityConfig`/`GlobalExceptionHandler` không là Spring bean" (T03 đã đưa vào `ARCHITECTURE.md` §5) thành P-23 trong `DECISIONS.md`, chủ dự án đã duyệt. F-03 ghi nhận mã lỗi mới sau T03; §1 (bảng Module, luồng auth) cập nhật path `/api/v1`. |

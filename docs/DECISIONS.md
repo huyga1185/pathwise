@@ -77,6 +77,7 @@
 | P-20 | Filter không gắn `@Configuration` và không tự đăng ký thành servlet filter. | Đây là nguyên nhân làm hỏng mọi `@WebMvcTest` (đã kiểm chứng). |
 | P-21 | Test tích hợp dùng **Testcontainers** (MariaDB + Redis). Email dùng `FakeEmailSender`. | CI và máy dev chỉ cần Docker. |
 | P-22 | ~~Migration V2 chuyển user `USER` thành OWNER.~~ | **Superseded bởi D-29.** |
+| P-23 | (Phát sinh ở T03, Approved 2026-10-22.) Mở rộng P-20: những thành phần mà `SecurityConfig` hoặc `GlobalExceptionHandler` phụ thuộc (filter, `AuthenticationEntryPoint`, `AccessDeniedHandler`, `ErrorResponseFactory`) **không là Spring bean**, mà được khởi tạo trực tiếp bằng `new`; thứ chúng cần (`Environment`, `ObjectMapper`, `AccessTokenManager`) được truyền qua constructor. | `@WebMvcTest` nạp `@ControllerAdvice` và `SecurityConfig` (qua `@Import`) nhưng không nạp `@Component` thường; nếu chúng inject một `@Component` thì mọi slice test fail giống F-06. Đánh đổi: các class này không dùng DI trực tiếp. Phương án thay thế (giữ là bean và `@Import` trong từng test, hoặc annotation test dùng chung) dễ bị quên khi viết test mới. |
 
 ## 3. Ý tưởng chưa phê duyệt (KHÔNG triển khai)
 
