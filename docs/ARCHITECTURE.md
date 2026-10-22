@@ -296,7 +296,7 @@ Quy tắc:
 
 - Thêm `spring-boot-starter-actuator`, chỉ expose `health` (gồm liveness và readiness). Mọi endpoint actuator khác tắt.
 - Image không chứa secret hay `application-dev.yaml`. Toàn bộ cấu hình đi qua biến môi trường.
-- Có file `.dockerignore` (bỏ `target/`, `.idea/`, các file `application-*.yaml` local).
+- Có file `.dockerignore` (bỏ `target/`, `.idea/`, các file `application-dev*.yaml` local). `application-staging.yaml` và `application-prod.yaml` không chứa secret và được đóng vào image.
 
 ### 12.2 Compose (`compose.yaml` ở root)
 
@@ -314,7 +314,7 @@ Cách dùng:
 - `docker compose --profile app up -d --build`: chạy toàn bộ stack.
 - Thêm `--profile routing`: chạy kèm OSRM và Nominatim local. App trỏ tới chúng qua `ROUTING_GEOCODING_NOMINATIM_BASE_URL`, `ROUTING_MATRIX_OSRM_BASE_URL`, và đặt `...RATE_LIMIT_ENABLED=false`.
 - `.env.example` liệt kê mọi biến môi trường (không chứa secret thật). File `.env` được gitignore.
-- `compose.prod.yaml`: dùng cho VPS, gồm `app` (image từ `ghcr.io`, không build tại chỗ), `mariadb`, `redis`, không có mailpit, dùng SMTP thật qua env. Reverse proxy TLS (Caddy/Nginx) nằm ngoài phạm vi repo; cookie `Secure` yêu cầu HTTPS.
+- `compose.prod.yaml`: dùng cho VPS, gồm `app` (image từ `ghcr.io`, không build tại chỗ), `mariadb`, `redis`, không có mailpit, dùng SMTP thật qua env. App kết nối DB bằng user riêng (không phải root); chỉ cổng app được publish, ở `127.0.0.1`. Reverse proxy TLS (Caddy/Nginx) nằm ngoài phạm vi repo; cookie `Secure` yêu cầu HTTPS.
 
 ### 12.3 GitHub Actions
 

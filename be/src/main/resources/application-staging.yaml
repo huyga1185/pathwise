@@ -1,0 +1,12 @@
+# Staging (image develop / develop-<sha>, ARCHITECTURE.md §12.4). All secrets come from environment variables.
+logging:
+  level:
+    root: info
+    uk.huy.pathwise: debug
+
+# OpenAPI/Swagger is enabled on dev and staging only (ARCHITECTURE.md §12.4).
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true

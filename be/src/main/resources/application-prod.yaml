@@ -1,0 +1,11 @@
+# Production (image x.y.z, ARCHITECTURE.md §12.4). All secrets come from environment variables.
+logging:
+  level:
+    root: info
+    uk.huy.pathwise: info
+
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false

@@ -167,6 +167,7 @@ Bảng dependency (→ nghĩa là "phải xong trước"):
   - Profile Spring `staging` và `prod` (bật/tắt swagger, mức log).
   - `docs/DEPLOYMENT.md`: chuẩn bị VPS (Docker, `.env`, đăng nhập `ghcr.io` bằng PAT `read:packages`), lần deploy đầu, cập nhật phiên bản, rollback (pull tag cũ), backup MariaDB (`mariadb-dump` thủ công), ghi chú reverse proxy TLS.
 - **Không thuộc phạm vi:** workflow deploy tự động (D-31), cấu hình reverse proxy.
+- **Phụ thuộc phát sinh:** Trivy phát hiện 6 CVE CRITICAL trong dependency của Spring Boot 4.1.0 (F-34). Đã xử lý bằng PR #5 `fix/deps-security` (Boot 4.1.1 + Tomcat 11.0.27), merge trước T07; nếu không, gate của `image.yml` fail ở lần merge đầu.
 - **Acceptance criteria:** merge vào `develop` sinh image `develop-<sha>` trên GHCR; push tag `v0.1.0` thử sinh tag `0.1.0` và `latest`; Trivy chạy và ghi kết quả; làm theo `DEPLOYMENT.md` trên một máy sạch (hoặc VM local) với `compose.prod.yaml` thì app health `UP`.
 
 ### T08. Profile `routing`: OSRM và Nominatim self-host
