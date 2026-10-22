@@ -39,7 +39,8 @@ public class SecurityConfig {
                                 "/error",
                                 "/api/v1/auth/log-in",
                                 "/api/v1/auth/register",
-                                "/api/v1/auth/refresh").permitAll()
+                                "/api/v1/auth/refresh",
+                                "/api/v1/auth/log-out").permitAll()
                         .anyRequest().authenticated())
                 .exceptionHandling(handling -> handling
                         .authenticationEntryPoint(new JsonAuthenticationEntryPoint(errors, objectMapper))

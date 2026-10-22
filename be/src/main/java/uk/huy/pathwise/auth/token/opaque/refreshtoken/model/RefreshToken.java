@@ -25,13 +25,13 @@ public class RefreshToken {
     @Column(nullable = false)
     private Long userId;
 
-    @JoinColumn(name = "family_id", nullable = false)
+    @Column(name = "family_id", nullable = false)
     private String familyId;
 
-    @JoinColumn(name = "user_agent")
+    @Column(name = "user_agent")
     private String userAgent;
 
-    @JoinColumn(name = "ip_address")
+    @Column(name = "ip_address")
     private String ipAddress;
 
     @Column(nullable = false)

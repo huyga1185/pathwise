@@ -61,17 +61,19 @@ public class AuthService {
         if (request == null) throw new NullPointerException("Log in request could not be null");
         Optional<UserIdentity> identity = userService.findUserByCredentials(request.email(), request.password());
         if (identity.isEmpty()) throw new AppException(ErrorCode.INVALID_EMAIL_OR_PASSWORD);
-        return new LogInResponse(accessTokenManager.generateAccessToken(identity.get()), refreshTokenManager.generateToken(identity.get().id(), clientDetail));
+        return new LogInResponse(accessTokenManager.generateAccessToken(identity.get()),
+                refreshTokenManager.generateToken(identity.get().id(), clientDetail),
+                identity.get());
     }
 
     public RefreshTokenResponse refreshToken(String refreshToken, ClientDetail clientDetail) {
         Optional<RefreshTokenRotationDetail> response = refreshTokenManager.rotateToken(refreshToken, clientDetail);
         if (response.isEmpty()) throw new AppException(ErrorCode.INVALID_TOKEN);
         RefreshTokenRotationDetail refreshTokenRotationDetail = response.get();
+        // Only "user still exists" for now; users get a status (ACTIVE/DISABLED) in T13.
         Optional<UserIdentity> identity = userService.findUserById(refreshTokenRotationDetail.userId());
         if (identity.isEmpty()) throw new AppException(ErrorCode.INVALID_TOKEN);
-        String accessToken = accessTokenManager.generateAccessToken(identity.get());
-        return new RefreshTokenResponse(accessToken, refreshTokenRotationDetail);
+        return new RefreshTokenResponse(accessTokenManager.generateAccessToken(identity.get()), refreshTokenRotationDetail);
     }
 
     public void logOut(String rawToken) {
