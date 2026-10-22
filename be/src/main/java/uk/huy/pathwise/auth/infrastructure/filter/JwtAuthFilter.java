@@ -1,0 +1,57 @@
+package uk.huy.pathwise.auth.infrastructure.filter;
+
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.NonNull;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.filter.OncePerRequestFilter;
+import uk.huy.pathwise.auth.token.jwt.manager.AccessTokenManager;
+import uk.huy.pathwise.shared.identity.UserIdentity;
+
+import java.io.IOException;
+import java.util.List;
+import java.util.Optional;
+
+/**
+ * Not a Spring bean on purpose: it is instantiated by {@code SecurityConfig} so that it only runs inside
+ * the security filter chain (not also as a servlet filter) and is not picked up by {@code @WebMvcTest} slices.
+ */
+@RequiredArgsConstructor
+public class JwtAuthFilter extends OncePerRequestFilter {
+    private final AccessTokenManager accessTokenManager;
+
+    @Override
+    protected void doFilterInternal(HttpServletRequest request,
+                                    @NonNull HttpServletResponse response,
+                                    @NonNull FilterChain filterChain) throws ServletException, IOException {
+        String header = request.getHeader("Authorization");
+        if (header == null || !header.startsWith("Bearer ")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
+        String token = header.substring(7);
+        Optional<UserIdentity> identity = accessTokenManager.verifyAccessToken(token);
+        if (identity.isEmpty()) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+        String role = identity.get().role().name();
+
+        List<SimpleGrantedAuthority> authorities = List.of(new SimpleGrantedAuthority("ROLE_" + role));
+        UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(
+                identity.get(),
+                null,
+                authorities
+        );
+
+        SecurityContextHolder.getContext().setAuthentication(authenticationToken);
+
+        filterChain.doFilter(request, response);
+    }
+}

@@ -1,0 +1,57 @@
+# VPS deployment (ARCHITECTURE.md §12.2, D-31, D-34). Runbook: docs/DEPLOYMENT.md.
+#   docker compose -f compose.prod.yaml pull && docker compose -f compose.prod.yaml up -d
+# Variables come from .env next to this file (copy .env.prod.example). No mailpit: real SMTP via env.
+# Only the app port is published, on 127.0.0.1, for a reverse proxy (TLS) on the same host.
+
+services:
+  mariadb:
+    image: mariadb:11.8 # D-35
+    restart: unless-stopped
+    environment:
+      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD:?set in .env}
+      MARIADB_DATABASE: ${MARIADB_DATABASE:-pathwise}
+      MARIADB_USER: ${MARIADB_USER:-pathwise}
+      MARIADB_PASSWORD: ${MARIADB_PASSWORD:?set in .env}
+    volumes:
+      - mariadb-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+
+  redis:
+    image: redis:7.4
+    restart: unless-stopped
+    # Every key has a TTL, so losing data is acceptable; AOF only avoids surprises on restart.
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 30
+
+  app:
+    image: ${APP_IMAGE:-ghcr.io/huyga1185/pathwise}:${APP_IMAGE_TAG:?set in .env, e.g. 0.1.0 or develop}
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:?set in .env, staging or prod}
+      SPRING_DATASOURCE_URL: jdbc:mariadb://mariadb:3306/${MARIADB_DATABASE:-pathwise}
+      SPRING_DATASOURCE_USERNAME: ${MARIADB_USER:-pathwise}
+      SPRING_DATASOURCE_PASSWORD: ${MARIADB_PASSWORD:?set in .env}
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
+    ports:
+      - "127.0.0.1:${APP_PORT:-8080}:8080"
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+volumes:
+  mariadb-data:
+  redis-data:

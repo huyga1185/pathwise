@@ -1,0 +1,9 @@
+target/
+.idea/
+.vscode/
+.claude/
+*.iml
+HELP.md
+Dockerfile
+.dockerignore
+src/main/resources/application-dev*.yaml

@@ -10,12 +10,37 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.MariaDBDialect
         format_sql: true
-    show-sql: true
+        jdbc:
+          time_zone: UTC
     open-in-view: false
+  flyway:
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+    baseline-version: 1
 
 api:
-  user-agent: transit-optimization/1.0 (https://huy-vu.uk/)
+  user-agent: PathWise/1.0 (https://huy-vu.uk/)
   geocoding:
     nominatim-base-url: https://nominatim.openstreetmap.org
   matrix:
     osrm-base-url: http://router.project-osrm.org
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      probes:
+        enabled: true
+  health:
+    # SMTP outages must not mark the whole service DOWN; email failures are handled per request.
+    mail:
+      enabled: false
+
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false

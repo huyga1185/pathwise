@@ -1,17 +1,5 @@
 package uk.huy.pathwise.user.dto.request;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import uk.huy.pathwise.user.infrastructure.phonenumber.ValidPhoneNumber;
 
-import java.util.Optional;
-
-@AllArgsConstructor
-@NoArgsConstructor
-@Builder
-@Getter
-public class UserModificationRequest {
-    @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
-    private Optional<String> phoneNumber;
-}
+public record UserModificationRequest(@ValidPhoneNumber String phoneNumber) {}

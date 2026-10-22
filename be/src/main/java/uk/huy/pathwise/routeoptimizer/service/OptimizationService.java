@@ -6,7 +6,7 @@ import uk.huy.pathwise.routeoptimizer.dto.request.OptimizationMultiVehicleReques
 import uk.huy.pathwise.routeoptimizer.dto.request.OptimizationRequest;
 import uk.huy.pathwise.routeoptimizer.dto.response.OptimizationMultiVehicleResponse;
 import uk.huy.pathwise.routeoptimizer.dto.response.OptimizationResponse;
-import uk.huy.pathwise.routeoptimizer.routeoptimizationpipeline.RouteOptimizationPipeline;
+import uk.huy.pathwise.routeoptimizer.infrastructure.routeoptimizationpipeline.RouteOptimizationPipeline;
 
 import java.util.List;
 

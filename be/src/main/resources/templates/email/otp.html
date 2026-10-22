@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://thymeleaf.org">
+<head>
+    <meta charset="UTF-8" />
+    <title>Login Verification Required</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #333; background-color: #fff;">
+
+<div class="container" style="margin: 0 auto; width: 100%; max-width: 600px; padding: 0 0px; padding-bottom: 10px; border-radius: 5px; line-height: 1.8;">
+
+    <div class="header" style="border-bottom: 1px solid #eee; padding-bottom: 10px;">
+        <a style="font-size: 1.4em; color: #000; text-decoration: none; font-weight: 600;"
+           th:href="${appUrl}" th:text="${appName}">[App Name]</a>
+    </div>
+    <br />
+
+    <!-- Điền email người nhận tự động -->
+    <strong>Dear <strong th:text="${userEmail}">userEmail@domain.com</strong>,</strong>
+
+    <p>
+        We have received a login request for your <span th:text="${appName}">[App Name]</span> account. For
+        security purposes, please verify your identity by providing the
+        following One-Time Password (OTP).
+        <br />
+        <b>Your One-Time Password (OTP) verification code is:</b>
+    </p>
+
+    <h2 class="otp" style="background: linear-gradient(to right, #00bc69 0, #00bc88 50%, #00bca8 100%); margin: 0 auto; width: max-content; padding: 10px 30px; color: #fff; border-radius: 4px; font-size: 2em; text-align: center;"
+        th:text="${otp}">123456</h2>
+
+    <p style="font-size: 0.9em">
+        <!-- Đổ số phút hết hạn động từ Java sang (ví dụ: 3 phút hoặc 5 phút) -->
+        <strong>One-Time Password (OTP) is valid for <strong th:text="${otpValidTime}">3</strong> seconds.</strong>
+        <br />
+        <br />
+        If you did not initiate this login request, please disregard this
+        message. Please ensure the confidentiality of your OTP and do not share
+        it with anyone.<br />
+        <strong>Do not forward or give this code to anyone.</strong>
+        <br />
+        <br />
+        <strong>Thank you for using <span th:text="${appName}">[App Name]</span>.</strong>
+        <br />
+        <br />
+        Best regards,
+        <br />
+        <strong th:text="${companyName}">[Company Name]</strong>
+    </p>
+
+    <hr style="border: none; border-top: 0.5px solid #131111;" />
+
+    <div class="footer" style="color: #aaa; font-size: 0.8em; line-height: 1.4; font-weight: 300;">
+        <p>This email can't receive replies.</p>
+        <p>
+            For more information about <span th:text="${appName}">[App Name]</span> and your account, visit
+            <strong th:text="${companyName}">[Company Name]</strong>
+        </p>
+    </div>
+</div>
+
+<!-- Phần thông tin chân trang (Footer ngoài) -->
+<div style="text-align: center; margin-top: 20px;">
+    <div class="email-info" style="color: #666666; font-weight: 400; font-size: 13px; line-height: 18px; padding-bottom: 6px;">
+      <span>
+        This email was sent to
+        <a style="text-decoration: none; color: #00bc69;" th:href="|mailto:${userEmail}|" th:text="${userEmail}">recipient@domain.com</a>
+      </span>
+    </div>
+
+    <div class="email-info" style="color: #666666; font-weight: 400; font-size: 13px; line-height: 18px; padding-bottom: 6px;">
+        <a style="text-decoration: none; color: #00bc69;" th:href="${companyUrl}" th:text="${companyName}">[Company Name]</a>
+        | <span th:text="${companyAddress}">[Company Address]</span>
+    </div>
+
+    <div class="email-info" style="color: #666666; font-weight: 400; font-size: 13px; line-height: 18px; padding-bottom: 6px;">
+        &copy; <span th:text="${#calendars.year(#calendars.createNow())}">2026</span> <span th:text="${companyName}">[Company Name]</span>. All rights reserved.
+    </div>
+</div>
+
+</body>
+</html>
