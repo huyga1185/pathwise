@@ -1,0 +1,24 @@
+# Tells whether a push/PR touches anything besides documentation, so heavy jobs can be skipped on docs-only changes.
+# Requires actions/checkout with fetch-depth: 0. Fails safe: any doubt (unknown base, git error) reports code=true.
+name: detect-code-changes
+description: Outputs code=false only when every changed file is documentation (docs/**, *.md, LICENSE).
+outputs:
+  code:
+    description: "'true' if at least one non-documentation file changed"
+    value: ${{ steps.diff.outputs.code }}
+runs:
+  using: composite
+  steps:
+    - id: diff
+      shell: bash
+      env:
+        BASE: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+        HEAD: ${{ github.sha }}
+      run: |
+        if [ -z "$BASE" ] || [ "$BASE" = "0000000000000000000000000000000000000000" ] \
+            || ! files=$(git diff --name-only "$BASE" "$HEAD"); then
+          echo "code=true" >> "$GITHUB_OUTPUT"; exit 0
+        fi
+        echo "Changed files:"; echo "$files"
+        if echo "$files" | grep -qvE '^(docs/.*|.*\.md|LICENSE)$'; then code=true; else code=false; fi
+        echo "code=$code" >> "$GITHUB_OUTPUT"

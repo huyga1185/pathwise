@@ -337,6 +337,7 @@ Cách dùng:
 | `image.yml` | `push` lên `develop`; tag `v*` | Build image multi-stage (Buildx, cache GHA), quét bằng **Trivy** (fail khi có lỗ hổng CRITICAL đã có bản sửa), push lên `ghcr.io/<owner>/pathwise`. Tag cho `develop`: `develop`, `develop-<shortsha>`. Tag cho `v*`: `x.y.z`, `x.y`, `latest`. Dùng `GITHUB_TOKEN` với quyền `packages: write`, không cần secret khác. |
 | `dependabot.yml` | theo lịch hằng tuần | Ecosystem `maven`, `github-actions`, `docker`. Gộp PR: Maven minor/patch thành một PR, GitHub Actions thành một PR. Không đề xuất đổi phiên bản Java của Docker image (bỏ qua major `eclipse-temurin` và image `maven`). |
 
+- **Thay đổi chỉ đụng docs** (`docs/**`, `*.md`, `LICENSE`): job `ci` và `dependency-review` bị skip (composite action `.github/actions/detect-code-changes`; job skip vẫn đạt check bắt buộc `ci`, còn lọc ở trigger thì check không bao giờ báo và PR bị kẹt); `image` lọc bằng `paths-ignore` ở trigger (không phải check bắt buộc, tag `v*` luôn build). `gitleaks` luôn chạy. Không xác định được thay đổi thì vẫn chạy đủ.
 - Không có workflow deploy (D-31). Chủ dự án deploy thủ công theo `docs/DEPLOYMENT.md`: `docker compose -f compose.prod.yaml pull && up -d`.
 - Coverage: MVP chỉ báo cáo, **chưa đặt ngưỡng chặn**. Ngưỡng sẽ thêm sau T43 khi coverage đã ổn định. (Đây là điểm mở rộng: thêm rule `jacoco:check` mà không đổi workflow.)
 - Bảo vệ branch (chủ dự án tự cấu hình): `develop` và `main` yêu cầu PR, check `ci` phải xanh, không cho force push.

@@ -17,6 +17,7 @@
 | Dependabot | Hằng tuần | Cập nhật `maven` (`be/`), `github-actions`, `docker` (`be/Dockerfile`); PR vào `develop`. Maven minor/patch gộp một PR, GitHub Actions gộp một PR; không đề xuất đổi Java của Docker image. | — |
 
 - Run cũ của cùng một PR bị huỷ khi có commit mới (concurrency group).
+- PR hoặc push chỉ sửa docs (`docs/**`, `*.md`, `LICENSE`): job `ci` và `dependency-review` hiện **Skipped** (vẫn tính là đạt check `ci`), `image` không chạy; `gitleaks` vẫn chạy. Thêm thư mục docs mới thì sửa pattern trong `.github/actions/detect-code-changes/action.yml` và `paths-ignore` của `image.yml`.
 - Coverage hiện chỉ báo cáo, chưa có ngưỡng chặn.
 - GitHub chỉ đọc `.github/dependabot.yml` trên branch mặc định (`main`): thay đổi cấu hình Dependabot chỉ có hiệu lực sau khi vào `main`.
 - PR Dependabot đụng action chỉ dùng trong `image.yml` (`docker/*`) không được kiểm tra trên PR; merge từng cái và xem run `image`.

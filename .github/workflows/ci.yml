@@ -15,7 +15,23 @@ permissions:
   contents: read
 
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      code: ${{ steps.detect.outputs.code }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - id: detect
+        uses: ./.github/actions/detect-code-changes
+
+  # Skipped (not removed) on docs-only changes: a skipped job still satisfies the required "ci" check,
+  # whereas a workflow filtered out by paths-ignore never reports and blocks the PR.
+  # Runs anyway if change detection itself failed.
   ci:
+    needs: changes
+    if: ${{ always() && (needs.changes.result != 'success' || needs.changes.outputs.code == 'true') }}
     runs-on: ubuntu-latest
     defaults:
       run:
