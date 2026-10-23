@@ -12,7 +12,21 @@ permissions:
   contents: read
 
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      code: ${{ steps.detect.outputs.code }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - id: detect
+        uses: ./.github/actions/detect-code-changes
+
+  # Docs-only PRs cannot change dependencies.
   dependency-review:
+    needs: changes
+    if: ${{ always() && (needs.changes.result != 'success' || needs.changes.outputs.code == 'true') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -21,6 +35,7 @@ jobs:
         with:
           fail-on-severity: high
 
+  # Always runs, docs included: a secret pasted into a Markdown file is still a leak.
   gitleaks:
     runs-on: ubuntu-latest
     permissions:

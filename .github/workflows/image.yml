@@ -7,6 +7,9 @@ on:
   push:
     branches: [develop]
     tags: ['v*']
+    # Docs-only pushes would rebuild an identical image. Not a required check, so a trigger filter is fine;
+    # GitHub ignores path filters for tag pushes, so releases always build.
+    paths-ignore: ['docs/**', '**/*.md', 'LICENSE']
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
