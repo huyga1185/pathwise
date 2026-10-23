@@ -190,13 +190,15 @@ Bảng dependency (→ nghĩa là "phải xong trước"):
 - **Acceptance criteria (integration test):** token hết hạn → 401; web log-in có `Set-Cookie` với path và SameSite đúng, body không có `refreshToken`; mobile có `refreshToken` trong body và không có `Set-Cookie`; log-out web chỉ dùng cookie (không cần access token) → family bị revoke; reuse token đã USED sau grace → revoke family.
 
 ### T11. Quản lý session
-- **Tầng:** Must · **Ước lượng:** 0,5 ngày · **Quyết định:** P-07 · **FR:** A06
+- **Tầng:** Must · **Ước lượng:** 0,75 ngày · **Quyết định:** P-07, P-24 · **FR:** A06
 - **Phạm vi:**
   - Access token thêm claim `sid`.
   - `GET /sessions` trả mỗi family một dòng, chỉ family có token ACTIVE chưa hết hạn, kèm `current`.
   - Thêm `DELETE /sessions/{sessionId}` và `POST /sessions/revoke-others`.
   - Thêm `RefreshTokenManager.revokeAllForUser(userId, exceptFamilyId?)`, sẽ dùng lại ở T14, T15, T16.
-- **Acceptance criteria:** đăng nhập 2 lần thì thấy 2 session; xoá session kia thì refresh bằng token của nó → 401; không xoá được session của user khác (→ 404); token hết hạn không xuất hiện trong danh sách.
+  - F-37 (P-24): `rotateToken` trả `RotationResult` (`Rotated`/`Rejected(RejectReason)`) thay cho `Optional`; `AuthService` log lý do và ném `INVALID_TOKEN`. `verifyJwt`/`verifyAccessToken` trả kiểu kết quả kèm lý do; `JOSEException` thành lỗi 500 thay vì "token không hợp lệ".
+  - F-38: `auth.cookie.same-site` chuyển sang `@ConfigurationProperties`.
+- **Acceptance criteria:** đăng nhập 2 lần thì thấy 2 session; xoá session kia thì refresh bằng token của nó → 401; không xoá được session của user khác (→ 404); token hết hạn không xuất hiện trong danh sách; unit test `RefreshTokenManager` assert đúng `RejectReason` cho từng nhánh (thiếu token, không tìm thấy, hết hạn, revoked, dùng lại sau grace).
 
 ### T12. Gộp OTP và tách module notification
 - **Tầng:** Must · **Ước lượng:** 1 ngày · **Quyết định:** D-13, ARCHITECTURE §2, §6.1
@@ -218,7 +220,7 @@ Bảng dependency (→ nghĩa là "phải xong trước"):
   - `UserRole` mới; `UserStatus`; chuẩn hoá email.
   - Register tạo OWNER và store trong một transaction, sau commit mới gửi OTP `VERIFY_EMAIL`.
   - Thêm `POST /email/verify` và `/email/verify/resend`.
-  - Log-in từ chối `PENDING_VERIFICATION`/`DISABLED`; refresh từ chối user không ACTIVE.
+  - Log-in từ chối `PENDING_VERIFICATION`/`DISABLED`; refresh từ chối user không ACTIVE. `findUserByCredentials` thay bằng `authenticate` trả `AuthenticationResult` (`Authenticated`/`InvalidCredentials`/`EmailNotVerified`/`Disabled`) theo P-24 (F-37).
   - `/users/me` thêm `fullName`, `role`, `storeId`, `status`.
   - Interface công khai `StoreMemberQuery` (ví dụ `findActiveMember(storeId, userId, role)`) để `planning` kiểm tra tài xế mà không đụng repository của `user`.
 - **Acceptance criteria:** register → user PENDING kèm store, FakeEmailSender nhận OTP; log-in trước khi verify → 403 `EMAIL_NOT_VERIFIED`; verify xong log-in được; register trùng email (khác hoa thường) → 409; Flyway chạy V1→V2 trên DB trống thành công; Hibernate validate pass.
@@ -235,7 +237,7 @@ Bảng dependency (→ nghĩa là "phải xong trước"):
 
 ### T14. Quên mật khẩu
 - **Tầng:** Must · **Ước lượng:** 0,5 ngày · **Quyết định:** P-06 · **FR:** A07
-- **Phạm vi:** 3 endpoint `/password/forgot`, `/password/reset/verify`, `/password/reset`; reset token bind userId (dùng lại `OtpTokenManager` của T00); reset thành công thì revoke mọi session.
+- **Phạm vi:** 3 endpoint `/password/forgot`, `/password/reset/verify`, `/password/reset`; reset token bind userId (dùng lại `OtpTokenManager` của T00); reset thành công thì revoke mọi session. `verifyOtpToken` đổi từ `Optional<Long>` sang kiểu kết quả; giá trị Redis hỏng là lỗi kỹ thuật, không coi là token sai (P-24, F-37).
 - **Acceptance criteria:** email không tồn tại → vẫn 204 và không gửi email; luồng đúng thì đổi được mật khẩu và mọi refresh token cũ → 401; dùng lại reset token → 400; reset token hết hạn → 400.
 
 ### T15. Đổi mật khẩu bằng mật khẩu cũ + OTP

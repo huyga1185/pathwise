@@ -95,12 +95,24 @@ Không bắt buộc module nào cũng đủ thư mục; chỉ tạo khi có nộ
 | `*Provider` | Adapter tới hệ thống ngoài; dịch lỗi ngoài thành `ExternalServiceException` (T03). | Biết entity/DTO API của module khác. | HTTP client. |
 | Mapper (MapStruct) | Entity ↔ DTO trong cùng module. | Gọi service/repository. | — |
 
+**Optional, kết quả và lỗi (P-24):**
+
+| Tình huống | Cách biểu diễn | Ví dụ |
+|---|---|---|
+| Tra cứu có thể không có dữ liệu | `Optional<T>` (chỉ làm kiểu trả về) | `UserRepository.findByEmail`, `StateStore.find` |
+| Kiểm tra/quyết định có nhiều kết quả cần xử lý hoặc log khác nhau, hoặc nhánh thành công mang dữ liệu | `sealed interface` + `record` theo nghiệp vụ (không dùng `Result<T, E>` chung), lý do là enum, xử lý bằng `switch`; chỉ dùng giữa manager và service | `RotationResult` (`Rotated`/`Rejected(reason)`), `AuthenticationResult` |
+| Kiểm tra chỉ có đúng/sai, không cần lý do | `boolean` | `OtpStore.verifyOtp` |
+| Lỗi nghiệp vụ trả cho client | `AppException(ErrorCode)`, chỉ ném từ service (controller khi kiểm tra input) | `AppException(ErrorCode.EMAIL_EXISTED)` |
+| Lỗi kỹ thuật | Exception cấp thấp trong `infrastructure`; handler map hoặc service dịch; lỗi bug/cấu hình để về 500 | `ExternalServiceException`, `StateStoreException` |
+
+Chỉ thêm `ErrorCode` khi client phải hành động khác đi; lý do chi tiết để ở kiểu kết quả và log. Không tạo exception riêng cho từng lỗi nghiệp vụ (chỉ subclass `AppException` khi cần dữ liệu cho `details`). Không dùng `Optional` làm field/tham số; dùng `orElseThrow`/`map` thay cho `isEmpty()` + `get()`.
+
 **Quy ước tên:** `XxxController`, `XxxService` (interface công khai giữ tên nghiệp vụ, ví dụ `UserAccountService`; implementation có thể là `UserService`), `XxxManager`, `XxxRepository`, `RedisXxxStore`, `NominatimGeocodingProvider`. Request DTO: `CreatePlanRequest`; response: `PlanResponse`, `PlanSummaryResponse`.
 
 ## 4. DTO, validation, mapping
 
 - Request/response là **Java record**. Không dùng entity làm request/response.
-- Validation cú pháp ở request DTO bằng Bean Validation; `message` của constraint là **mã lỗi** UPPER_SNAKE (ví dụ `EMAIL_REQUIRED`), không phải câu văn. (Hiện `VerifyOtpRequest` dùng câu văn — sửa trong T03.)
+- Validation cú pháp ở request DTO bằng Bean Validation; `message` của constraint là **mã lỗi** UPPER_SNAKE (ví dụ `EMAIL_REQUIRED`), không phải câu văn (T03 đã chuyển mọi constraint hiện có sang mã).
 - Validation nghiệp vụ (tham chiếu tồn tại, trạng thái, quyền) ở service → `AppException(ErrorCode.X)`.
 - Thời gian trong API: `Instant` ISO-8601 UTC cho sự kiện; `LocalDate` cho `planDate`; `LocalTime` (`HH:mm`) cho time window/ca, hiểu theo timezone của store (P-14).
 - Cấu hình mới dùng `@ConfigurationProperties` (record) theo module, không rải `@Value`.
