@@ -68,5 +68,6 @@ docker compose --profile app up -d --build    # chạy toàn bộ stack trong co
 
 - Code theo phong cách code xung quanh: Lombok (`@RequiredArgsConstructor`), record cho DTO, MapStruct cho mapping, Bean Validation với message là mã UPPER_SNAKE.
 - Tên lớp: `XxxController`, `XxxService`, `XxxManager`, `XxxRepository`, `RedisXxxStore`, `XxxProvider`. Request/response dùng `CreateXxxRequest` / `XxxResponse`.
+- `Optional` chỉ cho tra cứu có thể không có dữ liệu; verify/rotate/authenticate trả kiểu kết quả `sealed interface`; `AppException` chỉ ném từ service; chỉ thêm `ErrorCode` khi client phải xử lý khác đi (P-24, bảng ở `ARCHITECTURE.md` §3).
 - Đơn vị: mét, giây, capacity là số nguyên. Timestamp dùng `Instant` UTC. Time window dùng `LocalTime` theo timezone của store.
 - Git: mỗi task một branch `task/Txx-...` từ `develop`. Commit theo dạng `feat(module): ...`, `fix(module): ...`.
