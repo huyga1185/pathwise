@@ -35,9 +35,9 @@
 | `POST /log-in` | P | `{email, password}` | 200 `LoginResponse` (+ cookie nếu web) | 401 `INVALID_EMAIL_OR_PASSWORD` · 403 `EMAIL_NOT_VERIFIED` · 403 `ACCOUNT_DISABLED` · 429 | 🟡 Transport và body khớp spec (T10, có test): `accessToken`, `accessTokenExpiresAt`, `refreshTokenExpiresAt`, `refreshToken` chỉ khi mobile, cookie `Path=/api/v1/auth; SameSite` cho web; sai thông tin 401 ✓. Còn lệch: `user` chỉ có `id`, `email`, `role` (`ADMIN`/`USER`), thiếu `fullName`, `storeId`, `canDrive` (T13, T17); chưa có 403 `EMAIL_NOT_VERIFIED`/`ACCOUNT_DISABLED` (T13), 429 (T40) |
 | `POST /refresh` | P | web: cookie · mobile: `{refreshToken}` | 200 `TokenResponse` (+ cookie mới nếu web) | 401 `INVALID_TOKEN` | 🟡 Khớp spec (T10, có test): cookie (web) hoặc body (mobile), trả `TokenResponse`, thiếu/sai/hết hạn token → 401 `INVALID_TOKEN`. Còn lệch: chưa từ chối user bị vô hiệu hoá (cần trạng thái user, T13) |
 | `POST /log-out` | P | web: cookie · mobile: `{refreshToken}` | 204 (idempotent; xoá cookie nếu web) | — | ✅ T10: public, cookie (web) hoặc body (mobile), luôn 204, web xoá cookie |
-| `GET /sessions` | A | — | 200 `[SessionResponse]` | — | 🟡 `GET /api/v1/auth/sessions` → `{data:{listSession:[{id, userAgent, ipAddress, expiresAt, createdAt}]}}`; `id` là id refresh token (đổi sau mỗi refresh), gồm cả token hết hạn (F-08) |
-| `DELETE /sessions/{sessionId}` | A | — | 204 | 404 `SESSION_NOT_FOUND` | ❌ |
-| `POST /sessions/revoke-others` | A | — | 204 | — | ❌ |
+| `GET /sessions` | A | — | 200 `[SessionResponse]` | — | ✅ T11: mỗi session (family) còn hiệu lực một dòng, `current` theo claim `sid` |
+| `DELETE /sessions/{sessionId}` | A | — | 204 | 404 `SESSION_NOT_FOUND` | ✅ T11: `sessionId` có thể là bất kỳ session nào của chính user. Nếu là **session hiện tại** (`current: true`) thì xử lý **như `/log-out`**: cùng thu hồi session, response giống `/log-out` (204, `no-store`, web xoá cookie `refreshToken`); client phải bỏ token như sau khi log-out. Session của user khác, không tồn tại, đã thu hồi hoặc hết hạn đều 404 `SESSION_NOT_FOUND` |
+| `POST /sessions/revoke-others` | A | — | 204 | — | ✅ T11 (access token cấp trước T11 không có `sid` thì thu hồi mọi session) |
 | `POST /password/forgot` | P | `{email}` | 204 (luôn); gửi OTP `RESET_PASSWORD` nếu email ACTIVE | 429 | ❌ |
 | `POST /password/reset/verify` | P | `{email, otp}` | 200 `{data:{resetToken, expiresAt}}` | 400 `INVALID_OTP` | ❌ |
 | `POST /password/reset` | P | `{resetToken, newPassword}` | 204; revoke **mọi** session | 400 `INVALID_TOKEN` | ❌ |
@@ -59,6 +59,7 @@
 
 Ghi chú:
 - Access token chứa claim `sid` = sessionId (family) để xác định `current` (bổ sung cho P-09).
+- `lastUsedAt` = thời điểm phát hành refresh token hiện tại của session, tức lần log-in hoặc refresh gần nhất (sai lệch tối đa bằng tuổi access token, 14 phút).
 - `resetToken` là chuỗi opaque (client không phân tích).
 - OTP: 6 chữ số; sai quá 3 lần → OTP huỷ, phải xin mã mới.
 

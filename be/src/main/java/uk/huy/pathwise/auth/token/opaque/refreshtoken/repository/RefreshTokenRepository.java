@@ -10,6 +10,7 @@ import org.springframework.stereotype.Repository;
 import uk.huy.pathwise.auth.token.opaque.refreshtoken.model.RefreshToken;
 import uk.huy.pathwise.auth.token.opaque.refreshtoken.model.RefreshTokenState;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -25,5 +26,15 @@ public interface RefreshTokenRepository extends JpaRepository<RefreshToken, Long
     @Query("UPDATE RefreshToken rf SET rf.state = 'REVOKED' WHERE rf.familyId = :familyId")
     void revokeFamily(@Param("familyId") String familyId);
 
-    List<RefreshToken> findByUserIdAndState(Long userId, RefreshTokenState state);
+    List<RefreshToken> findByUserIdAndStateAndExpiresAtAfter(Long userId, RefreshTokenState state, Instant now);
+
+    boolean existsByUserIdAndFamilyIdAndStateAndExpiresAtAfter(Long userId, String familyId, RefreshTokenState state, Instant now);
+
+    /**
+     * Revokes every family of the user except {@code exceptFamilyId} (null: all families).
+     */
+    @Modifying
+    @Query("UPDATE RefreshToken rf SET rf.state = 'REVOKED' WHERE rf.userId = :userId AND rf.state <> 'REVOKED' "
+            + "AND (:exceptFamilyId IS NULL OR rf.familyId <> :exceptFamilyId)")
+    void revokeAllForUser(@Param("userId") Long userId, @Param("exceptFamilyId") String exceptFamilyId);
 }

@@ -1,21 +1,21 @@
 package uk.huy.pathwise.auth.infrastructure.builder;
 
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.http.ResponseCookie;
 import org.springframework.stereotype.Component;
+import uk.huy.pathwise.auth.infrastructure.config.AuthCookieProperties;
 
 import java.time.Duration;
 import java.time.Instant;
 
 @Component
+// Declared here (not on the application class) so slices that @Import this builder also bind the properties.
+@EnableConfigurationProperties(AuthCookieProperties.class)
 public class AuthCookieBuilder {
     private final String sameSite;
 
-    /**
-     * @param sameSite SameSite attribute of every auth cookie (D-22, ARCHITECTURE.md §6.4), from {@code auth.cookie.same-site}.
-     */
-    public AuthCookieBuilder(@Value("${auth.cookie.same-site:Strict}") String sameSite) {
-        this.sameSite = sameSite;
+    public AuthCookieBuilder(AuthCookieProperties properties) {
+        this.sameSite = properties.sameSite();
     }
 
     private void validateArgs(String name, String value, boolean canValueBeNullOrEmpty) {

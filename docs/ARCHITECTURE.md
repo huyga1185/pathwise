@@ -39,7 +39,7 @@ Package gốc `uk.huy.pathwise`. Mỗi module là một package cấp 1.
 | Module | Trách nhiệm | Trạng thái |
 |---|---|---|
 | `core` | Hạ tầng dùng chung, không chứa nghiệp vụ: envelope response, `ErrorCode`/`AppException`/handler, pagination, `StateStore`, rate limiter, **job framework** (`core.job`, §8.4), cấu hình web/JSON. | Có — mở rộng |
-| `shared` | Kiểu dữ liệu chia sẻ giữa module: `UserIdentity`, `UserRole`. Chỉ record/enum, **không** bean. | Có — sửa |
+| `shared` | Kiểu dữ liệu chia sẻ giữa module: `UserIdentity`, `UserRole`, principal `AuthenticatedUser` (P-25). Chỉ record/enum, **không** bean. | Có — sửa |
 | `user` | Tài khoản người dùng: entity `User`, mật khẩu, hồ sơ, trạng thái. | Có — mở rộng |
 | `auth` | Xác thực: đăng ký (orchestrate user + store), đăng nhập, token (access/refresh/OTP token), OTP, session, đổi/quên mật khẩu, security filter chain. | Có — sửa |
 | `notification` | Gửi email theo template (chuyển từ `auth.email.infrastructure` sang, để `store` gửi được lời mời mà không phụ thuộc `auth`). | Mới (tách từ auth) — T12 |
@@ -87,7 +87,7 @@ Không bắt buộc module nào cũng đủ thư mục; chỉ tạo khi có nộ
 
 | Loại | Được làm | Không được làm | Được phụ thuộc vào |
 |---|---|---|---|
-| `*Controller` | Map HTTP ↔ DTO, `@Valid`, đọc `@AuthenticationPrincipal UserIdentity`, cookie/header, chọn status code, `@PreAuthorize` theo role. | Business logic, gọi repository, `@Transactional`, try/catch để đổi lỗi (để handler toàn cục làm). | Service của chính module. |
+| `*Controller` | Map HTTP ↔ DTO, `@Valid`, đọc `@AuthenticationPrincipal AuthenticatedUser` (P-25), cookie/header, chọn status code, `@PreAuthorize` theo role. | Business logic, gọi repository, `@Transactional`, try/catch để đổi lỗi (để handler toàn cục làm). | Service của chính module. |
 | `*Service` | Use case: kiểm tra quyền sở hữu/tenant, business rule, ranh giới transaction, orchestrate manager/repository/provider, map entity → DTO. | Biết về HTTP (cookie, header, `HttpServletRequest`). | Repository/store/manager/provider của module mình; service interface công khai của module khác. |
 | `*Manager` | Đóng gói vòng đời một khả năng kỹ thuật dùng lại được (sinh/verify/thu hồi token, OTP). | Biết HTTP; kiểm tra quyền nghiệp vụ; được gọi từ controller. | Store/repository/generator/hasher. |
 | `*Repository` | Truy vấn JPA. Mọi truy vấn dữ liệu thuộc store **phải có tham số `storeId`**. | Logic nghiệp vụ. | — |
@@ -284,7 +284,7 @@ Chọn implementation bằng property (`routing.geocoding.provider=nominatim`), 
 | Tầng | Công cụ | Phạm vi bắt buộc |
 |---|---|---|
 | Unit | JUnit 5 + Mockito + AssertJ | Service (business rule, quyền), manager token/OTP, solver (ma trận nhỏ cố định, kiểm tra capacity/time window/drop), state machine plan/stop, mapper có logic. |
-| Web slice | `@WebMvcTest` + `@Import(SecurityConfig.class)` + `@MockitoBean AccessTokenManager` (stub token → `UserIdentity`, gửi header `Authorization: Bearer …` để đi qua filter thật). Mẫu: `OptimizationControllerTest`, `ErrorHandlingWebMvcTest`. Controller có DTO dùng custom validator thì `@Import` thêm bean mà validator cần (ví dụ `PhoneNumberProcessor`), nếu không validator lỗi và test có thể pass sai lý do (500). | Mỗi controller: validation → 400 + code, chưa đăng nhập → 401, sai role → 403, happy path, cookie/header web vs mobile. |
+| Web slice | `@WebMvcTest` + `@Import(SecurityConfig.class)` + `@MockitoBean AccessTokenManager` (stub token → `AccessTokenVerification.Authenticated(new AuthenticatedUser(...))`, gửi header `Authorization: Bearer …` để đi qua filter thật). Mẫu: `OptimizationControllerTest`, `ErrorHandlingWebMvcTest`. Controller có DTO dùng custom validator thì `@Import` thêm bean mà validator cần (ví dụ `PhoneNumberProcessor`), nếu không validator lỗi và test có thể pass sai lý do (500). | Mỗi controller: validation → 400 + code, chưa đăng nhập → 401, sai role → 403, happy path, cookie/header web vs mobile. |
 | Integration | `@SpringBootTest` + **Testcontainers** MariaDB + Redis (P-21); `EmailSender` thay bằng fake lưu email để đọc OTP; `MatrixProvider` fake | Luồng auth đầy đủ, Lua OTP, Flyway migrate, tenant isolation, plan lifecycle end-to-end, optimistic lock. |
 | Hợp đồng provider | `MockRestServiceServer` | Parse response/lỗi Nominatim, OSRM (đã có, giữ). |
 
