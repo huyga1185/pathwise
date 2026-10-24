@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.*;
 import uk.huy.pathwise.core.apiresponse.ApiResponse;
 import uk.huy.pathwise.user.dto.request.UserModificationRequest;
 import uk.huy.pathwise.user.dto.response.GetUserResponse;
-import uk.huy.pathwise.shared.identity.UserIdentity;
+import uk.huy.pathwise.shared.identity.AuthenticatedUser;
 import uk.huy.pathwise.user.service.UserProfileService;
 
 @RestController
@@ -18,14 +18,14 @@ public class UserController {
     private final UserProfileService userService;
 
     @PutMapping("/me")
-    public ResponseEntity<Void> updateUserProfile(@AuthenticationPrincipal UserIdentity identity,
+    public ResponseEntity<Void> updateUserProfile(@AuthenticationPrincipal AuthenticatedUser actor,
                                                   @Valid @RequestBody UserModificationRequest request) {
-        userService.updateUser(identity, request);
+        userService.updateUser(actor.identity(), request);
         return ResponseEntity.status(204).build();
     }
 
     @GetMapping("/me")
-    public ResponseEntity<ApiResponse<GetUserResponse>> getUserProfile(@AuthenticationPrincipal UserIdentity identity) {
-        return ResponseEntity.ok().body(new ApiResponse<>(null, userService.getUser(identity)));
+    public ResponseEntity<ApiResponse<GetUserResponse>> getUserProfile(@AuthenticationPrincipal AuthenticatedUser actor) {
+        return ResponseEntity.ok().body(new ApiResponse<>(null, userService.getUser(actor.identity())));
     }
 }

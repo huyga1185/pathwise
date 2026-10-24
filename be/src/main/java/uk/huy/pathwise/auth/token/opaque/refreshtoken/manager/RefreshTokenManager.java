@@ -3,13 +3,16 @@ package uk.huy.pathwise.auth.token.opaque.refreshtoken.manager;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NonNull;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import uk.huy.pathwise.auth.infrastructure.hash.Hasher;
 import uk.huy.pathwise.auth.token.opaque.infrastructure.OpaqueTokenGenerator;
-import uk.huy.pathwise.auth.token.opaque.refreshtoken.dto.RefreshTokenDetail;
 import uk.huy.pathwise.auth.token.opaque.refreshtoken.dto.RefreshTokenGenerationDetail;
-import uk.huy.pathwise.auth.token.opaque.refreshtoken.dto.RefreshTokenRotationDetail;
+import uk.huy.pathwise.auth.token.opaque.refreshtoken.dto.RotationResult;
+import uk.huy.pathwise.auth.token.opaque.refreshtoken.dto.RotationResult.RejectReason;
+import uk.huy.pathwise.auth.token.opaque.refreshtoken.dto.RotationResult.Rejected;
+import uk.huy.pathwise.auth.token.opaque.refreshtoken.dto.RotationResult.Rotated;
+import uk.huy.pathwise.auth.token.opaque.refreshtoken.dto.SessionDetail;
 import uk.huy.pathwise.auth.token.opaque.refreshtoken.model.RefreshToken;
 import uk.huy.pathwise.auth.token.opaque.refreshtoken.model.RefreshTokenState;
 import uk.huy.pathwise.auth.token.opaque.refreshtoken.repository.RefreshTokenRepository;
@@ -19,7 +22,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
 
-@Service
+@Component
 @Slf4j
 public class RefreshTokenManager {
     private final RefreshTokenRepository refreshTokenRepository;
@@ -51,31 +54,33 @@ public class RefreshTokenManager {
                 .expiresAt(Instant.now().plus(expirationTime))
                 .build();
         refreshTokenRepository.save(refreshToken);
-        return new RefreshTokenGenerationDetail(rawToken, refreshToken.getExpiresAt());
+        return new RefreshTokenGenerationDetail(refreshToken.getFamilyId(), rawToken, refreshToken.getExpiresAt());
     }
 
     @Transactional
-    public Optional<RefreshTokenRotationDetail> rotateToken(String rawRefreshToken, ClientDetail detail) {
-        if (rawRefreshToken == null || rawRefreshToken.isEmpty()) return Optional.empty();
-        String hashedToken = hasher.hashString(rawRefreshToken);
-        Optional<RefreshToken> found = refreshTokenRepository.findByTokenForUpdate(hashedToken);
-        if (found.isEmpty()) return Optional.empty();
+    public RotationResult rotateToken(String rawRefreshToken, ClientDetail detail) {
+        if (rawRefreshToken == null || rawRefreshToken.isEmpty()) return new Rejected(RejectReason.MISSING);
+        Optional<RefreshToken> found = refreshTokenRepository.findByTokenForUpdate(hasher.hashString(rawRefreshToken));
+        if (found.isEmpty()) return new Rejected(RejectReason.NOT_FOUND);
 
         RefreshToken token = found.get();
         return switch (token.getState()) {
-            case ACTIVE -> markExpiredIfOverdue(token) ? Optional.empty() : rotate(token, detail, Instant.now().plus(expirationTime));
+            case ACTIVE -> markExpiredIfOverdue(token)
+                    ? new Rejected(RejectReason.EXPIRED)
+                    : rotate(token, detail, Instant.now().plus(expirationTime));
             case USED -> handleUsed(token, detail);
-            case EXPIRED -> Optional.empty();
-            case REVOKED -> { logReuse("Revoked refresh token reused", token, detail); yield Optional.empty(); }
+            case EXPIRED -> new Rejected(RejectReason.EXPIRED);
+            case REVOKED -> {
+                logReuse("Revoked refresh token reused", token, detail);
+                yield new Rejected(RejectReason.REVOKED_REUSED);
+            }
         };
     }
 
-    private Optional<RefreshTokenRotationDetail> handleUsed(RefreshToken token, ClientDetail detail) {
-        if (token == null) return Optional.empty();
-
+    private RotationResult handleUsed(RefreshToken token, ClientDetail detail) {
         if (token.getRotatedAt() == null) {
             log.error("Used refresh token does not have rotated at. tokenId={}", token.getId());
-            return Optional.empty();
+            return new Rejected(RejectReason.INCONSISTENT_FAMILY);
         }
 
         boolean withinGrace = token.getRotatedAt().plusSeconds(3).isAfter(Instant.now());
@@ -83,23 +88,19 @@ public class RefreshTokenManager {
         if (!withinGrace) {
             refreshTokenRepository.revokeFamily(token.getFamilyId());
             logReuse("Used refresh token reused", token, detail);
-            return Optional.empty();
+            return new Rejected(RejectReason.USED_REUSED);
         }
 
         List<RefreshToken> actives = refreshTokenRepository.findByFamilyIdAndState(token.getFamilyId(), RefreshTokenState.ACTIVE);
 
-        if (actives.isEmpty()) {
-            log.error("Non-revoked family has a USED token but no ACTIVE token. familyId={}", token.getFamilyId());
-            return Optional.empty();
-        }
-
-        if (actives.size() > 1) {
-            log.error("Refresh token family has more than one active token. familyId={}", token.getFamilyId());
-            return Optional.empty();
+        if (actives.size() != 1) {
+            log.error("Refresh token family within grace must have exactly one active token. familyId={}, actives={}",
+                    token.getFamilyId(), actives.size());
+            return new Rejected(RejectReason.INCONSISTENT_FAMILY);
         }
 
         RefreshToken active = actives.getFirst();
-        if (markExpiredIfOverdue(active)) return Optional.empty();
+        if (markExpiredIfOverdue(active)) return new Rejected(RejectReason.EXPIRED);
 
         return rotate(active, detail, active.getExpiresAt());
     }
@@ -114,9 +115,7 @@ public class RefreshTokenManager {
         return true;
     }
 
-    private Optional<RefreshTokenRotationDetail> rotate(RefreshToken current,
-                                                        ClientDetail detail,
-                                                        Instant childExpiresAt) {
+    private Rotated rotate(RefreshToken current, ClientDetail detail, Instant childExpiresAt) {
         current.setState(RefreshTokenState.USED);
         current.setRotatedAt(Instant.now());
         refreshTokenRepository.save(current);
@@ -132,7 +131,7 @@ public class RefreshTokenManager {
                 .expiresAt(childExpiresAt)
                 .build();
         refreshTokenRepository.save(child);
-        return Optional.of(new RefreshTokenRotationDetail(child.getUserId(), newRawToken, child.getExpiresAt()));
+        return new Rotated(child.getUserId(), child.getFamilyId(), newRawToken, child.getExpiresAt());
     }
 
     private void logReuse(String message,
@@ -157,17 +156,44 @@ public class RefreshTokenManager {
         refreshTokenRepository.revokeFamily(refreshToken.getFamilyId());
     }
 
-    public List<RefreshTokenDetail> getListInfoByUserId(long id) {
-        List<RefreshToken> tokens = refreshTokenRepository.findByUserIdAndState(id, RefreshTokenState.ACTIVE);
-        if (tokens.isEmpty()) return List.of();
-        List<RefreshTokenDetail> infos = new ArrayList<>();
-        for (RefreshToken token : tokens) {
-            infos.add(new RefreshTokenDetail(token.getId(),
-                    token.getUserAgent(),
-                    token.getIpAddress(),
-                    token.getExpiresAt(),
-                    token.getCreatedAt()));
-        }
-        return infos;
+    /**
+     * Active sessions of the user: one per family that still has an unexpired ACTIVE token.
+     */
+    @Transactional(readOnly = true)
+    public List<SessionDetail> listSessions(long userId) {
+        return refreshTokenRepository.findByUserIdAndStateAndExpiresAtAfter(userId, RefreshTokenState.ACTIVE, Instant.now())
+                .stream()
+                .map(token -> new SessionDetail(token.getFamilyId(),
+                        token.getUserAgent(),
+                        token.getIpAddress(),
+                        token.getCreatedAt(),
+                        token.getExpiresAt()))
+                .toList();
+    }
+
+    /**
+     * Revokes one active session (refresh token family) owned by {@code userId}. The current session of the caller
+     * is not special here: callers decide whether it may be targeted.
+     *
+     * @param userId    owner the session must belong to
+     * @param sessionId family to revoke
+     * @return false if {@code userId} has no such active session (unknown, someone else's, revoked or expired)
+     */
+    @Transactional
+    public boolean revokeSession(long userId, String sessionId) {
+        if (sessionId == null || sessionId.isBlank()) return false;
+        if (!refreshTokenRepository.existsByUserIdAndFamilyIdAndStateAndExpiresAtAfter(userId, sessionId,
+                RefreshTokenState.ACTIVE, Instant.now())) return false;
+        refreshTokenRepository.revokeFamily(sessionId);
+        return true;
+    }
+
+    /**
+     * Revokes every session of the user except {@code exceptSessionId} (null: all sessions). Reused by password
+     * reset/change and member removal (T14, T15, T16).
+     */
+    @Transactional
+    public void revokeAllForUser(long userId, String exceptSessionId) {
+        refreshTokenRepository.revokeAllForUser(userId, exceptSessionId);
     }
 }

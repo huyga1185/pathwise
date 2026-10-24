@@ -10,7 +10,9 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import uk.huy.pathwise.auth.infrastructure.config.SecurityConfig;
+import uk.huy.pathwise.auth.token.jwt.dto.AccessTokenVerification;
 import uk.huy.pathwise.auth.token.jwt.manager.AccessTokenManager;
+import uk.huy.pathwise.shared.identity.AuthenticatedUser;
 import uk.huy.pathwise.routeoptimizer.dto.request.OptimizationMultiVehicleRequest;
 import uk.huy.pathwise.routeoptimizer.dto.request.OptimizationRequest;
 import uk.huy.pathwise.routeoptimizer.dto.response.OptimizationMultiVehicleResponse;
@@ -22,7 +24,6 @@ import uk.huy.pathwise.shared.identity.UserIdentity;
 import uk.huy.pathwise.shared.identity.UserRole;
 
 import java.util.List;
-import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
@@ -47,7 +48,7 @@ class OptimizationControllerTest {
     @BeforeEach
     void authenticateTestToken() {
         when(accessTokenManager.verifyAccessToken("test-token"))
-                .thenReturn(Optional.of(new UserIdentity(1L, "user@pathwise.test", UserRole.USER)));
+                .thenReturn(new AccessTokenVerification.Authenticated(new AuthenticatedUser(new UserIdentity(1L, "user@pathwise.test", UserRole.USER), "session-1")));
     }
 
     @Test

@@ -7,6 +7,8 @@ import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import lombok.extern.slf4j.Slf4j;
 import uk.huy.pathwise.auth.token.jwt.infrastructure.dto.JwtClaimsSet;
+import uk.huy.pathwise.auth.token.jwt.infrastructure.dto.JwtRejectReason;
+import uk.huy.pathwise.auth.token.jwt.infrastructure.dto.JwtVerification;
 import uk.huy.pathwise.auth.token.jwt.infrastructure.exception.JwtException;
 import uk.huy.pathwise.auth.token.jwt.infrastructure.generator.nimbus.AbstractNimbusJwtTokenGenerator;
 
@@ -81,46 +83,44 @@ public class HMACJwtTokenGenerator extends AbstractNimbusJwtTokenGenerator {
         return signedJWT.serialize();
     }
 
-    public final Optional<JwtClaimsSet> verifyJwt(String jwt, String expectedAudience) {
+    public final JwtVerification verifyJwt(String jwt, String expectedAudience) {
         if (jwt == null) throw new NullPointerException("Jwt could not be null");
         if (jwt.isEmpty()) throw new IllegalArgumentException("Jwt could not be empty");
-        Instant now = Instant.now();
-        Date nowDate = Date.from(now);
+        Date nowDate = Date.from(Instant.now());
+        SignedJWT signedJWT;
+        JWTClaimsSet jwtClaimsSet;
         try {
-            MACVerifier verifier = new MACVerifier(secretKey);
-            SignedJWT signedJWT = SignedJWT.parse(jwt);
-            if (!signedJWT.verify(verifier)) {
-                log.warn("Bad signature");
-                return Optional.empty();
-            }
-            JWTClaimsSet jwtClaimsSet = signedJWT.getJWTClaimsSet();
-            if (!jwsAlgorithm.equals(signedJWT.getHeader().getAlgorithm()))
-                return Optional.empty();
-            if (issuer != null && !Objects.equals(this.issuer, jwtClaimsSet.getIssuer()))
-                return Optional.empty();
-            if (jwtClaimsSet.getAudience() != null &&
-                    expectedAudience != null &&
-                    !jwtClaimsSet.getAudience().contains(expectedAudience))
-                return Optional.empty();
-            if (jwtClaimsSet.getNotBeforeTime() != null && nowDate.before(jwtClaimsSet.getNotBeforeTime()))
-                return Optional.empty();
-            if (jwtClaimsSet.getExpirationTime() == null || nowDate.after(jwtClaimsSet.getExpirationTime()))
-                return Optional.empty();
-            JwtClaimsSet result = new JwtClaimsSet(
-                    jwtClaimsSet.getSubject(),
-                    jwtClaimsSet.getAudience(),
-                    jwtClaimsSet.getJWTID(),
-                    jwtClaimsSet.getNotBeforeTime(),
-                    jwtClaimsSet.getIssueTime(),
-                    jwtClaimsSet.getExpirationTime(),
-                    jwtClaimsSet.getClaims()
-            );
-            return Optional.of(result);
-        } catch (JOSEException e) {
-            log.warn("Verifier could not work");
-            return Optional.empty();
-        } catch (ParseException ignored) {
-            return Optional.empty();
+            signedJWT = SignedJWT.parse(jwt);
+            jwtClaimsSet = signedJWT.getJWTClaimsSet();
+        } catch (ParseException e) {
+            return new JwtVerification.Rejected(JwtRejectReason.MALFORMED);
         }
+        if (!jwsAlgorithm.equals(signedJWT.getHeader().getAlgorithm()))
+            return new JwtVerification.Rejected(JwtRejectReason.WRONG_ALGORITHM);
+        try {
+            if (!signedJWT.verify(new MACVerifier(secretKey)))
+                return new JwtVerification.Rejected(JwtRejectReason.BAD_SIGNATURE);
+        } catch (JOSEException e) {
+            // Key or crypto problem on our side: not the client's fault, so not a "bad token".
+            throw new JwtException("Could not verify jwt", e);
+        }
+        if (issuer != null && !Objects.equals(this.issuer, jwtClaimsSet.getIssuer()))
+            return new JwtVerification.Rejected(JwtRejectReason.WRONG_ISSUER);
+        if (jwtClaimsSet.getAudience() != null &&
+                expectedAudience != null &&
+                !jwtClaimsSet.getAudience().contains(expectedAudience))
+            return new JwtVerification.Rejected(JwtRejectReason.WRONG_AUDIENCE);
+        if (jwtClaimsSet.getNotBeforeTime() != null && nowDate.before(jwtClaimsSet.getNotBeforeTime()))
+            return new JwtVerification.Rejected(JwtRejectReason.NOT_YET_VALID);
+        if (jwtClaimsSet.getExpirationTime() == null || nowDate.after(jwtClaimsSet.getExpirationTime()))
+            return new JwtVerification.Rejected(JwtRejectReason.EXPIRED);
+        return new JwtVerification.Verified(new JwtClaimsSet(
+                jwtClaimsSet.getSubject(),
+                jwtClaimsSet.getAudience(),
+                jwtClaimsSet.getJWTID(),
+                jwtClaimsSet.getNotBeforeTime(),
+                jwtClaimsSet.getIssueTime(),
+                jwtClaimsSet.getExpirationTime(),
+                jwtClaimsSet.getClaims()));
     }
 }

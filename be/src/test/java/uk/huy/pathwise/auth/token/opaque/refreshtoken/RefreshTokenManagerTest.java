@@ -12,7 +12,10 @@ import uk.huy.pathwise.auth.model.ClientDetail;
 import uk.huy.pathwise.auth.token.opaque.infrastructure.OpaqueTokenGenerator;
 import uk.huy.pathwise.auth.token.opaque.infrastructure.SecureRandomOpaqueTokenGenerator;
 import uk.huy.pathwise.auth.token.opaque.refreshtoken.dto.RefreshTokenGenerationDetail;
-import uk.huy.pathwise.auth.token.opaque.refreshtoken.dto.RefreshTokenRotationDetail;
+import uk.huy.pathwise.auth.token.opaque.refreshtoken.dto.RotationResult;
+import uk.huy.pathwise.auth.token.opaque.refreshtoken.dto.RotationResult.RejectReason;
+import uk.huy.pathwise.auth.token.opaque.refreshtoken.dto.RotationResult.Rejected;
+import uk.huy.pathwise.auth.token.opaque.refreshtoken.dto.RotationResult.Rotated;
 import uk.huy.pathwise.auth.token.opaque.refreshtoken.manager.RefreshTokenManager;
 import uk.huy.pathwise.auth.token.opaque.refreshtoken.model.RefreshToken;
 import uk.huy.pathwise.auth.token.opaque.refreshtoken.model.RefreshTokenState;
@@ -25,10 +28,14 @@ import java.util.Optional;
 
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 public class RefreshTokenManagerTest {
+    private static final String RAW = "ABCD";
+    private static final ClientDetail CLIENT = new ClientDetail("UA", "IP");
+
     @Mock
     private RefreshTokenRepository refreshTokenRepository;
 
@@ -54,6 +61,7 @@ public class RefreshTokenManagerTest {
 
         assertThat(detail).isNotNull();
         assertThat(detail.token()).isNotBlank();
+        assertThat(detail.sessionId()).isNotBlank();
         assertThat(detail.expiresAt()).isNotNull();
 
         ArgumentCaptor<RefreshToken> captor = ArgumentCaptor.forClass(RefreshToken.class);
@@ -77,6 +85,7 @@ public class RefreshTokenManagerTest {
 
         assertThat(detail).isNotNull();
         assertThat(detail.token()).isNotBlank();
+        assertThat(detail.sessionId()).isNotBlank();
         assertThat(detail.expiresAt()).isNotNull();
 
         ArgumentCaptor<RefreshToken> captor = ArgumentCaptor.forClass(RefreshToken.class);
@@ -100,6 +109,7 @@ public class RefreshTokenManagerTest {
 
         assertThat(detail).isNotNull();
         assertThat(detail.token()).isNotBlank();
+        assertThat(detail.sessionId()).isNotBlank();
         assertThat(detail.expiresAt()).isNotNull();
 
         ArgumentCaptor<RefreshToken> captor = ArgumentCaptor.forClass(RefreshToken.class);
@@ -180,87 +190,152 @@ public class RefreshTokenManagerTest {
     }
 
     @Test
-    public void rotateToken_whenRawTokenIsNull_returnEmpty() {
-        Optional<RefreshTokenRotationDetail> result = refreshTokenManager.rotateToken(null, null);
-
-        assertThat(result).isEmpty();
+    public void rotateToken_whenRawTokenIsNull_rejectMissing() {
+        assertThat(refreshTokenManager.rotateToken(null, CLIENT)).isEqualTo(new Rejected(RejectReason.MISSING));
 
         verify(refreshTokenRepository, never()).findByTokenForUpdate(any());
     }
 
     @Test
-    public void rotateToken_whenRawTokenIsEmpty_returnEmpty() {
-        Optional<RefreshTokenRotationDetail> result = refreshTokenManager.rotateToken("", null);
-
-        assertThat(result).isEmpty();
+    public void rotateToken_whenRawTokenIsEmpty_rejectMissing() {
+        assertThat(refreshTokenManager.rotateToken("", CLIENT)).isEqualTo(new Rejected(RejectReason.MISSING));
 
         verify(refreshTokenRepository, never()).findByTokenForUpdate(any());
     }
 
     @Test
-    public void rotateToken_whenTokenNotFound_returnEmpty() {
-        String rawToken = "ABCD";
+    public void rotateToken_whenTokenNotFound_rejectNotFound() {
+        when(refreshTokenRepository.findByTokenForUpdate(sha256Hasher.hashString(RAW))).thenReturn(Optional.empty());
 
-        when(refreshTokenRepository.findByTokenForUpdate(any()))
-                .thenReturn(Optional.empty());
+        assertThat(refreshTokenManager.rotateToken(RAW, CLIENT)).isEqualTo(new Rejected(RejectReason.NOT_FOUND));
 
-        Optional<RefreshTokenRotationDetail> result =
-                refreshTokenManager.rotateToken(
-                        rawToken,
-                        new ClientDetail("UA", "IP")
-                );
-
-        assertThat(result).isEmpty();
-
-        verify(refreshTokenRepository)
-                .findByTokenForUpdate(sha256Hasher.hashString(rawToken));
-
-        verify(refreshTokenRepository, never())
-                .save(any());
+        verify(refreshTokenRepository, never()).save(any());
     }
 
     @Test
-    public void rotateToken_whenActiveTokenValid_markUsedAndIssueChild() {
-        String rawToken = "ABCD";
+    public void rotateToken_whenActiveTokenValid_markUsedAndIssueChildInSameSession() {
         RefreshToken active = token(RefreshTokenState.ACTIVE, Instant.now().plus(Duration.ofDays(1)));
-        when(refreshTokenRepository.findByTokenForUpdate(sha256Hasher.hashString(rawToken))).thenReturn(Optional.of(active));
+        found(active);
 
-        Optional<RefreshTokenRotationDetail> result = refreshTokenManager.rotateToken(rawToken, new ClientDetail("UA", "IP"));
+        RotationResult result = refreshTokenManager.rotateToken(RAW, CLIENT);
 
-        assertThat(result).isPresent();
+        assertThat(result).isInstanceOfSatisfying(Rotated.class, rotated -> {
+            assertThat(rotated.sessionId()).isEqualTo("FAMILY");
+            assertThat(rotated.userId()).isEqualTo(1L);
+            assertThat(rotated.token()).isNotBlank();
+        });
         assertThat(active.getState()).isEqualTo(RefreshTokenState.USED);
         assertThat(active.getRotatedAt()).isNotNull();
         verify(refreshTokenRepository, times(2)).save(any());
     }
 
     @Test
-    public void rotateToken_whenActiveTokenExpired_markExpiredAndReturnEmpty() {
-        String rawToken = "ABCD";
+    public void rotateToken_whenActiveTokenExpired_markExpiredAndRejectExpired() {
         RefreshToken expired = token(RefreshTokenState.ACTIVE, Instant.now().minusSeconds(1));
-        when(refreshTokenRepository.findByTokenForUpdate(sha256Hasher.hashString(rawToken))).thenReturn(Optional.of(expired));
+        found(expired);
 
-        Optional<RefreshTokenRotationDetail> result = refreshTokenManager.rotateToken(rawToken, new ClientDetail("UA", "IP"));
+        assertThat(refreshTokenManager.rotateToken(RAW, CLIENT)).isEqualTo(new Rejected(RejectReason.EXPIRED));
 
-        assertThat(result).isEmpty();
         assertThat(expired.getState()).isEqualTo(RefreshTokenState.EXPIRED);
-        verify(refreshTokenRepository).save(expired);
-        verify(refreshTokenRepository, times(1)).save(any());
+        verify(refreshTokenRepository, times(1)).save(expired);
     }
 
     @Test
-    public void rotateToken_whenUsedWithinGraceButActiveExpired_markActiveExpiredAndReturnEmpty() {
-        String rawToken = "ABCD";
+    public void rotateToken_whenTokenAlreadyExpiredState_rejectExpired() {
+        found(token(RefreshTokenState.EXPIRED, Instant.now().minusSeconds(1)));
+
+        assertThat(refreshTokenManager.rotateToken(RAW, CLIENT)).isEqualTo(new Rejected(RejectReason.EXPIRED));
+    }
+
+    @Test
+    public void rotateToken_whenTokenRevoked_rejectRevokedReused() {
+        found(token(RefreshTokenState.REVOKED, Instant.now().plus(Duration.ofDays(1))));
+
+        assertThat(refreshTokenManager.rotateToken(RAW, CLIENT)).isEqualTo(new Rejected(RejectReason.REVOKED_REUSED));
+
+        verify(refreshTokenRepository, never()).revokeFamily(any());
+    }
+
+    @Test
+    public void rotateToken_whenUsedTokenReusedAfterGrace_revokeFamilyAndRejectUsedReused() {
+        RefreshToken used = token(RefreshTokenState.USED, Instant.now().plus(Duration.ofDays(1)));
+        used.setRotatedAt(Instant.now().minusSeconds(60));
+        found(used);
+
+        assertThat(refreshTokenManager.rotateToken(RAW, CLIENT)).isEqualTo(new Rejected(RejectReason.USED_REUSED));
+
+        verify(refreshTokenRepository).revokeFamily("FAMILY");
+    }
+
+    @Test
+    public void rotateToken_whenUsedWithinGrace_rotateCurrentActiveKeepingItsExpiry() {
+        RefreshToken used = token(RefreshTokenState.USED, Instant.now().plus(Duration.ofDays(1)));
+        used.setRotatedAt(Instant.now());
+        Instant activeExpiry = Instant.now().plus(Duration.ofDays(2));
+        RefreshToken active = token(RefreshTokenState.ACTIVE, activeExpiry);
+        found(used);
+        when(refreshTokenRepository.findByFamilyIdAndState("FAMILY", RefreshTokenState.ACTIVE)).thenReturn(List.of(active));
+
+        RotationResult result = refreshTokenManager.rotateToken(RAW, CLIENT);
+
+        assertThat(result).isInstanceOfSatisfying(Rotated.class,
+                rotated -> assertThat(rotated.expiresAt()).isEqualTo(activeExpiry));
+        assertThat(active.getState()).isEqualTo(RefreshTokenState.USED);
+    }
+
+    @Test
+    public void rotateToken_whenUsedWithinGraceButActiveExpired_markActiveExpiredAndRejectExpired() {
         RefreshToken used = token(RefreshTokenState.USED, Instant.now().plus(Duration.ofDays(1)));
         used.setRotatedAt(Instant.now());
         RefreshToken active = token(RefreshTokenState.ACTIVE, Instant.now().minusSeconds(1));
-        when(refreshTokenRepository.findByTokenForUpdate(sha256Hasher.hashString(rawToken))).thenReturn(Optional.of(used));
+        found(used);
         when(refreshTokenRepository.findByFamilyIdAndState("FAMILY", RefreshTokenState.ACTIVE)).thenReturn(List.of(active));
 
-        Optional<RefreshTokenRotationDetail> result = refreshTokenManager.rotateToken(rawToken, new ClientDetail("UA", "IP"));
+        assertThat(refreshTokenManager.rotateToken(RAW, CLIENT)).isEqualTo(new Rejected(RejectReason.EXPIRED));
 
-        assertThat(result).isEmpty();
         assertThat(active.getState()).isEqualTo(RefreshTokenState.EXPIRED);
         verify(refreshTokenRepository, never()).revokeFamily(any());
+    }
+
+    @Test
+    public void rotateToken_whenUsedWithinGraceButNoActiveToken_rejectInconsistentFamily() {
+        RefreshToken used = token(RefreshTokenState.USED, Instant.now().plus(Duration.ofDays(1)));
+        used.setRotatedAt(Instant.now());
+        found(used);
+        when(refreshTokenRepository.findByFamilyIdAndState("FAMILY", RefreshTokenState.ACTIVE)).thenReturn(List.of());
+
+        assertThat(refreshTokenManager.rotateToken(RAW, CLIENT)).isEqualTo(new Rejected(RejectReason.INCONSISTENT_FAMILY));
+    }
+
+    @Test
+    public void rotateToken_whenUsedTokenHasNoRotatedAt_rejectInconsistentFamily() {
+        found(token(RefreshTokenState.USED, Instant.now().plus(Duration.ofDays(1))));
+
+        assertThat(refreshTokenManager.rotateToken(RAW, CLIENT)).isEqualTo(new Rejected(RejectReason.INCONSISTENT_FAMILY));
+    }
+
+    @Test
+    public void revokeSession_whenUserHasNoSuchActiveSession_returnFalseWithoutRevoking() {
+        when(refreshTokenRepository.existsByUserIdAndFamilyIdAndStateAndExpiresAtAfter(eq(1L), eq("FAMILY"),
+                eq(RefreshTokenState.ACTIVE), any())).thenReturn(false);
+
+        assertThat(refreshTokenManager.revokeSession(1L, "FAMILY")).isFalse();
+
+        verify(refreshTokenRepository, never()).revokeFamily(any());
+    }
+
+    @Test
+    public void revokeSession_whenUserOwnsActiveSession_revokeFamily() {
+        when(refreshTokenRepository.existsByUserIdAndFamilyIdAndStateAndExpiresAtAfter(eq(1L), eq("FAMILY"),
+                eq(RefreshTokenState.ACTIVE), any())).thenReturn(true);
+
+        assertThat(refreshTokenManager.revokeSession(1L, "FAMILY")).isTrue();
+
+        verify(refreshTokenRepository).revokeFamily("FAMILY");
+    }
+
+    private void found(RefreshToken token) {
+        when(refreshTokenRepository.findByTokenForUpdate(sha256Hasher.hashString(RAW))).thenReturn(Optional.of(token));
     }
 
     private static RefreshToken token(RefreshTokenState state, Instant expiresAt) {

@@ -12,7 +12,7 @@ import uk.huy.pathwise.auth.dto.request.UpdateUserPasswordRequest;
 import uk.huy.pathwise.auth.dto.request.VerifyOtpRequest;
 import uk.huy.pathwise.auth.dto.response.AuthTokenResponse;
 import uk.huy.pathwise.auth.dto.response.AuthUserResponse;
-import uk.huy.pathwise.auth.dto.response.GetListSessionResponse;
+import uk.huy.pathwise.auth.dto.response.SessionResponse;
 import uk.huy.pathwise.auth.dto.response.RefreshTokenResponse;
 import uk.huy.pathwise.auth.dto.response.VerifyOtpResponse;
 import uk.huy.pathwise.auth.infrastructure.annotation.CurrentClient;
@@ -22,13 +22,15 @@ import uk.huy.pathwise.auth.dto.response.LogInResponse;
 import uk.huy.pathwise.auth.infrastructure.builder.AuthCookieBuilder;
 import uk.huy.pathwise.auth.model.ClientDetail;
 import uk.huy.pathwise.auth.service.AuthService;
-import uk.huy.pathwise.auth.token.opaque.refreshtoken.dto.RefreshTokenRotationDetail;
+import uk.huy.pathwise.auth.token.opaque.refreshtoken.dto.RotationResult;
 import uk.huy.pathwise.core.apiresponse.ApiResponse;
 import uk.huy.pathwise.core.exception.AppException;
 import uk.huy.pathwise.core.exception.ErrorCode;
+import uk.huy.pathwise.shared.identity.AuthenticatedUser;
 import uk.huy.pathwise.shared.identity.UserIdentity;
 
 import java.time.Instant;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/auth")
@@ -77,7 +79,7 @@ public class AuthController {
         // Missing credential: same 401 as an unknown token, whatever the transport.
         if (rawToken == null || rawToken.isBlank()) throw new AppException(ErrorCode.INVALID_TOKEN);
         RefreshTokenResponse response = authService.refreshToken(rawToken, clientDetail);
-        RefreshTokenRotationDetail rotated = response.refreshTokenRotationDetail();
+        RotationResult.Rotated rotated = response.refreshToken();
         AuthTokenResponse body = new AuthTokenResponse(response.accessToken().token(),
                 response.accessToken().expiresAt(),
                 mobile ? rotated.token() : null,
@@ -96,32 +98,45 @@ public class AuthController {
                                        @RequestBody(required = false) RefreshTokenRequest request) {
         boolean mobile = isMobile(platform);
         authService.logOut(mobile ? (request != null ? request.refreshToken() : null) : cookieToken);
-        ResponseEntity.HeadersBuilder<?> builder = ResponseEntity.noContent()
-                .cacheControl(CacheControl.noStore())
-                .header(HttpHeaders.PRAGMA, "no-cache");
-        if (!mobile) {
-            builder.header(HttpHeaders.SET_COOKIE,
-                    authCookieBuilder.removeSecureCookie(REFRESH_TOKEN_COOKIE, "", REFRESH_TOKEN_COOKIE_PATH).toString());
-        }
-        return builder.build();
+        return loggedOutResponse(mobile);
     }
 
     @GetMapping("/sessions")
-    public ResponseEntity<ApiResponse<GetListSessionResponse>> getListSession(@AuthenticationPrincipal UserIdentity userIdentity) {
-        return ResponseEntity.ok()
-                .body(new ApiResponse<>(authService.getListSession(userIdentity)));
+    public ResponseEntity<ApiResponse<List<SessionResponse>>> listSessions(@AuthenticationPrincipal AuthenticatedUser actor) {
+        return ResponseEntity.ok(new ApiResponse<>(authService.listSessions(actor)));
+    }
+
+    /**
+     * {@code actor} is the caller (its own session is in {@code actor.sessionId()}); the path variable is the session
+     * to revoke. Revoking the caller's current session is a log-out and gets the same response as {@code /log-out}.
+     * See {@link AuthService#revokeSession}.
+     */
+    @DeleteMapping("/sessions/{sessionId}")
+    public ResponseEntity<Void> revokeSession(@AuthenticationPrincipal AuthenticatedUser actor,
+                                              @RequestHeader(value = CLIENT_PLATFORM_HEADER, required = false) String platform,
+                                              @PathVariable("sessionId") String targetSessionId) {
+        return switch (authService.revokeSession(actor, targetSessionId)) {
+            case CURRENT_SESSION_LOGGED_OUT -> loggedOutResponse(isMobile(platform));
+            case OTHER_SESSION_REVOKED -> ResponseEntity.noContent().build();
+        };
+    }
+
+    @PostMapping("/sessions/revoke-others")
+    public ResponseEntity<Void> revokeOtherSessions(@AuthenticationPrincipal AuthenticatedUser actor) {
+        authService.revokeOtherSessions(actor);
+        return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/update-password")
-    public ResponseEntity<Void> getUserPasswordToken(@AuthenticationPrincipal UserIdentity identity) {
-        authService.getUpdateUserPasswordToken(identity);
+    public ResponseEntity<Void> getUserPasswordToken(@AuthenticationPrincipal AuthenticatedUser actor) {
+        authService.getUpdateUserPasswordToken(actor.identity());
         return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/update-password/verify")
-    public ResponseEntity<Void> verifyUserPasswordToken(@AuthenticationPrincipal UserIdentity identity,
+    public ResponseEntity<Void> verifyUserPasswordToken(@AuthenticationPrincipal AuthenticatedUser actor,
                                                         @Valid @RequestBody VerifyOtpRequest verifyOtpRequest) {
-        VerifyOtpResponse verifyOtpResponse = authService.verifyUpdateUserPasswordOtp(identity, verifyOtpRequest);
+        VerifyOtpResponse verifyOtpResponse = authService.verifyUpdateUserPasswordOtp(actor.identity(), verifyOtpRequest);
         return ResponseEntity.noContent()
                 .cacheControl(CacheControl.noStore())
                 .header(HttpHeaders.PRAGMA, "no-cache")
@@ -142,8 +157,8 @@ public class AuthController {
     public ResponseEntity<Void> updateUserPassword(@CookieValue(UPDATE_USER_PASSWORD_COOKIE) String token,
                                                    @CookieValue(UPDATE_USER_PASSWORD_TICKET) String ticket,
                                                    @Valid @RequestBody UpdateUserPasswordRequest request,
-                                                   @AuthenticationPrincipal UserIdentity identity) {
-        authService.updateUserPassword(identity, ticket, token, request);
+                                                   @AuthenticationPrincipal AuthenticatedUser actor) {
+        authService.updateUserPassword(actor.identity(), ticket, token, request);
         return ResponseEntity.noContent()
                 .header(HttpHeaders.PRAGMA, "no-cache")
                 .header(HttpHeaders.SET_COOKIE,
@@ -155,6 +170,20 @@ public class AuthController {
                                 null,
                                 UPDATE_USER_PASSWORD_ROUTE).toString())
                 .build();
+    }
+
+    /**
+     * Response of a log-out of this device: 204, not cached, and for web the refresh cookie is cleared.
+     */
+    private ResponseEntity<Void> loggedOutResponse(boolean mobile) {
+        ResponseEntity.HeadersBuilder<?> builder = ResponseEntity.noContent()
+                .cacheControl(CacheControl.noStore())
+                .header(HttpHeaders.PRAGMA, "no-cache");
+        if (!mobile) {
+            builder.header(HttpHeaders.SET_COOKIE,
+                    authCookieBuilder.removeSecureCookie(REFRESH_TOKEN_COOKIE, "", REFRESH_TOKEN_COOKIE_PATH).toString());
+        }
+        return builder.build();
     }
 
     private static boolean isMobile(String platform) {

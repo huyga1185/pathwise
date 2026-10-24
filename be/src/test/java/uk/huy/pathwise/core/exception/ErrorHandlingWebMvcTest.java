@@ -14,7 +14,10 @@ import uk.huy.pathwise.auth.controller.AuthController;
 import uk.huy.pathwise.auth.infrastructure.builder.AuthCookieBuilder;
 import uk.huy.pathwise.auth.infrastructure.config.SecurityConfig;
 import uk.huy.pathwise.auth.service.AuthService;
+import uk.huy.pathwise.auth.token.jwt.dto.AccessTokenVerification;
+import uk.huy.pathwise.auth.token.jwt.infrastructure.dto.JwtRejectReason;
 import uk.huy.pathwise.auth.token.jwt.manager.AccessTokenManager;
+import uk.huy.pathwise.shared.identity.AuthenticatedUser;
 import uk.huy.pathwise.shared.identity.UserIdentity;
 import uk.huy.pathwise.shared.identity.UserRole;
 import uk.huy.pathwise.user.controller.AdminUserController;
@@ -22,7 +25,6 @@ import uk.huy.pathwise.user.controller.UserController;
 import uk.huy.pathwise.user.infrastructure.phonenumber.PhoneNumberProcessor;
 import uk.huy.pathwise.user.service.UserProfileService;
 
-import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
@@ -59,8 +61,9 @@ class ErrorHandlingWebMvcTest {
     @BeforeEach
     void setUp() {
         when(accessTokenManager.verifyAccessToken("user-token"))
-                .thenReturn(Optional.of(new UserIdentity(1L, "user@pathwise.test", UserRole.USER)));
-        when(accessTokenManager.verifyAccessToken("bad-token")).thenReturn(Optional.empty());
+                .thenReturn(new AccessTokenVerification.Authenticated(new AuthenticatedUser(new UserIdentity(1L, "user@pathwise.test", UserRole.USER), "session-1")));
+        when(accessTokenManager.verifyAccessToken("bad-token"))
+                .thenReturn(new AccessTokenVerification.Rejected(JwtRejectReason.BAD_SIGNATURE));
     }
 
     @Test
