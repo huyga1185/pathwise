@@ -35,6 +35,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Import(SecurityConfig.class)
 class OptimizationControllerTest {
     private static final String BEARER = "Bearer test-token";
+    private static final String DRIVER_BEARER = "Bearer driver-token";
 
     @Autowired
     private MockMvc mockMvc;
@@ -48,7 +49,20 @@ class OptimizationControllerTest {
     @BeforeEach
     void authenticateTestToken() {
         when(accessTokenManager.verifyAccessToken("test-token"))
-                .thenReturn(new AccessTokenVerification.Authenticated(new AuthenticatedUser(new UserIdentity(1L, "user@pathwise.test", UserRole.OWNER, 1L), "session-1")));
+                .thenReturn(new AccessTokenVerification.Authenticated(new AuthenticatedUser(new UserIdentity(1L, "user@pathwise.test", UserRole.OWNER, 1L, false), "session-1")));
+        when(accessTokenManager.verifyAccessToken("driver-token"))
+                .thenReturn(new AccessTokenVerification.Authenticated(new AuthenticatedUser(new UserIdentity(2L, "driver@pathwise.test", UserRole.DRIVER, 1L, false), "session-2")));
+    }
+
+    @Test
+    void postOptimize_whenDriver_return403Forbidden() throws Exception {
+        mockMvc.perform(post("/api/v1/route/optimize")
+                        .header(HttpHeaders.AUTHORIZATION, DRIVER_BEARER)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"addresses":["a","b"],"depot":0}"""))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("FORBIDDEN"));
     }
 
     @Test

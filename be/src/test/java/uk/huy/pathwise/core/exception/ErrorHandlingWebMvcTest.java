@@ -64,7 +64,7 @@ class ErrorHandlingWebMvcTest {
     @BeforeEach
     void setUp() {
         when(accessTokenManager.verifyAccessToken("user-token"))
-                .thenReturn(new AccessTokenVerification.Authenticated(new AuthenticatedUser(new UserIdentity(1L, "user@pathwise.test", UserRole.OWNER, 1L), "session-1")));
+                .thenReturn(new AccessTokenVerification.Authenticated(new AuthenticatedUser(new UserIdentity(1L, "user@pathwise.test", UserRole.OWNER, 1L, false), "session-1")));
         when(accessTokenManager.verifyAccessToken("bad-token"))
                 .thenReturn(new AccessTokenVerification.Rejected(JwtRejectReason.BAD_SIGNATURE));
     }

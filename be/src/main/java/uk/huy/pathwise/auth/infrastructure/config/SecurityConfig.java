@@ -13,6 +13,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import uk.huy.pathwise.auth.infrastructure.filter.ClientDetailFilter;
 import tools.jackson.databind.ObjectMapper;
 import uk.huy.pathwise.auth.infrastructure.filter.JwtAuthFilter;
+import uk.huy.pathwise.auth.infrastructure.security.AuthorizationRules;
 import uk.huy.pathwise.auth.infrastructure.security.JsonAccessDeniedHandler;
 import uk.huy.pathwise.auth.infrastructure.security.JsonAuthenticationEntryPoint;
 import uk.huy.pathwise.auth.token.jwt.manager.AccessTokenManager;
@@ -25,6 +26,14 @@ public class SecurityConfig {
     private final AccessTokenManager accessTokenManager;
     private final Environment environment;
     private final ObjectMapper objectMapper;
+
+    /**
+     * Rules used in {@code @PreAuthorize} expressions as {@code @authz...}.
+     */
+    @Bean("authz")
+    public AuthorizationRules authorizationRules() {
+        return new AuthorizationRules();
+    }
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) {

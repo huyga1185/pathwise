@@ -90,7 +90,7 @@ public class AuthController {
                         logInResponse.user().fullName(),
                         user.role().name(),
                         user.storeId(),
-                        logInResponse.user().canDrive()));
+                        user.assignableToRoutes()));
         return tokenResponse(body, mobile, logInResponse.refreshToken().token(), logInResponse.refreshToken().expiresAt());
     }
 

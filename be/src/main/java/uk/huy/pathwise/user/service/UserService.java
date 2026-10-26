@@ -116,9 +116,7 @@ public class UserService implements UserAccountService, UserProfileService, Stor
 
     private AuthenticationResult toAuthenticationResult(User user) {
         return switch (user.getStatus()) {
-            case ACTIVE -> new AuthenticationResult.Authenticated(userMapper.toUserIdentity(user),
-                    user.getFullName(),
-                    user.getRole() == UserRole.DRIVER || user.isCanDrive());
+            case ACTIVE -> new AuthenticationResult.Authenticated(userMapper.toUserIdentity(user), user.getFullName());
             case PENDING_VERIFICATION -> new AuthenticationResult.EmailNotVerified();
             case DISABLED -> new AuthenticationResult.Disabled();
         };

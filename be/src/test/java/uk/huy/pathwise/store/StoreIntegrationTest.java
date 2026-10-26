@@ -112,7 +112,7 @@ class StoreIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void getStore_whenAdminWithoutStore_return404() throws Exception {
+    void getStore_whenAdminWithoutStore_return403() throws Exception {
         String email = "t13-admin-" + UUID.randomUUID() + "@pathwise.test";
         jdbcTemplate.update("INSERT INTO users (email, password, role, status, email_verified_at, created_at, updated_at) "
                         + "VALUES (?, ?, 'ADMIN', 'ACTIVE', UTC_TIMESTAMP(6), UTC_TIMESTAMP(6), UTC_TIMESTAMP(6))",
@@ -120,8 +120,8 @@ class StoreIntegrationTest extends AbstractIntegrationTest {
 
         String token = accessToken(email);
         getStore(token)
-                .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.code").value("NOT_FOUND"));
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("FORBIDDEN"));
     }
 
     @Test

@@ -24,6 +24,7 @@ public class AccessTokenManager {
     private static final String EMAIL_CLAIM = "email";
     private static final String SESSION_CLAIM = "sid";
     private static final String STORE_CLAIM = "storeId";
+    private static final String CAN_DRIVE_CLAIM = "canDrive";
 
     private final JwtTokenGenerator jwtTokenGenerator;
 
@@ -41,7 +42,8 @@ public class AccessTokenManager {
         Instant expiresAt = Instant.now().plus(jwtTokenGenerator.getExpirationTime()).truncatedTo(ChronoUnit.SECONDS);
         Map<String, Object> claims = new HashMap<>(Map.of(ROLE_CLAIM, identity.role(),
                 EMAIL_CLAIM, identity.email(),
-                SESSION_CLAIM, sessionId));
+                SESSION_CLAIM, sessionId,
+                CAN_DRIVE_CLAIM, identity.canDrive()));
         // ADMIN has no store: the claim is left out rather than set to null.
         if (identity.storeId() != null) claims.put(STORE_CLAIM, identity.storeId());
         String token = jwtTokenGenerator.generateJwt(String.valueOf(identity.id()),
@@ -66,13 +68,25 @@ public class AccessTokenManager {
             UserIdentity identity = new UserIdentity(Long.parseLong(claims.sub()),
                     claims.getClaimAsString(EMAIL_CLAIM),
                     UserRole.valueOf(claims.getClaimAsString(ROLE_CLAIM)),
-                    storeId(claims));
+                    storeId(claims),
+                    canDrive(claims));
             return new AccessTokenVerification.Authenticated(
                     new AuthenticatedUser(identity, claims.getClaimAsString(SESSION_CLAIM)));
         } catch (IllegalArgumentException | NullPointerException | JwtException e) {
             // Correctly signed but not shaped like our access tokens (e.g. unknown role, non-string claim).
             return new AccessTokenVerification.Rejected(JwtRejectReason.INVALID_CLAIMS);
         }
+    }
+
+    /**
+     * Tokens issued before T17 have no {@code canDrive} claim; they count as not allowed to drive and expire
+     * within 14 minutes.
+     */
+    private static boolean canDrive(JwtClaimsSet claims) {
+        Object value = claims.getClaim(CAN_DRIVE_CLAIM);
+        if (value == null) return false;
+        if (!(value instanceof Boolean flag)) throw new JwtException("Claim is not a boolean: " + CAN_DRIVE_CLAIM);
+        return flag;
     }
 
     private static Long storeId(JwtClaimsSet claims) {
