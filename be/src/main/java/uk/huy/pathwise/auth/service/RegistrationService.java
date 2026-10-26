@@ -17,7 +17,7 @@ import uk.huy.pathwise.notification.service.EmailDeliveryException;
 import uk.huy.pathwise.shared.identity.UserIdentity;
 import uk.huy.pathwise.shared.identity.UserStatus;
 import uk.huy.pathwise.store.service.StoreProvisioningService;
-import uk.huy.pathwise.user.dto.EmailVerificationState;
+import uk.huy.pathwise.user.dto.AccountState;
 import uk.huy.pathwise.user.service.UserAccountService;
 
 /**
@@ -67,7 +67,7 @@ public class RegistrationService {
      */
     public void verifyEmail(VerifyEmailRequest request) {
         if (request == null) throw new NullPointerException("Verify email request could not be null");
-        EmailVerificationState account = userService.findEmailVerificationState(request.email())
+        AccountState account = userService.findAccountState(request.email())
                 .orElseThrow(() -> new AppException(ErrorCode.INVALID_OTP));
         if (account.emailVerified()) throw new AppException(ErrorCode.EMAIL_ALREADY_VERIFIED);
         if (!otpManager.verifyOtp(OtpPurpose.VERIFY_EMAIL, account.userId(), request.otp()))
@@ -81,7 +81,7 @@ public class RegistrationService {
      */
     public void resendVerification(ResendVerificationRequest request) {
         if (request == null) throw new NullPointerException("Resend verification request could not be null");
-        userService.findEmailVerificationState(request.email())
+        userService.findAccountState(request.email())
                 .filter(account -> !account.emailVerified() && account.status() == UserStatus.PENDING_VERIFICATION)
                 .ifPresent(account -> sendVerificationOtp(account.userId(), account.email()));
     }

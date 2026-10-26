@@ -27,13 +27,13 @@ Mỗi user thuộc tối đa 1 store và có đúng 1 role (D-02). OWNER hoặc 
 
 | ID | Yêu cầu | Tầng | Hiện trạng |
 |---|---|---|---|
-| FR-A01 | OWNER đăng ký bằng email, mật khẩu (8–72 ký tự), tên cửa hàng; tạo user + store trong 1 giao dịch; tài khoản ở trạng thái chờ xác thực. | Must | 🟡 có register nhưng không có store, không có xác thực email |
-| FR-A02 | Xác thực email bằng OTP 6 số gửi qua email; gửi lại OTP có cooldown. Chưa xác thực thì không đăng nhập được. | Must | ❌ |
+| FR-A01 | OWNER đăng ký bằng email, mật khẩu (8–72 ký tự), tên cửa hàng; tạo user + store trong 1 giao dịch; tài khoản ở trạng thái chờ xác thực. | Must | ✅ (T13) |
+| FR-A02 | Xác thực email bằng OTP 6 số gửi qua email; gửi lại OTP có cooldown. Chưa xác thực thì không đăng nhập được. | Must | ✅ (T13) |
 | FR-A03 | Đăng nhập bằng email + mật khẩu → access token (JWT, 14 phút) + refresh token (14 ngày). Web: refresh token trong HttpOnly cookie; mobile: trong body. | Must | ✅ (T10): web cookie `Path=/api/v1/auth`, mobile body |
-| FR-A04 | Refresh: xoay vòng refresh token, phát hiện tái sử dụng (revoke cả family), từ chối token hết hạn, từ chối user bị vô hiệu hoá. | Must | 🟡 (T10) xoay vòng, reuse, hết hạn ✓; từ chối user bị vô hiệu hoá chờ trạng thái user (T13) |
+| FR-A04 | Refresh: xoay vòng refresh token, phát hiện tái sử dụng (revoke cả family), từ chối token hết hạn, từ chối user bị vô hiệu hoá. | Must | ✅ (T10, T13) |
 | FR-A05 | Đăng xuất thiết bị hiện tại. | Must | ✅ (T10): `/log-out` public, cookie hoặc body |
 | FR-A06 | Xem danh sách session (thiết bị) đang hoạt động; đăng xuất từng session; đăng xuất mọi session khác. | Must | ✅ (T11) |
-| FR-A07 | Quên mật khẩu: OTP qua email → đặt mật khẩu mới → thu hồi mọi session. Không tiết lộ email có tồn tại hay không. | Must | ❌ |
+| FR-A07 | Quên mật khẩu: OTP qua email → đặt mật khẩu mới → thu hồi mọi session. Không tiết lộ email có tồn tại hay không. | Must | ✅ (T14) |
 | FR-A08 | Đổi mật khẩu khi đã đăng nhập: mật khẩu cũ + OTP qua email; thu hồi mọi session khác. | Must | 🟡 luồng OTP 3 bước đang có lỗ hổng (F-01) |
 | FR-A09 | Xem/cập nhật hồ sơ của chính mình (số điện thoại VN). | Must | ✅ (`GET/PUT /users/me`) — cần bổ sung `fullName` |
 | FR-A10 | ADMIN xem danh sách user (phân trang, sort whitelist). | Should | ✅ |
@@ -42,7 +42,7 @@ Mỗi user thuộc tối đa 1 store và có đúng 1 role (D-02). OWNER hoặc 
 
 | ID | Yêu cầu | Tầng | Hiện trạng |
 |---|---|---|---|
-| FR-S01 | OWNER xem/cập nhật thông tin store: tên, depot (địa chỉ + toạ độ), timezone. | Must | ❌ |
+| FR-S01 | OWNER xem/cập nhật thông tin store: tên, depot (địa chỉ + toạ độ), timezone. | Must | ✅ (T13, quyền theo role ở T17) |
 | FR-S02 | OWNER mời thành viên (email + role DISPATCHER/DRIVER); email chứa mã mời; xem/huỷ lời mời đang chờ. | Must | ❌ |
 | FR-S03 | Người được mời chấp nhận bằng mã mời + đặt mật khẩu + tên → tài khoản ACTIVE (email coi như đã xác thực). | Must | ❌ |
 | FR-S04 | OWNER xem danh sách thành viên; vô hiệu hoá / kích hoạt lại thành viên (vô hiệu hoá → thu hồi mọi session). | Must | ❌ |

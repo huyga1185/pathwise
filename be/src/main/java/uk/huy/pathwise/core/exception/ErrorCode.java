@@ -35,6 +35,7 @@ public enum ErrorCode {
     EMAIL_NOT_VERIFIED(403),
     ACCOUNT_DISABLED(403),
     EMAIL_ALREADY_VERIFIED(409),
-    INVALID_TIMEZONE(400);
+    INVALID_TIMEZONE(400),
+    INVALID_RESET_TOKEN(400);
     private final int httpCode;
 }

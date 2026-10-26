@@ -14,6 +14,7 @@ import uk.huy.pathwise.auth.otp.manager.OtpManager;
 import uk.huy.pathwise.auth.otp.model.OtpPurpose;
 import uk.huy.pathwise.auth.token.jwt.manager.AccessTokenManager;
 import uk.huy.pathwise.auth.token.opaque.otptoken.dto.OtpToken;
+import uk.huy.pathwise.auth.token.opaque.otptoken.dto.OtpTokenVerification;
 import uk.huy.pathwise.auth.token.opaque.otptoken.manager.OtpTokenManager;
 import uk.huy.pathwise.auth.token.opaque.refreshtoken.dto.RefreshTokenGenerationDetail;
 import uk.huy.pathwise.auth.token.opaque.refreshtoken.dto.RotationResult.Rejected;
@@ -32,8 +33,8 @@ import uk.huy.pathwise.user.dto.AuthenticationResult.EmailNotVerified;
 import uk.huy.pathwise.user.dto.AuthenticationResult.InvalidCredentials;
 import uk.huy.pathwise.user.service.UserAccountService;
 
+import java.time.Duration;
 import java.util.List;
-import java.util.Optional;
 
 @Service
 @Slf4j
@@ -44,8 +45,9 @@ public class AuthService {
     private final OtpManager otpManager;
     private final OtpTokenManager otpTokenManager;
 
-    // Purpose of the OTP token issued after the OTP is verified (old change-password flow, replaced in T15).
+    // Purpose and lifetime of the OTP token issued after the OTP is verified (old change-password flow, replaced in T15).
     private static final String UPDATE_USER_PASSWORD_PURPOSE = "updateUserPassword";
+    private static final Duration UPDATE_USER_PASSWORD_TOKEN_TTL = Duration.ofMinutes(5);
 
     public AuthService(UserAccountService userService,
                        AccessTokenManager accessTokenManager,
@@ -160,16 +162,18 @@ public class AuthService {
     public VerifyOtpResponse verifyUpdateUserPasswordOtp(UserIdentity identity, VerifyOtpRequest request) {
         if (!otpManager.verifyOtp(OtpPurpose.CHANGE_PASSWORD, identity.id(), request.otp()))
             throw new AppException(ErrorCode.INVALID_OTP);
-        OtpToken token = otpTokenManager.generateToken(UPDATE_USER_PASSWORD_PURPOSE, identity.id());
+        OtpToken token = otpTokenManager.generateToken(UPDATE_USER_PASSWORD_PURPOSE, identity.id(), UPDATE_USER_PASSWORD_TOKEN_TTL);
         return new VerifyOtpResponse(token.token(), token.ticket(), token.expiresAfter());
     }
 
     public void updateUserPassword(UserIdentity identity, String ticket, String token, UpdateUserPasswordRequest request) {
         if (ticket == null || ticket.isEmpty()) throw new AppException(ErrorCode.COULD_NOT_UPDATE_USER_PASSWORD);
         if (token == null || token.isEmpty()) throw new AppException(ErrorCode.INVALID_TOKEN);
-        Optional<Long> tokenUserId = otpTokenManager.verifyOtpToken(ticket, token, UPDATE_USER_PASSWORD_PURPOSE);
-        if (tokenUserId.filter(userId -> userId == identity.id()).isEmpty())
-            throw new AppException(ErrorCode.INVALID_TOKEN);
+        boolean issuedForCaller = switch (otpTokenManager.verifyOtpToken(ticket, token, UPDATE_USER_PASSWORD_PURPOSE)) {
+            case OtpTokenVerification.Verified verified -> verified.userId() == identity.id();
+            case OtpTokenVerification.Rejected ignored -> false;
+        };
+        if (!issuedForCaller) throw new AppException(ErrorCode.INVALID_TOKEN);
         userService.updateUserPassword(identity.id(), request.password());
     }
 }

@@ -185,7 +185,7 @@ Index `(status, created_at)`, `(store_id, target_id)`. Khi ứng dụng khởi �
 |---|---|---|---|
 | `otp:{purpose}:{userId}` | `{sha256}{số lần sai}`; `purpose` là tên `OtpPurpose` (`VERIFY_EMAIL`, `RESET_PASSWORD`, `CHANGE_PASSWORD`) | `otp.ttl` (mặc định 5 phút) | auth |
 | `otp:cooldown:{purpose}:{userId}` | `1`; bị xoá cùng OTP khi email gửi lỗi | `otp.cooldown` (mặc định 60 s) | auth |
-| `otpToken:{purpose}:{ticket}` | `{userId}:{sha256(secret)}` | 10 phút | auth |
+| `otpToken:{purpose}:{ticket}` | `{userId}:{sha256(secret)}`; `purpose` là `RESET_PASSWORD` (T14) hoặc `updateUserPassword` (luồng đổi mật khẩu cũ, bỏ ở T15) | 10 phút với `RESET_PASSWORD`; 5 phút với `updateUserPassword` | auth |
 | `ratelimit:{scope}:{key}:{window}` | counter | = window | core |
 | `geocode:nominatim:{sha256(normalizedQuery)}` | JSON kết quả | 24 h | routing |
 | `geocode:nominatim:lock` | token rate limit 1 req/s | 1 s | routing |
