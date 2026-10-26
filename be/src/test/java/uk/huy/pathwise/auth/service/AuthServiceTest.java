@@ -41,7 +41,7 @@ class AuthServiceTest {
     @InjectMocks
     private AuthService authService;
 
-    private final UserIdentity userB = new UserIdentity(2L, "b@pathwise.test", UserRole.USER);
+    private final UserIdentity userB = new UserIdentity(2L, "b@pathwise.test", UserRole.OWNER, 1L);
     private final UpdateUserPasswordRequest request = new UpdateUserPasswordRequest("newPassword123");
 
     @Test

@@ -1,6 +1,6 @@
 # DATA_MODEL — Mô hình dữ liệu mục tiêu
 
-> Hiện trạng: chỉ có `users`, `refresh_tokens` (`db/migration/V1__baseline.sql`). Mọi bảng khác là **mục tiêu**, chưa tồn tại.
+> Hiện trạng: có `users`, `refresh_tokens` (`V1__baseline.sql`) và `stores` cùng các cột tenancy của `users` (`V2__stores_and_user_tenancy.sql`, T13). Các bảng từ §2.4 trở đi là **mục tiêu**, chưa tồn tại.
 > Dựa trên D-01..D-05, D-15, D-16, D-18..D-21, P-01, P-07, P-14 (đã Approved). Dữ liệu cũ không được giữ (D-29).
 > Quy ước: `BIGINT AUTO_INCREMENT` id; timestamp sự kiện `DATETIME(6)` lưu UTC (`hibernate.jdbc.time_zone: UTC`, Java `Instant`); toạ độ `DOUBLE`; khoảng cách mét `INT`, thời lượng giây `INT`; enum lưu `VARCHAR` (`@Enumerated(STRING)`); bảng thuộc store luôn có `store_id NOT NULL` + FK + index.
 
@@ -18,7 +18,7 @@ users  1───* refresh_tokens
 
 ## 2. Bảng
 
-### 2.1 `users` — Modify (V2)
+### 2.1 `users` — Modify (V2, đã tạo ở T13)
 
 | Cột | Kiểu | Ràng buộc | Ghi chú |
 |---|---|---|---|
@@ -34,24 +34,24 @@ users  1───* refresh_tokens
 | can_drive | BOOLEAN | NOT NULL DEFAULT FALSE | **mới** (D-21). Với role DRIVER luôn được coi là TRUE; OWNER/DISPATCHER có cờ này thì được gán route. |
 | created_at, updated_at | DATETIME(6) | NOT NULL | có sẵn (đổi sang DATETIME(6)) |
 
-Index: `idx_users_store_role (store_id, role)`.
+Index: `idx_users_store_role (store_id, role)`. Tên ràng buộc trong V2: FK `fk_users_store_id`, CHECK `chk_users_store_by_role`.
 
-### 2.2 `stores` — New (V2)
+### 2.2 `stores` — New (V2, đã tạo ở T13)
 
 | Cột | Kiểu | Ràng buộc |
 |---|---|---|
 | id | BIGINT | PK |
 | name | VARCHAR(150) | NOT NULL |
 | depot_address | VARCHAR(500) | NULL |
-| depot_lat, depot_lon | DOUBLE | NULL (cả hai cùng NULL hoặc cùng có) |
+| depot_lat, depot_lon | DOUBLE | NULL (cả hai cùng NULL hoặc cùng có: CHECK `chk_stores_depot_coordinates`) |
 | timezone | VARCHAR(50) | NOT NULL DEFAULT `'Asia/Ho_Chi_Minh'` |
 | created_at, updated_at | DATETIME(6) | NOT NULL |
 
 OWNER của store = user có `role='OWNER' AND store_id=?` (đúng 1, BR-03, kiểm tra ở service).
 
-### 2.3 `refresh_tokens` — Keep + index (V2)
+### 2.3 `refresh_tokens` — Keep + index (V2, đã tạo ở T13)
 
-Giữ nguyên cột. Thêm `idx_refresh_tokens_user_state (user_id, state)`. `family_id` = session id công khai (P-07). Trạng thái `EXPIRED` được gán khi phát hiện token hết hạn lúc rotate (T10). Không có job dọn dẹp trong MVP (Could).
+Giữ nguyên cột (timestamp đổi sang `DATETIME(6)`). Thêm `idx_refresh_tokens_user_state (user_id, state)`. `family_id` = session id công khai (P-07). Trạng thái `EXPIRED` được gán khi phát hiện token hết hạn lúc rotate (T10). Không có job dọn dẹp trong MVP (Could).
 
 ### 2.4 `store_invitations` — New (V3)
 
@@ -201,7 +201,7 @@ Version được cấp trước — agent **không** tự chọn số khác:
 | Version | File | Task | Nội dung |
 |---|---|---|---|
 | V1 | `V1__baseline.sql` | T02 ✓ | Nội dung `be/db/db.sql` (bỏ `CREATE DATABASE`/`USE`). `baseline-on-migrate` cho DB tạo trước từ `db.sql`. **Đã tạo.** |
-| V2 | `V2__stores_and_user_tenancy.sql` | T13 | Bảng `stores`; cột mới của `users`; chuyển dữ liệu (§5); index refresh_tokens; đổi timestamp sang `DATETIME(6)`. |
+| V2 | `V2__stores_and_user_tenancy.sql` | T13 ✓ | Bảng `stores`; cột mới của `users`; không chuyển dữ liệu (§5, D-29); index refresh_tokens; đổi timestamp sang `DATETIME(6)`. **Đã tạo.** |
 | V3 | `V3__store_invitations.sql` | T16 | Bảng `store_invitations`. |
 | V4 | `V4__vehicles.sql` | T20 | Bảng `vehicles`. |
 | V5 | `V5__route_plans.sql` | T24 | `background_jobs`, `route_plans`, `route_plan_routes`, `route_plan_stops`. |

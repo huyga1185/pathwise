@@ -10,6 +10,11 @@ import uk.huy.pathwise.core.exception.AppException;
 import uk.huy.pathwise.core.exception.ErrorCode;
 import uk.huy.pathwise.core.pagination.PageResponse;
 import uk.huy.pathwise.core.pagination.PaginationValidator;
+import uk.huy.pathwise.shared.identity.UserRole;
+import uk.huy.pathwise.shared.identity.UserStatus;
+import uk.huy.pathwise.user.dto.AuthenticationResult;
+import uk.huy.pathwise.user.dto.EmailVerificationState;
+import uk.huy.pathwise.user.dto.StoreUser;
 import uk.huy.pathwise.user.dto.request.UserModificationRequest;
 import uk.huy.pathwise.user.dto.response.AdminGetUserResponse;
 import uk.huy.pathwise.user.dto.response.GetUserResponse;
@@ -18,12 +23,14 @@ import uk.huy.pathwise.user.model.User;
 import uk.huy.pathwise.shared.identity.UserIdentity;
 import uk.huy.pathwise.user.repository.UserRepository;
 
+import java.time.Instant;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
 
 @Service
 @AllArgsConstructor
-public class UserService implements UserAccountService, UserProfileService {
+public class UserService implements UserAccountService, UserProfileService, StoreUserQuery {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final UserMapper userMapper;
@@ -39,15 +46,29 @@ public class UserService implements UserAccountService, UserProfileService {
             throw new AppException(ErrorCode.EMAIL_EXISTED);
     }
 
+    /**
+     * Emails are unique whatever their case (BR-02, P-19).
+     */
+    private static String normalizeEmail(String email) {
+        if (email == null) throw new NullPointerException("Email is null");
+        return email.trim().toLowerCase(Locale.ROOT);
+    }
+
     @Override
     @Transactional
-    public void createUser(String email, String rawPassword) {
-        checkUserEmailExisted(email);
-        String hashedPassword = passwordEncoder.encode(rawPassword);
+    public UserIdentity createOwner(String email, String rawPassword, String fullName, long storeId) {
+        String normalizedEmail = normalizeEmail(email);
+        // Two concurrent registrations can both pass this check; the unique key then answers 409 CONFLICT (F-15).
+        checkUserEmailExisted(normalizedEmail);
         User user = User.builder()
-                .email(email)
-                .password(hashedPassword).build();
-        userRepository.save(user);
+                .email(normalizedEmail)
+                .password(passwordEncoder.encode(rawPassword))
+                .fullName(fullName)
+                .role(UserRole.OWNER)
+                .status(UserStatus.PENDING_VERIFICATION)
+                .storeId(storeId)
+                .build();
+        return userMapper.toUserIdentity(userRepository.save(user));
     }
 
     @Override
@@ -70,9 +91,10 @@ public class UserService implements UserAccountService, UserProfileService {
     @Override
     @Transactional
     public void updateUserEmail(long id, String newEmail) {
-        checkUserEmailExisted(newEmail);
+        String normalizedEmail = normalizeEmail(newEmail);
+        checkUserEmailExisted(normalizedEmail);
         User user = getUserById(id);
-        user.setEmail(newEmail);
+        user.setEmail(normalizedEmail);
         userRepository.save(user);
     }
 
@@ -84,19 +106,58 @@ public class UserService implements UserAccountService, UserProfileService {
     }
 
     @Override
-    public Optional<UserIdentity> findUserByCredentials(String email, String password) {
-        if (email == null) throw new NullPointerException("Email is null");
+    public AuthenticationResult authenticate(String email, String password) {
         if (password == null) throw new NullPointerException("Password is null");
-        Optional<User> user = userRepository.findByEmail(email);
-        if (user.isEmpty()) return Optional.empty();
-        if (!passwordEncoder.matches(password, user.get().getPassword())) return Optional.empty();
-        return Optional.of(userMapper.toUserIdentity(user.get()));
+        return userRepository.findByEmail(normalizeEmail(email))
+                .filter(user -> passwordEncoder.matches(password, user.getPassword()))
+                .map(this::toAuthenticationResult)
+                .orElseGet(AuthenticationResult.InvalidCredentials::new);
+    }
+
+    private AuthenticationResult toAuthenticationResult(User user) {
+        return switch (user.getStatus()) {
+            case ACTIVE -> new AuthenticationResult.Authenticated(userMapper.toUserIdentity(user),
+                    user.getFullName(),
+                    user.getRole() == UserRole.DRIVER || user.isCanDrive());
+            case PENDING_VERIFICATION -> new AuthenticationResult.EmailNotVerified();
+            case DISABLED -> new AuthenticationResult.Disabled();
+        };
     }
 
     @Override
     public Optional<UserIdentity> findUserById(long id) {
-        Optional<User> user = userRepository.findById(id);
-        return user.map(value -> new UserIdentity(value.getId(), value.getEmail(), value.getRole()));
+        return userRepository.findById(id).map(userMapper::toUserIdentity);
+    }
+
+    @Override
+    public Optional<UserIdentity> findActiveUserById(long id) {
+        return userRepository.findById(id)
+                .filter(user -> user.getStatus() == UserStatus.ACTIVE)
+                .map(userMapper::toUserIdentity);
+    }
+
+    @Override
+    public Optional<EmailVerificationState> findEmailVerificationState(String email) {
+        return userRepository.findByEmail(normalizeEmail(email))
+                .map(user -> new EmailVerificationState(user.getId(),
+                        user.getEmail(),
+                        user.getStatus(),
+                        user.getEmailVerifiedAt() != null));
+    }
+
+    @Override
+    @Transactional
+    public void markEmailVerified(long id) {
+        User user = getUserById(id);
+        user.setEmailVerifiedAt(Instant.now());
+        // A disabled account stays disabled; verifying the email does not re-enable it.
+        if (user.getStatus() == UserStatus.PENDING_VERIFICATION) user.setStatus(UserStatus.ACTIVE);
+        userRepository.save(user);
+    }
+
+    @Override
+    public Optional<StoreUser> findInStore(long storeId, long userId) {
+        return userRepository.findByIdAndStoreId(userId, storeId).map(userMapper::toStoreUser);
     }
 
     @Override

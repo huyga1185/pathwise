@@ -222,16 +222,17 @@ Bảng dependency (→ nghĩa là "phải xong trước"):
   - Thêm `POST /email/verify` và `/email/verify/resend`.
   - Log-in từ chối `PENDING_VERIFICATION`/`DISABLED`; refresh từ chối user không ACTIVE. `findUserByCredentials` thay bằng `authenticate` trả `AuthenticationResult` (`Authenticated`/`InvalidCredentials`/`EmailNotVerified`/`Disabled`) theo P-24 (F-37).
   - `/users/me` thêm `fullName`, `role`, `storeId`, `status`.
+  - `UserIdentity` thêm `storeId`, JWT có thêm claim `storeId` (P-09). Phần này chuyển từ T17 sang (chủ dự án chọn 2026-10-26), vì `GET/PUT /store` phải lấy `storeId` từ token. T17 vẫn lo `canDrive` và phân quyền theo role.
   - Interface công khai `StoreMemberQuery` (ví dụ `findActiveMember(storeId, userId, role)`) để `planning` kiểm tra tài xế mà không đụng repository của `user`.
 - **Acceptance criteria:** register → user PENDING kèm store, FakeEmailSender nhận OTP; log-in trước khi verify → 403 `EMAIL_NOT_VERIFIED`; verify xong log-in được; register trùng email (khác hoa thường) → 409; Flyway chạy V1→V2 trên DB trống thành công; Hibernate validate pass.
 
 ### T17. Authorization và tenant isolation
 - **Tầng:** Must · **Ước lượng:** 1 ngày · **Quyết định:** D-03, P-08, P-09
 - **Phạm vi:**
-  - `UserIdentity` thêm `storeId`, `sessionId`, `canDrive`; JWT có thêm `storeId`, `canDrive` (P-09).
+  - `UserIdentity` thêm `canDrive`; JWT có thêm claim `canDrive` (P-09). (`storeId` đã chuyển sang T13; `sessionId` nằm trong principal `AuthenticatedUser` từ T11, P-25.)
   - Quy tắc "người được gán route" (`role=DRIVER` hoặc `canDrive`) dùng chung, có sẵn để T24 và T30 sử dụng (ví dụ bean `@authz.canDrive(principal)`).
   - `@PreAuthorize` theo ma trận `ARCHITECTURE.md` §6.3 cho các endpoint hiện có (`/store`, `/admin/users`, ...).
-  - Thêm helper test `TestUsers` (tạo store, OWNER, DISPATCHER, DRIVER và access token) cùng mẫu test tenant isolation để các task sau dùng lại.
+  - Thêm helper test `TestUsers` (tạo store, OWNER, DISPATCHER, DRIVER và access token) cùng mẫu test tenant isolation để các task sau dùng lại. T13 đã có `support/TestAccounts` (đăng ký và verify OWNER qua API), có thể mở rộng từ đó.
   - ADMIN không truy cập được `/store`.
 - **Acceptance criteria:** ma trận quyền của endpoint hiện có được test (một test cho mỗi ô ✓/— quan trọng); OWNER store A gọi `/store` chỉ thấy store A.
 
