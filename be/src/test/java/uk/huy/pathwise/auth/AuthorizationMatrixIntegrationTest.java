@@ -34,6 +34,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * access tokens. The legacy {@code /route/optimize} endpoints are covered by {@code OptimizationControllerTest}
  * (they would call Nominatim here). Also the reference tenant isolation test for store-scoped endpoints.
  */
+@SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
 @AutoConfigureMockMvc
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class AuthorizationMatrixIntegrationTest extends AbstractIntegrationTest {

@@ -14,6 +14,7 @@ import uk.huy.pathwise.auth.controller.AuthController;
 import uk.huy.pathwise.auth.infrastructure.builder.AuthCookieBuilder;
 import uk.huy.pathwise.auth.infrastructure.config.SecurityConfig;
 import uk.huy.pathwise.auth.service.AuthService;
+import uk.huy.pathwise.auth.service.PasswordChangeService;
 import uk.huy.pathwise.auth.service.PasswordResetService;
 import uk.huy.pathwise.auth.service.RegistrationService;
 import uk.huy.pathwise.auth.token.jwt.dto.AccessTokenVerification;
@@ -59,6 +60,8 @@ class ErrorHandlingWebMvcTest {
     private RegistrationService registrationService;
     @MockitoBean
     private PasswordResetService passwordResetService;
+    @MockitoBean
+    private PasswordChangeService passwordChangeService;
     @MockitoBean
     private AuthCookieBuilder authCookieBuilder;
     @MockitoBean

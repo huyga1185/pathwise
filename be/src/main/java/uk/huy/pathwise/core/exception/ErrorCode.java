@@ -14,6 +14,8 @@ public enum ErrorCode {
     INVALID_TOKEN(401),
     INVALID_OTP(400),
     OTP_COOLDOWN(429),
+    /** @deprecated no longer used since the old change-password flow was removed (T15); kept because error codes are only ever added. */
+    @Deprecated
     COULD_NOT_UPDATE_USER_PASSWORD(400),
     COULD_NOT_FIND_CHEAPEST_ROUTE(400),
     COULD_NOT_FIND_ADDRESS(400),
@@ -36,6 +38,7 @@ public enum ErrorCode {
     ACCOUNT_DISABLED(403),
     EMAIL_ALREADY_VERIFIED(409),
     INVALID_TIMEZONE(400),
-    INVALID_RESET_TOKEN(400);
+    INVALID_RESET_TOKEN(400),
+    INVALID_CURRENT_PASSWORD(400);
     private final int httpCode;
 }

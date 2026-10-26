@@ -24,6 +24,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * T14 acceptance: forgotten password (P-06) against MariaDB and Redis.
  */
+@SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
 @AutoConfigureMockMvc
 class PasswordResetIntegrationTest extends AbstractIntegrationTest {
     private static final String PASSWORD = "Passw0rd!x";

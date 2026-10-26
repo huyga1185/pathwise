@@ -4,7 +4,7 @@
 > Mọi quyết định nền tảng của contract này đã được duyệt (`DECISIONS.md`, 2026-10-22). Frontend web và Flutter có thể dựa vào tài liệu này để thiết kế song song (D-09).
 > Khi implementation khác spec: sửa code cho khớp spec, **hoặc** cập nhật spec trong cùng PR kèm lý do. Không để lệch.
 
-## 0. Tình trạng implementation so với spec (cập nhật 2026-10-27, sau T14)
+## 0. Tình trạng implementation so với spec (cập nhật 2026-10-27, sau T15)
 
 - ✅ Mọi endpoint đã dùng prefix `/api/v1` (P-02).
 - ✅ Body lỗi đã theo `{code, details?}`, kể cả lỗi từ Spring Security: thiếu hoặc sai access token trả 401 `UNAUTHORIZED`, sai role trả 403 `FORBIDDEN`. `exception`/`stackTrace` chỉ có ở profile `dev` (P-03). Có slice test kiểm chứng (`ErrorHandlingWebMvcTest`).
@@ -43,8 +43,8 @@
 | `POST /password/forgot` | P | `{email}` | 204 (luôn); gửi OTP `RESET_PASSWORD` nếu email ACTIVE | 429 | 🟡 T14 (có test): luôn 204, chỉ gửi khi tài khoản ACTIVE và hết cooldown OTP; email lỗi vẫn 204. Còn thiếu 429 (T40) |
 | `POST /password/reset/verify` | P | `{email, otp}` | 200 `{data:{resetToken, expiresAt}}` | 400 `INVALID_OTP` | ✅ T14: `resetToken` hạn 10 phút; email không tồn tại hoặc không ACTIVE cũng 400 `INVALID_OTP` |
 | `POST /password/reset` | P | `{resetToken, newPassword}` | 204; revoke **mọi** session | 400 `INVALID_RESET_TOKEN` (P-26) | ✅ T14: đổi mật khẩu và thu hồi mọi session trong một transaction; token dùng một lần (lần thử đầu tiên tiêu thụ token, kể cả khi sai secret) |
-| `POST /password/change/otp` | A | `{currentPassword}` | 204; gửi OTP `CHANGE_PASSWORD` | 400 `INVALID_CURRENT_PASSWORD` · 429 `OTP_COOLDOWN` | 🟡 hiện là `GET /api/v1/auth/update-password`: gửi OTP, **không** kiểm tra mật khẩu cũ; T15 thay thế |
-| `PUT /password` | A | `{otp, newPassword}` | 204; revoke mọi session **khác** | 400 `INVALID_OTP` | 🟡 hiện là 2 request: `POST /api/v1/auth/update-password/verify {otp}` (set cookie token và ticket) rồi `POST /api/v1/auth/update-password {password}`. Token đã gắn userId từ T00; chưa thu hồi session; T15 thay thế |
+| `POST /password/change/otp` | A | `{currentPassword}` | 204; gửi OTP `CHANGE_PASSWORD` | 400 `INVALID_CURRENT_PASSWORD` · 429 `OTP_COOLDOWN` | ✅ T15: sai mật khẩu hiện tại → 400 và không gửi email; trong cooldown → 429 `OTP_COOLDOWN`. Gửi email lỗi → 500 `INTERNAL_ERROR` (spec không có mã riêng; cooldown đã được xoá nên gọi lại được ngay) |
+| `PUT /password` | A | `{otp, newPassword}` | 204; revoke mọi session **khác** | 400 `INVALID_OTP` | ✅ T15: OTP gắn userId của người gọi; đổi mật khẩu và thu hồi mọi session khác trong một transaction, session hiện tại (claim `sid`) vẫn refresh được. Luồng cũ `/update-password*` đã xoá (404) |
 
 ```jsonc
 // LoginResponse.data
@@ -238,7 +238,7 @@ Người gọi phải có `role=DRIVER` hoặc `canDrive=true` (D-21), và chỉ
 | `CONFLICT` | 409 | | `METHOD_NOT_ALLOWED` | 405 |
 | `SHIFT_OVERLAP` | 422 | | `INVALID_RESET_TOKEN` | 400 |
 
-Mã bị bỏ so với hiện tại: `INVALID_DEPOT`, `COULD_NOT_FIND_CHEAPEST_ROUTE`, `COULD_NOT_FIND_ADDRESS`, `COULD_NOT_UPDATE_USER_PASSWORD` (thay bằng mã cụ thể hơn khi endpoint cũ bị xoá). `COULD_NOT_FIND_USER` → `USER_NOT_FOUND` (404).
+Mã bị bỏ so với hiện tại: `INVALID_DEPOT`, `COULD_NOT_FIND_CHEAPEST_ROUTE`, `COULD_NOT_FIND_ADDRESS`, `COULD_NOT_UPDATE_USER_PASSWORD` (không còn dùng từ T15, giữ trong enum dạng `@Deprecated` vì `ErrorCode` chỉ được thêm). `COULD_NOT_FIND_USER` → `USER_NOT_FOUND` (404).
 
 `CONFLICT` (vi phạm ràng buộc DB không có mã nghiệp vụ riêng, ví dụ hai request đăng ký đồng thời) và `METHOD_NOT_ALLOWED` được thêm ở T03 để không có lỗi framework nào rơi vào 500.
 

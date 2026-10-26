@@ -68,7 +68,7 @@ public class OtpTokenManager {
      *     defeats its primary stateless advantage and introduces unnecessary payload overhead
      *     for otp use case.
      * </p>
-     * @param purpose The specific business context for this token (i.e "updateUserPassword").
+     * @param purpose The specific business context for this token (e.g. "RESET_PASSWORD").
      *                This prevents cross-use vulnerabilities where a token generated for one flow
      *                is exploited in another.
      * @param userId  The user this token is issued for. Stored alongside the hash and returned
