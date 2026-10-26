@@ -26,6 +26,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * T13 acceptance: OWNER registration with its store, email verification, and log-in/refresh by account status.
  */
+@SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
 @AutoConfigureMockMvc
 class RegistrationIntegrationTest extends AbstractIntegrationTest {
     private static final String PASSWORD = "Passw0rd!x";

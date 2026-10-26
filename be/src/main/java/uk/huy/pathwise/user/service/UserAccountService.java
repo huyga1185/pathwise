@@ -19,6 +19,12 @@ public interface UserAccountService {
     UserIdentity createOwner(String email, String rawPassword, String fullName, long storeId);
 
     void updateUserPassword(long id, String newRawPassword);
+
+    /**
+     * @return true if {@code rawPassword} is the current password of user {@code id}
+     * @throws uk.huy.pathwise.core.exception.AppException {@code USER_NOT_FOUND} if there is no such user
+     */
+    boolean matchesPassword(long id, String rawPassword);
     void updateUserEmail(long id, String newEmail);
     void deleteUser(long id);
     AuthenticationResult authenticate(String email, String password);

@@ -25,6 +25,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * T10 acceptance: refresh token transport (web cookie / mobile body), expiry, reuse detection and log-out.
  */
+@SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
 @AutoConfigureMockMvc
 class AuthTokenFlowIntegrationTest extends AbstractIntegrationTest {
     private static final String PASSWORD = "Passw0rd!x";

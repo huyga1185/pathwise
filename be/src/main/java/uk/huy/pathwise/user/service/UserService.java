@@ -89,6 +89,12 @@ public class UserService implements UserAccountService, UserProfileService, Stor
     }
 
     @Override
+    public boolean matchesPassword(long id, String rawPassword) {
+        if (rawPassword == null) throw new NullPointerException("Password is null");
+        return passwordEncoder.matches(rawPassword, getUserById(id).getPassword());
+    }
+
+    @Override
     @Transactional
     public void updateUserEmail(long id, String newEmail) {
         String normalizedEmail = normalizeEmail(newEmail);

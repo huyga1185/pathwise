@@ -8,7 +8,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import uk.huy.pathwise.auth.dto.request.ChangePasswordRequest;
 import uk.huy.pathwise.auth.dto.request.ForgotPasswordRequest;
+import uk.huy.pathwise.auth.dto.request.RequestPasswordChangeOtpRequest;
 import uk.huy.pathwise.auth.dto.request.RefreshTokenRequest;
 import uk.huy.pathwise.auth.dto.request.ResetPasswordRequest;
 import uk.huy.pathwise.auth.dto.request.VerifyResetOtpRequest;
@@ -16,13 +18,10 @@ import uk.huy.pathwise.auth.dto.response.ResetTokenResponse;
 import uk.huy.pathwise.auth.dto.request.ResendVerificationRequest;
 import uk.huy.pathwise.auth.dto.request.VerifyEmailRequest;
 import uk.huy.pathwise.auth.dto.response.RegisterResponse;
-import uk.huy.pathwise.auth.dto.request.UpdateUserPasswordRequest;
-import uk.huy.pathwise.auth.dto.request.VerifyOtpRequest;
 import uk.huy.pathwise.auth.dto.response.AuthTokenResponse;
 import uk.huy.pathwise.auth.dto.response.AuthUserResponse;
 import uk.huy.pathwise.auth.dto.response.SessionResponse;
 import uk.huy.pathwise.auth.dto.response.RefreshTokenResponse;
-import uk.huy.pathwise.auth.dto.response.VerifyOtpResponse;
 import uk.huy.pathwise.auth.infrastructure.annotation.CurrentClient;
 import uk.huy.pathwise.auth.dto.request.LogInRequest;
 import uk.huy.pathwise.auth.dto.request.RegisterRequest;
@@ -30,6 +29,7 @@ import uk.huy.pathwise.auth.dto.response.LogInResponse;
 import uk.huy.pathwise.auth.infrastructure.builder.AuthCookieBuilder;
 import uk.huy.pathwise.auth.model.ClientDetail;
 import uk.huy.pathwise.auth.service.AuthService;
+import uk.huy.pathwise.auth.service.PasswordChangeService;
 import uk.huy.pathwise.auth.service.PasswordResetService;
 import uk.huy.pathwise.auth.service.RegistrationService;
 import uk.huy.pathwise.auth.token.opaque.refreshtoken.dto.RotationResult;
@@ -49,6 +49,7 @@ public class AuthController {
     private final AuthService authService;
     private final RegistrationService registrationService;
     private final PasswordResetService passwordResetService;
+    private final PasswordChangeService passwordChangeService;
     private final AuthCookieBuilder authCookieBuilder;
 
     private static final String REFRESH_TOKEN_COOKIE = "refreshToken";
@@ -56,9 +57,6 @@ public class AuthController {
     private static final String REFRESH_TOKEN_COOKIE_PATH = "/api/v1/auth";
     private static final String CLIENT_PLATFORM_HEADER = "X-Client-Platform";
     private static final String MOBILE_PLATFORM = "mobile";
-    private final String UPDATE_USER_PASSWORD_ROUTE = "/api/v1/auth/update-password";
-    private final String UPDATE_USER_PASSWORD_COOKIE = "updateUserPassword";
-    private final String UPDATE_USER_PASSWORD_TICKET = "updateUserPasswordTicket";
 
     @PostMapping("/register")
     public ResponseEntity<ApiResponse<RegisterResponse>> register(@Valid @RequestBody RegisterRequest request) {
@@ -181,49 +179,24 @@ public class AuthController {
         return ResponseEntity.noContent().build();
     }
 
-    @GetMapping("/update-password")
-    public ResponseEntity<Void> getUserPasswordToken(@AuthenticationPrincipal AuthenticatedUser actor) {
-        authService.getUpdateUserPasswordToken(actor.identity());
+    /**
+     * Step 1 of a password change (P-05): checks the current password, then emails a {@code CHANGE_PASSWORD} OTP.
+     */
+    @PostMapping("/password/change/otp")
+    public ResponseEntity<Void> requestPasswordChangeOtp(@AuthenticationPrincipal AuthenticatedUser actor,
+                                                         @Valid @RequestBody RequestPasswordChangeOtpRequest request) {
+        passwordChangeService.requestChangeOtp(actor, request);
         return ResponseEntity.noContent().build();
     }
 
-    @PostMapping("/update-password/verify")
-    public ResponseEntity<Void> verifyUserPasswordToken(@AuthenticationPrincipal AuthenticatedUser actor,
-                                                        @Valid @RequestBody VerifyOtpRequest verifyOtpRequest) {
-        VerifyOtpResponse verifyOtpResponse = authService.verifyUpdateUserPasswordOtp(actor.identity(), verifyOtpRequest);
-        return ResponseEntity.noContent()
-                .cacheControl(CacheControl.noStore())
-                .header(HttpHeaders.PRAGMA, "no-cache")
-                .header(HttpHeaders.SET_COOKIE,
-                        authCookieBuilder.createSecureCookie(UPDATE_USER_PASSWORD_COOKIE,
-                                verifyOtpResponse.token(),
-                                UPDATE_USER_PASSWORD_ROUTE,
-                                verifyOtpResponse.expiresAfter()).toString())
-                .header(HttpHeaders.SET_COOKIE,
-                        authCookieBuilder.createSecureCookie(UPDATE_USER_PASSWORD_TICKET,
-                                verifyOtpResponse.ticket(),
-                                UPDATE_USER_PASSWORD_ROUTE,
-                                verifyOtpResponse.expiresAfter()).toString())
-                .build();
-    }
-
-    @PostMapping("/update-password")
-    public ResponseEntity<Void> updateUserPassword(@CookieValue(UPDATE_USER_PASSWORD_COOKIE) String token,
-                                                   @CookieValue(UPDATE_USER_PASSWORD_TICKET) String ticket,
-                                                   @Valid @RequestBody UpdateUserPasswordRequest request,
-                                                   @AuthenticationPrincipal AuthenticatedUser actor) {
-        authService.updateUserPassword(actor.identity(), ticket, token, request);
-        return ResponseEntity.noContent()
-                .header(HttpHeaders.PRAGMA, "no-cache")
-                .header(HttpHeaders.SET_COOKIE,
-                        authCookieBuilder.removeSecureCookie(UPDATE_USER_PASSWORD_COOKIE,
-                                null,
-                                UPDATE_USER_PASSWORD_ROUTE).toString())
-                .header(HttpHeaders.SET_COOKIE,
-                        authCookieBuilder.removeSecureCookie(UPDATE_USER_PASSWORD_TICKET,
-                                null,
-                                UPDATE_USER_PASSWORD_ROUTE).toString())
-                .build();
+    /**
+     * Step 2: sets the new password with the emailed OTP; every other session is revoked, this one stays.
+     */
+    @PutMapping("/password")
+    public ResponseEntity<Void> changePassword(@AuthenticationPrincipal AuthenticatedUser actor,
+                                               @Valid @RequestBody ChangePasswordRequest request) {
+        passwordChangeService.changePassword(actor, request);
+        return ResponseEntity.noContent().build();
     }
 
     /**

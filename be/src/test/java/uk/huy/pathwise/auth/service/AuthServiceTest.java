@@ -5,73 +5,57 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import uk.huy.pathwise.auth.dto.request.UpdateUserPasswordRequest;
-import uk.huy.pathwise.auth.otp.manager.OtpManager;
+import uk.huy.pathwise.auth.dto.request.LogInRequest;
+import uk.huy.pathwise.auth.model.ClientDetail;
 import uk.huy.pathwise.auth.token.jwt.manager.AccessTokenManager;
-import uk.huy.pathwise.auth.token.opaque.otptoken.dto.OtpTokenVerification;
-import uk.huy.pathwise.auth.token.opaque.otptoken.manager.OtpTokenManager;
 import uk.huy.pathwise.auth.token.opaque.refreshtoken.manager.RefreshTokenManager;
 import uk.huy.pathwise.core.exception.AppException;
 import uk.huy.pathwise.core.exception.ErrorCode;
-import uk.huy.pathwise.shared.identity.UserIdentity;
-import uk.huy.pathwise.shared.identity.UserRole;
+import uk.huy.pathwise.user.dto.AuthenticationResult;
 import uk.huy.pathwise.user.service.UserAccountService;
 
-
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class AuthServiceTest {
-    private static final String PURPOSE = "updateUserPassword";
-
     @Mock
     private UserAccountService userService;
     @Mock
     private AccessTokenManager accessTokenManager;
     @Mock
     private RefreshTokenManager refreshTokenManager;
-    @Mock
-    private OtpManager otpManager;
-    @Mock
-    private OtpTokenManager otpTokenManager;
 
     @InjectMocks
     private AuthService authService;
 
-    private final UserIdentity userB = new UserIdentity(2L, "b@pathwise.test", UserRole.OWNER, 1L, false);
-    private final UpdateUserPasswordRequest request = new UpdateUserPasswordRequest("newPassword123");
+    private final LogInRequest request = new LogInRequest("a@pathwise.test", "Passw0rd!x");
 
     @Test
-    void updateUserPassword_whenTokenIssuedForAnotherUser_throwInvalidTokenAndKeepPassword() {
-        when(otpTokenManager.verifyOtpToken("ticketA", "tokenA", PURPOSE)).thenReturn(new OtpTokenVerification.Verified(1L));
-
-        assertThatThrownBy(() -> authService.updateUserPassword(userB, "ticketA", "tokenA", request))
-                .isInstanceOf(AppException.class)
-                .extracting("errorCode").isEqualTo(ErrorCode.INVALID_TOKEN);
-
-        verify(userService, never()).updateUserPassword(anyLong(), anyString());
+    void logIn_whenInvalidCredentials_throwInvalidEmailOrPasswordAndIssueNoToken() {
+        assertRejected(new AuthenticationResult.InvalidCredentials(), ErrorCode.INVALID_EMAIL_OR_PASSWORD);
     }
 
     @Test
-    void updateUserPassword_whenTokenInvalid_throwInvalidToken() {
-        when(otpTokenManager.verifyOtpToken("ticket", "token", PURPOSE)).thenReturn(new OtpTokenVerification.Rejected(OtpTokenVerification.RejectReason.NOT_FOUND));
-
-        assertThatThrownBy(() -> authService.updateUserPassword(userB, "ticket", "token", request))
-                .isInstanceOf(AppException.class)
-                .extracting("errorCode").isEqualTo(ErrorCode.INVALID_TOKEN);
-
-        verify(userService, never()).updateUserPassword(anyLong(), anyString());
+    void logIn_whenEmailNotVerified_throwEmailNotVerifiedAndIssueNoToken() {
+        assertRejected(new AuthenticationResult.EmailNotVerified(), ErrorCode.EMAIL_NOT_VERIFIED);
     }
 
     @Test
-    void updateUserPassword_whenTokenIssuedForSameUser_updatePassword() {
-        when(otpTokenManager.verifyOtpToken("ticketB", "tokenB", PURPOSE)).thenReturn(new OtpTokenVerification.Verified(2L));
+    void logIn_whenDisabled_throwAccountDisabledAndIssueNoToken() {
+        assertRejected(new AuthenticationResult.Disabled(), ErrorCode.ACCOUNT_DISABLED);
+    }
 
-        authService.updateUserPassword(userB, "ticketB", "tokenB", request);
+    private void assertRejected(AuthenticationResult result, ErrorCode expected) {
+        when(userService.authenticate("a@pathwise.test", "Passw0rd!x")).thenReturn(result);
 
-        verify(userService).updateUserPassword(2L, "newPassword123");
+        assertThatThrownBy(() -> authService.logIn(new ClientDetail("JUnit", "127.0.0.1"), request))
+                .isInstanceOf(AppException.class)
+                .extracting("errorCode").isEqualTo(expected);
+
+        verify(refreshTokenManager, never()).generateToken(anyLong(), any());
+        verifyNoInteractions(accessTokenManager);
     }
 }
