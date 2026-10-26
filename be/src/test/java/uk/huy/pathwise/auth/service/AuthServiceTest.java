@@ -6,8 +6,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import uk.huy.pathwise.auth.dto.request.UpdateUserPasswordRequest;
-import uk.huy.pathwise.auth.email.manager.OtpEmailManager;
-import uk.huy.pathwise.auth.otp.store.OtpStore;
+import uk.huy.pathwise.auth.otp.manager.OtpManager;
 import uk.huy.pathwise.auth.token.jwt.manager.AccessTokenManager;
 import uk.huy.pathwise.auth.token.opaque.otptoken.manager.OtpTokenManager;
 import uk.huy.pathwise.auth.token.opaque.refreshtoken.manager.RefreshTokenManager;
@@ -35,11 +34,9 @@ class AuthServiceTest {
     @Mock
     private RefreshTokenManager refreshTokenManager;
     @Mock
-    private OtpStore otpStore;
+    private OtpManager otpManager;
     @Mock
     private OtpTokenManager otpTokenManager;
-    @Mock
-    private OtpEmailManager otpEmailManager;
 
     @InjectMocks
     private AuthService authService;

@@ -1,4 +1,4 @@
-package uk.huy.pathwise.auth.email.infrastructure.exception;
+package uk.huy.pathwise.notification.infrastructure.sender;
 
 public class EmailSenderException extends RuntimeException {
     public EmailSenderException(String message, Throwable e) {
