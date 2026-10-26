@@ -8,6 +8,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import uk.huy.pathwise.auth.dto.request.UpdateUserPasswordRequest;
 import uk.huy.pathwise.auth.otp.manager.OtpManager;
 import uk.huy.pathwise.auth.token.jwt.manager.AccessTokenManager;
+import uk.huy.pathwise.auth.token.opaque.otptoken.dto.OtpTokenVerification;
 import uk.huy.pathwise.auth.token.opaque.otptoken.manager.OtpTokenManager;
 import uk.huy.pathwise.auth.token.opaque.refreshtoken.manager.RefreshTokenManager;
 import uk.huy.pathwise.core.exception.AppException;
@@ -16,7 +17,6 @@ import uk.huy.pathwise.shared.identity.UserIdentity;
 import uk.huy.pathwise.shared.identity.UserRole;
 import uk.huy.pathwise.user.service.UserAccountService;
 
-import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -46,7 +46,7 @@ class AuthServiceTest {
 
     @Test
     void updateUserPassword_whenTokenIssuedForAnotherUser_throwInvalidTokenAndKeepPassword() {
-        when(otpTokenManager.verifyOtpToken("ticketA", "tokenA", PURPOSE)).thenReturn(Optional.of(1L));
+        when(otpTokenManager.verifyOtpToken("ticketA", "tokenA", PURPOSE)).thenReturn(new OtpTokenVerification.Verified(1L));
 
         assertThatThrownBy(() -> authService.updateUserPassword(userB, "ticketA", "tokenA", request))
                 .isInstanceOf(AppException.class)
@@ -57,7 +57,7 @@ class AuthServiceTest {
 
     @Test
     void updateUserPassword_whenTokenInvalid_throwInvalidToken() {
-        when(otpTokenManager.verifyOtpToken("ticket", "token", PURPOSE)).thenReturn(Optional.empty());
+        when(otpTokenManager.verifyOtpToken("ticket", "token", PURPOSE)).thenReturn(new OtpTokenVerification.Rejected(OtpTokenVerification.RejectReason.NOT_FOUND));
 
         assertThatThrownBy(() -> authService.updateUserPassword(userB, "ticket", "token", request))
                 .isInstanceOf(AppException.class)
@@ -68,7 +68,7 @@ class AuthServiceTest {
 
     @Test
     void updateUserPassword_whenTokenIssuedForSameUser_updatePassword() {
-        when(otpTokenManager.verifyOtpToken("ticketB", "tokenB", PURPOSE)).thenReturn(Optional.of(2L));
+        when(otpTokenManager.verifyOtpToken("ticketB", "tokenB", PURPOSE)).thenReturn(new OtpTokenVerification.Verified(2L));
 
         authService.updateUserPassword(userB, "ticketB", "tokenB", request);
 

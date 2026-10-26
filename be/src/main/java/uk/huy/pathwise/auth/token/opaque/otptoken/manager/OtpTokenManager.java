@@ -5,11 +5,11 @@ import org.springframework.stereotype.Component;
 import uk.huy.pathwise.auth.infrastructure.hash.Hasher;
 import uk.huy.pathwise.auth.token.opaque.infrastructure.OpaqueTokenGenerator;
 import uk.huy.pathwise.auth.token.opaque.otptoken.dto.OtpToken;
+import uk.huy.pathwise.auth.token.opaque.otptoken.dto.OtpTokenVerification;
 import uk.huy.pathwise.auth.token.opaque.otptoken.statestore.OtpTokenStore;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Optional;
 
 /**
  * Manages the complete lifecycle of Otp Token for Otp flows.
@@ -42,8 +42,6 @@ public class OtpTokenManager {
 
     private final OpaqueTokenGenerator opaqueTokenGenerator;
 
-    private static final Duration TTL = Duration.ofMinutes(5);
-
     private static final String VALUE_SEPARATOR = ":";
 
     /**
@@ -75,9 +73,10 @@ public class OtpTokenManager {
      *                is exploited in another.
      * @param userId  The user this token is issued for. Stored alongside the hash and returned
      *                on verification so callers can reject tokens issued for another user.
+     * @param ttl     How long the token stays valid; it depends on the flow (e.g. 10 minutes for a reset token).
      * @return {@link OtpToken} an object containing secured opaque token, tracking identity and expiry instant.
      */
-    public OtpToken generateToken(String purpose, long userId) {
+    public OtpToken generateToken(String purpose, long userId, Duration ttl) {
         // this field is token identity.
         String ticket = opaqueTokenGenerator.generateOpaqueToken();
         String otpToken = opaqueTokenGenerator.generateOpaqueToken();
@@ -86,44 +85,43 @@ public class OtpTokenManager {
 
         String otpTokenKey = buildOtpTokenKey(ticket, purpose);
 
-        otpTokenStore.save(otpTokenKey, userId + VALUE_SEPARATOR + hashedOtpToken, TTL);
+        otpTokenStore.save(otpTokenKey, userId + VALUE_SEPARATOR + hashedOtpToken, ttl);
 
-        return new OtpToken(otpToken, ticket, Instant.now().plus(TTL));
+        return new OtpToken(otpToken, ticket, Instant.now().plus(ttl));
     }
 
     /**
-     * Verifies the authenticity of a user-provided OTP token and enforces one-time use.
+     * Verifies the authenticity of a user-provided OTP token and enforces one-time use: the stored token is
+     * deleted on the first attempt (Redis {@code GETDEL}), whether the secret matches or not.
      *
      * @param ticket   The unique identity of the token (used to locate the record in DB).
      * @param otpToken The plain-text opaque token submitted by the user.
      * @param purpose  The specific business context (e.g., "RESET_PASSWORD") to ensure
      *                 the token is not being exploited across different flows.
-     * @return the id of the user the token was issued for if the token is valid, unexpired,
-     *         and matches the purpose (the token has then been consumed and revoked);
-     *         {@link Optional#empty()} if validation fails.
+     * @return {@link OtpTokenVerification.Verified} with the user the token was issued for, or
+     *         {@link OtpTokenVerification.Rejected} with the reason
+     * @throws IllegalStateException if the stored value is not shaped like {@code {userId}:{hash}}: corrupt data is
+     *                               a server fault (500), not a wrong token (P-24)
      */
-    public Optional<Long> verifyOtpToken(String ticket, String otpToken, String purpose) {
-        String otpTokenKey = buildOtpTokenKey(ticket, purpose);
-
-        String storedValue = otpTokenStore.getAndDelete(otpTokenKey);
-
-        if (storedValue == null || storedValue.isEmpty())
-            return Optional.empty();
+    public OtpTokenVerification verifyOtpToken(String ticket, String otpToken, String purpose) {
+        String storedValue = otpTokenStore.getAndDelete(buildOtpTokenKey(ticket, purpose));
+        if (storedValue == null) return new OtpTokenVerification.Rejected(OtpTokenVerification.RejectReason.NOT_FOUND);
 
         int separatorIndex = storedValue.indexOf(VALUE_SEPARATOR);
-        if (separatorIndex <= 0)
-            return Optional.empty();
-
+        if (separatorIndex <= 0) throw corruptValue(purpose, null);
         long userId;
         try {
             userId = Long.parseLong(storedValue.substring(0, separatorIndex));
         } catch (NumberFormatException e) {
-            return Optional.empty();
+            throw corruptValue(purpose, e);
         }
 
         if (!hasher.match(storedValue.substring(separatorIndex + 1), otpToken))
-            return Optional.empty();
+            return new OtpTokenVerification.Rejected(OtpTokenVerification.RejectReason.MISMATCH);
+        return new OtpTokenVerification.Verified(userId);
+    }
 
-        return Optional.of(userId);
+    private static IllegalStateException corruptValue(String purpose, Exception cause) {
+        return new IllegalStateException("Corrupt OTP token value in Redis for purpose " + purpose, cause);
     }
 }

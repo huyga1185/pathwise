@@ -4,14 +4,14 @@
 > Mọi quyết định nền tảng của contract này đã được duyệt (`DECISIONS.md`, 2026-10-22). Frontend web và Flutter có thể dựa vào tài liệu này để thiết kế song song (D-09).
 > Khi implementation khác spec: sửa code cho khớp spec, **hoặc** cập nhật spec trong cùng PR kèm lý do. Không để lệch.
 
-## 0. Tình trạng implementation so với spec (cập nhật 2026-10-26, sau T17)
+## 0. Tình trạng implementation so với spec (cập nhật 2026-10-27, sau T14)
 
 - ✅ Mọi endpoint đã dùng prefix `/api/v1` (P-02).
 - ✅ Body lỗi đã theo `{code, details?}`, kể cả lỗi từ Spring Security: thiếu hoặc sai access token trả 401 `UNAUTHORIZED`, sai role trả 403 `FORBIDDEN`. `exception`/`stackTrace` chỉ có ở profile `dev` (P-03). Có slice test kiểm chứng (`ErrorHandlingWebMvcTest`).
 - ✅ Mã HTTP đã khớp §9 cho các lỗi hiện có: sai đăng nhập 401, không tìm thấy user 404 (`USER_NOT_FOUND`), trùng email 409, JSON hỏng 400 `MALFORMED_REQUEST`, path không tồn tại 404 `NOT_FOUND`, sai method 405 `METHOD_NOT_ALLOWED`, vi phạm ràng buộc DB 409 `CONFLICT`, thiếu cookie credential 401 `INVALID_TOKEN`.
 - §4: đã có `GET /store` và `PUT /store` (T13, có test, kể cả tenant isolation). Store luôn lấy từ claim `storeId` của access token. Quyền đúng cột Quyền (T17, có test ma trận): `GET` cho OWNER và DISPATCHER, `PUT` chỉ OWNER, role khác (kể cả ADMIN) 403 `FORBIDDEN`. Các endpoint khác của §4 chưa có (T16).
 - Các mục §5 đến §8 (fleet, geocoding, jobs, plans, driver) **chưa có endpoint nào trong code**.
-- Đã thêm `ErrorCode` ở T13: `EMAIL_NOT_VERIFIED` 403, `ACCOUNT_DISABLED` 403, `EMAIL_ALREADY_VERIFIED` 409, `INVALID_TIMEZONE` 400 (khớp §9).
+- Đã thêm `ErrorCode` ở T13: `EMAIL_NOT_VERIFIED` 403, `ACCOUNT_DISABLED` 403, `EMAIL_ALREADY_VERIFIED` 409, `INVALID_TIMEZONE` 400 (khớp §9). T14 thêm `INVALID_RESET_TOKEN` 400 (P-26): spec §2 trước đó ghi `/password/reset` trả 400 `INVALID_TOKEN`, nhưng `INVALID_TOKEN` là 401 nên đã đổi sang mã mới.
 - Endpoint vận hành ngoài `/api/v1`, giữ có chủ đích: `GET /actuator/health` (kèm `/liveness`, `/readiness`), Public, chỉ trả `status` và tên các `groups`, không lộ chi tiết thành phần (T05, `ARCHITECTURE.md` §12.1). Mọi endpoint actuator khác tắt.
 - Endpoint đang có trong code nhưng **không thuộc spec**, sẽ bị xoá ở T27: `POST /api/v1/route/optimize` và `POST /api/v1/route/optimize/k` (từ T17 chỉ OWNER/DISPATCHER, role khác 403). Mã lỗi riêng của chúng (`INVALID_DEPOT`, `COULD_NOT_FIND_*`) cũng bỏ theo.
 - Cột "Hiện trạng" chỉ có ở §2 và §3. Ký hiệu: ✅ khớp spec và đã có test · 🟡 có nhưng khác spec hoặc có lỗi · ❌ chưa có.
@@ -40,9 +40,9 @@
 | `GET /sessions` | A | — | 200 `[SessionResponse]` | — | ✅ T11: mỗi session (family) còn hiệu lực một dòng, `current` theo claim `sid` |
 | `DELETE /sessions/{sessionId}` | A | — | 204 | 404 `SESSION_NOT_FOUND` | ✅ T11: `sessionId` có thể là bất kỳ session nào của chính user. Nếu là **session hiện tại** (`current: true`) thì xử lý **như `/log-out`**: cùng thu hồi session, response giống `/log-out` (204, `no-store`, web xoá cookie `refreshToken`); client phải bỏ token như sau khi log-out. Session của user khác, không tồn tại, đã thu hồi hoặc hết hạn đều 404 `SESSION_NOT_FOUND` |
 | `POST /sessions/revoke-others` | A | — | 204 | — | ✅ T11 (access token cấp trước T11 không có `sid` thì thu hồi mọi session) |
-| `POST /password/forgot` | P | `{email}` | 204 (luôn); gửi OTP `RESET_PASSWORD` nếu email ACTIVE | 429 | ❌ |
-| `POST /password/reset/verify` | P | `{email, otp}` | 200 `{data:{resetToken, expiresAt}}` | 400 `INVALID_OTP` | ❌ |
-| `POST /password/reset` | P | `{resetToken, newPassword}` | 204; revoke **mọi** session | 400 `INVALID_TOKEN` | ❌ |
+| `POST /password/forgot` | P | `{email}` | 204 (luôn); gửi OTP `RESET_PASSWORD` nếu email ACTIVE | 429 | 🟡 T14 (có test): luôn 204, chỉ gửi khi tài khoản ACTIVE và hết cooldown OTP; email lỗi vẫn 204. Còn thiếu 429 (T40) |
+| `POST /password/reset/verify` | P | `{email, otp}` | 200 `{data:{resetToken, expiresAt}}` | 400 `INVALID_OTP` | ✅ T14: `resetToken` hạn 10 phút; email không tồn tại hoặc không ACTIVE cũng 400 `INVALID_OTP` |
+| `POST /password/reset` | P | `{resetToken, newPassword}` | 204; revoke **mọi** session | 400 `INVALID_RESET_TOKEN` (P-26) | ✅ T14: đổi mật khẩu và thu hồi mọi session trong một transaction; token dùng một lần (lần thử đầu tiên tiêu thụ token, kể cả khi sai secret) |
 | `POST /password/change/otp` | A | `{currentPassword}` | 204; gửi OTP `CHANGE_PASSWORD` | 400 `INVALID_CURRENT_PASSWORD` · 429 `OTP_COOLDOWN` | 🟡 hiện là `GET /api/v1/auth/update-password`: gửi OTP, **không** kiểm tra mật khẩu cũ; T15 thay thế |
 | `PUT /password` | A | `{otp, newPassword}` | 204; revoke mọi session **khác** | 400 `INVALID_OTP` | 🟡 hiện là 2 request: `POST /api/v1/auth/update-password/verify {otp}` (set cookie token và ticket) rồi `POST /api/v1/auth/update-password {password}`. Token đã gắn userId từ T00; chưa thu hồi session; T15 thay thế |
 
@@ -236,7 +236,7 @@ Người gọi phải có `role=DRIVER` hoặc `canDrive=true` (D-21), và chỉ
 | `ROUTING_PROVIDER_ERROR` | 502 | | `INTERNAL_ERROR` | 500 |
 | `PLAN_BUSY` | 409 | | `STOPS_NOT_GEOCODED` | 422 |
 | `CONFLICT` | 409 | | `METHOD_NOT_ALLOWED` | 405 |
-| `SHIFT_OVERLAP` | 422 | | | |
+| `SHIFT_OVERLAP` | 422 | | `INVALID_RESET_TOKEN` | 400 |
 
 Mã bị bỏ so với hiện tại: `INVALID_DEPOT`, `COULD_NOT_FIND_CHEAPEST_ROUTE`, `COULD_NOT_FIND_ADDRESS`, `COULD_NOT_UPDATE_USER_PASSWORD` (thay bằng mã cụ thể hơn khi endpoint cũ bị xoá). `COULD_NOT_FIND_USER` → `USER_NOT_FOUND` (404).
 

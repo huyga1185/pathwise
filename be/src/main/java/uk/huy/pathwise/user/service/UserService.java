@@ -13,7 +13,7 @@ import uk.huy.pathwise.core.pagination.PaginationValidator;
 import uk.huy.pathwise.shared.identity.UserRole;
 import uk.huy.pathwise.shared.identity.UserStatus;
 import uk.huy.pathwise.user.dto.AuthenticationResult;
-import uk.huy.pathwise.user.dto.EmailVerificationState;
+import uk.huy.pathwise.user.dto.AccountState;
 import uk.huy.pathwise.user.dto.StoreUser;
 import uk.huy.pathwise.user.dto.request.UserModificationRequest;
 import uk.huy.pathwise.user.dto.response.AdminGetUserResponse;
@@ -135,9 +135,9 @@ public class UserService implements UserAccountService, UserProfileService, Stor
     }
 
     @Override
-    public Optional<EmailVerificationState> findEmailVerificationState(String email) {
+    public Optional<AccountState> findAccountState(String email) {
         return userRepository.findByEmail(normalizeEmail(email))
-                .map(user -> new EmailVerificationState(user.getId(),
+                .map(user -> new AccountState(user.getId(),
                         user.getEmail(),
                         user.getStatus(),
                         user.getEmailVerifiedAt() != null));

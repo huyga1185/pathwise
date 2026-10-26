@@ -239,7 +239,7 @@ Bảng dependency (→ nghĩa là "phải xong trước"):
 ### T14. Quên mật khẩu
 - **Tầng:** Must · **Ước lượng:** 0,5 ngày · **Quyết định:** P-06 · **FR:** A07
 - **Phạm vi:** 3 endpoint `/password/forgot`, `/password/reset/verify`, `/password/reset`; reset token bind userId (dùng lại `OtpTokenManager` của T00); reset thành công thì revoke mọi session. `verifyOtpToken` đổi từ `Optional<Long>` sang kiểu kết quả; giá trị Redis hỏng là lỗi kỹ thuật, không coi là token sai (P-24, F-37).
-- **Acceptance criteria:** email không tồn tại → vẫn 204 và không gửi email; luồng đúng thì đổi được mật khẩu và mọi refresh token cũ → 401; dùng lại reset token → 400; reset token hết hạn → 400.
+- **Acceptance criteria:** email không tồn tại → vẫn 204 và không gửi email; luồng đúng thì đổi được mật khẩu và mọi refresh token cũ → 401; dùng lại reset token → 400; reset token hết hạn → 400 (mã `INVALID_RESET_TOKEN`, P-26).
 
 ### T15. Đổi mật khẩu bằng mật khẩu cũ + OTP
 - **Tầng:** Must · **Ước lượng:** 0,5 ngày · **Quyết định:** D-17, P-05 · **FR:** A08

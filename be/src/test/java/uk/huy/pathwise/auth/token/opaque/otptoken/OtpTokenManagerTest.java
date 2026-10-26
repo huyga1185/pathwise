@@ -9,14 +9,16 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import uk.huy.pathwise.auth.infrastructure.hash.Hasher;
 import uk.huy.pathwise.auth.token.opaque.infrastructure.OpaqueTokenGenerator;
 import uk.huy.pathwise.auth.token.opaque.otptoken.dto.OtpToken;
+import uk.huy.pathwise.auth.token.opaque.otptoken.dto.OtpTokenVerification;
+import uk.huy.pathwise.auth.token.opaque.otptoken.dto.OtpTokenVerification.RejectReason;
 import uk.huy.pathwise.auth.token.opaque.otptoken.manager.OtpTokenManager;
 import uk.huy.pathwise.auth.token.opaque.otptoken.statestore.OtpTokenStore;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -41,7 +43,7 @@ public class OtpTokenManagerTest {
         when(hasher.hashString("generated")).thenReturn("hashed");
 
         Instant before = Instant.now();
-        OtpToken token = otpTokenManager.generateToken(purpose, 42L);
+        OtpToken token = otpTokenManager.generateToken(purpose, 42L, Duration.ofMinutes(5));
 
         ArgumentCaptor<String> key = ArgumentCaptor.forClass(String.class);
         ArgumentCaptor<String> value = ArgumentCaptor.forClass(String.class);
@@ -61,50 +63,65 @@ public class OtpTokenManagerTest {
     }
 
     @Test
-    void verifyOtpToken_whenAllArgumentsValid_returnUserId() {
+    void generateToken_whenTtlGiven_storeAndExpireWithThatTtl() {
+        when(opaqueTokenGenerator.generateOpaqueToken()).thenReturn("generated");
+        when(hasher.hashString("generated")).thenReturn("hashed");
+
+        Instant before = Instant.now();
+        OtpToken token = otpTokenManager.generateToken("RESET_PASSWORD", 42L, Duration.ofMinutes(10));
+
+        verify(otpTokenStore).save("otpToken:RESET_PASSWORD:generated", "42:hashed", Duration.ofMinutes(10));
+        assertThat(token.expiresAfter()).isAfterOrEqualTo(before.plus(Duration.ofMinutes(10)));
+    }
+
+    @Test
+    void verifyOtpToken_whenAllArgumentsValid_returnVerifiedWithUserId() {
         when(otpTokenStore.getAndDelete("otpToken:purpose:ticket")).thenReturn("42:valid");
         when(hasher.match("valid", "otpToken")).thenReturn(true);
 
-        Optional<Long> userId = otpTokenManager.verifyOtpToken("ticket", "otpToken", "purpose");
-
-        assertThat(userId).contains(42L);
+        assertThat(otpTokenManager.verifyOtpToken("ticket", "otpToken", "purpose"))
+                .isEqualTo(new OtpTokenVerification.Verified(42L));
     }
 
     @Test
-    void verifyOtpToken_whenHashDoesNotMatch_returnEmpty() {
+    void verifyOtpToken_whenHashDoesNotMatch_rejectMismatch() {
         when(otpTokenStore.getAndDelete("otpToken:purpose:ticket")).thenReturn("42:valid");
         when(hasher.match("valid", "wrong")).thenReturn(false);
 
-        Optional<Long> userId = otpTokenManager.verifyOtpToken("ticket", "wrong", "purpose");
-
-        assertThat(userId).isEmpty();
+        assertThat(otpTokenManager.verifyOtpToken("ticket", "wrong", "purpose"))
+                .isEqualTo(new OtpTokenVerification.Rejected(RejectReason.MISMATCH));
     }
 
     @Test
-    void verifyOtpToken_whenTokenIsNotExist_returnEmpty() {
+    void verifyOtpToken_whenTokenIsNotExist_rejectNotFound() {
         when(otpTokenStore.getAndDelete("otpToken:purpose:ticket")).thenReturn(null);
 
-        Optional<Long> userId = otpTokenManager.verifyOtpToken("ticket", "otpToken", "purpose");
-
-        assertThat(userId).isEmpty();
+        assertThat(otpTokenManager.verifyOtpToken("ticket", "otpToken", "purpose"))
+                .isEqualTo(new OtpTokenVerification.Rejected(RejectReason.NOT_FOUND));
     }
 
     @Test
-    void verifyOtpToken_whenTokenIsEmpty_returnEmpty() {
+    void verifyOtpToken_whenStoredValueIsEmpty_throwIllegalState() {
         when(otpTokenStore.getAndDelete("otpToken:purpose:ticket")).thenReturn("");
 
-        Optional<Long> userId = otpTokenManager.verifyOtpToken("ticket", "otpToken", "purpose");
-
-        assertThat(userId).isEmpty();
+        assertThatThrownBy(() -> otpTokenManager.verifyOtpToken("ticket", "otpToken", "purpose"))
+                .isInstanceOf(IllegalStateException.class);
     }
 
     @Test
-    void verifyOtpToken_whenStoredValueHasNoUserId_returnEmpty() {
+    void verifyOtpToken_whenStoredValueHasNoUserId_throwIllegalStateWithoutCheckingHash() {
         when(otpTokenStore.getAndDelete("otpToken:purpose:ticket")).thenReturn("legacyhash");
 
-        Optional<Long> userId = otpTokenManager.verifyOtpToken("ticket", "otpToken", "purpose");
-
-        assertThat(userId).isEmpty();
+        assertThatThrownBy(() -> otpTokenManager.verifyOtpToken("ticket", "otpToken", "purpose"))
+                .isInstanceOf(IllegalStateException.class);
         verifyNoInteractions(hasher);
+    }
+
+    @Test
+    void verifyOtpToken_whenUserIdIsNotANumber_throwIllegalState() {
+        when(otpTokenStore.getAndDelete("otpToken:purpose:ticket")).thenReturn("abc:hash");
+
+        assertThatThrownBy(() -> otpTokenManager.verifyOtpToken("ticket", "otpToken", "purpose"))
+                .isInstanceOf(IllegalStateException.class);
     }
 }

@@ -2,7 +2,7 @@ package uk.huy.pathwise.user.service;
 
 import uk.huy.pathwise.shared.identity.UserIdentity;
 import uk.huy.pathwise.user.dto.AuthenticationResult;
-import uk.huy.pathwise.user.dto.EmailVerificationState;
+import uk.huy.pathwise.user.dto.AccountState;
 
 import java.util.Optional;
 
@@ -29,7 +29,7 @@ public interface UserAccountService {
      */
     Optional<UserIdentity> findActiveUserById(long id);
 
-    Optional<EmailVerificationState> findEmailVerificationState(String email);
+    Optional<AccountState> findAccountState(String email);
 
     /**
      * Records the email as verified now; a {@code PENDING_VERIFICATION} account becomes {@code ACTIVE}.

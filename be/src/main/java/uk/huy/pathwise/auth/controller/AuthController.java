@@ -8,7 +8,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import uk.huy.pathwise.auth.dto.request.ForgotPasswordRequest;
 import uk.huy.pathwise.auth.dto.request.RefreshTokenRequest;
+import uk.huy.pathwise.auth.dto.request.ResetPasswordRequest;
+import uk.huy.pathwise.auth.dto.request.VerifyResetOtpRequest;
+import uk.huy.pathwise.auth.dto.response.ResetTokenResponse;
 import uk.huy.pathwise.auth.dto.request.ResendVerificationRequest;
 import uk.huy.pathwise.auth.dto.request.VerifyEmailRequest;
 import uk.huy.pathwise.auth.dto.response.RegisterResponse;
@@ -26,6 +30,7 @@ import uk.huy.pathwise.auth.dto.response.LogInResponse;
 import uk.huy.pathwise.auth.infrastructure.builder.AuthCookieBuilder;
 import uk.huy.pathwise.auth.model.ClientDetail;
 import uk.huy.pathwise.auth.service.AuthService;
+import uk.huy.pathwise.auth.service.PasswordResetService;
 import uk.huy.pathwise.auth.service.RegistrationService;
 import uk.huy.pathwise.auth.token.opaque.refreshtoken.dto.RotationResult;
 import uk.huy.pathwise.core.apiresponse.ApiResponse;
@@ -43,6 +48,7 @@ import java.util.List;
 public class AuthController {
     private final AuthService authService;
     private final RegistrationService registrationService;
+    private final PasswordResetService passwordResetService;
     private final AuthCookieBuilder authCookieBuilder;
 
     private static final String REFRESH_TOKEN_COOKIE = "refreshToken";
@@ -71,6 +77,29 @@ public class AuthController {
     @PostMapping("/email/verify/resend")
     public ResponseEntity<Void> resendVerification(@Valid @RequestBody ResendVerificationRequest request) {
         registrationService.resendVerification(request);
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * Always 204, whether or not the email is registered (P-06).
+     */
+    @PostMapping("/password/forgot")
+    public ResponseEntity<Void> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+        passwordResetService.forgotPassword(request);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/password/reset/verify")
+    public ResponseEntity<ApiResponse<ResetTokenResponse>> verifyResetOtp(@Valid @RequestBody VerifyResetOtpRequest request) {
+        return ResponseEntity.ok()
+                .cacheControl(CacheControl.noStore())
+                .header(HttpHeaders.PRAGMA, "no-cache")
+                .body(new ApiResponse<>(passwordResetService.verifyResetOtp(request)));
+    }
+
+    @PostMapping("/password/reset")
+    public ResponseEntity<Void> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        passwordResetService.resetPassword(request);
         return ResponseEntity.noContent().build();
     }
 
