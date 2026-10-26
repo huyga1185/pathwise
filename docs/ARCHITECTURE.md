@@ -136,7 +136,7 @@ Chỉ thêm `ErrorCode` khi client phải hành động khác đi; lý do chi ti
 
 | Token | Dạng | Lưu | TTL | Ghi chú |
 |---|---|---|---|---|
-| Access token | JWT HS256, claim `sub`(userId), `email`, `role`, `storeId`, `sid`(sessionId = familyId) (P-09) | Client (memory/secure storage) | 14 phút | Header `Authorization: Bearer`. Không thu hồi được trước hạn. |
+| Access token | JWT HS256, claim `sub`(userId), `email`, `role`, `storeId` (không có với ADMIN), `sid`(sessionId = familyId), `canDrive` (P-09) | Client (memory/secure storage) | 14 phút | Header `Authorization: Bearer`. Không thu hồi được trước hạn. |
 | Refresh token | Opaque 256-bit, lưu SHA-256 | MariaDB `refresh_tokens` | 14 ngày, trượt: rotate bình thường → token con hạn = now + 14 ngày (giữ hành vi hiện tại); nhánh grace giữ nguyên hạn của token active | Xoay vòng mỗi lần dùng; family = session (P-07). Web: cookie; mobile: body (P-04). |
 | OTP | 6 chữ số, lưu SHA-256 + số lần thử | Redis `otp:{purpose}:{userId}` | `otp.ttl`, mặc định 5 phút | Verify atomic bằng Lua, huỷ sau `otp.max-attempts` (3) lần sai; cooldown `otp.cooldown` (60 s) `otp:cooldown:{purpose}:{userId}`, được xoá nếu email gửi lỗi. `OtpManager` (generate, lưu, gửi email, verify) trên `OtpStore` (chỉ Redis). |
 | Reset token | Opaque (ticket + secret) | Redis `otpToken:{purpose}:{ticket}` → `{userId}:{hash}` | 10 phút | Một lần (GETDEL), bind userId + purpose (P-06). |
@@ -173,7 +173,7 @@ Hai lớp, **cả hai bắt buộc**:
 
 ADMIN không có `storeId` và **không** truy cập API của store trong MVP.
 
-"Người được gán route" = user ACTIVE của store có `role=DRIVER` hoặc `canDrive=true` (D-21). API `/driver/**` kiểm tra điều kiện này bằng `@PreAuthorize`, dùng role và claim `canDrive`. Quyền trên từng route kiểm tra `route.driver_id = actor.id()` ở service.
+"Người được gán route" = user ACTIVE của store có `role=DRIVER` hoặc `canDrive=true` (D-21). Quy tắc này chỉ viết ở một chỗ: `UserIdentity.assignableToRoutes()` (T17). API `/driver/**` kiểm tra bằng `@PreAuthorize("@authz.canDrive(principal)")`, dùng role và claim `canDrive`; bean `authz` (`AuthorizationRules`) khai báo trong `SecurityConfig` nên slice test `@Import(SecurityConfig.class)` có sẵn. Khi chọn người cho một plan, service dùng `StoreMemberQuery` (kiểm tra ACTIVE và cùng store) rồi áp cùng quy tắc. Quyền trên từng route kiểm tra `route.driver_id = actor.id()` ở service.
 
 ### 6.4 Web vs mobile (P-04)
 

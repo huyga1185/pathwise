@@ -7,7 +7,7 @@ import uk.huy.pathwise.shared.identity.UserIdentity;
  * revealed to someone who knows it.
  */
 public sealed interface AuthenticationResult {
-    record Authenticated(UserIdentity identity, String fullName, boolean canDrive) implements AuthenticationResult {}
+    record Authenticated(UserIdentity identity, String fullName) implements AuthenticationResult {}
 
     /** Unknown email or wrong password; the two are not told apart. */
     record InvalidCredentials() implements AuthenticationResult {}
