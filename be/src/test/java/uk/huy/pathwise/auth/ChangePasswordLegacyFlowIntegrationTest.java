@@ -11,6 +11,7 @@ import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.test.web.servlet.MockMvc;
 import uk.huy.pathwise.support.AbstractIntegrationTest;
 import uk.huy.pathwise.support.FakeEmailSender;
+import uk.huy.pathwise.support.TestAccounts;
 
 import java.util.UUID;
 import java.util.regex.Matcher;
@@ -81,7 +82,9 @@ class ChangePasswordLegacyFlowIntegrationTest extends AbstractIntegrationTest {
         mockMvc.perform(get("/api/v1/auth/update-password").header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken))
                 .andExpect(status().isTooManyRequests())
                 .andExpect(jsonPath("$.code").value("OTP_COOLDOWN"));
-        assertThat(emailSender.sentTo(email)).hasSize(1);
+        assertThat(emailSender.sentTo(email))
+                .filteredOn(sent -> sent.subject().startsWith("Mã xác nhận đổi mật khẩu"))
+                .hasSize(1);
     }
 
     @Test
@@ -104,10 +107,7 @@ class ChangePasswordLegacyFlowIntegrationTest extends AbstractIntegrationTest {
     }
 
     private void register(String email, String password) throws Exception {
-        mockMvc.perform(post("/api/v1/auth/register")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"email\":\"" + email + "\",\"password\":\"" + password + "\"}"))
-                .andExpect(status().isNoContent());
+        TestAccounts.registerVerifiedOwner(mockMvc, emailSender, email, password);
     }
 
     private String accessToken(String email, String password) throws Exception {

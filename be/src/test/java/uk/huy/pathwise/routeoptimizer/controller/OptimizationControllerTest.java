@@ -48,7 +48,7 @@ class OptimizationControllerTest {
     @BeforeEach
     void authenticateTestToken() {
         when(accessTokenManager.verifyAccessToken("test-token"))
-                .thenReturn(new AccessTokenVerification.Authenticated(new AuthenticatedUser(new UserIdentity(1L, "user@pathwise.test", UserRole.USER), "session-1")));
+                .thenReturn(new AccessTokenVerification.Authenticated(new AuthenticatedUser(new UserIdentity(1L, "user@pathwise.test", UserRole.OWNER, 1L), "session-1")));
     }
 
     @Test

@@ -4,10 +4,14 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.CacheControl;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import uk.huy.pathwise.auth.dto.request.RefreshTokenRequest;
+import uk.huy.pathwise.auth.dto.request.ResendVerificationRequest;
+import uk.huy.pathwise.auth.dto.request.VerifyEmailRequest;
+import uk.huy.pathwise.auth.dto.response.RegisterResponse;
 import uk.huy.pathwise.auth.dto.request.UpdateUserPasswordRequest;
 import uk.huy.pathwise.auth.dto.request.VerifyOtpRequest;
 import uk.huy.pathwise.auth.dto.response.AuthTokenResponse;
@@ -22,6 +26,7 @@ import uk.huy.pathwise.auth.dto.response.LogInResponse;
 import uk.huy.pathwise.auth.infrastructure.builder.AuthCookieBuilder;
 import uk.huy.pathwise.auth.model.ClientDetail;
 import uk.huy.pathwise.auth.service.AuthService;
+import uk.huy.pathwise.auth.service.RegistrationService;
 import uk.huy.pathwise.auth.token.opaque.refreshtoken.dto.RotationResult;
 import uk.huy.pathwise.core.apiresponse.ApiResponse;
 import uk.huy.pathwise.core.exception.AppException;
@@ -37,6 +42,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class AuthController {
     private final AuthService authService;
+    private final RegistrationService registrationService;
     private final AuthCookieBuilder authCookieBuilder;
 
     private static final String REFRESH_TOKEN_COOKIE = "refreshToken";
@@ -49,8 +55,22 @@ public class AuthController {
     private final String UPDATE_USER_PASSWORD_TICKET = "updateUserPasswordTicket";
 
     @PostMapping("/register")
-    public ResponseEntity<Void> register(@Valid @RequestBody RegisterRequest request) {
-        authService.register(request);
+    public ResponseEntity<ApiResponse<RegisterResponse>> register(@Valid @RequestBody RegisterRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(new ApiResponse<>(registrationService.register(request)));
+    }
+
+    @PostMapping("/email/verify")
+    public ResponseEntity<Void> verifyEmail(@Valid @RequestBody VerifyEmailRequest request) {
+        registrationService.verifyEmail(request);
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * Always 204, whether or not the email is registered.
+     */
+    @PostMapping("/email/verify/resend")
+    public ResponseEntity<Void> resendVerification(@Valid @RequestBody ResendVerificationRequest request) {
+        registrationService.resendVerification(request);
         return ResponseEntity.noContent().build();
     }
 
@@ -60,12 +80,17 @@ public class AuthController {
                                                                 @Valid @RequestBody LogInRequest request) {
         LogInResponse logInResponse = authService.logIn(clientDetail, request);
         boolean mobile = isMobile(platform);
-        UserIdentity user = logInResponse.user();
+        UserIdentity user = logInResponse.user().identity();
         AuthTokenResponse body = new AuthTokenResponse(logInResponse.accessToken().token(),
                 logInResponse.accessToken().expiresAt(),
                 mobile ? logInResponse.refreshToken().token() : null,
                 logInResponse.refreshToken().expiresAt(),
-                new AuthUserResponse(user.id(), user.email(), null, user.role().name(), null, null));
+                new AuthUserResponse(user.id(),
+                        user.email(),
+                        logInResponse.user().fullName(),
+                        user.role().name(),
+                        user.storeId(),
+                        logInResponse.user().canDrive()));
         return tokenResponse(body, mobile, logInResponse.refreshToken().token(), logInResponse.refreshToken().expiresAt());
     }
 

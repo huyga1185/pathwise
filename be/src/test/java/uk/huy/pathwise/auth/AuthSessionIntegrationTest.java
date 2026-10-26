@@ -11,6 +11,8 @@ import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import uk.huy.pathwise.support.AbstractIntegrationTest;
+import uk.huy.pathwise.support.FakeEmailSender;
+import uk.huy.pathwise.support.TestAccounts;
 
 import java.util.List;
 import java.util.UUID;
@@ -35,6 +37,9 @@ class AuthSessionIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
+
+    @Autowired
+    private FakeEmailSender emailSender;
 
     @Test
     void listSessions_whenLoggedInTwice_returnTwoSessionsWithCurrentMarked() throws Exception {
@@ -177,10 +182,7 @@ class AuthSessionIntegrationTest extends AbstractIntegrationTest {
 
     private String register() throws Exception {
         String email = "t11-" + UUID.randomUUID() + "@pathwise.test";
-        mockMvc.perform(post("/api/v1/auth/register")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"email\":\"" + email + "\",\"password\":\"" + PASSWORD + "\"}"))
-                .andExpect(status().isNoContent());
+        TestAccounts.registerVerifiedOwner(mockMvc, emailSender, email, PASSWORD);
         return email;
     }
 

@@ -39,6 +39,8 @@ public class SecurityConfig {
                                 "/error",
                                 "/api/v1/auth/log-in",
                                 "/api/v1/auth/register",
+                                "/api/v1/auth/email/verify",
+                                "/api/v1/auth/email/verify/resend",
                                 "/api/v1/auth/refresh",
                                 "/api/v1/auth/log-out").permitAll()
                         .anyRequest().authenticated())

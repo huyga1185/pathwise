@@ -14,6 +14,7 @@ import uk.huy.pathwise.auth.controller.AuthController;
 import uk.huy.pathwise.auth.infrastructure.builder.AuthCookieBuilder;
 import uk.huy.pathwise.auth.infrastructure.config.SecurityConfig;
 import uk.huy.pathwise.auth.service.AuthService;
+import uk.huy.pathwise.auth.service.RegistrationService;
 import uk.huy.pathwise.auth.token.jwt.dto.AccessTokenVerification;
 import uk.huy.pathwise.auth.token.jwt.infrastructure.dto.JwtRejectReason;
 import uk.huy.pathwise.auth.token.jwt.manager.AccessTokenManager;
@@ -54,6 +55,8 @@ class ErrorHandlingWebMvcTest {
     @MockitoBean
     private AuthService authService;
     @MockitoBean
+    private RegistrationService registrationService;
+    @MockitoBean
     private AuthCookieBuilder authCookieBuilder;
     @MockitoBean
     private UserProfileService userProfileService;
@@ -61,7 +64,7 @@ class ErrorHandlingWebMvcTest {
     @BeforeEach
     void setUp() {
         when(accessTokenManager.verifyAccessToken("user-token"))
-                .thenReturn(new AccessTokenVerification.Authenticated(new AuthenticatedUser(new UserIdentity(1L, "user@pathwise.test", UserRole.USER), "session-1")));
+                .thenReturn(new AccessTokenVerification.Authenticated(new AuthenticatedUser(new UserIdentity(1L, "user@pathwise.test", UserRole.OWNER, 1L), "session-1")));
         when(accessTokenManager.verifyAccessToken("bad-token"))
                 .thenReturn(new AccessTokenVerification.Rejected(JwtRejectReason.BAD_SIGNATURE));
     }
@@ -104,27 +107,28 @@ class ErrorHandlingWebMvcTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"))
                 .andExpect(jsonPath("$.details[?(@.field == 'email')].code").value("INVALID_EMAIL_FORMAT"))
-                .andExpect(jsonPath("$.details[?(@.field == 'password')].code").value("INVALID_PASSWORD_LENGTH"));
+                .andExpect(jsonPath("$.details[?(@.field == 'password')].code").value("INVALID_PASSWORD_LENGTH"))
+                .andExpect(jsonPath("$.details[?(@.field == 'storeName')].code").value("STORE_NAME_REQUIRED"));
     }
 
     @Test
     void register_whenEmailExisted_return409() throws Exception {
-        doThrow(new AppException(ErrorCode.EMAIL_EXISTED)).when(authService).register(any());
+        doThrow(new AppException(ErrorCode.EMAIL_EXISTED)).when(registrationService).register(any());
 
         mockMvc.perform(post("/api/v1/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"email\":\"a@pathwise.test\",\"password\":\"password123\"}"))
+                        .content("{\"email\":\"a@pathwise.test\",\"password\":\"password123\",\"storeName\":\"Shop\"}"))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("EMAIL_EXISTED"));
     }
 
     @Test
     void register_whenConcurrentInsertViolatesConstraint_return409Conflict() throws Exception {
-        doThrow(new DataIntegrityViolationException("Duplicate entry")).when(authService).register(any());
+        doThrow(new DataIntegrityViolationException("Duplicate entry")).when(registrationService).register(any());
 
         mockMvc.perform(post("/api/v1/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"email\":\"a@pathwise.test\",\"password\":\"password123\"}"))
+                        .content("{\"email\":\"a@pathwise.test\",\"password\":\"password123\",\"storeName\":\"Shop\"}"))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("CONFLICT"));
     }

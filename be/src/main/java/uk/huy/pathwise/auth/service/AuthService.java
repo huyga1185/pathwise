@@ -3,7 +3,6 @@ package uk.huy.pathwise.auth.service;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import uk.huy.pathwise.auth.dto.request.LogInRequest;
-import uk.huy.pathwise.auth.dto.request.RegisterRequest;
 import uk.huy.pathwise.auth.dto.request.UpdateUserPasswordRequest;
 import uk.huy.pathwise.auth.dto.request.VerifyOtpRequest;
 import uk.huy.pathwise.auth.dto.response.LogInResponse;
@@ -27,6 +26,10 @@ import uk.huy.pathwise.core.exception.ErrorCode;
 import uk.huy.pathwise.notification.service.EmailDeliveryException;
 import uk.huy.pathwise.shared.identity.AuthenticatedUser;
 import uk.huy.pathwise.shared.identity.UserIdentity;
+import uk.huy.pathwise.user.dto.AuthenticationResult.Authenticated;
+import uk.huy.pathwise.user.dto.AuthenticationResult.Disabled;
+import uk.huy.pathwise.user.dto.AuthenticationResult.EmailNotVerified;
+import uk.huy.pathwise.user.dto.AuthenticationResult.InvalidCredentials;
 import uk.huy.pathwise.user.service.UserAccountService;
 
 import java.util.List;
@@ -56,19 +59,22 @@ public class AuthService {
         this.otpTokenManager = otpTokenManager;
     }
 
-    public void register(RegisterRequest request) {
-        if (request == null) throw new NullPointerException("Register request could not be null");
-        userService.createUser(request.email(), request.password());
-    }
-
+    /**
+     * @throws AppException {@code INVALID_EMAIL_OR_PASSWORD} (401), or for a correct password on an account that
+     *                      cannot log in (BR-04) {@code EMAIL_NOT_VERIFIED} or {@code ACCOUNT_DISABLED} (403)
+     */
     public LogInResponse logIn(ClientDetail clientDetail, LogInRequest request) {
         if (request == null) throw new NullPointerException("Log in request could not be null");
-        UserIdentity identity = userService.findUserByCredentials(request.email(), request.password())
-                .orElseThrow(() -> new AppException(ErrorCode.INVALID_EMAIL_OR_PASSWORD));
-        RefreshTokenGenerationDetail refreshToken = refreshTokenManager.generateToken(identity.id(), clientDetail);
-        return new LogInResponse(accessTokenManager.generateAccessToken(identity, refreshToken.sessionId()),
+        Authenticated user = switch (userService.authenticate(request.email(), request.password())) {
+            case Authenticated authenticated -> authenticated;
+            case InvalidCredentials ignored -> throw new AppException(ErrorCode.INVALID_EMAIL_OR_PASSWORD);
+            case EmailNotVerified ignored -> throw new AppException(ErrorCode.EMAIL_NOT_VERIFIED);
+            case Disabled ignored -> throw new AppException(ErrorCode.ACCOUNT_DISABLED);
+        };
+        RefreshTokenGenerationDetail refreshToken = refreshTokenManager.generateToken(user.identity().id(), clientDetail);
+        return new LogInResponse(accessTokenManager.generateAccessToken(user.identity(), refreshToken.sessionId()),
                 refreshToken,
-                identity);
+                user);
     }
 
     public RefreshTokenResponse refreshToken(String refreshToken, ClientDetail clientDetail) {
@@ -80,9 +86,12 @@ public class AuthService {
                 throw new AppException(ErrorCode.INVALID_TOKEN);
             }
         };
-        // Only "user still exists" for now; users get a status (ACTIVE/DISABLED) in T13.
-        UserIdentity identity = userService.findUserById(rotated.userId())
-                .orElseThrow(() -> new AppException(ErrorCode.INVALID_TOKEN));
+        // A user deleted, disabled or not yet verified gets no new access token (BR-04).
+        UserIdentity identity = userService.findActiveUserById(rotated.userId())
+                .orElseThrow(() -> {
+                    log.info("Refresh rejected, user missing or not active. userId={}", rotated.userId());
+                    return new AppException(ErrorCode.INVALID_TOKEN);
+                });
         return new RefreshTokenResponse(accessTokenManager.generateAccessToken(identity, rotated.sessionId()), rotated);
     }
 

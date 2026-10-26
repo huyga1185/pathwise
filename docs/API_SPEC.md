@@ -4,12 +4,14 @@
 > Mọi quyết định nền tảng của contract này đã được duyệt (`DECISIONS.md`, 2026-10-22). Frontend web và Flutter có thể dựa vào tài liệu này để thiết kế song song (D-09).
 > Khi implementation khác spec: sửa code cho khớp spec, **hoặc** cập nhật spec trong cùng PR kèm lý do. Không để lệch.
 
-## 0. Tình trạng implementation so với spec (cập nhật 2026-10-22, sau T03)
+## 0. Tình trạng implementation so với spec (cập nhật 2026-10-26, sau T13)
 
 - ✅ Mọi endpoint đã dùng prefix `/api/v1` (P-02).
 - ✅ Body lỗi đã theo `{code, details?}`, kể cả lỗi từ Spring Security: thiếu hoặc sai access token trả 401 `UNAUTHORIZED`, sai role trả 403 `FORBIDDEN`. `exception`/`stackTrace` chỉ có ở profile `dev` (P-03). Có slice test kiểm chứng (`ErrorHandlingWebMvcTest`).
 - ✅ Mã HTTP đã khớp §9 cho các lỗi hiện có: sai đăng nhập 401, không tìm thấy user 404 (`USER_NOT_FOUND`), trùng email 409, JSON hỏng 400 `MALFORMED_REQUEST`, path không tồn tại 404 `NOT_FOUND`, sai method 405 `METHOD_NOT_ALLOWED`, vi phạm ràng buộc DB 409 `CONFLICT`, thiếu cookie credential 401 `INVALID_TOKEN`.
-- Các mục §4 đến §8 (store, fleet, geocoding, jobs, plans, driver) **chưa có endpoint nào trong code**.
+- §4: đã có `GET /store` và `PUT /store` (T13, có test, kể cả tenant isolation). Store luôn lấy từ claim `storeId` của access token; actor không có store (ADMIN) nhận 404 `NOT_FOUND`. **Còn lệch:** chưa kiểm tra role (T17), nên mọi user đã đăng nhập của store đều gọi được cả hai. Các endpoint khác của §4 chưa có (T16).
+- Các mục §5 đến §8 (fleet, geocoding, jobs, plans, driver) **chưa có endpoint nào trong code**.
+- Đã thêm `ErrorCode` ở T13: `EMAIL_NOT_VERIFIED` 403, `ACCOUNT_DISABLED` 403, `EMAIL_ALREADY_VERIFIED` 409, `INVALID_TIMEZONE` 400 (khớp §9).
 - Endpoint vận hành ngoài `/api/v1`, giữ có chủ đích: `GET /actuator/health` (kèm `/liveness`, `/readiness`), Public, chỉ trả `status` và tên các `groups`, không lộ chi tiết thành phần (T05, `ARCHITECTURE.md` §12.1). Mọi endpoint actuator khác tắt.
 - Endpoint đang có trong code nhưng **không thuộc spec**, sẽ bị xoá ở T27: `POST /api/v1/route/optimize` và `POST /api/v1/route/optimize/k`. Mã lỗi riêng của chúng (`INVALID_DEPOT`, `COULD_NOT_FIND_*`) cũng bỏ theo.
 - Cột "Hiện trạng" chỉ có ở §2 và §3. Ký hiệu: ✅ khớp spec và đã có test · 🟡 có nhưng khác spec hoặc có lỗi · ❌ chưa có.
@@ -29,11 +31,11 @@
 
 | Method & path | Quyền | Request | Response | Lỗi chính | Hiện trạng |
 |---|---|---|---|---|---|
-| `POST /register` | P | `{email, password(8–72), storeName(1–150), fullName?}` | 201 `{data:{email, status:"PENDING_VERIFICATION"}}`; gửi OTP `VERIFY_EMAIL` | 400 validation · 409 `EMAIL_EXISTED` · 429 | 🟡 `POST /api/v1/auth/register` `{email, password}` → 204 (spec: 201); không có store, không xác thực email; trùng email trả 409 ✓ |
-| `POST /email/verify` | P | `{email, otp}` | 204 | 400 `INVALID_OTP` · 409 `EMAIL_ALREADY_VERIFIED` | ❌ |
-| `POST /email/verify/resend` | P | `{email}` | 204 (luôn, không tiết lộ email tồn tại) | 429 `RATE_LIMITED` | ❌ |
-| `POST /log-in` | P | `{email, password}` | 200 `LoginResponse` (+ cookie nếu web) | 401 `INVALID_EMAIL_OR_PASSWORD` · 403 `EMAIL_NOT_VERIFIED` · 403 `ACCOUNT_DISABLED` · 429 | 🟡 Transport và body khớp spec (T10, có test): `accessToken`, `accessTokenExpiresAt`, `refreshTokenExpiresAt`, `refreshToken` chỉ khi mobile, cookie `Path=/api/v1/auth; SameSite` cho web; sai thông tin 401 ✓. Còn lệch: `user` chỉ có `id`, `email`, `role` (`ADMIN`/`USER`), thiếu `fullName`, `storeId`, `canDrive` (T13, T17); chưa có 403 `EMAIL_NOT_VERIFIED`/`ACCOUNT_DISABLED` (T13), 429 (T40) |
-| `POST /refresh` | P | web: cookie · mobile: `{refreshToken}` | 200 `TokenResponse` (+ cookie mới nếu web) | 401 `INVALID_TOKEN` | 🟡 Khớp spec (T10, có test): cookie (web) hoặc body (mobile), trả `TokenResponse`, thiếu/sai/hết hạn token → 401 `INVALID_TOKEN`. Còn lệch: chưa từ chối user bị vô hiệu hoá (cần trạng thái user, T13) |
+| `POST /register` | P | `{email, password(8–72), storeName(1–150), fullName?}` | 201 `{data:{email, status:"PENDING_VERIFICATION"}}`; gửi OTP `VERIFY_EMAIL` | 400 validation · 409 `EMAIL_EXISTED` · 429 | 🟡 Khớp spec (T13, có test): 201 `{email, status}`, tạo store và OWNER trong một transaction, gửi OTP sau commit (email lỗi vẫn 201, gửi lại bằng `/email/verify/resend`), email chuẩn hoá nên trùng khác hoa thường → 409 `EMAIL_EXISTED`. Còn thiếu 429 (T40) |
+| `POST /email/verify` | P | `{email, otp}` | 204 | 400 `INVALID_OTP` · 409 `EMAIL_ALREADY_VERIFIED` | ✅ T13: email không tồn tại cũng trả 400 `INVALID_OTP` |
+| `POST /email/verify/resend` | P | `{email}` | 204 (luôn, không tiết lộ email tồn tại) | 429 `RATE_LIMITED` | 🟡 T13 (có test): luôn 204; chỉ gửi khi tài khoản đang `PENDING_VERIFICATION` và hết cooldown OTP (cooldown không trả `OTP_COOLDOWN`, để không lộ email có tồn tại). Còn thiếu 429 `RATE_LIMITED` (T40) |
+| `POST /log-in` | P | `{email, password}` | 200 `LoginResponse` (+ cookie nếu web) | 401 `INVALID_EMAIL_OR_PASSWORD` · 403 `EMAIL_NOT_VERIFIED` · 403 `ACCOUNT_DISABLED` · 429 | 🟡 Transport và body khớp spec (T10, có test): `accessToken`, `accessTokenExpiresAt`, `refreshTokenExpiresAt`, `refreshToken` chỉ khi mobile, cookie `Path=/api/v1/auth; SameSite` cho web; sai thông tin 401 ✓. T13 (có test): `user` đủ `id`, `email`, `fullName` (bỏ khi chưa đặt), `role`, `storeId` (bỏ với ADMIN), `canDrive`; đúng mật khẩu nhưng chưa verify → 403 `EMAIL_NOT_VERIFIED`, DISABLED → 403 `ACCOUNT_DISABLED` (sai mật khẩu luôn 401, không lộ trạng thái). Còn thiếu 429 (T40) |
+| `POST /refresh` | P | web: cookie · mobile: `{refreshToken}` | 200 `TokenResponse` (+ cookie mới nếu web) | 401 `INVALID_TOKEN` | ✅ T10, T13: cookie (web) hoặc body (mobile), trả `TokenResponse`, thiếu/sai/hết hạn token → 401 `INVALID_TOKEN`; user không còn ACTIVE (DISABLED, đã xoá) → 401 `INVALID_TOKEN` (T13, có test) |
 | `POST /log-out` | P | web: cookie · mobile: `{refreshToken}` | 204 (idempotent; xoá cookie nếu web) | — | ✅ T10: public, cookie (web) hoặc body (mobile), luôn 204, web xoá cookie |
 | `GET /sessions` | A | — | 200 `[SessionResponse]` | — | ✅ T11: mỗi session (family) còn hiệu lực một dòng, `current` theo claim `sid` |
 | `DELETE /sessions/{sessionId}` | A | — | 204 | 404 `SESSION_NOT_FOUND` | ✅ T11: `sessionId` có thể là bất kỳ session nào của chính user. Nếu là **session hiện tại** (`current: true`) thì xử lý **như `/log-out`**: cùng thu hồi session, response giống `/log-out` (204, `no-store`, web xoá cookie `refreshToken`); client phải bỏ token như sau khi log-out. Session của user khác, không tồn tại, đã thu hồi hoặc hết hạn đều 404 `SESSION_NOT_FOUND` |
@@ -67,9 +69,9 @@ Ghi chú:
 
 | Method & path | Quyền | Request | Response | Hiện trạng |
 |---|---|---|---|---|
-| `GET /users/me` | A | — | `{id, email, fullName, phoneNumber, role, storeId, status, canDrive}` | 🟡 `GET /api/v1/users/me` → `{id, email, phoneNumber}`; thiếu fullName, role, storeId, status, canDrive |
+| `GET /users/me` | A | — | `{id, email, fullName, phoneNumber, role, storeId, status, canDrive}` | ✅ T13 (có test): đủ field. `canDrive` = true với DRIVER, còn lại theo cờ (D-21) |
 | `PUT /users/me` | A | `{fullName?, phoneNumber?}` (số VN, lưu E.164, trả dạng national) | 204 | 🟡 `PUT /api/v1/users/me` `{phoneNumber}`; chưa có fullName |
-| `GET /admin/users` | AD | paging; sort `id,email,createdAt,updatedAt` | Page `{id, email, phoneNumber, role, storeId, status, createdAt, updatedAt}` | 🟡 `GET /api/v1/admin/users` → `{id, email, phoneNumber, role, createdAt, updatedAt}`; thiếu storeId, status; role vẫn là `ADMIN/USER` |
+| `GET /admin/users` | AD | paging; sort `id,email,createdAt,updatedAt` | Page `{id, email, phoneNumber, role, storeId, status, createdAt, updatedAt}` | 🟡 `GET /api/v1/admin/users` → `{id, email, phoneNumber, role, createdAt, updatedAt}`; role đã là `ADMIN/OWNER/DISPATCHER/DRIVER` (T13); thiếu storeId, status |
 
 ## 4. Store — `/api/v1/store`, `/api/v1/invitations`
 

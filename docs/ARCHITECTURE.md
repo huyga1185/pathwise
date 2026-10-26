@@ -39,11 +39,11 @@ Package gốc `uk.huy.pathwise`. Mỗi module là một package cấp 1.
 | Module | Trách nhiệm | Trạng thái |
 |---|---|---|
 | `core` | Hạ tầng dùng chung, không chứa nghiệp vụ: envelope response, `ErrorCode`/`AppException`/handler, pagination, `StateStore`, rate limiter, **job framework** (`core.job`, §8.4), cấu hình web/JSON. | Có — mở rộng |
-| `shared` | Kiểu dữ liệu chia sẻ giữa module: `UserIdentity`, `UserRole`, principal `AuthenticatedUser` (P-25). Chỉ record/enum, **không** bean. | Có — sửa |
+| `shared` | Kiểu dữ liệu chia sẻ giữa module: `UserIdentity`, `UserRole`, `UserStatus`, principal `AuthenticatedUser` (P-25). Chỉ record/enum, **không** bean. | Có — sửa |
 | `user` | Tài khoản người dùng: entity `User`, mật khẩu, hồ sơ, trạng thái. | Có — mở rộng |
 | `auth` | Xác thực: đăng ký (orchestrate user + store), đăng nhập, token (access/refresh/OTP token), OTP, session, đổi/quên mật khẩu, security filter chain. | Có — sửa |
 | `notification` | Gửi email theo template (chuyển từ `auth.email.infrastructure` sang, để `store` gửi được lời mời mà không phụ thuộc `auth`). API công khai: `EmailNotificationService.send(templateName, to, variables)`, lỗi gửi là `EmailDeliveryException`. | Có (T12) |
-| `store` | Store, thành viên, lời mời. | Mới — T13, T16 |
+| `store` | Store, thành viên, lời mời. API công khai: `StoreProvisioningService.createStore(name)` (cho đăng ký, tham gia transaction của bên gọi), `StoreMemberQuery.findActiveMember(storeId, userId)`. Đọc user qua `StoreUserQuery` của `user`. | Có (T13) — mở rộng ở T16 |
 | `fleet` | Xe. | Mới — T20 |
 | `routing` | Adapter định tuyến **không có DB**: `GeocodingProvider`, `MatrixProvider`, `SolverProvider`, (Should) `DirectionsProvider`; endpoint geocoding search. Đổi tên từ `routeoptimizer`. | Có — sửa/thay |
 | `planning` | Route plan, route, stop; optimize, publish, trạng thái; API cho dispatcher **và** API cho driver; vị trí tài xế. | Mới — T24+ |

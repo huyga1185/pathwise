@@ -11,6 +11,8 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.test.web.servlet.MockMvc;
 import uk.huy.pathwise.support.AbstractIntegrationTest;
+import uk.huy.pathwise.support.FakeEmailSender;
+import uk.huy.pathwise.support.TestAccounts;
 
 import java.util.List;
 import java.util.UUID;
@@ -35,6 +37,9 @@ class AuthTokenFlowIntegrationTest extends AbstractIntegrationTest {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
+    @Autowired
+    private FakeEmailSender emailSender;
+
     @Test
     void logIn_whenWebClient_setRefreshCookieOnAuthPathAndOmitTokenFromBody() throws Exception {
         String email = register();
@@ -48,7 +53,7 @@ class AuthTokenFlowIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.data.refreshTokenExpiresAt").isNotEmpty())
                 .andExpect(jsonPath("$.data.refreshToken").doesNotExist())
                 .andExpect(jsonPath("$.data.user.email").value(email))
-                .andExpect(jsonPath("$.data.user.role").value("USER"))
+                .andExpect(jsonPath("$.data.user.role").value("OWNER"))
                 .andReturn().getResponse();
 
         String setCookie = response.getHeader(HttpHeaders.SET_COOKIE);
@@ -195,10 +200,7 @@ class AuthTokenFlowIntegrationTest extends AbstractIntegrationTest {
 
     private String register() throws Exception {
         String email = "t10-" + UUID.randomUUID() + "@pathwise.test";
-        mockMvc.perform(post("/api/v1/auth/register")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(credentials(email)))
-                .andExpect(status().isNoContent());
+        TestAccounts.registerVerifiedOwner(mockMvc, emailSender, email, PASSWORD);
         return email;
     }
 
