@@ -183,8 +183,8 @@ Index `(status, created_at)`, `(store_id, target_id)`. Khi ứng dụng khởi �
 
 | Key | Giá trị | TTL | Module |
 |---|---|---|---|
-| `otp:{purpose}:{userId}` | `{sha256}{attempts}` (định dạng hiện tại của Lua) | `otp.ttl` (300 s) | auth |
-| `otp:cooldown:{purpose}:{userId}` | `1` | `otp.cooldown` (60 s) | auth |
+| `otp:{purpose}:{userId}` | `{sha256}{số lần sai}`; `purpose` là tên `OtpPurpose` (`VERIFY_EMAIL`, `RESET_PASSWORD`, `CHANGE_PASSWORD`) | `otp.ttl` (mặc định 5 phút) | auth |
+| `otp:cooldown:{purpose}:{userId}` | `1`; bị xoá cùng OTP khi email gửi lỗi | `otp.cooldown` (mặc định 60 s) | auth |
 | `otpToken:{purpose}:{ticket}` | `{userId}:{sha256(secret)}` | 10 phút | auth |
 | `ratelimit:{scope}:{key}:{window}` | counter | = window | core |
 | `geocode:nominatim:{sha256(normalizedQuery)}` | JSON kết quả | 24 h | routing |
@@ -192,7 +192,7 @@ Index `(status, created_at)`, `(store_id, target_id)`. Khi ứng dụng khởi �
 | `driver:location:{storeId}:{driverId}` | JSON vị trí | 10 phút | planning |
 | `directions:route:{routeId}:{planVersion}` (Should) | JSON geometry/steps | 24 h | planning |
 
-Lưu ý: key OTP hiện tại dùng **email** làm identifier (bản refactor); mục tiêu dùng **userId** (T12).
+Key OTP dùng **userId** (T12), không dùng email. OTP bị xoá khi đúng (dùng một lần) hoặc khi sai đủ `otp.max-attempts` (mặc định 3) lần.
 
 ## 4. Migration (Flyway, P-01)
 

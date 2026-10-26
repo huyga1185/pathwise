@@ -1,4 +1,4 @@
-package uk.huy.pathwise.auth.email.infrastructure.sender;
+package uk.huy.pathwise.notification.infrastructure.sender;
 
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
@@ -8,7 +8,9 @@ import org.springframework.mail.MailSendException;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Component;
-import uk.huy.pathwise.auth.email.infrastructure.exception.EmailSenderException;
+
+import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 
 @Component
 @Slf4j
@@ -34,13 +36,16 @@ public class DefaultEmailSender implements EmailSender {
         if (content.isEmpty()) throw new IllegalArgumentException("Content could not be empty");
 
         MimeMessage mimeMessage = javaMailSender.createMimeMessage();
-        MimeMessageHelper mimeMessageHelper = new MimeMessageHelper(mimeMessage);
+        // UTF-8: templates are Vietnamese.
+        MimeMessageHelper mimeMessageHelper;
         try {
-            mimeMessageHelper.setFrom(from);
+            mimeMessageHelper = new MimeMessageHelper(mimeMessage, StandardCharsets.UTF_8.name());
+            if (name == null || name.isBlank()) mimeMessageHelper.setFrom(from);
+            else mimeMessageHelper.setFrom(from, name);
             mimeMessageHelper.setTo(to);
             mimeMessageHelper.setSubject(subject);
             mimeMessageHelper.setText(content, isHtml);
-        } catch (MessagingException e) {
+        } catch (MessagingException | UnsupportedEncodingException e) {
             log.error("Could not create mime message", e);
             throw new EmailSenderException("Could not create mime message");
         }

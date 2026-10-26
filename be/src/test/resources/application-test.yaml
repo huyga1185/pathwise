@@ -13,6 +13,10 @@ mail:
       address: no-reply@pathwise.test
       name: PathWise Test
 
+# Not the 5 min default, so tests prove the value comes from configuration (F-09).
+otp:
+  ttl: 2m
+
 token:
   jwt:
     # 256-bit all-zero key, test only

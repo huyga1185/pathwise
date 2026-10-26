@@ -42,7 +42,7 @@ Package gốc `uk.huy.pathwise`. Mỗi module là một package cấp 1.
 | `shared` | Kiểu dữ liệu chia sẻ giữa module: `UserIdentity`, `UserRole`, principal `AuthenticatedUser` (P-25). Chỉ record/enum, **không** bean. | Có — sửa |
 | `user` | Tài khoản người dùng: entity `User`, mật khẩu, hồ sơ, trạng thái. | Có — mở rộng |
 | `auth` | Xác thực: đăng ký (orchestrate user + store), đăng nhập, token (access/refresh/OTP token), OTP, session, đổi/quên mật khẩu, security filter chain. | Có — sửa |
-| `notification` | Gửi email theo template (chuyển từ `auth.email.infrastructure` sang, để `store` gửi được lời mời mà không phụ thuộc `auth`). | Mới (tách từ auth) — T12 |
+| `notification` | Gửi email theo template (chuyển từ `auth.email.infrastructure` sang, để `store` gửi được lời mời mà không phụ thuộc `auth`). API công khai: `EmailNotificationService.send(templateName, to, variables)`, lỗi gửi là `EmailDeliveryException`. | Có (T12) |
 | `store` | Store, thành viên, lời mời. | Mới — T13, T16 |
 | `fleet` | Xe. | Mới — T20 |
 | `routing` | Adapter định tuyến **không có DB**: `GeocodingProvider`, `MatrixProvider`, `SolverProvider`, (Should) `DirectionsProvider`; endpoint geocoding search. Đổi tên từ `routeoptimizer`. | Có — sửa/thay |
@@ -138,7 +138,7 @@ Chỉ thêm `ErrorCode` khi client phải hành động khác đi; lý do chi ti
 |---|---|---|---|---|
 | Access token | JWT HS256, claim `sub`(userId), `email`, `role`, `storeId`, `sid`(sessionId = familyId) (P-09) | Client (memory/secure storage) | 14 phút | Header `Authorization: Bearer`. Không thu hồi được trước hạn. |
 | Refresh token | Opaque 256-bit, lưu SHA-256 | MariaDB `refresh_tokens` | 14 ngày, trượt: rotate bình thường → token con hạn = now + 14 ngày (giữ hành vi hiện tại); nhánh grace giữ nguyên hạn của token active | Xoay vòng mỗi lần dùng; family = session (P-07). Web: cookie; mobile: body (P-04). |
-| OTP | 6 chữ số, lưu SHA-256 + số lần thử | Redis `otp:{purpose}:{userId}` | cấu hình, mặc định 300 s | Verify atomic bằng Lua; cooldown 60 s `otp:cooldown:{purpose}:{userId}`. |
+| OTP | 6 chữ số, lưu SHA-256 + số lần thử | Redis `otp:{purpose}:{userId}` | `otp.ttl`, mặc định 5 phút | Verify atomic bằng Lua, huỷ sau `otp.max-attempts` (3) lần sai; cooldown `otp.cooldown` (60 s) `otp:cooldown:{purpose}:{userId}`, được xoá nếu email gửi lỗi. `OtpManager` (generate, lưu, gửi email, verify) trên `OtpStore` (chỉ Redis). |
 | Reset token | Opaque (ticket + secret) | Redis `otpToken:{purpose}:{ticket}` → `{userId}:{hash}` | 10 phút | Một lần (GETDEL), bind userId + purpose (P-06). |
 | Invitation code | Opaque, lưu SHA-256 | MariaDB `store_invitations` | 7 ngày (D-27) | Một lần. |
 
