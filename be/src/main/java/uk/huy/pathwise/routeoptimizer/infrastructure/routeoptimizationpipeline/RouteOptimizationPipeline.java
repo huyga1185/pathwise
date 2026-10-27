@@ -3,13 +3,14 @@ package uk.huy.pathwise.routeoptimizer.infrastructure.routeoptimizationpipeline;
 import lombok.AllArgsConstructor;
 import uk.huy.pathwise.routing.geocoding.GeocodingProvider;
 import uk.huy.pathwise.routing.geocoding.GeocodingResult;
-import uk.huy.pathwise.routeoptimizer.infrastructure.matrix.MatrixProvider;
-import uk.huy.pathwise.routeoptimizer.model.Coordinate;
+import uk.huy.pathwise.routing.matrix.MatrixProvider;
+import uk.huy.pathwise.routing.model.Coordinate;
 import uk.huy.pathwise.routeoptimizer.infrastructure.solver.SolverProvider;
 import uk.huy.pathwise.core.exception.AppException;
 import uk.huy.pathwise.core.exception.ErrorCode;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 @AllArgsConstructor
@@ -21,7 +22,7 @@ public class RouteOptimizationPipeline {
     public List<String> optimize(List<String> addresses, int depot) {
         if (depot >= addresses.size() || depot < 0) throw new AppException(ErrorCode.INVALID_DEPOT);
         List<Coordinate> coordinates = geocode(addresses);
-        double[][] matrix = matrixProvider.matrixRoute(coordinates, "driving");
+        double[][] matrix = distances(coordinates);
         int[] result = solverProvider.solveTSP(matrix, depot);
         List<String> finalResult = new ArrayList<>();
         for (int r : result) {
@@ -33,7 +34,7 @@ public class RouteOptimizationPipeline {
     public List<List<String>> optimizeKVehicleRoute(List<String> addresses, int depot, int numberVehicle) {
         if (depot >= addresses.size() || depot < 0) throw new AppException(ErrorCode.INVALID_DEPOT);
         List<Coordinate> coordinates = geocode(addresses);
-        double[][] matrix = matrixProvider.matrixRoute(coordinates, "driving");
+        double[][] matrix = distances(coordinates);
         List<List<Integer>> result = solverProvider.solveVRP(matrix, depot, numberVehicle);
         List<List<String>> finalResult = new ArrayList<>();
         for (List<Integer> integers : result) {
@@ -57,5 +58,15 @@ public class RouteOptimizationPipeline {
             coordinates.add(new Coordinate(results.getFirst().lat(), results.getFirst().lon()));
         }
         return coordinates;
+    }
+
+    /**
+     * The legacy solver works on distances as doubles (replaced in T23).
+     */
+    private double[][] distances(List<Coordinate> coordinates) {
+        int[][] meters = matrixProvider.matrix(coordinates).distanceMeters();
+        double[][] matrix = new double[meters.length][];
+        for (int i = 0; i < meters.length; i++) matrix[i] = Arrays.stream(meters[i]).asDoubleStream().toArray();
+        return matrix;
     }
 }

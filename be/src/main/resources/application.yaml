@@ -18,11 +18,6 @@ spring:
     baseline-on-migrate: true
     baseline-version: 1
 
-api:
-  user-agent: PathWise/1.0 (https://huy-vu.uk/)
-  matrix:
-    osrm-base-url: http://router.project-osrm.org
-
 routing:
   geocoding:
     provider: nominatim
@@ -37,6 +32,16 @@ routing:
         enabled: true
         per-second: 1
         max-wait: 2s
+  matrix:
+    provider: osrm
+    osrm:
+      base-url: http://router.project-osrm.org
+      user-agent: PathWise/1.0 (https://huy-vu.uk/)
+      profile: driving
+      # Must not exceed the server's osrm-routed --max-table-size; larger matrices are split into several requests.
+      max-table-size: 100
+      connect-timeout: 3s
+      read-timeout: 10s
 
 management:
   endpoints:
