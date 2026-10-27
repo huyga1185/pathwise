@@ -13,7 +13,7 @@ import uk.huy.pathwise.store.dto.response.StoreResponse;
 import uk.huy.pathwise.store.infrastructure.mapper.StoreMapper;
 import uk.huy.pathwise.store.model.Store;
 import uk.huy.pathwise.store.repository.StoreRepository;
-import uk.huy.pathwise.user.service.StoreUserQuery;
+import uk.huy.pathwise.user.service.StoreUserService;
 
 import java.time.DateTimeException;
 import java.time.ZoneId;
@@ -30,7 +30,7 @@ public class StoreService implements StoreProvisioningService, StoreMemberQuery 
 
     private final StoreRepository storeRepository;
     private final StoreMapper storeMapper;
-    private final StoreUserQuery storeUserQuery;
+    private final StoreUserService storeUserService;
 
     @Override
     @Transactional
@@ -65,16 +65,24 @@ public class StoreService implements StoreProvisioningService, StoreMemberQuery 
     @Override
     @Transactional(readOnly = true)
     public Optional<StoreMember> findActiveMember(long storeId, long userId) {
-        return storeUserQuery.findInStore(storeId, userId)
+        return storeUserService.findInStore(storeId, userId)
                 .filter(user -> user.status() == UserStatus.ACTIVE)
                 .map(storeMapper::toStoreMember);
     }
 
     private Store getStoreOf(UserIdentity actor) {
+        return storeRepository.findById(storeIdOf(actor))
+                .orElseThrow(() -> new AppException(ErrorCode.NOT_FOUND));
+    }
+
+    /**
+     * @return the caller's store id from the access token
+     * @throws AppException {@code NOT_FOUND} for an actor without a store (ADMIN)
+     */
+    static long storeIdOf(UserIdentity actor) {
         if (actor == null) throw new NullPointerException("Actor could not be null");
         if (actor.storeId() == null) throw new AppException(ErrorCode.NOT_FOUND);
-        return storeRepository.findById(actor.storeId())
-                .orElseThrow(() -> new AppException(ErrorCode.NOT_FOUND));
+        return actor.storeId();
     }
 
     private static String parseTimezone(String timezone) {

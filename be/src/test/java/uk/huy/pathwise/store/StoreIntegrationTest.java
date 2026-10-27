@@ -134,7 +134,7 @@ class StoreIntegrationTest extends AbstractIntegrationTest {
         Owner owner = newOwner();
 
         assertThat(storeMemberQuery.findActiveMember(owner.storeId(), owner.userId()))
-                .contains(new StoreMember(owner.userId(), owner.email(), null, UserRole.OWNER, UserStatus.ACTIVE, false));
+                .contains(new StoreMember(owner.userId(), owner.email(), null, null, UserRole.OWNER, UserStatus.ACTIVE, false));
     }
 
     @Test

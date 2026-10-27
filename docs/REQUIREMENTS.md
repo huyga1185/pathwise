@@ -43,11 +43,11 @@ Mỗi user thuộc tối đa 1 store và có đúng 1 role (D-02). OWNER hoặc 
 | ID | Yêu cầu | Tầng | Hiện trạng |
 |---|---|---|---|
 | FR-S01 | OWNER xem/cập nhật thông tin store: tên, depot (địa chỉ + toạ độ), timezone. | Must | ✅ (T13, quyền theo role ở T17) |
-| FR-S02 | OWNER mời thành viên (email + role DISPATCHER/DRIVER); email chứa mã mời; xem/huỷ lời mời đang chờ. | Must | ❌ |
-| FR-S03 | Người được mời chấp nhận bằng mã mời + đặt mật khẩu + tên → tài khoản ACTIVE (email coi như đã xác thực). | Must | ❌ |
-| FR-S04 | OWNER xem danh sách thành viên; vô hiệu hoá / kích hoạt lại thành viên (vô hiệu hoá → thu hồi mọi session). | Must | ❌ |
-| FR-S05 | OWNER đổi role DISPATCHER ↔ DRIVER của thành viên. | Should | ❌ |
-| FR-S06 | OWNER bật hoặc tắt `canDrive` cho chính mình và cho DISPATCHER; người có `canDrive` được gán route và dùng API tài xế (D-21). | Must | ❌ |
+| FR-S02 | OWNER mời thành viên (email + role DISPATCHER/DRIVER); email chứa mã mời; xem/huỷ lời mời đang chờ. | Must | ✅ (T16) |
+| FR-S03 | Người được mời chấp nhận bằng mã mời + đặt mật khẩu + tên → tài khoản ACTIVE (email coi như đã xác thực). | Must | ✅ (T16) |
+| FR-S04 | OWNER xem danh sách thành viên; vô hiệu hoá / kích hoạt lại thành viên (vô hiệu hoá → thu hồi mọi session). | Must | ✅ (T16) |
+| FR-S05 | OWNER đổi role DISPATCHER ↔ DRIVER của thành viên. | Should | ✅ (T16) |
+| FR-S06 | OWNER bật hoặc tắt `canDrive` cho chính mình và cho DISPATCHER; người có `canDrive` được gán route và dùng API tài xế (D-21). | Must | ✅ (T16) |
 
 ### 3.3 Xe (D-05)
 

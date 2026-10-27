@@ -1,4 +1,4 @@
-package uk.huy.pathwise.auth.infrastructure.hash;
+package uk.huy.pathwise.core.security;
 
 import org.springframework.stereotype.Component;
 

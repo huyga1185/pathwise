@@ -38,12 +38,12 @@ Package gốc `uk.huy.pathwise`. Mỗi module là một package cấp 1.
 
 | Module | Trách nhiệm | Trạng thái |
 |---|---|---|
-| `core` | Hạ tầng dùng chung, không chứa nghiệp vụ: envelope response, `ErrorCode`/`AppException`/handler, pagination, `StateStore`, rate limiter, **job framework** (`core.job`, §8.4), cấu hình web/JSON. | Có — mở rộng |
+| `core` | Hạ tầng dùng chung, không chứa nghiệp vụ: envelope response, `ErrorCode`/`AppException`/handler, pagination, `StateStore`, `core.security` (`Hasher` SHA-256, `OpaqueTokenGenerator`; P-28), rate limiter, **job framework** (`core.job`, §8.4), cấu hình web/JSON. | Có — mở rộng |
 | `shared` | Kiểu dữ liệu chia sẻ giữa module: `UserIdentity`, `UserRole`, `UserStatus`, principal `AuthenticatedUser` (P-25). Chỉ record/enum, **không** bean. | Có — sửa |
 | `user` | Tài khoản người dùng: entity `User`, mật khẩu, hồ sơ, trạng thái. | Có — mở rộng |
 | `auth` | Xác thực: đăng ký (orchestrate user + store), đăng nhập, token (access/refresh/OTP token), OTP, session, đổi/quên mật khẩu, security filter chain. | Có — sửa |
 | `notification` | Gửi email theo template (chuyển từ `auth.email.infrastructure` sang, để `store` gửi được lời mời mà không phụ thuộc `auth`). API công khai: `EmailNotificationService.send(templateName, to, variables)`, lỗi gửi là `EmailDeliveryException`. | Có (T12) |
-| `store` | Store, thành viên, lời mời. API công khai: `StoreProvisioningService.createStore(name)` (cho đăng ký, tham gia transaction của bên gọi), `StoreMemberQuery.findActiveMember(storeId, userId)`. Đọc user qua `StoreUserQuery` của `user`. | Có (T13) — mở rộng ở T16 |
+| `store` | Store, thành viên, lời mời. API công khai: `StoreProvisioningService.createStore(name)` (cho đăng ký, tham gia transaction của bên gọi), `StoreMemberQuery.findActiveMember(storeId, userId)`, event `MemberDisabledEvent` (P-27, auth nghe để thu hồi session). Đọc và ghi user qua `StoreUserService` của `user`. | Có (T13, T16) |
 | `fleet` | Xe. | Mới — T20 |
 | `routing` | Adapter định tuyến **không có DB**: `GeocodingProvider`, `MatrixProvider`, `SolverProvider`, (Should) `DirectionsProvider`; endpoint geocoding search. Đổi tên từ `routeoptimizer`. | Có — sửa/thay |
 | `planning` | Route plan, route, stop; optimize, publish, trạng thái; API cho dispatcher **và** API cho driver; vị trí tài xế. | Mới — T24+ |
@@ -65,6 +65,7 @@ planning      →  store, fleet, routing
 - Module khác chỉ được dùng **service interface công khai** và **DTO/record** của module đích (ví dụ `UserAccountService`, `StoreMemberQuery`). **Cấm** inject repository, entity hoặc class trong `infrastructure` của module khác.
 - Entity JPA **không** đi ra khỏi module sở hữu (không trả entity qua service interface công khai, không tạo quan hệ `@ManyToOne` tới entity module khác — dùng cột id `Long storeId`, `Long driverId`).
 - Thêm một mũi tên phụ thuộc mới vào sơ đồ trên = quyết định kiến trúc → ghi vào `DECISIONS.md`.
+- Module phía dưới cần báo cho module phía trên (ví dụ store → auth) thì phát **event đồng bộ** là record public của mình; module phía trên nghe bằng `@EventListener`, chạy trong cùng transaction (P-27).
 
 ### 2.2 Cấu trúc trong một module
 

@@ -4,12 +4,18 @@
 > Mọi quyết định nền tảng của contract này đã được duyệt (`DECISIONS.md`, 2026-10-22). Frontend web và Flutter có thể dựa vào tài liệu này để thiết kế song song (D-09).
 > Khi implementation khác spec: sửa code cho khớp spec, **hoặc** cập nhật spec trong cùng PR kèm lý do. Không để lệch.
 
-## 0. Tình trạng implementation so với spec (cập nhật 2026-10-27, sau T15)
+## 0. Tình trạng implementation so với spec (cập nhật 2026-10-27, sau T16)
 
 - ✅ Mọi endpoint đã dùng prefix `/api/v1` (P-02).
 - ✅ Body lỗi đã theo `{code, details?}`, kể cả lỗi từ Spring Security: thiếu hoặc sai access token trả 401 `UNAUTHORIZED`, sai role trả 403 `FORBIDDEN`. `exception`/`stackTrace` chỉ có ở profile `dev` (P-03). Có slice test kiểm chứng (`ErrorHandlingWebMvcTest`).
 - ✅ Mã HTTP đã khớp §9 cho các lỗi hiện có: sai đăng nhập 401, không tìm thấy user 404 (`USER_NOT_FOUND`), trùng email 409, JSON hỏng 400 `MALFORMED_REQUEST`, path không tồn tại 404 `NOT_FOUND`, sai method 405 `METHOD_NOT_ALLOWED`, vi phạm ràng buộc DB 409 `CONFLICT`, thiếu cookie credential 401 `INVALID_TOKEN`.
-- §4: đã có `GET /store` và `PUT /store` (T13, có test, kể cả tenant isolation). Store luôn lấy từ claim `storeId` của access token. Quyền đúng cột Quyền (T17, có test ma trận): `GET` cho OWNER và DISPATCHER, `PUT` chỉ OWNER, role khác (kể cả ADMIN) 403 `FORBIDDEN`. Các endpoint khác của §4 chưa có (T16).
+- §4: đã có `GET /store` và `PUT /store` (T13, có test, kể cả tenant isolation). Store luôn lấy từ claim `storeId` của access token. Quyền đúng cột Quyền (T17, có test ma trận): `GET` cho OWNER và DISPATCHER, `PUT` chỉ OWNER, role khác (kể cả ADMIN) 403 `FORBIDDEN`. T16 thêm toàn bộ phần còn lại của §4, có test (kể cả quyền và tenant isolation): `GET /store/members` (lọc `role`, `status`, `assignable`), `PATCH /store/members/{userId}`, `PATCH /store/members/me/can-drive`, `POST/GET /store/invitations`, `DELETE /store/invitations/{id}`, `GET /invitations/{code}`, `POST /invitations/accept`. Chi tiết hành vi mà spec chưa ghi:
+  - `canDrive` trong member luôn `true` với DRIVER (D-21). `phoneNumber` trả dạng national.
+  - `PATCH /store/members/{userId}`: user không thuộc store của actor → 404 `USER_NOT_FOUND`. OWNER chỉ đổi được `canDrive`, đổi `role`/`status` → 422 `CANNOT_MODIFY_OWNER`. `status`/`role` ngoài `ACTIVE|DISABLED` / `DISPATCHER|DRIVER` → 400 `MALFORMED_REQUEST`.
+  - `DELETE /store/invitations/{id}` của store khác → 404 `NOT_FOUND`.
+  - Lời mời PENDING đã quá `expiresAt` được trả với `status: EXPIRED` (lọc `status=EXPIRED` cũng tính chúng), DB không ghi lại.
+  - `POST /invitations/accept`: mọi mã không dùng được (không tồn tại, đã dùng, đã huỷ, hết hạn) → 404 `INVITATION_INVALID` (không có 400, vì một `ErrorCode` chỉ có một HTTP status); `phoneNumber` sai → 400 `INVALID_PHONE_NUMBER`, lời mời vẫn PENDING.
+  - `POST /store/invitations`: email lỗi vẫn trả 201 (ARCHITECTURE §7), OWNER mời lại để gửi mã mới. Chưa có 429 (T40).
 - Các mục §5 đến §8 (fleet, geocoding, jobs, plans, driver) **chưa có endpoint nào trong code**.
 - Đã thêm `ErrorCode` ở T13: `EMAIL_NOT_VERIFIED` 403, `ACCOUNT_DISABLED` 403, `EMAIL_ALREADY_VERIFIED` 409, `INVALID_TIMEZONE` 400 (khớp §9). T14 thêm `INVALID_RESET_TOKEN` 400 (P-26): spec §2 trước đó ghi `/password/reset` trả 400 `INVALID_TOKEN`, nhưng `INVALID_TOKEN` là 401 nên đã đổi sang mã mới.
 - Endpoint vận hành ngoài `/api/v1`, giữ có chủ đích: `GET /actuator/health` (kèm `/liveness`, `/readiness`), Public, chỉ trả `status` và tên các `groups`, không lộ chi tiết thành phần (T05, `ARCHITECTURE.md` §12.1). Mọi endpoint actuator khác tắt.

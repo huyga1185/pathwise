@@ -1,6 +1,6 @@
 # DATA_MODEL — Mô hình dữ liệu mục tiêu
 
-> Hiện trạng: có `users`, `refresh_tokens` (`V1__baseline.sql`) và `stores` cùng các cột tenancy của `users` (`V2__stores_and_user_tenancy.sql`, T13). Các bảng từ §2.4 trở đi là **mục tiêu**, chưa tồn tại.
+> Hiện trạng: có `users`, `refresh_tokens` (`V1__baseline.sql`), `stores` cùng các cột tenancy của `users` (`V2__stores_and_user_tenancy.sql`, T13) và `store_invitations` (`V3__store_invitations.sql`, T16). Các bảng từ §2.5 trở đi là **mục tiêu**, chưa tồn tại.
 > Dựa trên D-01..D-05, D-15, D-16, D-18..D-21, P-01, P-07, P-14 (đã Approved). Dữ liệu cũ không được giữ (D-29).
 > Quy ước: `BIGINT AUTO_INCREMENT` id; timestamp sự kiện `DATETIME(6)` lưu UTC (`hibernate.jdbc.time_zone: UTC`, Java `Instant`); toạ độ `DOUBLE`; khoảng cách mét `INT`, thời lượng giây `INT`; enum lưu `VARCHAR` (`@Enumerated(STRING)`); bảng thuộc store luôn có `store_id NOT NULL` + FK + index.
 
@@ -53,7 +53,7 @@ OWNER của store = user có `role='OWNER' AND store_id=?` (đúng 1, BR-03, ki�
 
 Giữ nguyên cột (timestamp đổi sang `DATETIME(6)`). Thêm `idx_refresh_tokens_user_state (user_id, state)`. `family_id` = session id công khai (P-07). Trạng thái `EXPIRED` được gán khi phát hiện token hết hạn lúc rotate (T10). Không có job dọn dẹp trong MVP (Could).
 
-### 2.4 `store_invitations` — New (V3)
+### 2.4 `store_invitations` — New (V3, đã tạo ở T16)
 
 | Cột | Kiểu | Ràng buộc |
 |---|---|---|
@@ -69,7 +69,7 @@ Giữ nguyên cột (timestamp đổi sang `DATETIME(6)`). Thêm `idx_refresh_to
 | accepted_at | DATETIME(6) | NULL |
 | created_at, updated_at | DATETIME(6) | NOT NULL |
 
-Index `(store_id, status)`, `(email, status)`. Quy tắc: mời lại cùng email trong cùng store → lời mời PENDING cũ chuyển `REVOKED`. Email đã thuộc một user bất kỳ → 409 `EMAIL_EXISTED` (D-02).
+Index `(store_id, status)`, `(email, status)`. Tên ràng buộc trong V3: `uk_store_invitations_code_hash`, FK `fk_store_invitations_store_id`/`_invited_by`/`_accepted_user_id`, CHECK `chk_store_invitations_role`. Trạng thái `EXPIRED` không được ghi vào DB: lời mời `PENDING` có `expires_at` đã qua được báo là `EXPIRED` và không chấp nhận/huỷ được nữa (T16). Quy tắc: mời lại cùng email trong cùng store → lời mời PENDING cũ chuyển `REVOKED`. Email đã thuộc một user bất kỳ → 409 `EMAIL_EXISTED` (D-02).
 
 ### 2.5 `vehicles` — New (V4)
 
@@ -202,7 +202,7 @@ Version được cấp trước — agent **không** tự chọn số khác:
 |---|---|---|---|
 | V1 | `V1__baseline.sql` | T02 ✓ | Nội dung `be/db/db.sql` (bỏ `CREATE DATABASE`/`USE`). `baseline-on-migrate` cho DB tạo trước từ `db.sql`. **Đã tạo.** |
 | V2 | `V2__stores_and_user_tenancy.sql` | T13 ✓ | Bảng `stores`; cột mới của `users`; không chuyển dữ liệu (§5, D-29); index refresh_tokens; đổi timestamp sang `DATETIME(6)`. **Đã tạo.** |
-| V3 | `V3__store_invitations.sql` | T16 | Bảng `store_invitations`. |
+| V3 | `V3__store_invitations.sql` | T16 ✓ | Bảng `store_invitations`. **Đã tạo.** |
 | V4 | `V4__vehicles.sql` | T20 | Bảng `vehicles`. |
 | V5 | `V5__route_plans.sql` | T24 | `background_jobs`, `route_plans`, `route_plan_routes`, `route_plan_stops`. |
 
