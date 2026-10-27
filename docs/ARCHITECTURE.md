@@ -45,7 +45,7 @@ Package gốc `uk.huy.pathwise`. Mỗi module là một package cấp 1.
 | `notification` | Gửi email theo template (chuyển từ `auth.email.infrastructure` sang, để `store` gửi được lời mời mà không phụ thuộc `auth`). API công khai: `EmailNotificationService.send(templateName, to, variables)`, lỗi gửi là `EmailDeliveryException`. | Có (T12) |
 | `store` | Store, thành viên, lời mời. API công khai: `StoreProvisioningService.createStore(name)` (cho đăng ký, tham gia transaction của bên gọi), `StoreMemberQuery.findActiveMember(storeId, userId)`, event `MemberDisabledEvent` (P-27, auth nghe để thu hồi session). Đọc và ghi user qua `StoreUserService` của `user`. | Có (T13, T16) |
 | `fleet` | Xe. | Mới — T20 |
-| `routing` | Adapter định tuyến **không có DB**: `GeocodingProvider`, `MatrixProvider`, `SolverProvider`, (Should) `DirectionsProvider`; endpoint geocoding search. Đổi tên từ `routeoptimizer`. | Có — geocoding (T21), matrix (T22) xong; solver chuyển ở T23 |
+| `routing` | Adapter định tuyến **không có DB**: `GeocodingProvider`, `MatrixProvider`, `SolverProvider`, (Should) `DirectionsProvider`; endpoint geocoding search. Đổi tên từ `routeoptimizer`. | Có — geocoding (T21), matrix (T22), solver (T23) |
 | `planning` | Route plan, route, stop; optimize, publish, trạng thái; API cho dispatcher **và** API cho driver; vị trí tài xế. | Mới — T24+ |
 
 ### 2.1 Quy tắc phụ thuộc giữa module (bắt buộc)
@@ -239,7 +239,9 @@ DRAFT ──optimize(job)──▶ DRAFT có kết quả ──publish──▶ 
    - Dimension Distance giới hạn bằng `maxDistance`.
    - Arc cost tính theo duration.
    - Mỗi stop có disjunction kèm penalty lớn, nên stop không xếp được sẽ rơi vào `dropped` (P-13).
-   - First solution `PATH_CHEAPEST_ARC`, metaheuristic `GUIDED_LOCAL_SEARCH`, time limit cấu hình (mặc định 10 giây).
+   - First solution `PATH_CHEAPEST_ARC`, metaheuristic `GUIDED_LOCAL_SEARCH`, time limit cấu hình (mặc định 10 giây). GLS chạy tới hết time limit, nên mỗi lần optimize có stop luôn mất đúng khoảng đó.
+   - Mỗi node của ma trận là node của đúng một stop hoặc là start/end của xe (nhiều xe dùng chung depot được); vi phạm thì `IllegalArgumentException`. Horizon của dimension Time = giờ lớn nhất trong các ca và các time window, để stop có window nằm ngoài mọi ca bị drop thay vì làm OR-Tools lỗi khi dựng model. Giờ xuất phát được đẩy muộn nhất và giờ về sớm nhất có thể (finalizer). Penalty drop lớn hơn chi phí của mọi xe chạy hết horizon.
+   - `VrpSolution`: một route cho mỗi xe theo thứ tự đầu vào (xe không dùng thì không có visit), ETA = giờ bắt đầu phục vụ, `droppedStops`; `NO_SOLUTION` khi OR-Tools không tìm ra lời giải nào (ví dụ xe không kịp đi từ start tới end trong ca).
 5. Ghi kết quả: `sequence`, `plannedArrival`, chỉ số từng route, `optimized_at`. Stop bị drop có `route_id = NULL`. Job `SUCCEEDED`, plan về `IDLE`. Nếu provider lỗi thì job `FAILED` (`ROUTING_PROVIDER_ERROR`), plan về `IDLE`, kết quả cũ giữ nguyên.
 
 ### 8.4 Job framework (`core.job`, D-19)
@@ -260,7 +262,7 @@ DRAFT ──optimize(job)──▶ DRAFT có kết quả ──publish──▶ 
 |---|---|---|
 | `GeocodingProvider.search(query, limit)` | Nominatim (`countrycodes=vn`) với `CachingGeocodingProvider` (Redis 24 giờ) bọc ngoài và rate limiter dùng chung (P-11). Cấu hình `routing.geocoding.nominatim.base-url`, `.user-agent`, `.connect-timeout`, `.read-timeout`, `routing.geocoding.nominatim.rate-limit.enabled`, `.per-second`, `.max-wait` (D-25), `routing.geocoding.cache-ttl`. Redis lỗi thì fail-closed (500), không coi là cache miss, vì rate limiter cũng cần Redis. Rate limiter (`RedisRequestThrottle`) đặt slot bằng Lua `ReserveThrottleSlot.lua`: một round trip atomic trả về thời gian phải chờ tới slot của mình, theo thứ tự đến và theo đồng hồ Redis, nên không polling và không tranh slot; chờ quá `max-wait` thì không đặt slot (trade-off kỹ thuật như Lua verify OTP: logic gắn với Redis, chỉ test bằng Testcontainers). | Google (I-03) |
 | `MatrixProvider.matrix(points)` → `TravelMatrix(distanceMeters, durationSeconds)` (int) | OSRM table `annotations=distance,duration`. Cấu hình `routing.matrix.provider`, `routing.matrix.osrm.base-url`, `.user-agent`, `.profile`, `.max-table-size`, `.connect-timeout`, `.read-timeout`. Ô `null` (không có đường) hay response thiếu → 502 `ROUTING_PROVIDER_ERROR`. Server OSRM giới hạn số điểm (`--max-table-size`): quá `max-table-size` điểm thì app chia thành khối `max-table-size / 2` và lấy từng cặp khối bằng `sources`/`destinations` (F-41), nên giá trị cấu hình phải khớp server. | Google Distance Matrix (I-03) |
-| `SolverProvider.solve(problem)` | OR-Tools | — |
+| `SolverProvider.solve(VrpProblem)` → `VrpSolution` | OR-Tools (`OrToolsVrpSolver`, T23). Cấu hình `routing.solver.provider`, `routing.solver.time-limit`. | — |
 | `DirectionsProvider.route(coords)` (Should) | OSRM route `steps=true&overview=full&geometries=polyline6`, cache theo route và version | — |
 
 Chọn implementation bằng property (`routing.geocoding.provider=nominatim`), **không** dùng chuỗi `@Qualifier` rải rác.
