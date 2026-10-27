@@ -17,10 +17,6 @@ public class OSRMMatrixProviderConfig {
                 .baseUrl(osrmBaseUrl)
                 .defaultHeader("User-Agent", userAgent)
                 .defaultHeader("Accept-Encoding", "identity")
-                .requestInterceptor((request, body, execution) -> {
-                    System.out.println(">>> OSRM URI: " + request.getURI());
-                    return execution.execute(request, body);
-                })
                 .build();
     }
 }

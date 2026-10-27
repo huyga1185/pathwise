@@ -59,7 +59,7 @@ Mỗi user thuộc tối đa 1 store và có đúng 1 role (D-02). OWNER hoặc 
 
 | ID | Yêu cầu | Tầng | Hiện trạng |
 |---|---|---|---|
-| FR-P01 | Tìm địa chỉ → danh sách ứng viên có toạ độ (geocoding search, dùng cho autocomplete hoặc sửa stop lỗi). | Should | 🟡 có geocode nội bộ, chưa có endpoint |
+| FR-P01 | Tìm địa chỉ → danh sách ứng viên có toạ độ (geocoding search, dùng cho autocomplete hoặc sửa stop lỗi). | Should | ✅ (T21) |
 | FR-P02 | Tạo plan nháp (DRAFT) cho một ngày: depot, danh sách stop (nhãn, tên/số điện thoại người nhận, địa chỉ hiển thị, **địa chỉ và/hoặc toạ độ** (phải có ít nhất một trong hai), demand, thời gian phục vụ, time window tuỳ chọn, ghi chú) và danh sách phân công (tài xế + xe + giờ bắt đầu/kết thúc ca + quãng đường tối đa tuỳ chọn). | Must | ❌ |
 | FR-P03 | Sửa plan DRAFT (thêm/sửa/xoá stop, phân công). Mọi chỉnh sửa xoá kết quả tối ưu cũ; stop không đổi địa chỉ thì giữ kết quả geocode. | Must | ❌ |
 | FR-P09 | Server geocode **chạy nền** các stop chỉ có địa chỉ ngay khi lưu plan. Dispatcher thấy tiến độ và từng stop thất bại kèm lý do, sửa được bằng địa chỉ mới hoặc toạ độ, và chạy lại được. Plan chỉ optimize khi mọi stop đã có toạ độ. | Must | ❌ (hiện geocode tuần tự trong request) |
