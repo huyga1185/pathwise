@@ -187,8 +187,8 @@ Index `(status, created_at)`, `(store_id, target_id)`. Khi ứng dụng khởi �
 | `otp:cooldown:{purpose}:{userId}` | `1`; bị xoá cùng OTP khi email gửi lỗi | `otp.cooldown` (mặc định 60 s) | auth |
 | `otpToken:{purpose}:{ticket}` | `{userId}:{sha256(secret)}`; `purpose` là `RESET_PASSWORD` (T14; `updateUserPassword` của luồng đổi mật khẩu cũ đã bỏ ở T15) | 10 phút | auth |
 | `ratelimit:{scope}:{key}:{window}` | counter | = window | core |
-| `geocode:nominatim:{sha256(normalizedQuery)}` | JSON kết quả | 24 h | routing |
-| `geocode:nominatim:lock` | token rate limit 1 req/s | 1 s | routing |
+| `geocode:nominatim:{sha256(normalizedQuery + "|" + limit)}` | JSON danh sách `{displayName, lat, lon}` (cả danh sách rỗng); query chuẩn hoá = trim, gộp khoảng trắng, chữ thường | `routing.geocoding.cache-ttl` (24 h) | routing |
+| `geocode:nominatim:next-slot` | thời điểm (ms, đồng hồ Redis) slot trống kế tiếp; Lua `ReserveThrottleSlot.lua` đặt slot theo thứ tự đến (P-11) | hết khi slot cuối đã đặt kết thúc (`chờ + 1000 / per-second` ms) | routing |
 | `driver:location:{storeId}:{driverId}` | JSON vị trí | 10 phút | planning |
 | `directions:route:{routeId}:{planVersion}` (Should) | JSON geometry/steps | 24 h | planning |
 

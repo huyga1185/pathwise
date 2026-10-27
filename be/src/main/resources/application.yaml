@@ -20,10 +20,23 @@ spring:
 
 api:
   user-agent: PathWise/1.0 (https://huy-vu.uk/)
-  geocoding:
-    nominatim-base-url: https://nominatim.openstreetmap.org
   matrix:
     osrm-base-url: http://router.project-osrm.org
+
+routing:
+  geocoding:
+    provider: nominatim
+    cache-ttl: 24h
+    nominatim:
+      base-url: https://nominatim.openstreetmap.org
+      user-agent: PathWise/1.0 (https://huy-vu.uk/)
+      connect-timeout: 3s
+      read-timeout: 10s
+      rate-limit:
+        # Nominatim usage policy: at most 1 request per second. Turn off only for a self-hosted Nominatim (D-25).
+        enabled: true
+        per-second: 1
+        max-wait: 2s
 
 management:
   endpoints:

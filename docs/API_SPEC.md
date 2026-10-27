@@ -4,7 +4,7 @@
 > Mọi quyết định nền tảng của contract này đã được duyệt (`DECISIONS.md`, 2026-10-22). Frontend web và Flutter có thể dựa vào tài liệu này để thiết kế song song (D-09).
 > Khi implementation khác spec: sửa code cho khớp spec, **hoặc** cập nhật spec trong cùng PR kèm lý do. Không để lệch.
 
-## 0. Tình trạng implementation so với spec (cập nhật 2026-10-27, sau T16)
+## 0. Tình trạng implementation so với spec (cập nhật 2026-10-28, sau T21)
 
 - ✅ Mọi endpoint đã dùng prefix `/api/v1` (P-02).
 - ✅ Body lỗi đã theo `{code, details?}`, kể cả lỗi từ Spring Security: thiếu hoặc sai access token trả 401 `UNAUTHORIZED`, sai role trả 403 `FORBIDDEN`. `exception`/`stackTrace` chỉ có ở profile `dev` (P-03). Có slice test kiểm chứng (`ErrorHandlingWebMvcTest`).
@@ -16,7 +16,8 @@
   - Lời mời PENDING đã quá `expiresAt` được trả với `status: EXPIRED` (lọc `status=EXPIRED` cũng tính chúng), DB không ghi lại.
   - `POST /invitations/accept`: mọi mã không dùng được (không tồn tại, đã dùng, đã huỷ, hết hạn) → 404 `INVITATION_INVALID` (không có 400, vì một `ErrorCode` chỉ có một HTTP status); `phoneNumber` sai → 400 `INVALID_PHONE_NUMBER`, lời mời vẫn PENDING.
   - `POST /store/invitations`: email lỗi vẫn trả 201 (ARCHITECTURE §7), OWNER mời lại để gửi mã mới. Chưa có 429 (T40).
-- Các mục §5 đến §8 (fleet, geocoding, jobs, plans, driver) **chưa có endpoint nào trong code**.
+- §6: `GET /geocoding/search` đã có (T21, có test): quyền OWNER/DISPATCHER, `q` 3–300 ký tự và `limit` 1–10 (sai → 400 `VALIDATION_ERROR`, detail `INVALID_QUERY_LENGTH`/`INVALID_LIMIT`; thiếu `q` → 400 `MALFORMED_REQUEST`), 503 `GEOCODING_BUSY`, 502 `GEOCODING_PROVIDER_ERROR`. Kết quả chỉ trong Việt Nam (`countrycodes=vn`). `GET /jobs/{id}` chưa có.
+- Các mục §5, §7, §8 (fleet, plans, driver) **chưa có endpoint nào trong code**.
 - Đã thêm `ErrorCode` ở T13: `EMAIL_NOT_VERIFIED` 403, `ACCOUNT_DISABLED` 403, `EMAIL_ALREADY_VERIFIED` 409, `INVALID_TIMEZONE` 400 (khớp §9). T14 thêm `INVALID_RESET_TOKEN` 400 (P-26): spec §2 trước đó ghi `/password/reset` trả 400 `INVALID_TOKEN`, nhưng `INVALID_TOKEN` là 401 nên đã đổi sang mã mới.
 - Endpoint vận hành ngoài `/api/v1`, giữ có chủ đích: `GET /actuator/health` (kèm `/liveness`, `/readiness`), Public, chỉ trả `status` và tên các `groups`, không lộ chi tiết thành phần (T05, `ARCHITECTURE.md` §12.1). Mọi endpoint actuator khác tắt.
 - Endpoint đang có trong code nhưng **không thuộc spec**, sẽ bị xoá ở T27: `POST /api/v1/route/optimize` và `POST /api/v1/route/optimize/k` (từ T17 chỉ OWNER/DISPATCHER, role khác 403). Mã lỗi riêng của chúng (`INVALID_DEPOT`, `COULD_NOT_FIND_*`) cũng bỏ theo.

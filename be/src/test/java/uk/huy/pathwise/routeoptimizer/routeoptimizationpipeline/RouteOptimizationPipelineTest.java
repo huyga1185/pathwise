@@ -7,7 +7,8 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import uk.huy.pathwise.routeoptimizer.infrastructure.geocoding.GeocodingProvider;
+import uk.huy.pathwise.routing.geocoding.GeocodingProvider;
+import uk.huy.pathwise.routing.geocoding.GeocodingResult;
 import uk.huy.pathwise.routeoptimizer.infrastructure.matrix.MatrixProvider;
 import uk.huy.pathwise.routeoptimizer.infrastructure.routeoptimizationpipeline.RouteOptimizationPipeline;
 import uk.huy.pathwise.routeoptimizer.model.Coordinate;
@@ -81,7 +82,7 @@ class RouteOptimizationPipelineTest {
 
     @Test
     void optimizeTSP_allStopsGeocoded_returnsListString() {
-        when(geocodingProvider.geocodeListAddress(anyList())).thenReturn(List.of(new Coordinate[]{add1, add2, add3, add4}));
+        stubGeocoding(List.of(add1, add2, add3, add4));
         when(matrixProvider.matrixRoute(anyList(), anyString())).thenReturn(matrix);
         when(solverProvider.solveTSP(any(), anyInt())).thenReturn(tspResult);
 
@@ -91,7 +92,7 @@ class RouteOptimizationPipelineTest {
         assertThat(rs).isNotEmpty();
 
         var inOrder = inOrder(geocodingProvider, matrixProvider, solverProvider);
-        inOrder.verify(geocodingProvider, atLeastOnce()).geocodeListAddress(anyList());
+        inOrder.verify(geocodingProvider, atLeastOnce()).search(anyString(), eq(1));
         inOrder.verify(matrixProvider).matrixRoute(anyList(), anyString());
         inOrder.verify(solverProvider).solveTSP(any(), anyInt());
     }
@@ -99,7 +100,7 @@ class RouteOptimizationPipelineTest {
     @Test
     void optimizeTSP_mapsSolverIndicesBackToAddressesInOrder() {
         // solver visits stops in the order 3 -> 0 -> 2 -> 1
-        when(geocodingProvider.geocodeListAddress(anyList())).thenReturn(List.of(new Coordinate[]{add1, add2, add3, add4}));
+        stubGeocoding(List.of(add1, add2, add3, add4));
         when(matrixProvider.matrixRoute(anyList(), anyString())).thenReturn(matrix);
         when(solverProvider.solveTSP(any(), anyInt())).thenReturn(new int[]{3, 0, 2, 1});
 
@@ -116,13 +117,13 @@ class RouteOptimizationPipelineTest {
     @Test
     void optimizeTSP_passesGeocodedCoordinatesDrivingProfileAndDepotDownstream() {
         List<Coordinate> coordinates = List.of(add1, add2, add3, add4);
-        when(geocodingProvider.geocodeListAddress(anyList())).thenReturn(coordinates);
+        stubGeocoding(coordinates);
         when(matrixProvider.matrixRoute(anyList(), anyString())).thenReturn(matrix);
         when(solverProvider.solveTSP(any(), anyInt())).thenReturn(tspResult);
 
         routeOptimizationPipeline.optimize(addresses, 2);
 
-        verify(geocodingProvider).geocodeListAddress(addresses);
+        for (String address : addresses) verify(geocodingProvider).search(address, 1);
         verify(matrixProvider).matrixRoute(coordinates, "driving");
         verify(solverProvider).solveTSP(matrix, 2);
     }
@@ -159,7 +160,7 @@ class RouteOptimizationPipelineTest {
 
     @Test
     void optimizeVRP_allStopsGeocoded_returns2DArrayString() {
-        when(geocodingProvider.geocodeListAddress(anyList())).thenReturn(List.of(new Coordinate[]{add1, add2, add3, add4}));
+        stubGeocoding(List.of(add1, add2, add3, add4));
         when(matrixProvider.matrixRoute(anyList(), anyString())).thenReturn(matrix);
         when(solverProvider.solveVRP(any(), anyInt(), anyInt())).thenReturn(vrpResult);
 
@@ -169,14 +170,14 @@ class RouteOptimizationPipelineTest {
         assertThat(rs).isNotEmpty();
 
         var inOrder = inOrder(geocodingProvider, matrixProvider, solverProvider);
-        inOrder.verify(geocodingProvider, atLeastOnce()).geocodeListAddress(anyList());
+        inOrder.verify(geocodingProvider, atLeastOnce()).search(anyString(), eq(1));
         inOrder.verify(matrixProvider).matrixRoute(anyList(), anyString());
         inOrder.verify(solverProvider).solveVRP(any(), anyInt(), anyInt());
     }
 
     @Test
     void optimizeVRP_mapsEachVehicleRouteBackToAddresses() {
-        when(geocodingProvider.geocodeListAddress(anyList())).thenReturn(List.of(new Coordinate[]{add1, add2, add3, add4}));
+        stubGeocoding(List.of(add1, add2, add3, add4));
         when(matrixProvider.matrixRoute(anyList(), anyString())).thenReturn(matrix);
         when(solverProvider.solveVRP(any(), anyInt(), anyInt())).thenReturn(vrpResult);
 
@@ -199,14 +200,14 @@ class RouteOptimizationPipelineTest {
     @Test
     void optimizeVRP_passesGeocodedCoordinatesDrivingProfileDepotAndVehicleCountDownstream() {
         List<Coordinate> coordinates = List.of(add1, add2, add3, add4);
-        when(geocodingProvider.geocodeListAddress(anyList())).thenReturn(coordinates);
+        stubGeocoding(coordinates);
         when(matrixProvider.matrixRoute(anyList(), anyString())).thenReturn(matrix);
         when(solverProvider.solveVRP(any(), anyInt(), anyInt())).thenReturn(vrpResult);
 
         routeOptimizationPipeline.optimizeKVehicleRoute(addresses, 1, 3);
 
         ArgumentCaptor<String> profile = ArgumentCaptor.forClass(String.class);
-        verify(geocodingProvider).geocodeListAddress(addresses);
+        for (String address : addresses) verify(geocodingProvider).search(address, 1);
         verify(matrixProvider).matrixRoute(eq(coordinates), profile.capture());
         verify(solverProvider).solveVRP(matrix, 1, 3);
         assertThat(profile.getValue()).isEqualTo("driving");
@@ -230,5 +231,13 @@ class RouteOptimizationPipelineTest {
                 .isEqualTo(ErrorCode.INVALID_DEPOT);
 
         verifyNoInteractions(geocodingProvider, matrixProvider, solverProvider);
+    }
+
+    private void stubGeocoding(List<Coordinate> coordinates) {
+        for (int i = 0; i < addresses.size(); i++) {
+            Coordinate coordinate = coordinates.get(i);
+            when(geocodingProvider.search(addresses.get(i), 1))
+                    .thenReturn(List.of(new GeocodingResult(addresses.get(i), coordinate.lat(), coordinate.lon())));
+        }
     }
 }
