@@ -45,7 +45,7 @@ Package gốc `uk.huy.pathwise`. Mỗi module là một package cấp 1.
 | `notification` | Gửi email theo template (chuyển từ `auth.email.infrastructure` sang, để `store` gửi được lời mời mà không phụ thuộc `auth`). API công khai: `EmailNotificationService.send(templateName, to, variables)`, lỗi gửi là `EmailDeliveryException`. | Có (T12) |
 | `store` | Store, thành viên, lời mời. API công khai: `StoreProvisioningService.createStore(name)` (cho đăng ký, tham gia transaction của bên gọi), `StoreMemberQuery.findActiveMember(storeId, userId)`, event `MemberDisabledEvent` (P-27, auth nghe để thu hồi session). Đọc và ghi user qua `StoreUserService` của `user`. | Có (T13, T16) |
 | `fleet` | Xe. | Mới — T20 |
-| `routing` | Adapter định tuyến **không có DB**: `GeocodingProvider`, `MatrixProvider`, `SolverProvider`, (Should) `DirectionsProvider`; endpoint geocoding search. Đổi tên từ `routeoptimizer`. | Có — geocoding xong ở T21; matrix, solver chuyển ở T22, T23 |
+| `routing` | Adapter định tuyến **không có DB**: `GeocodingProvider`, `MatrixProvider`, `SolverProvider`, (Should) `DirectionsProvider`; endpoint geocoding search. Đổi tên từ `routeoptimizer`. | Có — geocoding (T21), matrix (T22) xong; solver chuyển ở T23 |
 | `planning` | Route plan, route, stop; optimize, publish, trạng thái; API cho dispatcher **và** API cho driver; vị trí tài xế. | Mới — T24+ |
 
 ### 2.1 Quy tắc phụ thuộc giữa module (bắt buộc)
@@ -259,7 +259,7 @@ DRAFT ──optimize(job)──▶ DRAFT có kết quả ──publish──▶ 
 | Interface | MVP | Sau MVP |
 |---|---|---|
 | `GeocodingProvider.search(query, limit)` | Nominatim (`countrycodes=vn`) với `CachingGeocodingProvider` (Redis 24 giờ) bọc ngoài và rate limiter dùng chung (P-11). Cấu hình `routing.geocoding.nominatim.base-url`, `.user-agent`, `.connect-timeout`, `.read-timeout`, `routing.geocoding.nominatim.rate-limit.enabled`, `.per-second`, `.max-wait` (D-25), `routing.geocoding.cache-ttl`. Redis lỗi thì fail-closed (500), không coi là cache miss, vì rate limiter cũng cần Redis. Rate limiter (`RedisRequestThrottle`) đặt slot bằng Lua `ReserveThrottleSlot.lua`: một round trip atomic trả về thời gian phải chờ tới slot của mình, theo thứ tự đến và theo đồng hồ Redis, nên không polling và không tranh slot; chờ quá `max-wait` thì không đặt slot (trade-off kỹ thuật như Lua verify OTP: logic gắn với Redis, chỉ test bằng Testcontainers). | Google (I-03) |
-| `MatrixProvider.matrix(coords)` | OSRM table `annotations=distance,duration`, base URL cấu hình được | Google Distance Matrix (I-03) |
+| `MatrixProvider.matrix(points)` → `TravelMatrix(distanceMeters, durationSeconds)` (int) | OSRM table `annotations=distance,duration`. Cấu hình `routing.matrix.provider`, `routing.matrix.osrm.base-url`, `.user-agent`, `.profile`, `.max-table-size`, `.connect-timeout`, `.read-timeout`. Ô `null` (không có đường) hay response thiếu → 502 `ROUTING_PROVIDER_ERROR`. Server OSRM giới hạn số điểm (`--max-table-size`): quá `max-table-size` điểm thì app chia thành khối `max-table-size / 2` và lấy từng cặp khối bằng `sources`/`destinations` (F-41), nên giá trị cấu hình phải khớp server. | Google Distance Matrix (I-03) |
 | `SolverProvider.solve(problem)` | OR-Tools | — |
 | `DirectionsProvider.route(coords)` (Should) | OSRM route `steps=true&overview=full&geometries=polyline6`, cache theo route và version | — |
 
