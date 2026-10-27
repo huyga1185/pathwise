@@ -1,4 +1,4 @@
-package uk.huy.pathwise.auth.token.opaque.infrastructure;
+package uk.huy.pathwise.core.security;
 
 import org.springframework.stereotype.Component;
 

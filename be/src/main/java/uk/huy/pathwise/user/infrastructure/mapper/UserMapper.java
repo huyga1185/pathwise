@@ -27,5 +27,6 @@ public interface UserMapper {
 
     UserIdentity toUserIdentity(User user);
 
+    @Mapping(target = "phoneNumber", source = "phoneNumber", qualifiedByName = "toNational")
     StoreUser toStoreUser(User user);
 }

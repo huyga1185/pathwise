@@ -22,12 +22,14 @@ public class EmailNotificationService {
     public static final String VERIFY_EMAIL = "verify-email";
     public static final String RESET_PASSWORD = "reset-password";
     public static final String CHANGE_PASSWORD = "change-password";
+    public static final String INVITATION = "invitation";
 
     // Subject of each template; a template without a subject here cannot be sent.
     private static final Map<String, String> SUBJECTS = Map.of(
             VERIFY_EMAIL, "Mã xác thực email",
             RESET_PASSWORD, "Mã đặt lại mật khẩu",
-            CHANGE_PASSWORD, "Mã xác nhận đổi mật khẩu");
+            CHANGE_PASSWORD, "Mã xác nhận đổi mật khẩu",
+            INVITATION, "Lời mời tham gia cửa hàng");
 
     private final EmailSender emailSender;
     private final TemplateEngine templateEngine;

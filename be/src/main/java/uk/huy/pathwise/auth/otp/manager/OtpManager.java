@@ -3,7 +3,7 @@ package uk.huy.pathwise.auth.otp.manager;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.stereotype.Component;
-import uk.huy.pathwise.auth.infrastructure.hash.Hasher;
+import uk.huy.pathwise.core.security.Hasher;
 import uk.huy.pathwise.auth.otp.dto.OtpSendResult;
 import uk.huy.pathwise.auth.otp.infrastructure.config.OtpProperties;
 import uk.huy.pathwise.auth.otp.infrastructure.generator.OtpGenerator;
