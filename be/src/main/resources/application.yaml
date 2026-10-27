@@ -42,6 +42,10 @@ routing:
       max-table-size: 100
       connect-timeout: 3s
       read-timeout: 10s
+  solver:
+    provider: ortools
+    # Guided local search runs until this limit, so every optimization takes this long (NFR-02: <= 15 s).
+    time-limit: 10s
 
 management:
   endpoints:
