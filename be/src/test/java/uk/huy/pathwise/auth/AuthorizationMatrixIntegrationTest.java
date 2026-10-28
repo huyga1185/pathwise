@@ -31,8 +31,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 /**
  * T17: the permission matrix of ARCHITECTURE.md §6.3 for the endpoints that exist, one case per cell, with real
- * access tokens. The legacy {@code /route/optimize} endpoints are covered by {@code OptimizationControllerTest}
- * (they would call Nominatim here). Also the reference tenant isolation test for store-scoped endpoints.
+ * access tokens. Also the reference tenant isolation test for store-scoped endpoints.
  */
 @SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
 @AutoConfigureMockMvc

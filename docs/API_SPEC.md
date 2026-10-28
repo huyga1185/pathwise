@@ -5,14 +5,13 @@
 > Cột "Hiện trạng" ở mọi bảng: ✅ khớp spec và có test · 🟡 có nhưng còn lệch (ghi rõ lệch gì) · ❌ chưa có. Lịch sử triển khai theo task nằm ở `CURRENT_STATE.md` §5, không ghi ở đây.
 > Lần rà soát contract gần nhất: T44 (2026-10-29, P-32).
 
-## 0. Lệch hiện tại so với spec (cập nhật 2026-10-29, sau T26)
+## 0. Lệch hiện tại so với spec (cập nhật 2026-10-29, sau T27)
 
 - Chưa có 429 `RATE_LIMITED` cho `/register`, `/email/verify/resend`, `/log-in`, `/password/forgot`, `POST /store/invitations` (T40).
 - `GET /admin/users` chưa trả `storeId`, `status`.
 - §7: chưa có `driver-locations` (T32), `routes` (T28).
 - §8: chưa có endpoint nào (T30–T33).
 - Endpoint vận hành ngoài `/api/v1`, giữ có chủ đích: `GET /actuator/health` (kèm `/liveness`, `/readiness`), Public, chỉ trả `status` và tên các `groups` (T05, `ARCHITECTURE.md` §12.1). Mọi endpoint actuator khác tắt.
-- Endpoint có trong code nhưng **không thuộc spec**, sẽ bị xoá ở T27: `POST /api/v1/route/optimize`, `POST /api/v1/route/optimize/k` (chỉ OWNER/DISPATCHER). Mã lỗi riêng của chúng (`INVALID_DEPOT`, `COULD_NOT_FIND_*`) bỏ theo.
 
 ## 1. Quy ước chung
 
@@ -350,6 +349,6 @@ Người gọi phải có `role=DRIVER` hoặc `canDrive=true` (D-21), và chỉ
 | Khác | `INTERNAL_ERROR` | 500 |
 
 - `CONFLICT`: vi phạm ràng buộc DB không có mã nghiệp vụ riêng, ví dụ hai request đăng ký đồng thời.
-- Không còn trả (giữ trong enum dạng `@Deprecated` vì `ErrorCode` chỉ được thêm): `USER_NOT_FOUND`, `SESSION_NOT_FOUND`, `JOB_NOT_FOUND` (thay bằng `NOT_FOUND`, P-32), `COULD_NOT_FIND_USER`, `COULD_NOT_UPDATE_USER_PASSWORD`. Bỏ cùng `/route/optimize*` ở T27: `INVALID_DEPOT`, `COULD_NOT_FIND_CHEAPEST_ROUTE`, `COULD_NOT_FIND_ADDRESS`.
+- Không còn trả (giữ trong enum dạng `@Deprecated` vì `ErrorCode` chỉ được thêm): `USER_NOT_FOUND`, `SESSION_NOT_FOUND`, `JOB_NOT_FOUND` (thay bằng `NOT_FOUND`, P-32), `COULD_NOT_FIND_USER`, `COULD_NOT_UPDATE_USER_PASSWORD`. Đã bỏ cùng `/route/optimize*` ở T27 (`@Deprecated`): `INVALID_DEPOT`, `COULD_NOT_FIND_CHEAPEST_ROUTE`, `COULD_NOT_FIND_ADDRESS`.
 - `Job.errorCode` (§6) có thêm các giá trị không phải `ErrorCode`: `INTERRUPTED`, `JOB_QUEUE_FULL`, `NO_SOLUTION`.
 - Mã validation trong `details[].code` dùng UPPER_SNAKE, ví dụ `EMAIL_REQUIRED`, `INVALID_EMAIL_FORMAT`, `INVALID_PASSWORD_LENGTH`, `PHONE_NUMBER_WRONG_REGION`, `NOT_NULLABLE`.
