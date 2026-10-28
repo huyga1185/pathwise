@@ -1,4 +1,4 @@
-package uk.huy.pathwise.core.job;
+package uk.huy.pathwise.job.model;
 
 import jakarta.persistence.*;
 import lombok.*;

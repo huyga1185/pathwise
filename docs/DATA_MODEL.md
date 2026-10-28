@@ -99,7 +99,7 @@ Không xoá cứng xe đã dùng trong plan; chỉ `active=false`. Tên ràng bu
 | depot_lat, depot_lon | DOUBLE | NOT NULL — snapshot từ store hoặc ghi đè |
 | timezone | VARCHAR(50) | NOT NULL — snapshot |
 | processing_status | VARCHAR(20) | NOT NULL DEFAULT `IDLE`. Giá trị: `IDLE, GEOCODING, OPTIMIZING`. Khác `IDLE` thì plan không sửa, optimize hay publish được (409 `PLAN_BUSY`) (D-19). |
-| active_job_id | BIGINT | NULL, FK background_jobs |
+| active_job_id | BIGINT | NULL, FK background_jobs. Job đang chạy trên plan khi `processing_status` khác `IDLE`, NULL khi `IDLE` (T29). Loại khỏi optimistic lock: gắn job không tự tăng `version`. |
 | optimized_at | DATETIME(6) | NULL. NULL nghĩa là chưa có kết quả hợp lệ. |
 | total_distance_m | INT | NULL |
 | total_duration_s | INT | NULL |
@@ -183,13 +183,13 @@ Bảng job dùng chung. MVP có 2 loại job: `GEOCODE_PLAN` (chạy nền) và 
 | type | VARCHAR(30) | NOT NULL — `GEOCODE_PLAN, OPTIMIZE_PLAN` |
 | target_id | BIGINT | NOT NULL. Là plan id. Không có FK để bảng dùng chung cho mọi loại job. |
 | status | VARCHAR(20) | NOT NULL — `QUEUED, RUNNING, SUCCEEDED, FAILED, CANCELLED` |
-| error_code | VARCHAR(50) | NULL |
-| attempts | INT | NOT NULL DEFAULT 0 |
+| error_code | VARCHAR(50) | NULL. Khi `FAILED`: `INTERRUPTED`, `JOB_QUEUE_FULL`, `INTERNAL_ERROR` (hằng `job.model.JobErrors`) hoặc tên `ErrorCode` của provider, ví dụ `GEOCODING_PROVIDER_ERROR` (T29, P-30). |
+| attempts | INT | NOT NULL DEFAULT 0. Tăng mỗi lần job chuyển sang `RUNNING`. |
 | created_by | BIGINT | NOT NULL, FK users |
 | started_at, finished_at | DATETIME(6) | NULL |
 | created_at, updated_at | DATETIME(6) | NOT NULL |
 
-Index `(status, created_at)`, `(store_id, target_id)`. Tên ràng buộc trong V5: FK `fk_background_jobs_store_id`/`_created_by`, index `idx_background_jobs_status_created`/`_store_target`. T24 chỉ tạo entity `core.job.BackgroundJob` và repository; executor ở T29. Khi ứng dụng khởi động, job đang `RUNNING` được chuyển sang `FAILED` (`error_code = INTERRUPTED`) và plan tương ứng trả về `processing_status = IDLE`. MVP giả định chỉ chạy **một instance**; muốn chạy nhiều instance thì phải có cơ chế claim job (ghi vào Could).
+Index `(status, created_at)`, `(store_id, target_id)`. Tên ràng buộc trong V5: FK `fk_background_jobs_store_id`/`_created_by`, index `idx_background_jobs_status_created`/`_store_target`. Entity `job.model.BackgroundJob` và repository (module `job`; T24 đặt ở `core.job`, T29 tách ra, P-31); executor, `JobService`, khôi phục lúc khởi động (T29). Khi khởi động, job `QUEUED` cũng chuyển sang `FAILED/INTERRUPTED` như `RUNNING` (P-30). Khi ứng dụng khởi động, job đang `RUNNING` hoặc `QUEUED` được chuyển sang `FAILED` (`error_code = INTERRUPTED`) và plan tương ứng trả về `processing_status = IDLE`. MVP giả định chỉ chạy **một instance**; muốn chạy nhiều instance thì phải có cơ chế claim job (ghi vào Could).
 
 ## 3. Redis keys (mọi key có TTL)
 

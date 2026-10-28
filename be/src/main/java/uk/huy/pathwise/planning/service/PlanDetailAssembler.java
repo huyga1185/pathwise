@@ -5,6 +5,8 @@ import org.springframework.stereotype.Component;
 import uk.huy.pathwise.fleet.dto.FleetVehicle;
 import uk.huy.pathwise.fleet.model.CapacityUnit;
 import uk.huy.pathwise.fleet.service.VehicleQuery;
+import uk.huy.pathwise.job.dto.JobResponse;
+import uk.huy.pathwise.job.service.JobService;
 import uk.huy.pathwise.planning.dto.response.*;
 import uk.huy.pathwise.planning.infrastructure.mapper.PlanMapper;
 import uk.huy.pathwise.planning.model.GeocodeStatus;
@@ -31,6 +33,7 @@ class PlanDetailAssembler {
     private final StoreMemberQuery storeMemberQuery;
     private final VehicleQuery vehicleQuery;
     private final PlanMapper planMapper;
+    private final JobService jobService;
 
     PlanDetailResponse toDetail(RoutePlan plan) {
         long storeId = plan.getStoreId();
@@ -44,6 +47,8 @@ class PlanDetailAssembler {
         Map<Long, List<PlanStop>> stopsByRoute = plan.getStops().stream()
                 .filter(stop -> stop.getRoute() != null)
                 .collect(Collectors.groupingBy(stop -> stop.getRoute().getId()));
+        JobResponse activeJob = plan.getActiveJobId() == null ? null
+                : jobService.findJob(storeId, plan.getActiveJobId()).orElse(null);
         DropReason dropReason = plan.getOptimizedAt() == null ? DropReason.NOT_OPTIMIZED : DropReason.INFEASIBLE;
 
         List<PlanRouteResponse> routeResponses = routes.stream()
@@ -62,6 +67,7 @@ class PlanDetailAssembler {
                 plan.getStatus(),
                 plan.getVersion(),
                 plan.getProcessingStatus(),
+                activeJob,
                 geocodingSummary(plan.getStops()),
                 planMapper.toDepot(plan),
                 plan.getTimezone(),

@@ -29,3 +29,9 @@ service:
     company-name: PathWise
     company-url: http://localhost
     company-address: Test
+
+# Geocoding jobs run in the request thread after commit, so tests see their result without waiting. The async mode
+# is tested by GeocodePlanJobAsyncIntegrationTest.
+jobs:
+  geocode-plan:
+    mode: inline

@@ -18,7 +18,7 @@
    ┌──────────────────── Spring Boot (be/) ────────────────────┐
    │  auth ── user ── store ── fleet ── planning ── routing     │
    │     \______ notification ______/        (driver API)       │
-   │                 core / shared                              │
+   │                 job · core / shared                        │
    └───────────┬───────────────┬─────────────────┬─────────────┘
            MariaDB           Redis        SMTP · Nominatim · OSRM (· Google sau)
 ```
@@ -38,15 +38,16 @@ Package gốc `uk.huy.pathwise`. Mỗi module là một package cấp 1.
 
 | Module | Trách nhiệm | Trạng thái |
 |---|---|---|
-| `core` | Hạ tầng dùng chung, không chứa nghiệp vụ: envelope response, `ErrorCode`/`AppException`/handler, pagination, `StateStore`, `core.security` (`Hasher` SHA-256, `OpaqueTokenGenerator`; P-28), `core.phonenumber` (chuẩn hoá và validate số VN, P-29), rate limiter, **job framework** (`core.job`, §8.4), cấu hình web/JSON. | Có — mở rộng |
+| `core` | Hạ tầng dùng chung, không chứa nghiệp vụ: envelope response, `ErrorCode`/`AppException`/handler, pagination, `StateStore`, `core.security` (`Hasher` SHA-256, `OpaqueTokenGenerator`; P-28), `core.phonenumber` (chuẩn hoá và validate số VN, P-29), rate limiter, cấu hình web/JSON. | Có — mở rộng |
 | `shared` | Kiểu dữ liệu chia sẻ giữa module: `UserIdentity`, `UserRole`, `UserStatus`, principal `AuthenticatedUser` (P-25). Chỉ record/enum, **không** bean. | Có — sửa |
 | `user` | Tài khoản người dùng: entity `User`, mật khẩu, hồ sơ, trạng thái. | Có — mở rộng |
 | `auth` | Xác thực: đăng ký (orchestrate user + store), đăng nhập, token (access/refresh/OTP token), OTP, session, đổi/quên mật khẩu, security filter chain. | Có — sửa |
 | `notification` | Gửi email theo template (chuyển từ `auth.email.infrastructure` sang, để `store` gửi được lời mời mà không phụ thuộc `auth`). API công khai: `EmailNotificationService.send(templateName, to, variables)`, lỗi gửi là `EmailDeliveryException`. | Có (T12) |
 | `store` | Store, thành viên, lời mời. API công khai: `StoreProvisioningService.createStore(name)` (cho đăng ký, tham gia transaction của bên gọi), `StoreMemberQuery.findActiveMember(storeId, userId)` và `findMembers(storeId, ids)` (mọi trạng thái, để hiển thị), `StoreQuery.findStore(storeId)` → `StoreProfile` (depot, timezone), event `MemberDisabledEvent` (P-27, auth nghe để thu hồi session). Đọc và ghi user qua `StoreUserService` của `user`. | Có (T13, T16) |
+| `job` | Job chạy nền dùng chung (D-19, §8.4): bảng `background_jobs`, executor inline/async, khôi phục lúc khởi động, `GET /api/v1/jobs/{id}`. API công khai: `JobService` (`createJob`, `findJob`), interface `JobHandler` cho module sở hữu target implement, record `JobRef`, `JobResponse`. Không biết nghiệp vụ của target (P-31). | Có (T24 entity, T29) |
 | `fleet` | Xe. API công khai: `VehicleQuery.findActive(storeId, vehicleId)`, `listActive(storeId)`, `findAll(storeId, ids)` (cả xe đã tắt, để hiển thị) trả `FleetVehicle`. | Có (T20) |
 | `routing` | Adapter định tuyến **không có DB**: `GeocodingProvider`, `MatrixProvider`, `SolverProvider`, (Should) `DirectionsProvider`; endpoint geocoding search. Đổi tên từ `routeoptimizer`. | Có — geocoding (T21), matrix (T22), solver (T23) |
-| `planning` | Route plan, route, stop; optimize, publish, trạng thái; API cho dispatcher **và** API cho driver; vị trí tài xế. | Có — draft CRUD (T24); T25+ |
+| `planning` | Route plan, route, stop; geocode nền, optimize, publish, trạng thái; API cho dispatcher **và** API cho driver; vị trí tài xế. | Có — draft CRUD (T24), geocode nền (T29); T25+ |
 
 ### 2.1 Quy tắc phụ thuộc giữa module (bắt buộc)
 
@@ -58,7 +59,8 @@ store         →  user, notification
 auth          →  user, store, notification
 fleet         →  (core, shared)
 routing       →  (core)
-planning      →  store, fleet, routing
+job           →  (core, shared)
+planning      →  store, fleet, routing, job
 ```
 
 - **Không có vòng phụ thuộc.** `user` không biết `auth`/`store`; `routing` không biết `planning`.
@@ -218,13 +220,13 @@ DRAFT ──optimize(job)──▶ DRAFT có kết quả ──publish──▶ 
 
 ### 8.2 Geocoding khi lưu plan (D-18)
 
-1. Lưu draft trong một transaction. Stop có lat/lon thì `geocode_status = PROVIDED`. Stop chỉ có địa chỉ thì `PENDING`. Nếu có ít nhất một stop `PENDING` thì tạo job `GEOCODE_PLAN` và đặt `processing_status = GEOCODING`. Commit.
+1. Lưu draft trong một transaction (`POST`, `PUT`, `PATCH` stop đều vậy). Stop có lat/lon thì `geocode_status = PROVIDED`. Stop chỉ có địa chỉ thì `PENDING`. Nếu có ít nhất một stop `PENDING` thì tạo job `GEOCODE_PLAN`, đặt `processing_status = GEOCODING` và `active_job_id`. Commit.
 2. Sau commit, job chạy trên executor nền. Với mỗi stop `PENDING`:
-   - Gọi `GeocodingProvider.search(address, 1)`. Lớp cache nằm trước provider, và **chỉ cache miss mới tốn slot rate limit**.
+   - Gọi `GeocodingProvider.search(address, 1)`. Lớp cache nằm trước provider, và **chỉ cache miss mới tốn slot rate limit**. Không lấy được slot (`GEOCODING_BUSY`) thì thử lại, tối đa 3 lần cho mỗi stop, rồi mới coi là `PROVIDER_ERROR`.
    - Có kết quả thì `RESOLVED`, ghi lat/lon và `geocoded_display_name`. Không có kết quả thì `FAILED/NOT_FOUND`. Provider lỗi thì `FAILED/PROVIDER_ERROR`, job vẫn tiếp tục với các stop còn lại.
-   - Ghi kết quả theo lô nhỏ, mỗi lô một transaction ngắn, để client polling thấy tiến độ.
-3. Xong thì job `SUCCEEDED`, kể cả khi có stop FAILED, vì đó là lỗi dữ liệu chứ không phải lỗi job. Sau đó `processing_status = IDLE`.
-4. Dispatcher sửa stop FAILED bằng `PATCH` stop (địa chỉ mới hoặc toạ độ) hoặc gọi `POST /plans/{id}/geocode`.
+   - Ghi kết quả theo lô nhỏ (`jobs.geocode-plan.batch-size`, mặc định 5 stop), mỗi lô một transaction ngắn, để client polling thấy tiến độ. Stop không còn `PENDING` với đúng địa chỉ đó thì bỏ qua kết quả.
+3. Xong thì job `SUCCEEDED`, kể cả khi có stop FAILED, vì đó là lỗi dữ liệu chứ không phải lỗi job. Handler đặt `processing_status = IDLE`, `active_job_id = NULL` trong `finally`; việc này tăng `version` của plan đúng 1 (P-30).
+4. Dispatcher sửa stop FAILED bằng `PATCH` stop (địa chỉ mới hoặc toạ độ) hoặc gọi `POST /plans/{id}/geocode`: stop `FAILED` về `PENDING` rồi chạy job mới; không có stop `PENDING`/`FAILED` nào thì 422 `NOTHING_TO_GEOCODE` (P-30).
 5. `PUT` draft giữ kết quả geocode của stop có `id` cũ khi địa chỉ và toạ độ không đổi.
 
 ### 8.3 Optimize (D-19, P-13, P-14)
@@ -244,15 +246,20 @@ DRAFT ──optimize(job)──▶ DRAFT có kết quả ──publish──▶ 
    - `VrpSolution`: một route cho mỗi xe theo thứ tự đầu vào (xe không dùng thì không có visit), ETA = giờ bắt đầu phục vụ, `droppedStops`; `NO_SOLUTION` khi OR-Tools không tìm ra lời giải nào (ví dụ xe không kịp đi từ start tới end trong ca).
 5. Ghi kết quả: `sequence`, `plannedArrival`, chỉ số từng route, `optimized_at`. Stop bị drop có `route_id = NULL`. Job `SUCCEEDED`, plan về `IDLE`. Nếu provider lỗi thì job `FAILED` (`ROUTING_PROVIDER_ERROR`), plan về `IDLE`, kết quả cũ giữ nguyên.
 
-### 8.4 Job framework (`core.job`, D-19)
+### 8.4 Job framework (module `job`, D-19, P-31)
 
-- Entity và repository `BackgroundJob` (bảng `background_jobs`). Interface `JobHandler` được mỗi loại job implement (`GeocodePlanJobHandler`, `OptimizePlanJobHandler` nằm trong `planning`).
+- Module cấp 1 `uk.huy.pathwise.job` (P-31), cấu trúc theo §2.2: `job.model` (`BackgroundJob`, `JobType`, `JobStatus`, `JobErrors`), `.repository`, `.dto` (`JobRef`, `JobResponse`), `.service` (`JobService`, `JobHandler`, `JobExecutor`, `JobStateService`, `JobRecovery`), `.controller` (`JobController`), `.infrastructure.config` (`JobProperties`, `JobMode`). Module khác chỉ dùng `service.JobService`, `service.JobHandler` và các record/enum ở `dto`/`model`; không inject repository hay entity `BackgroundJob`.
+- Entity và repository `BackgroundJob` (bảng `background_jobs`). Interface `JobHandler` (`type()`, `run(JobRef)`, `abandon(JobRef)`) được mỗi loại job implement (`GeocodePlanJobHandler`, `OptimizePlanJobHandler` nằm trong `planning`). Handler chỉ thấy `JobRef(id, type, storeId, targetId)`, không thấy entity. `abandon` giải phóng target của job sẽ không bao giờ chạy (bị ngắt lúc khởi động, hàng đợi đầy).
+- `JobService.createJob(storeId, type, targetId, createdBy)` (`Propagation.MANDATORY`) ghi job `QUEUED` trong transaction của bên gọi và đăng ký `TransactionSynchronization.afterCommit` để submit. Rollback thì không submit.
+- **Mọi transaction phía job dùng `Propagation.REQUIRES_NEW`** (`JobStateService`, các transaction của handler). Lý do: job inline chạy trong `afterCommit`, lúc đó EntityManager của transaction request vừa commit vẫn còn bind vào thread; `REQUIRED` sẽ nhập vào transaction đã commit và thay đổi không bao giờ được ghi.
+- `JobExecutor` đánh dấu `RUNNING` (bỏ qua nếu job không còn `QUEUED`), gọi handler, rồi `SUCCEEDED`; exception → `FAILED` với `errorCode` là mã của `ExternalServiceException`/`AppException`, còn lại `INTERNAL_ERROR`. Thread pool là field riêng của `JobExecutor`, không phải bean `Executor`, để không thay task executor mặc định của Spring Boot. Cấu hình `jobs.executor.pool-size` (2), `jobs.executor.queue-capacity` (50).
 - `JobExecutor.submit(jobId)` có hai chiến lược, chọn theo từng loại job bằng cấu hình `jobs.<type>.mode = inline | async`:
   - `inline`: chạy ngay trong thread hiện tại. MVP dùng cho `OPTIMIZE_PLAN`.
-  - `async`: `ThreadPoolTaskExecutor` có giới hạn (core 2, queue 50). MVP dùng cho `GEOCODE_PLAN`.
+  - `async`: `ThreadPoolTaskExecutor` có giới hạn (core 2, queue 50). MVP dùng cho `GEOCODE_PLAN`. Hàng đợi đầy → job `FAILED/JOB_QUEUE_FULL` và `abandon` (P-30).
+  - Mỗi loại job **phải** có `mode` trong cấu hình, không có giá trị mặc định (thiếu → `IllegalStateException`). Profile test đặt `jobs.geocode-plan.mode=inline`; test async đặt lại bằng `@TestPropertySource`.
 - Job luôn được submit **sau khi commit** transaction tạo job.
 - Handler chịu trách nhiệm cập nhật `processing_status` của plan khi kết thúc, kể cả khi lỗi (dùng `finally`).
-- Khi khởi động: job `RUNNING` chuyển thành `FAILED/INTERRUPTED`, và plan liên quan về `IDLE`.
+- Khi khởi động (`JobRecovery`, `ApplicationReadyEvent`): job `QUEUED` và `RUNNING` chuyển thành `FAILED/INTERRUPTED`, và `abandon` đưa plan liên quan về `IDLE` (P-30).
 - Chuyển optimize sang chạy nền: đổi `jobs.optimize-plan.mode=async`. **Không đổi API.** Client vốn đã polling.
 - Giới hạn đã biết: chỉ một instance. Muốn chạy nhiều instance thì phải claim job bằng `UPDATE … WHERE status='QUEUED'` (Could).
 
@@ -288,7 +295,7 @@ Chọn implementation bằng property (`routing.geocoding.provider=nominatim`), 
 |---|---|---|
 | Unit | JUnit 5 + Mockito + AssertJ | Service (business rule, quyền), manager token/OTP, solver (ma trận nhỏ cố định, kiểm tra capacity/time window/drop), state machine plan/stop, mapper có logic. |
 | Web slice | `@WebMvcTest` + `@Import(SecurityConfig.class)` + `@MockitoBean AccessTokenManager` (stub token → `AccessTokenVerification.Authenticated(new AuthenticatedUser(...))`, gửi header `Authorization: Bearer …` để đi qua filter thật). Mẫu: `OptimizationControllerTest`, `ErrorHandlingWebMvcTest`. Controller có DTO dùng custom validator thì `@Import` thêm bean mà validator cần (ví dụ `PhoneNumberProcessor`), nếu không validator lỗi và test có thể pass sai lý do (500). | Mỗi controller: validation → 400 + code, chưa đăng nhập → 401, sai role → 403, happy path, cookie/header web vs mobile. |
-| Integration | `@SpringBootTest` + **Testcontainers** MariaDB + Redis (P-21); `EmailSender` thay bằng fake lưu email để đọc OTP; `MatrixProvider` fake | Luồng auth đầy đủ, Lua OTP, Flyway migrate, tenant isolation, plan lifecycle end-to-end, optimistic lock. |
+| Integration | `@SpringBootTest` + **Testcontainers** MariaDB + Redis (P-21); `EmailSender` thay bằng fake lưu email để đọc OTP; `GeocodingProvider` thay bằng `FakeGeocodingProvider` (`@Primary` trong `AbstractIntegrationTest`, T29); `MatrixProvider` fake; chờ job async bằng Awaitility | Luồng auth đầy đủ, Lua OTP, Flyway migrate, tenant isolation, plan lifecycle end-to-end, optimistic lock. |
 | Hợp đồng provider | `MockRestServiceServer` | Parse response/lỗi Nominatim, OSRM (đã có, giữ). |
 
 Quy tắc:

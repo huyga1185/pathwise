@@ -50,6 +50,8 @@ public enum ErrorCode {
     PLAN_NOT_EDITABLE(422),
     PLAN_TOO_LARGE(422),
     STORE_DEPOT_REQUIRED(422),
-    INVALID_ASSIGNMENT(422);
+    INVALID_ASSIGNMENT(422),
+    JOB_NOT_FOUND(404),
+    NOTHING_TO_GEOCODE(422);
     private final int httpCode;
 }

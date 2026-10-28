@@ -47,6 +47,18 @@ routing:
     # Guided local search runs until this limit, so every optimization takes this long (NFR-02: <= 15 s).
     time-limit: 10s
 
+jobs:
+  # Background jobs (D-19, ARCHITECTURE.md §8.4). Mode per job type: inline (in the caller's thread, after commit) or async.
+  geocode-plan:
+    mode: async
+    # Stops written per transaction, so that polling clients see progress.
+    batch-size: 5
+  optimize-plan:
+    mode: inline
+  executor:
+    pool-size: 2
+    queue-capacity: 50
+
 management:
   endpoints:
     web:
