@@ -13,6 +13,7 @@ import uk.huy.pathwise.routing.solver.VrpVehicle;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.stream.IntStream;
 
@@ -27,6 +28,8 @@ class OrToolsVrpSolverTest {
     private static final int H8 = 8 * 3600;
     private static final int H12 = 12 * 3600;
     private static final int H17 = 17 * 3600;
+    private static final String BOX = "BOX";
+    private static final String KG = "KG";
 
     private final OrToolsVrpSolver solver = new OrToolsVrpSolver(Duration.ofSeconds(1));
 
@@ -44,7 +47,7 @@ class OrToolsVrpSolverTest {
         assertThat(solution.droppedStops()).isEmpty();
         for (VrpRoute route : solution.routes()) {
             assertThat(route.load()).isLessThanOrEqualTo(9);
-            assertThat(route.load()).isEqualTo(route.visits().stream().mapToInt(v -> stops.get(v.stopIndex()).demand()).sum());
+            assertThat(route.load()).isEqualTo(route.visits().stream().mapToInt(v -> stops.get(v.stopIndex()).demand(BOX)).sum());
         }
         assertConsistent(matrix, vehicles, stops, solution);
     }
@@ -100,6 +103,32 @@ class OrToolsVrpSolverTest {
 
         assertThat(solution.routes().getFirst().distanceMeters()).isLessThanOrEqualTo(25_000);
         assertThat(solution.droppedStops()).containsExactly(1);
+        assertConsistent(matrix, vehicles, stops, solution);
+    }
+
+    @Test
+    void solve_whenVehiclesCountDifferentUnits_limitEachVehicleOnlyInItsOwnUnit() {
+        // Truck counts 100 kg, motorbike 2 boxes. Stops 1-3: 40 kg each (120 kg in total, more than the truck),
+        // stops 4-5: 1 box each.
+        TravelMatrix matrix = planar(new int[][]{{0, 0}, {1000, 0}, {2000, 0}, {3000, 0}, {0, 1000}, {0, 2000}});
+        List<VrpStop> stops = List.of(
+                new VrpStop(1, Map.of(KG, 40), 300, null, null),
+                new VrpStop(2, Map.of(KG, 40), 300, null, null),
+                new VrpStop(3, Map.of(KG, 40), 300, null, null),
+                new VrpStop(4, Map.of(BOX, 1), 300, null, null),
+                new VrpStop(5, Map.of(BOX, 1), 300, null, null));
+        List<VrpVehicle> vehicles = List.of(
+                new VrpVehicle(0, 0, KG, 100, H8, H17, null),
+                new VrpVehicle(0, 0, BOX, 2, H8, H17, null));
+
+        VrpSolution solution = solver.solve(new VrpProblem(matrix, vehicles, stops));
+
+        // Every stop fits: the motorbike is not limited in kg, so it takes the kg stop the truck cannot.
+        assertThat(solution.droppedStops()).isEmpty();
+        VrpRoute truck = solution.routes().get(0);
+        VrpRoute motorbike = solution.routes().get(1);
+        assertThat(truck.load()).isLessThanOrEqualTo(100);
+        assertThat(motorbike.load()).isLessThanOrEqualTo(2);
         assertConsistent(matrix, vehicles, stops, solution);
     }
 
@@ -193,6 +222,8 @@ class OrToolsVrpSolverTest {
             assertThat(route.startSeconds()).isGreaterThanOrEqualTo(vehicle.shiftStartSeconds());
             assertThat(route.endSeconds()).isLessThanOrEqualTo(vehicle.shiftEndSeconds());
             assertThat(route.load()).isLessThanOrEqualTo(vehicle.capacity());
+            assertThat(route.load()).isEqualTo(route.visits().stream()
+                    .mapToInt(visit -> stops.get(visit.stopIndex()).demand(vehicle.capacityUnit())).sum());
             int node = vehicle.startNode();
             int clock = route.startSeconds();
             int service = 0;
@@ -230,11 +261,11 @@ class OrToolsVrpSolverTest {
         return new TravelMatrix(distances, durations);
     }
 
-    private static VrpStop stop(int node, int demand, Integer windowStart, Integer windowEnd) {
-        return new VrpStop(node, demand, 300, windowStart, windowEnd);
+    private static VrpStop stop(int node, int boxes, Integer windowStart, Integer windowEnd) {
+        return new VrpStop(node, Map.of(BOX, boxes), 300, windowStart, windowEnd);
     }
 
-    private static VrpVehicle vehicle(int start, int end, int capacity, int shiftStart, int shiftEnd, Integer maxDistance) {
-        return new VrpVehicle(start, end, capacity, shiftStart, shiftEnd, maxDistance);
+    private static VrpVehicle vehicle(int start, int end, int boxes, int shiftStart, int shiftEnd, Integer maxDistance) {
+        return new VrpVehicle(start, end, BOX, boxes, shiftStart, shiftEnd, maxDistance);
     }
 }

@@ -4,7 +4,7 @@
 > Mọi quyết định nền tảng của contract này đã được duyệt (`DECISIONS.md`, 2026-10-22). Frontend web và Flutter có thể dựa vào tài liệu này để thiết kế song song (D-09).
 > Khi implementation khác spec: sửa code cho khớp spec, **hoặc** cập nhật spec trong cùng PR kèm lý do. Không để lệch.
 
-## 0. Tình trạng implementation so với spec (cập nhật 2026-10-28, sau T21)
+## 0. Tình trạng implementation so với spec (cập nhật 2026-10-28, sau T20)
 
 - ✅ Mọi endpoint đã dùng prefix `/api/v1` (P-02).
 - ✅ Body lỗi đã theo `{code, details?}`, kể cả lỗi từ Spring Security: thiếu hoặc sai access token trả 401 `UNAUTHORIZED`, sai role trả 403 `FORBIDDEN`. `exception`/`stackTrace` chỉ có ở profile `dev` (P-03). Có slice test kiểm chứng (`ErrorHandlingWebMvcTest`).
@@ -17,7 +17,8 @@
   - `POST /invitations/accept`: mọi mã không dùng được (không tồn tại, đã dùng, đã huỷ, hết hạn) → 404 `INVITATION_INVALID` (không có 400, vì một `ErrorCode` chỉ có một HTTP status); `phoneNumber` sai → 400 `INVALID_PHONE_NUMBER`, lời mời vẫn PENDING.
   - `POST /store/invitations`: email lỗi vẫn trả 201 (ARCHITECTURE §7), OWNER mời lại để gửi mã mới. Chưa có 429 (T40).
 - §6: `GET /geocoding/search` đã có (T21, có test): quyền OWNER/DISPATCHER, `q` 3–300 ký tự và `limit` 1–10 (sai → 400 `VALIDATION_ERROR`, detail `INVALID_QUERY_LENGTH`/`INVALID_LIMIT`; thiếu `q` → 400 `MALFORMED_REQUEST`), 503 `GEOCODING_BUSY`, 502 `GEOCODING_PROVIDER_ERROR`. Kết quả chỉ trong Việt Nam (`countrycodes=vn`). `GET /jobs/{id}` chưa có.
-- Các mục §5, §7, §8 (fleet, plans, driver) **chưa có endpoint nào trong code**.
+- §5: đủ 4 endpoint `/vehicles` (T20, có test, kể cả quyền và tenant isolation): OWNER/DISPATCHER, role khác 403; xe của store khác → 404 `NOT_FOUND`; trùng tên trong store → 409 `VEHICLE_NAME_EXISTED`, so sánh theo collation của DB (không phân biệt hoa thường); `PUT` thay toàn bộ, thiếu `plateNumber` thì xoá biển số; `capacityUnit` bắt buộc (D-36); `GET /vehicles` sắp theo tên. Không có endpoint xoá (xe chỉ chuyển `active=false`).
+- Các mục §7, §8 (plans, driver) **chưa có endpoint nào trong code**.
 - Đã thêm `ErrorCode` ở T13: `EMAIL_NOT_VERIFIED` 403, `ACCOUNT_DISABLED` 403, `EMAIL_ALREADY_VERIFIED` 409, `INVALID_TIMEZONE` 400 (khớp §9). T14 thêm `INVALID_RESET_TOKEN` 400 (P-26): spec §2 trước đó ghi `/password/reset` trả 400 `INVALID_TOKEN`, nhưng `INVALID_TOKEN` là 401 nên đã đổi sang mã mới.
 - Endpoint vận hành ngoài `/api/v1`, giữ có chủ đích: `GET /actuator/health` (kèm `/liveness`, `/readiness`), Public, chỉ trả `status` và tên các `groups`, không lộ chi tiết thành phần (T05, `ARCHITECTURE.md` §12.1). Mọi endpoint actuator khác tắt.
 - Endpoint đang có trong code nhưng **không thuộc spec**, sẽ bị xoá ở T27: `POST /api/v1/route/optimize` và `POST /api/v1/route/optimize/k` (từ T17 chỉ OWNER/DISPATCHER, role khác 403). Mã lỗi riêng của chúng (`INVALID_DEPOT`, `COULD_NOT_FIND_*`) cũng bỏ theo.
@@ -101,10 +102,12 @@ Store luôn là store của actor (không có `storeId` trong path).
 
 | Method & path | Quyền | Request | Response | Lỗi chính |
 |---|---|---|---|---|
-| `GET /vehicles` | O, D | query `active?` | `[{id, name, plateNumber, capacity, active}]` | — |
-| `POST /vehicles` | O, D | `{name, plateNumber?, capacity(>0)}` | 201 vehicle | 409 `VEHICLE_NAME_EXISTED` |
+| `GET /vehicles` | O, D | query `active?` | `[{id, name, plateNumber, capacity, capacityUnit, active}]` | — |
+| `POST /vehicles` | O, D | `{name, plateNumber?, capacity(>0), capacityUnit}` | 201 vehicle | 409 `VEHICLE_NAME_EXISTED` |
 | `GET /vehicles/{id}` | O, D | — | vehicle | 404 |
-| `PUT /vehicles/{id}` | O, D | `{name, plateNumber?, capacity, active}` | 200 vehicle | 404 · 409 |
+| `PUT /vehicles/{id}` | O, D | `{name, plateNumber?, capacity, capacityUnit, active}` | 200 vehicle | 404 · 409 |
+
+`capacityUnit` (D-36): `KG`, `BOX` (thùng), `PACKAGE` (kiện), `ORDER` (đơn, tức số điểm giao). Giá trị khác → 400 `MALFORMED_REQUEST`. Xe chỉ bị giới hạn theo loại của nó khi optimize.
 
 ## 6. Geocoding và Jobs
 
@@ -151,7 +154,8 @@ Job lỗi thì `Job.errorCode` có thể là `ROUTING_PROVIDER_ERROR`, `GEOCODIN
       "label": "ĐH-1024", "recipientName": "Chị Lan", "recipientPhone": "0905…",
       "address": "12 Lê Duẩn, Hải Châu, Đà Nẵng",
       "lat": null, "lon": null,          // tuỳ chọn; có thì bỏ qua geocode (D-18). Phải có address hoặc lat+lon.
-      "demand": 3, "serviceTimeSeconds": 300,
+      "demands": { "KG": 12, "BOX": 2 },  // tuỳ chọn, theo loại capacity (D-36); thiếu loại nào là 0. Không nhập ORDER: mỗi stop tự tính 1.
+      "serviceTimeSeconds": 300,
       "timeWindow": { "start": "09:00", "end": "11:00" },  // tuỳ chọn
       "note": "Gọi trước 10 phút" }
   ],
@@ -168,13 +172,13 @@ Job lỗi thì `Job.errorCode` có thể là `ROUTING_PROVIDER_ERROR`, `GEOCODIN
   "depot": { "address": "…", "lat": 16.05, "lon": 108.2 }, "timezone": "Asia/Ho_Chi_Minh",
   "optimizedAt": "…|null", "totalDistanceMeters": 52340, "totalDurationSeconds": 9800,
   "routes": [
-    { "id": 11, "driver": { "id": 21, "fullName": "Tùng", "role": "DRIVER" }, "vehicle": { "id": 5, "name": "Xe 1", "capacity": 40 },
+    { "id": 11, "driver": { "id": 21, "fullName": "Tùng", "role": "DRIVER" }, "vehicle": { "id": 5, "name": "Xe 1", "capacity": 40, "capacityUnit": "BOX" },
       "shiftStart": "08:00", "shiftEnd": "17:00", "maxDistanceMeters": 80000,
       "start": { "lat": 16.05, "lon": 108.2, "address": "…" }, "end": { "lat": 16.05, "lon": 108.2, "address": "…" },
       "plannedDistanceMeters": 30100, "plannedDurationSeconds": 5400,
-      "plannedStart": "…", "plannedEnd": "…", "load": 31,
+      "plannedStart": "…", "plannedEnd": "…", "load": 31,   // theo capacityUnit của xe (D-36)
       "stops": [ { "id": 101, "sequence": 1, "label": "ĐH-1024", "lat": 16.06, "lon": 108.22,
-                   "plannedArrival": "…", "timeWindow": {…}, "demand": 3, "status": "PENDING", "failureReason": null } ] }
+                   "plannedArrival": "…", "timeWindow": {…}, "demands": { "BOX": 3 }, "status": "PENDING", "failureReason": null } ] }
   ],
   "unassignedStops": [   // stop chưa được gán route: plan chưa optimize, hoặc solver đã bỏ (P-13)
     { "id": 109, "label": "…", "address": "…", "lat": null, "lon": null,
@@ -185,6 +189,8 @@ Job lỗi thì `Job.errorCode` có thể là `ROUTING_PROVIDER_ERROR`, `GEOCODIN
 ```
 
 Mọi stop trong `PlanDetail` (cả trong `routes[].stops`) đều có `address`, `geocodeStatus`, `geocodeError`, `geocodedDisplayName`. Ví dụ trên rút gọn bớt.
+
+Demand (D-36): mỗi giá trị trong `demands` là số nguyên ≥ 0, khoá là `KG`, `BOX`, `PACKAGE` (khoá khác hoặc `ORDER` → 400). Xe tính theo `ORDER` chở tối đa `capacity` stop.
 
 Giới hạn (D-19): ≤ 100 stop, ≤ 20 assignment mỗi plan. Mỗi người được gán (DRIVER hoặc `canDrive`) và mỗi xe chỉ xuất hiện một lần trong một plan.
 

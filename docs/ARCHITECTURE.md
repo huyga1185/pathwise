@@ -44,7 +44,7 @@ Package gốc `uk.huy.pathwise`. Mỗi module là một package cấp 1.
 | `auth` | Xác thực: đăng ký (orchestrate user + store), đăng nhập, token (access/refresh/OTP token), OTP, session, đổi/quên mật khẩu, security filter chain. | Có — sửa |
 | `notification` | Gửi email theo template (chuyển từ `auth.email.infrastructure` sang, để `store` gửi được lời mời mà không phụ thuộc `auth`). API công khai: `EmailNotificationService.send(templateName, to, variables)`, lỗi gửi là `EmailDeliveryException`. | Có (T12) |
 | `store` | Store, thành viên, lời mời. API công khai: `StoreProvisioningService.createStore(name)` (cho đăng ký, tham gia transaction của bên gọi), `StoreMemberQuery.findActiveMember(storeId, userId)`, event `MemberDisabledEvent` (P-27, auth nghe để thu hồi session). Đọc và ghi user qua `StoreUserService` của `user`. | Có (T13, T16) |
-| `fleet` | Xe. | Mới — T20 |
+| `fleet` | Xe. API công khai: `VehicleQuery.findActive(storeId, vehicleId)`, `listActive(storeId)` trả `FleetVehicle`. | Có (T20) |
 | `routing` | Adapter định tuyến **không có DB**: `GeocodingProvider`, `MatrixProvider`, `SolverProvider`, (Should) `DirectionsProvider`; endpoint geocoding search. Đổi tên từ `routeoptimizer`. | Có — geocoding (T21), matrix (T22), solver (T23) |
 | `planning` | Route plan, route, stop; optimize, publish, trạng thái; API cho dispatcher **và** API cho driver; vị trí tài xế. | Mới — T24+ |
 
@@ -233,8 +233,8 @@ DRAFT ──optimize(job)──▶ DRAFT có kết quả ──publish──▶ 
 2. Tạo job `OPTIMIZE_PLAN` và đặt `processing_status = OPTIMIZING`, commit. Gửi job cho `JobExecutor`. Trong MVP, executor của loại job này là **inline**, nghĩa là chạy ngay trong thread của request (§8.4).
 3. Job: transaction đọc input. Sau đó, **ngoài transaction**: dựng danh sách node gồm các điểm start/end riêng của từng route (MVP đều là depot) cộng stop, gọi `MatrixProvider.matrix(nodes)` lấy `distanceMeters` và `durationSeconds`, rồi gọi `SolverProvider.solve(VrpProblem)`. Cuối cùng là transaction ghi kết quả có kiểm tra `version`.
 4. `VrpProblem` (model của `routing`, không dùng entity):
-   - Xe k có `startNode`, `endNode` **riêng** (D-20, điểm mở rộng cho multi-depot), `capacity`, `shiftStart/End` (tính bằng giây từ 00:00 của `planDate`), `maxDistance?`.
-   - Dimension Capacity theo demand.
+   - Xe k có `startNode`, `endNode` **riêng** (D-20, điểm mở rộng cho multi-depot), `capacityUnit` + `capacity` (D-36), `shiftStart/End` (tính bằng giây từ 00:00 của `planDate`), `maxDistance?`.
+   - Mỗi loại capacity có trong problem một dimension Capacity (D-36): stop đóng góp `demands[loại]`; xe tính theo loại đó bị giới hạn bằng `capacity`, xe tính theo loại khác thì không giới hạn. Planning thêm `ORDER = 1` cho mọi stop khi có xe tính theo `ORDER`. `load` của route tính theo loại của xe.
    - Dimension Time với transit = `duration[i][j] + serviceTime[i]`, có slack để cho phép chờ, cumul nằm trong time window; start và end của xe nằm trong ca.
    - Dimension Distance giới hạn bằng `maxDistance`.
    - Arc cost tính theo duration.

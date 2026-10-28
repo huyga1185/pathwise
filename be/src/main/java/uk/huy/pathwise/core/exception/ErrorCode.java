@@ -43,6 +43,7 @@ public enum ErrorCode {
     CANNOT_MODIFY_OWNER(422),
     INVITATION_INVALID(404),
     INVITATION_NOT_PENDING(422),
-    GEOCODING_BUSY(503);
+    GEOCODING_BUSY(503),
+    VEHICLE_NAME_EXISTED(409);
     private final int httpCode;
 }
