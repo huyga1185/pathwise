@@ -59,4 +59,12 @@ class PlanLifecycleTest {
         assertThat(PlanLifecycle.isActive(IN_PROGRESS)).isTrue();
         assertThat(PlanLifecycle.isActive(COMPLETED)).isFalse();
     }
+
+    @Test
+    void routeStatus_whenStopsMove_pendingThenInProgressThenCompleted() {
+        assertThat(PlanLifecycle.routeStatus(List.of(PENDING, PENDING))).isEqualTo(RouteStatus.PENDING);
+        assertThat(PlanLifecycle.routeStatus(List.of(FAILED, PENDING))).isEqualTo(RouteStatus.IN_PROGRESS);
+        assertThat(PlanLifecycle.routeStatus(List.of(DELIVERED, SKIPPED))).isEqualTo(RouteStatus.COMPLETED);
+        assertThat(PlanLifecycle.routeStatus(List.of())).isEqualTo(RouteStatus.PENDING);
+    }
 }

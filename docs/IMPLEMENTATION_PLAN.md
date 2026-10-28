@@ -359,6 +359,7 @@ T42 cũ (Docker, compose, README) đã được gộp vào T05 và T07 trong M0 
 - **Tầng:** Must · **Ước lượng:** 1 ngày · **Quyết định:** D-06, D-07 · **FR:** D01, D02
 - **Phạm vi:** `GET /driver/routes`, `GET /driver/routes/{routeId}` (có `start`/`end` riêng của route, không có `navigationUrl`; P-32); chỉ trả route của chính người gọi trong plan PUBLISHED, IN_PROGRESS hoặc COMPLETED; mở cho `role=DRIVER` hoặc `canDrive` (D-21).
 - **Acceptance criteria:** DRIVER không thấy route của driver khác (→ 404); OWNER có `canDrive` và được gán route thì thấy route của mình; DISPATCHER không có `canDrive` → 403; plan DRAFT không hiển thị; `start`/`end` lấy từ route (D-20); route không có stop không hiển thị cho tài xế (P-34).
+- **Phát sinh khi làm (2026-10-29):** P-35 (chủ dự án chọn): `status` là trạng thái riêng của route (`RouteStatus`, tính từ stop, `PlanLifecycle.routeStatus`). Plan CANCELLED cũng ẩn. Không có ngày thì dùng hôm nay theo timezone hiện tại của store (`StoreQuery`). `PlanRouteRepository` cho truy vấn theo tài xế.
 
 ### T31. Tài xế cập nhật trạng thái stop
 - **Tầng:** Must · **Ước lượng:** 1 ngày · **FR:** D03, BR-10, BR-11

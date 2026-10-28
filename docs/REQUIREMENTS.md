@@ -73,8 +73,8 @@ Mỗi user thuộc tối đa 1 store và có đúng 1 role (D-02). OWNER hoặc 
 
 | ID | Yêu cầu | Tầng | Hiện trạng |
 |---|---|---|---|
-| FR-D01 | Tài xế xem các route được giao (theo ngày) và chi tiết route: stop theo thứ tự, toạ độ, ETA, time window, liên hệ, ghi chú. | Must | ❌ |
-| FR-D02 | Dữ liệu đủ để app mở Google/Apple Maps dẫn đường tới stop kế tiếp (deep link). | Must | ❌ |
+| FR-D01 | Tài xế xem các route được giao (theo ngày) và chi tiết route: stop theo thứ tự, toạ độ, ETA, time window, liên hệ, ghi chú. | Must | ✅ (T30): `GET /driver/routes`, `GET /driver/routes/{routeId}`; trạng thái stop đổi từ T31 |
+| FR-D02 | Dữ liệu đủ để app mở Google/Apple Maps dẫn đường tới stop kế tiếp (deep link). | Must | ✅ (T30): stop có `lat`/`lon`, app tự dựng deep link (P-32) |
 | FR-D03 | Cập nhật trạng thái stop: DELIVERED / FAILED (bắt buộc lý do) / SKIPPED; dispatcher thấy ngay khi tải lại. | Must | ❌ |
 | FR-D04 | Gửi vị trí định kỳ (15–30 s) theo **lô điểm** (gom được các điểm bị mất mạng); dispatcher xem vị trí cuối của các tài xế đang chạy plan. Thiết kế mở rộng được sang lưu lịch sử (D-26). | Should¹ | ❌ |
 | FR-D05 | Turn-by-turn trong app: backend trả geometry + chỉ dẫn từng bước cho route. | Should (fallback FR-D02) | ❌ |

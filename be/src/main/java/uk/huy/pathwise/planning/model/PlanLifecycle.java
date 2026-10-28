@@ -45,6 +45,15 @@ public final class PlanLifecycle {
     }
 
     /**
+     * Status of a route from the statuses of its stops, in order of progress.
+     */
+    public static RouteStatus routeStatus(List<StopStatus> stops) {
+        if (!stops.isEmpty() && stops.stream().noneMatch(status -> status == StopStatus.PENDING)) return RouteStatus.COMPLETED;
+        if (stops.stream().anyMatch(status -> status != StopStatus.PENDING)) return RouteStatus.IN_PROGRESS;
+        return RouteStatus.PENDING;
+    }
+
+    /**
      * Where a running plan stands given the statuses of its assigned stops (BR-11): IN_PROGRESS once a stop has left
      * PENDING, COMPLETED once every one has finished. Stops without a route do not count.
      *
