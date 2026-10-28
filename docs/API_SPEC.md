@@ -5,12 +5,12 @@
 > Cột "Hiện trạng" ở mọi bảng: ✅ khớp spec và có test · 🟡 có nhưng còn lệch (ghi rõ lệch gì) · ❌ chưa có. Lịch sử triển khai theo task nằm ở `CURRENT_STATE.md` §5, không ghi ở đây.
 > Lần rà soát contract gần nhất: T44 (2026-10-29, P-32).
 
-## 0. Lệch hiện tại so với spec (cập nhật 2026-10-29, sau T27)
+## 0. Lệch hiện tại so với spec (cập nhật 2026-10-29, sau T30)
 
 - Chưa có 429 `RATE_LIMITED` cho `/register`, `/email/verify/resend`, `/log-in`, `/password/forgot`, `POST /store/invitations` (T40).
 - `GET /admin/users` chưa trả `storeId`, `status`.
 - §7: chưa có `driver-locations` (T32), `routes` (T28).
-- §8: chưa có endpoint nào (T30–T33).
+- §8: chưa có `PATCH …/stops/{stopId}/status` (T31), `POST /driver/location` (T32), `directions` (T33).
 - Endpoint vận hành ngoài `/api/v1`, giữ có chủ đích: `GET /actuator/health` (kèm `/liveness`, `/readiness`), Public, chỉ trả `status` và tên các `groups` (T05, `ARCHITECTURE.md` §12.1). Mọi endpoint actuator khác tắt.
 
 ## 1. Quy ước chung
@@ -300,12 +300,14 @@ Ghi chú:
 
 ## 8. Driver — `/api/v1/driver`
 
-Người gọi phải có `role=DRIVER` hoặc `canDrive=true` (D-21), và chỉ thấy route có `driverId = mình` thuộc plan PUBLISHED, IN_PROGRESS hoặc COMPLETED.
+Người gọi phải có `role=DRIVER` hoặc `canDrive=true` (D-21); người khác → 403. Tài xế chỉ thấy route có `driverId = mình`, **có ít nhất một stop** (P-34), thuộc plan PUBLISHED, IN_PROGRESS hoặc COMPLETED của store mình. Route khác (của tài xế khác, store khác, không có stop, plan DRAFT hoặc CANCELLED) không có trong danh sách và trả 404.
+
+`status` của route (P-35) là trạng thái **riêng của route**, tính từ các stop của nó, không phải trạng thái plan: `PENDING` (chưa stop nào rời PENDING), `IN_PROGRESS`, `COMPLETED` (mọi stop đã kết thúc). Tài xế đã giao xong thấy `COMPLETED` dù route khác của plan vẫn đang chạy. `completedCount` đếm stop đã kết thúc (DELIVERED, FAILED, SKIPPED).
 
 | Method & path | Quyền | Request | Response | Lỗi chính | Hiện trạng |
 |---|---|---|---|---|---|
-| `GET /driver/routes` | R | `date` (mặc định hôm nay theo timezone store) | `[{routeId, planId, planName, planDate, status, stopCount, completedCount, plannedStart}]` | — | ❌ T30 |
-| `GET /driver/routes/{routeId}` | R | — | `DriverRouteDetail` | 404 | ❌ T30 |
+| `GET /driver/routes` | R | `date?` (`YYYY-MM-DD`, mặc định hôm nay theo timezone store) | `[{routeId, planId, planName, planDate, status, stopCount, completedCount, plannedStart}]`, theo `plannedStart` | 400 `MALFORMED_REQUEST` (ngày sai dạng) | ✅ |
+| `GET /driver/routes/{routeId}` | R | — | `DriverRouteDetail` | 404 | ✅ |
 | `PATCH /driver/routes/{routeId}/stops/{stopId}/status` | R | `{status: DELIVERED\|FAILED\|SKIPPED, failureReason?}` | 200 `{stop: DriverStop, routeStatus, planStatus}` | 404 · 422 `INVALID_STOP_TRANSITION` · 422 `FAILURE_REASON_REQUIRED` · 422 `PLAN_NOT_ACTIVE` | ❌ T31 |
 | `POST /driver/location` | R | `{points:[{lat, lon, accuracyMeters?, headingDegrees?, speedMps?, recordedAt}]}`, 1–100 điểm theo thứ tự thời gian (D-26) | 204 (Should). MVP chỉ giữ điểm có `recordedAt` mới nhất. | 400 | ❌ T32 |
 | `GET /driver/routes/{routeId}/directions` | R | — | `DirectionsResponse` (Should) | 404 · 502 | ❌ T33 |
@@ -313,7 +315,7 @@ Người gọi phải có `role=DRIVER` hoặc `canDrive=true` (D-21), và chỉ
 ```jsonc
 // DriverRouteDetail
 {
-  "routeId": 11, "planId": 7, "planDate": "2026-10-22", "status": "IN_PROGRESS",
+  "routeId": 11, "planId": 7, "planDate": "2026-10-22", "status": "PENDING|IN_PROGRESS|COMPLETED",   // của route
   "start": { "address": "…", "lat": 16.05, "lon": 108.2 }, "end": { "address": "…", "lat": 16.05, "lon": 108.2 },  // D-20
   "stops": [ DriverStop, … ]   // theo sequence
 }
@@ -329,7 +331,7 @@ Người gọi phải có `role=DRIVER` hoặc `canDrive=true` (D-21), và chỉ
 ```
 
 - Dẫn đường (D-07): client tự dựng deep link Google Maps hoặc Apple Maps theo nền tảng từ `lat`/`lon` của stop; server không trả URL (P-32).
-- `PATCH …/status` của tài xế trả `routeStatus` và `planStatus` để app biết route/plan đã chuyển `IN_PROGRESS` hay `COMPLETED` (BR-11). Cập nhật trạng thái stop không tăng `version` của plan (§1). Chỉ đi từ `PENDING`; stop đã kết thúc không đổi được nữa (P-34).
+- `PATCH …/status` của tài xế trả `routeStatus` (cùng nghĩa với `status` của route ở trên) và `planStatus` để app biết route/plan đã chuyển `IN_PROGRESS` hay `COMPLETED` (BR-11). Cập nhật trạng thái stop không tăng `version` của plan (§1). Chỉ đi từ `PENDING`; stop đã kết thúc không đổi được nữa (P-34).
 
 ## 9. Mã lỗi (`ErrorCode`)
 

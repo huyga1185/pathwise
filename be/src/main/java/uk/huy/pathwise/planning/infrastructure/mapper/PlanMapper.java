@@ -3,6 +3,7 @@ package uk.huy.pathwise.planning.infrastructure.mapper;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.ReportingPolicy;
+import uk.huy.pathwise.planning.dto.response.DriverStopResponse;
 import uk.huy.pathwise.planning.dto.response.DropReason;
 import uk.huy.pathwise.planning.dto.response.LocationResponse;
 import uk.huy.pathwise.planning.dto.response.PlanStopResponse;
@@ -22,6 +23,10 @@ public interface PlanMapper {
     PlanStopResponse toStopResponse(PlanStop stop, DropReason dropReason);
 
     PlanSummaryResponse toSummaryResponse(RoutePlan plan, long stopCount, long routeCount);
+
+    @Mapping(target = "address", source = "addressText")
+    @Mapping(target = "timeWindow", expression = "java(toTimeWindow(stop))")
+    DriverStopResponse toDriverStop(PlanStop stop);
 
     default LocationResponse toDepot(RoutePlan plan) {
         return new LocationResponse(plan.getDepotAddress(), plan.getDepotLat(), plan.getDepotLon());
