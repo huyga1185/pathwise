@@ -58,6 +58,8 @@ public enum ErrorCode {
     /** @deprecated a missing resource on the path is {@link #NOT_FOUND} (API_SPEC §1); kept because error codes are only ever added. */
     @Deprecated
     JOB_NOT_FOUND(404),
-    NOTHING_TO_GEOCODE(422);
+    NOTHING_TO_GEOCODE(422),
+    STOPS_NOT_GEOCODED(422),
+    PLAN_INCOMPLETE(422);
     private final int httpCode;
 }

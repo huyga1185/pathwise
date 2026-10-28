@@ -31,6 +31,7 @@ class GeocodePlanJobHandler implements JobHandler {
     static final int BUSY_ATTEMPTS = 3;
 
     private final PlanGeocodingService planGeocodingService;
+    private final PlanProcessingService planProcessingService;
     private final GeocodingProvider geocodingProvider;
     private final GeocodePlanProperties properties;
 
@@ -53,13 +54,13 @@ class GeocodePlanJobHandler implements JobHandler {
             }
             if (!batch.isEmpty()) planGeocodingService.saveOutcomes(job.storeId(), job.targetId(), batch);
         } finally {
-            planGeocodingService.release(job.storeId(), job.targetId(), job.id());
+            planProcessingService.release(job.storeId(), job.targetId(), job.id());
         }
     }
 
     @Override
     public void abandon(JobRef job) {
-        planGeocodingService.release(job.storeId(), job.targetId(), job.id());
+        planProcessingService.release(job.storeId(), job.targetId(), job.id());
     }
 
     private Outcome geocode(PendingStop stop) {

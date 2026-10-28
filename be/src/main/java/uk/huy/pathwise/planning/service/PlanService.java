@@ -86,7 +86,7 @@ public class PlanService {
         boolean geocode = markGeocodingIfPending(plan);
         planRepository.saveAndFlush(plan);
         if (geocode) {
-            attachGeocodingJob(plan, actor);
+            attachJob(plan, actor, JobType.GEOCODE_PLAN);
             planRepository.flush();
         }
         return planDetailAssembler.toDetail(plan);
@@ -143,7 +143,7 @@ public class PlanService {
                 .collect(Collectors.toMap(PlanStop::getId, Function.identity()));
         checkStopIds(request.stopsOrEmpty(), existing.keySet());
         applyDraft(plan, request, existing);
-        if (markGeocodingIfPending(plan)) attachGeocodingJob(plan, actor);
+        if (markGeocodingIfPending(plan)) attachJob(plan, actor, JobType.GEOCODE_PLAN);
         markModified(plan);
         planRepository.flush();
         return planDetailAssembler.toDetail(plan);
@@ -168,7 +168,7 @@ public class PlanService {
                 .orElseThrow(() -> new AppException(ErrorCode.NOT_FOUND));
         applyPatch(stop, request);
         clearOptimization(plan);
-        if (markGeocodingIfPending(plan)) attachGeocodingJob(plan, actor);
+        if (markGeocodingIfPending(plan)) attachJob(plan, actor, JobType.GEOCODE_PLAN);
         markModified(plan);
         planRepository.flush();
         return planDetailAssembler.toDetail(plan);
@@ -182,7 +182,7 @@ public class PlanService {
      * @throws AppException {@code NOT_FOUND}, {@code PLAN_NOT_EDITABLE}, {@code PLAN_BUSY}, {@code PLAN_MODIFIED},
      *                      {@code NOTHING_TO_GEOCODE} if no stop is PENDING or FAILED
      */
-    public JobResponse geocodePlan(UserIdentity actor, long planId, GeocodePlanRequest request) {
+    public JobResponse geocodePlan(UserIdentity actor, long planId, PlanVersionRequest request) {
         if (request == null) throw new NullPointerException("Geocode plan request could not be null");
         long storeId = storeIdOf(actor);
         // Not @Transactional: the job is submitted when this transaction commits, and is read after that.
@@ -200,11 +200,67 @@ public class PlanService {
             }
             clearOptimization(plan);
             markGeocodingIfPending(plan);
-            attachGeocodingJob(plan, actor);
+            attachJob(plan, actor, JobType.GEOCODE_PLAN);
             markModified(plan);
             return plan.getActiveJobId();
         });
         return jobService.findJob(storeId, Objects.requireNonNull(jobId)).orElseThrow();
+    }
+
+    /**
+     * Starts an {@code OPTIMIZE_PLAN} job ({@code POST /plans/{id}/optimize}, ARCHITECTURE.md §8.3). The plan is
+     * OPTIMIZING until the job ends; the job writes the result only if the plan is still at the version it read.
+     *
+     * @return the job, read after the commit: an inline job (the default) has already run, so its final status is
+     * returned
+     * @throws AppException {@code NOT_FOUND}, {@code PLAN_NOT_EDITABLE}, {@code PLAN_BUSY}, {@code PLAN_MODIFIED},
+     *                      {@code PLAN_INCOMPLETE} without stops or assignments, {@code STOPS_NOT_GEOCODED} while a stop
+     *                      has no coordinates, {@code INVALID_ASSIGNMENT} if a driver or vehicle may no longer be used
+     *                      (BR-07), each with the assignment in {@code details}
+     */
+    public JobResponse optimizePlan(UserIdentity actor, long planId, PlanVersionRequest request) {
+        if (request == null) throw new NullPointerException("Optimize plan request could not be null");
+        long storeId = storeIdOf(actor);
+        // Not @Transactional: the job is submitted when this transaction commits, and is read after that.
+        Long jobId = transactionTemplate.execute(status -> {
+            RoutePlan plan = lockEditablePlan(actor, planId, request.version());
+            checkComplete(plan);
+            if (plan.getStops().stream().anyMatch(stop -> stop.getLat() == null))
+                throw new AppException(ErrorCode.STOPS_NOT_GEOCODED);
+            checkAssignmentsStillValid(plan);
+            plan.setProcessingStatus(ProcessingStatus.OPTIMIZING);
+            attachJob(plan, actor, JobType.OPTIMIZE_PLAN);
+            markModified(plan);
+            return plan.getActiveJobId();
+        });
+        return jobService.findJob(storeId, Objects.requireNonNull(jobId)).orElseThrow();
+    }
+
+    private static void checkComplete(RoutePlan plan) {
+        List<FieldErrorDetail> missing = new ArrayList<>();
+        if (plan.getStops().isEmpty()) missing.add(new FieldErrorDetail("stops", "STOPS_REQUIRED"));
+        if (plan.getRoutes().isEmpty()) missing.add(new FieldErrorDetail("assignments", "ASSIGNMENTS_REQUIRED"));
+        if (!missing.isEmpty()) throw new DetailedAppException(ErrorCode.PLAN_INCOMPLETE, missing);
+    }
+
+    /**
+     * BR-07 again at optimize time: since the draft was saved a driver may have been disabled or lost
+     * {@code canDrive}, and a vehicle may have been deactivated. Assignments are numbered like
+     * {@code PlanDetail.routes}.
+     */
+    private void checkAssignmentsStillValid(RoutePlan plan) {
+        List<PlanRoute> routes = plan.getRoutes().stream().sorted(Comparator.comparing(PlanRoute::getId)).toList();
+        List<FieldErrorDetail> invalid = new ArrayList<>();
+        for (int i = 0; i < routes.size(); i++) {
+            PlanRoute route = routes.get(i);
+            boolean driverValid = storeMemberQuery.findActiveMember(plan.getStoreId(), route.getDriverId())
+                    .filter(member -> UserIdentity.canBeAssignedRoutes(member.role(), member.canDrive()))
+                    .isPresent();
+            if (!driverValid) invalid.add(new FieldErrorDetail("assignments[" + i + "].driverId", "INVALID_ASSIGNMENT"));
+            if (vehicleQuery.findActive(plan.getStoreId(), route.getVehicleId()).isEmpty())
+                invalid.add(new FieldErrorDetail("assignments[" + i + "].vehicleId", "INVALID_ASSIGNMENT"));
+        }
+        if (!invalid.isEmpty()) throw new DetailedAppException(ErrorCode.INVALID_ASSIGNMENT, invalid);
     }
 
     private RoutePlan lockEditablePlan(UserIdentity actor, long planId, Long version) {
@@ -439,8 +495,8 @@ public class PlanService {
     /**
      * Records the job in this transaction; it is submitted after the commit (D-19).
      */
-    private void attachGeocodingJob(RoutePlan plan, UserIdentity actor) {
-        plan.setActiveJobId(jobService.createJob(plan.getStoreId(), JobType.GEOCODE_PLAN, plan.getId(), actor.id()));
+    private void attachJob(RoutePlan plan, UserIdentity actor, JobType type) {
+        plan.setActiveJobId(jobService.createJob(plan.getStoreId(), type, plan.getId(), actor.id()));
     }
 
     /**

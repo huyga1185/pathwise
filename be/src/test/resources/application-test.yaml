@@ -35,3 +35,8 @@ service:
 jobs:
   geocode-plan:
     mode: inline
+
+# Guided local search runs until the time limit, so every optimization takes this long; keep tests fast.
+routing:
+  solver:
+    time-limit: 1s

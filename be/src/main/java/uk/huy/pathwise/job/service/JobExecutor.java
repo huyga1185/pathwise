@@ -83,6 +83,7 @@ public class JobExecutor {
     }
 
     private static String errorCodeOf(Exception e) {
+        if (e instanceof JobFailedException failed) return failed.getErrorCode();
         if (e instanceof ExternalServiceException external) return external.getErrorCode().name();
         if (e instanceof AppException app) return app.getErrorCode().name();
         return JobErrors.INTERNAL_ERROR;
