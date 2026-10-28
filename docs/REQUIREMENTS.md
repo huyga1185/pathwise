@@ -35,7 +35,7 @@ Mỗi user thuộc tối đa 1 store và có đúng 1 role (D-02). OWNER hoặc 
 | FR-A06 | Xem danh sách session (thiết bị) đang hoạt động; đăng xuất từng session; đăng xuất mọi session khác. | Must | ✅ (T11) |
 | FR-A07 | Quên mật khẩu: OTP qua email → đặt mật khẩu mới → thu hồi mọi session. Không tiết lộ email có tồn tại hay không. | Must | ✅ (T14) |
 | FR-A08 | Đổi mật khẩu khi đã đăng nhập: mật khẩu cũ + OTP qua email; thu hồi mọi session khác. | Must | ✅ (T15) |
-| FR-A09 | Xem/cập nhật hồ sơ của chính mình (số điện thoại VN). | Must | ✅ (`GET/PUT /users/me`) — cần bổ sung `fullName` |
+| FR-A09 | Xem/cập nhật hồ sơ của chính mình (họ tên, số điện thoại VN). | Must | ✅ (`GET/PATCH /users/me`, T44) |
 | FR-A10 | ADMIN xem danh sách user (phân trang, sort whitelist). | Should | ✅ |
 
 ### 3.2 Cửa hàng & thành viên (D-02, D-03, D-16)

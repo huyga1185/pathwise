@@ -51,7 +51,7 @@ public class MemberService {
      * Changes status, role or {@code canDrive} of a member. Disabling revokes every session of the member in the
      * same transaction (P-09, P-27). A role change reaches the member's access token within 14 minutes (P-09).
      *
-     * @throws AppException {@code USER_NOT_FOUND} if the user is not in the caller's store;
+     * @throws AppException {@code NOT_FOUND} if the user is not in the caller's store;
      *                      {@code CANNOT_MODIFY_OWNER} for a role or status change of the OWNER
      */
     @Transactional
@@ -59,15 +59,15 @@ public class MemberService {
         if (request == null) throw new NullPointerException("Update member request could not be null");
         long storeId = StoreService.storeIdOf(actor);
         StoreUser member = storeUserService.findInStore(storeId, userId)
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
-        if (member.role() == UserRole.OWNER && (request.role() != null || request.status() != null))
+                .orElseThrow(() -> new AppException(ErrorCode.NOT_FOUND));
+        if (member.role() == UserRole.OWNER && (request.getRole() != null || request.getStatus() != null))
             throw new AppException(ErrorCode.CANNOT_MODIFY_OWNER);
 
         StoreUser updated = storeUserService.updateMember(storeId,
                 userId,
-                request.role() == null ? null : request.role().toUserRole(),
-                request.status() == null ? null : request.status().toUserStatus(),
-                request.canDrive());
+                request.getRole() == null ? null : request.getRole().toUserRole(),
+                request.getStatus() == null ? null : request.getStatus().toUserStatus(),
+                request.getCanDrive());
         if (member.status() != UserStatus.DISABLED && updated.status() == UserStatus.DISABLED) {
             eventPublisher.publishEvent(new MemberDisabledEvent(storeId, userId));
             log.info("Member disabled. storeId={}, userId={}", storeId, userId);

@@ -121,6 +121,29 @@ class StoreMemberIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
+    void updateMember_whenFieldIsNull_return400NotNullableAndChangeNothing() throws Exception {
+        TestStore store = users.createStore();
+
+        updateMember(store.owner(), store.driver().id(), "{\"status\":null,\"canDrive\":null}")
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"))
+                .andExpect(jsonPath("$.details[?(@.field == 'status')].code").value("NOT_NULLABLE"))
+                .andExpect(jsonPath("$.details[?(@.field == 'canDrive')].code").value("NOT_NULLABLE"));
+        updateMember(store.owner(), store.driver().id(), "{}")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.status").value("ACTIVE"))
+                .andExpect(jsonPath("$.data.role").value("DRIVER"));
+    }
+
+    @Test
+    void listMembers_whenPhoneNumberSet_returnE164() throws Exception {
+        TestStore store = users.createStore();
+        jdbcTemplate.update("UPDATE users SET phone_number = '+84905123456' WHERE id = ?", store.driver().id());
+
+        members(store.owner(), "?role=DRIVER").andExpect(jsonPath("$.data[0].phoneNumber").value("+84905123456"));
+    }
+
+    @Test
     void updateMember_whenTargetIsOwner_return422CannotModifyOwner() throws Exception {
         TestStore store = users.createStore();
 

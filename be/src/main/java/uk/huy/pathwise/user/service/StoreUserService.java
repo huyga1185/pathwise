@@ -46,7 +46,7 @@ public interface StoreUserService {
     /**
      * Changes the given fields of a member of {@code storeId}; a null argument leaves that field unchanged.
      *
-     * @throws uk.huy.pathwise.core.exception.AppException {@code USER_NOT_FOUND} if the user is not in the store
+     * @throws uk.huy.pathwise.core.exception.AppException {@code NOT_FOUND} if the user is not in the store
      */
     StoreUser updateMember(long storeId, long userId, UserRole role, UserStatus status, Boolean canDrive);
 }

@@ -61,13 +61,13 @@ public class JobService {
     }
 
     /**
-     * @throws AppException {@code JOB_NOT_FOUND} if the job is not in the caller's store (BR-01)
+     * @throws AppException {@code NOT_FOUND} if the job is not in the caller's store (BR-01)
      */
     @Transactional(readOnly = true)
     public JobResponse getJob(UserIdentity actor, long jobId) {
         if (actor == null) throw new NullPointerException("Actor could not be null");
-        if (actor.storeId() == null) throw new AppException(ErrorCode.JOB_NOT_FOUND);
-        return findJob(actor.storeId(), jobId).orElseThrow(() -> new AppException(ErrorCode.JOB_NOT_FOUND));
+        if (actor.storeId() == null) throw new AppException(ErrorCode.NOT_FOUND);
+        return findJob(actor.storeId(), jobId).orElseThrow(() -> new AppException(ErrorCode.NOT_FOUND));
     }
 
     private static JobResponse toResponse(BackgroundJob job) {

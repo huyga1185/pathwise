@@ -107,13 +107,13 @@ public class AuthService {
      * {@code GET /sessions}, so it must then drop its tokens, as after {@code /log-out}. An access token issued
      * before T11 has no {@code sid}: no session is "current" and the target is treated as another session.
      *
-     * @throws AppException {@code SESSION_NOT_FOUND} if the caller has no such active session: unknown id, another
+     * @throws AppException {@code NOT_FOUND} if the caller has no such active session: unknown id, another
      *                      user's session (404, not 403, so its existence is not revealed), already revoked or expired
      */
     public SessionRevocation revokeSession(AuthenticatedUser actor, String targetSessionId) {
         if (actor == null) throw new NullPointerException("Actor could not be null");
         if (!refreshTokenManager.revokeSession(actor.identity().id(), targetSessionId))
-            throw new AppException(ErrorCode.SESSION_NOT_FOUND);
+            throw new AppException(ErrorCode.NOT_FOUND);
         return targetSessionId.equals(actor.sessionId())
                 ? SessionRevocation.CURRENT_SESSION_LOGGED_OUT
                 : SessionRevocation.OTHER_SESSION_REVOKED;

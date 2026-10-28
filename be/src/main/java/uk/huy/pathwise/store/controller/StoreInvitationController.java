@@ -39,7 +39,10 @@ public class StoreInvitationController {
         return ResponseEntity.ok(new ApiResponse<>(invitationService.listInvitations(actor.identity(), status)));
     }
 
-    @DeleteMapping("/{id}")
+    /**
+     * Revokes a PENDING invitation; it stays listed with status REVOKED.
+     */
+    @PostMapping("/{id}/revoke")
     public ResponseEntity<Void> revokeInvitation(@AuthenticationPrincipal AuthenticatedUser actor,
                                                  @PathVariable("id") long invitationId) {
         invitationService.revokeInvitation(actor.identity(), invitationId);

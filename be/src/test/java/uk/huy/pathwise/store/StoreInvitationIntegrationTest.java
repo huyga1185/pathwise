@@ -24,7 +24,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -130,7 +129,7 @@ class StoreInvitationIntegrationTest extends AbstractIntegrationTest {
         long id = invitationId(invite(store.owner().bearer(), email, "DRIVER"));
         String code = code(email);
 
-        mockMvc.perform(delete("/api/v1/store/invitations/" + id).header(HttpHeaders.AUTHORIZATION, store.owner().bearer()))
+        mockMvc.perform(post("/api/v1/store/invitations/" + id + "/revoke").header(HttpHeaders.AUTHORIZATION, store.owner().bearer()))
                 .andExpect(status().isNoContent());
 
         accept(code, "An", null).andExpect(jsonPath("$.code").value("INVITATION_INVALID"));
@@ -150,7 +149,7 @@ class StoreInvitationIntegrationTest extends AbstractIntegrationTest {
         listInvitations(store.owner().bearer(), "?status=EXPIRED")
                 .andExpect(jsonPath("$.data[0].id").value(id))
                 .andExpect(jsonPath("$.data[0].status").value("EXPIRED"));
-        mockMvc.perform(delete("/api/v1/store/invitations/" + id).header(HttpHeaders.AUTHORIZATION, store.owner().bearer()))
+        mockMvc.perform(post("/api/v1/store/invitations/" + id + "/revoke").header(HttpHeaders.AUTHORIZATION, store.owner().bearer()))
                 .andExpect(status().isUnprocessableContent())
                 .andExpect(jsonPath("$.code").value("INVITATION_NOT_PENDING"));
     }
@@ -221,7 +220,7 @@ class StoreInvitationIntegrationTest extends AbstractIntegrationTest {
         String email = newEmail();
         long id = invitationId(invite(storeA.owner().bearer(), email, "DRIVER"));
 
-        mockMvc.perform(delete("/api/v1/store/invitations/" + id).header(HttpHeaders.AUTHORIZATION, storeB.owner().bearer()))
+        mockMvc.perform(post("/api/v1/store/invitations/" + id + "/revoke").header(HttpHeaders.AUTHORIZATION, storeB.owner().bearer()))
                 .andExpect(status().isNotFound());
 
         listInvitations(storeB.owner().bearer(), "").andExpect(jsonPath("$.data").isEmpty());

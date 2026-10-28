@@ -182,7 +182,7 @@ Bảng job dùng chung. MVP có 2 loại job: `GEOCODE_PLAN` (chạy nền) và 
 | store_id | BIGINT | NOT NULL, FK |
 | type | VARCHAR(30) | NOT NULL — `GEOCODE_PLAN, OPTIMIZE_PLAN` |
 | target_id | BIGINT | NOT NULL. Là plan id. Không có FK để bảng dùng chung cho mọi loại job. |
-| status | VARCHAR(20) | NOT NULL — `QUEUED, RUNNING, SUCCEEDED, FAILED, CANCELLED` |
+| status | VARCHAR(20) | NOT NULL — `QUEUED, RUNNING, SUCCEEDED, FAILED` (`CANCELLED` bỏ ở T44, P-32: không có gì huỷ job) |
 | error_code | VARCHAR(50) | NULL. Khi `FAILED`: `INTERRUPTED`, `JOB_QUEUE_FULL`, `INTERNAL_ERROR` (hằng `job.model.JobErrors`) hoặc tên `ErrorCode` của provider, ví dụ `GEOCODING_PROVIDER_ERROR` (T29, P-30). |
 | attempts | INT | NOT NULL DEFAULT 0. Tăng mỗi lần job chuyển sang `RUNNING`. |
 | created_by | BIGINT | NOT NULL, FK users |

@@ -15,7 +15,7 @@ import uk.huy.pathwise.shared.identity.UserStatus;
 import uk.huy.pathwise.user.dto.AuthenticationResult;
 import uk.huy.pathwise.user.dto.AccountState;
 import uk.huy.pathwise.user.dto.StoreUser;
-import uk.huy.pathwise.user.dto.request.UserModificationRequest;
+import uk.huy.pathwise.user.dto.request.UpdateProfileRequest;
 import uk.huy.pathwise.user.dto.response.AdminGetUserResponse;
 import uk.huy.pathwise.user.dto.response.GetUserResponse;
 import uk.huy.pathwise.user.infrastructure.mapper.UserMapper;
@@ -43,7 +43,7 @@ public class UserService implements UserAccountService, UserProfileService, Stor
 
     private User getUserById (long id) {
         return userRepository.findById(id)
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+                .orElseThrow(() -> new AppException(ErrorCode.NOT_FOUND));
     }
 
     private void checkUserEmailExisted(String email) {
@@ -78,11 +78,13 @@ public class UserService implements UserAccountService, UserProfileService, Stor
 
     @Override
     @Transactional
-    public void updateUser(UserIdentity identity, UserModificationRequest request) {
+    public GetUserResponse updateUser(UserIdentity identity, UpdateProfileRequest request) {
         if (identity == null) throw new NullPointerException("Identity is null");
+        if (request == null) throw new NullPointerException("Update profile request is null");
         User user = getUserById(identity.id());
-        userMapper.update(user, request);
-        userRepository.save(user);
+        if (request.has("fullName")) user.setFullName(request.getFullName() == null ? null : request.getFullName().trim());
+        if (request.has("phoneNumber")) user.setPhoneNumber(toE164(request.getPhoneNumber()));
+        return userMapper.toGetUserResponse(userRepository.save(user));
     }
 
     @Override
@@ -208,7 +210,7 @@ public class UserService implements UserAccountService, UserProfileService, Stor
     @Transactional
     public StoreUser updateMember(long storeId, long userId, UserRole role, UserStatus status, Boolean canDrive) {
         User user = userRepository.findByIdAndStoreId(userId, storeId)
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+                .orElseThrow(() -> new AppException(ErrorCode.NOT_FOUND));
         if (role != null) user.setRole(role);
         if (status != null) user.setStatus(status);
         if (canDrive != null) user.setCanDrive(canDrive);

@@ -116,6 +116,9 @@ Chỉ thêm `ErrorCode` khi client phải hành động khác đi; lý do chi ti
 
 - Request/response là **Java record**. Không dùng entity làm request/response.
 - Validation cú pháp ở request DTO bằng Bean Validation; `message` của constraint là **mã lỗi** UPPER_SNAKE (ví dụ `EMAIL_REQUIRED`), không phải câu văn (T03 đã chuyển mọi constraint hiện có sang mã).
+- Kiểm tra chéo nhiều field: DTO implement `core.validation.SelfValidating` và gắn `@SelfValidated`; `validate(FieldErrors)` báo lỗi trên field client cần sửa (`errors.reject("end", "INVALID_TIME_WINDOW")`). Không dùng `@AssertTrue` trên method, vì lỗi sẽ mang tên method (P-32).
+- PATCH: request kế thừa `core.validation.MergePatch` (class có setter đánh dấu field có mặt, không phải record), service dùng `has(field)` để phân biệt vắng với `null`; field không xoá được dùng `rejectNull` → `NOT_NULLABLE` (P-32).
+- Số điện thoại lưu và trả E.164; request nhận dạng bất kỳ và validate bằng `@ValidPhoneNumber` (P-29, P-32).
 - Validation nghiệp vụ (tham chiếu tồn tại, trạng thái, quyền) ở service → `AppException(ErrorCode.X)`.
 - Thời gian trong API: `Instant` ISO-8601 UTC cho sự kiện; `LocalDate` cho `planDate`; `LocalTime` (`HH:mm`) cho time window/ca, hiểu theo timezone của store (P-14).
 - Cấu hình mới dùng `@ConfigurationProperties` (record) theo module, không rải `@Value`.
@@ -128,7 +131,7 @@ Chỉ thêm `ErrorCode` khi client phải hành động khác đi; lý do chi ti
   { "code": "VALIDATION_ERROR", "details": [{ "field": "email", "code": "EMAIL_REQUIRED" }] }
   ```
   Profile `dev` được thêm `exception`, `stackTrace`. Không profile nào khác lộ chi tiết nội bộ.
-- Map chuẩn: 400 validation/request sai · 401 chưa xác thực/token sai/sai thông tin đăng nhập · 403 không đủ quyền · 404 không tồn tại **hoặc thuộc store khác** · 405 sai HTTP method · 409 xung đột trạng thái/trùng/optimistic lock · 422 vi phạm business rule hợp lệ cú pháp (ví dụ publish plan chưa tối ưu) · 429 rate limit/cooldown · 502/503 provider ngoài lỗi/hết thời gian · 500 lỗi không lường trước.
+- Map chuẩn: 400 validation/request sai · 401 chưa xác thực/token sai/sai thông tin đăng nhập · 403 không đủ quyền · 404 `NOT_FOUND` khi không tồn tại **hoặc thuộc store khác** (không dùng mã 404 riêng theo loại tài nguyên, P-32) · 405 sai HTTP method · 409 xung đột trạng thái/trùng/optimistic lock · 422 vi phạm business rule hợp lệ cú pháp (ví dụ publish plan chưa tối ưu) · 429 rate limit/cooldown · 502/503 provider ngoài lỗi/hết thời gian · 500 lỗi không lường trước.
 - `AuthenticationEntryPoint` và `AccessDeniedHandler` của Security ghi cùng format: `JsonAuthenticationEntryPoint`, `JsonAccessDeniedHandler` (trong `auth.infrastructure.security`), cùng dùng `ErrorResponseFactory` với `GlobalExceptionHandler`.
 - **Quy tắc (P-23):** những gì `SecurityConfig` hoặc `GlobalExceptionHandler` cần (filter, entry point, `ErrorResponseFactory`) **không là Spring bean** mà được khởi tạo trực tiếp. Lý do: `@WebMvcTest` chỉ nạp controller, advice, filter và cấu hình MVC; một `@Component` thường sẽ thiếu trong slice và làm hỏng mọi controller test.
 - Provider ngoài: timeout kết nối/đọc cấu hình (mặc định 3 s / 10 s); lỗi → `ExternalServiceException` → 502 `ROUTING_PROVIDER_ERROR` hoặc `GEOCODING_PROVIDER_ERROR`.

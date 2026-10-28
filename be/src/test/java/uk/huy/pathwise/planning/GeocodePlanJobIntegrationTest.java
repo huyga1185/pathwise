@@ -254,7 +254,7 @@ abstract class GeocodePlanJobIntegrationTest extends AbstractIntegrationTest {
 
         getJob(storeB.owner(), jobId)
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.code").value("JOB_NOT_FOUND"));
+                .andExpect(jsonPath("$.code").value("NOT_FOUND"));
         getJob(storeA.owner(), Long.MAX_VALUE).andExpect(status().isNotFound());
         getJob(storeA.driver(), jobId).andExpect(status().isForbidden());
         geocode(storeB.owner(), id(body), 0).andExpect(status().isNotFound());
@@ -277,7 +277,7 @@ abstract class GeocodePlanJobIntegrationTest extends AbstractIntegrationTest {
         TestStore store = users.createStore();
         mockMvc.perform(put("/api/v1/store").header(HttpHeaders.AUTHORIZATION, store.owner().bearer())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"name\":\"Shop\",\"depotAddress\":\"Kho\",\"depotLat\":16.05,\"depotLon\":108.2,"
+                        .content("{\"name\":\"Shop\",\"depot\":{\"address\":\"Kho\",\"lat\":16.05,\"lon\":108.2},"
                                 + "\"timezone\":\"Asia/Ho_Chi_Minh\"}"))
                 .andExpect(status().isOk());
         return store;

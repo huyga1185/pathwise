@@ -36,7 +36,7 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -184,7 +184,7 @@ class ErrorHandlingWebMvcTest {
     void updateProfile_whenUnexpectedException_return500WithoutInternals() throws Exception {
         doThrow(new IllegalStateException("boom")).when(userProfileService).updateUser(any(), any());
 
-        mockMvc.perform(put("/api/v1/users/me")
+        mockMvc.perform(patch("/api/v1/users/me")
                         .header(HttpHeaders.AUTHORIZATION, USER_BEARER)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"phoneNumber\":null}"))
@@ -198,7 +198,7 @@ class ErrorHandlingWebMvcTest {
 
     @Test
     void updateProfile_whenPhoneNumberInvalid_return400ValidationError() throws Exception {
-        mockMvc.perform(put("/api/v1/users/me")
+        mockMvc.perform(patch("/api/v1/users/me")
                         .header(HttpHeaders.AUTHORIZATION, USER_BEARER)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"phoneNumber\":\"123\"}"))
