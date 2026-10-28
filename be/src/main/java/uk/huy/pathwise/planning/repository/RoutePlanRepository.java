@@ -29,6 +29,21 @@ public interface RoutePlanRepository extends JpaRepository<RoutePlan, Long> {
     Optional<RoutePlan> findByIdAndStoreIdForUpdate(@Param("id") long id, @Param("storeId") long storeId);
 
     /**
+     * Only the date, without loading the plan: a plan loaded before {@link #findAllOfDayForUpdate} would be returned
+     * as already loaded, not as read under the lock.
+     */
+    @Query("SELECT p.planDate FROM RoutePlan p WHERE p.id = :id AND p.storeId = :storeId")
+    Optional<LocalDate> findPlanDate(@Param("id") long id, @Param("storeId") long storeId);
+
+    /**
+     * Locks every plan of the store on that day, in id order, for publishing (D-23): a shift overlap check holds only
+     * if no other plan of the day can be published at the same time. Locking in one order cannot deadlock.
+     */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT p FROM RoutePlan p WHERE p.storeId = :storeId AND p.planDate = :planDate ORDER BY p.id")
+    List<RoutePlan> findAllOfDayForUpdate(@Param("storeId") long storeId, @Param("planDate") LocalDate planDate);
+
+    /**
      * @param planDate only this day, if set
      * @param status   only this status, if set
      */

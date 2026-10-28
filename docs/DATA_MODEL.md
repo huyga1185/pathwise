@@ -94,7 +94,7 @@ Không xoá cứng xe đã dùng trong plan; chỉ `active=false`. Tên ràng bu
 | store_id | BIGINT | NOT NULL, FK |
 | name | VARCHAR(150) | NOT NULL |
 | plan_date | DATE | NOT NULL |
-| status | VARCHAR(20) | NOT NULL — `DRAFT, PUBLISHED, IN_PROGRESS, COMPLETED, CANCELLED` |
+| status | VARCHAR(20) | NOT NULL — `DRAFT, PUBLISHED, IN_PROGRESS, COMPLETED, CANCELLED`; chuyển theo `PlanLifecycle`, COMPLETED và CANCELLED là cuối cùng (P-34) |
 | depot_address | VARCHAR(500) | NULL — snapshot |
 | depot_lat, depot_lon | DOUBLE | NOT NULL — snapshot từ store hoặc ghi đè |
 | timezone | VARCHAR(50) | NOT NULL — snapshot |
@@ -153,7 +153,7 @@ Index `(driver_id)` cho truy vấn của tài xế. Tên ràng buộc trong V5: 
 | tw_start, tw_end | TIME | NULL; cả hai cùng NULL hoặc `tw_start < tw_end` |
 | note | VARCHAR(500) | NULL |
 | planned_arrival | DATETIME(6) | NULL — kết quả |
-| status | VARCHAR(20) | NOT NULL DEFAULT `PENDING` — `PENDING, DELIVERED, FAILED, SKIPPED` |
+| status | VARCHAR(20) | NOT NULL DEFAULT `PENDING` — `PENDING, DELIVERED, FAILED, SKIPPED`; chỉ đi từ `PENDING`, không đảo ngược (P-34) |
 | failure_reason | VARCHAR(255) | NULL — bắt buộc khi FAILED |
 | status_updated_at | DATETIME(6) | NULL |
 | status_updated_by | BIGINT | NULL, FK users |

@@ -174,7 +174,6 @@ Hai lớp, **cả hai bắt buộc**:
 | Xem plan & vị trí tài xế | — | ✓ | ✓ | — |
 | Xem route được giao, cập nhật trạng thái stop, gửi vị trí | — | ✓ nếu `canDrive` | ✓ nếu `canDrive` | ✓ (chỉ route của mình) |
 | Bật/tắt `canDrive` của thành viên | — | ✓ | — | — |
-| Đặt lại stop về PENDING | — | ✓ | ✓ | — |
 | Danh sách user toàn hệ thống | ✓ | — | — | — |
 
 ADMIN không có `storeId` và **không** truy cập API của store trong MVP.
@@ -199,6 +198,7 @@ ADMIN không có `storeId` và **không** truy cập API của store trong MVP.
   - Optimize: tx đọc input → gọi matrix + solver ngoài tx → tx ghi kết quả, kiểm tra `version` của plan (optimistic lock); plan đã đổi → 409 `PLAN_MODIFIED`.
 - Concurrency:
   - `route_plans.version` (`@Version`) cho mọi sửa plan. Service khoá dòng plan (`SELECT … FOR UPDATE`) rồi so `version` client gửi, nên kiểm tra và ghi là một bước; mỗi request đánh dấu plan đã sửa đúng một lần, và collection route/stop được loại khỏi optimistic lock (`@OptimisticLock(excluded = true)`), nên `version` tăng đúng 1 dù chỉ stop đổi (T24).
+  - **MariaDB snapshot isolation** (bật mặc định từ 11.6, F-44): trong một transaction, nếu đã có một lần đọc thường rồi mới `SELECT … FOR UPDATE` một dòng mà transaction khác vừa sửa, MariaDB ném lỗi 1020 thay vì đợi rồi đọc bản mới. Quy tắc: câu khoá phải là lệnh đọc **đầu tiên** của transaction; cần dữ liệu để biết khoá gì thì đọc nó trong một transaction riêng trước đó (ví dụ publish đọc `plan_date`).
   - Cập nhật trạng thái stop: `UPDATE ... WHERE id=? AND status=?` hoặc `@Version` trên stop; thao tác lặp lại cùng trạng thái là idempotent.
   - Refresh token: giữ pessimistic lock khi rotate.
   - Đăng ký/mời trùng email: dựa vào unique constraint; `DataIntegrityViolationException` → 409 `EMAIL_EXISTED`.
@@ -219,7 +219,8 @@ DRAFT ──optimize(job)──▶ DRAFT có kết quả ──publish──▶ 
 
 - `processing_status` khác `IDLE` thì mọi thao tác ghi lên plan trả 409 `PLAN_BUSY`.
 - Optimize chỉ chạy khi mọi stop có toạ độ (`PROVIDED` hoặc `RESOLVED`). Nếu chưa thì trả 422 `STOPS_NOT_GEOCODED`.
-- Publish kiểm tra **trùng ca** (D-23): với mỗi người được gán và mỗi xe, khoảng `[shiftStart, shiftEnd)` của plan này không được giao với khoảng ca của plan PUBLISHED/IN_PROGRESS khác **cùng `plan_date`** trong store. Vi phạm thì trả 422 `SHIFT_OVERLAP`. Kiểm tra trong transaction publish, khoá các route liên quan bằng `SELECT … FOR UPDATE` theo driver_id/vehicle_id để hai lần publish đồng thời không cùng lọt qua.
+- Publish kiểm tra **trùng ca** (D-23): với mỗi route **có stop** của plan, khoảng `[shiftStart, shiftEnd)` không được giao với khoảng ca của cùng người được gán hoặc cùng xe trong route có stop của plan PUBLISHED/IN_PROGRESS khác **cùng `plan_date`** trong store; route không có stop không tính (P-34). Vi phạm thì trả 422 `SHIFT_OVERLAP`, mỗi xung đột một phần tử `details` có `conflictPlanId`. Để hai lần publish đồng thời không cùng lọt qua, transaction publish **khoá mọi plan của store trong ngày đó** (`SELECT … FOR UPDATE` theo `(store_id, plan_date)`, `ORDER BY id`, nên không deadlock) rồi mới kiểm tra; khoá theo route của plan khác không đủ, vì plan kia còn là DRAFT lúc kiểm tra. `plan_date` được đọc trong một transaction riêng trước đó (xem §7, MariaDB snapshot isolation).
+- Trạng thái đi một chiều, không có đảo ngược (P-34): stop `PENDING → DELIVERED | FAILED | SKIPPED`, plan `PUBLISHED → IN_PROGRESS → COMPLETED` (hoặc thẳng `PUBLISHED → COMPLETED` khi lần cập nhật đầu tiên đã kết thúc mọi stop). Bảng chuyển trạng thái và cách tính tiến độ plan nằm ở `planning.model.PlanLifecycle`, dùng chung cho T26 và T31.
 
 ### 8.2 Geocoding khi lưu plan (D-18)
 

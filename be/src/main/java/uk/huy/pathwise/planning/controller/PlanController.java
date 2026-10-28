@@ -99,4 +99,18 @@ public class PlanController {
         return ResponseEntity.status(HttpStatus.ACCEPTED)
                 .body(new ApiResponse<>(planService.optimizePlan(actor.identity(), planId, request)));
     }
+
+    @PostMapping("/{id}/publish")
+    public ResponseEntity<ApiResponse<PlanDetailResponse>> publishPlan(@AuthenticationPrincipal AuthenticatedUser actor,
+                                                                       @PathVariable("id") long planId,
+                                                                       @Valid @RequestBody PlanVersionRequest request) {
+        return ResponseEntity.ok(new ApiResponse<>(planService.publishPlan(actor.identity(), planId, request)));
+    }
+
+    @PostMapping("/{id}/cancel")
+    public ResponseEntity<ApiResponse<PlanDetailResponse>> cancelPlan(@AuthenticationPrincipal AuthenticatedUser actor,
+                                                                      @PathVariable("id") long planId,
+                                                                      @Valid @RequestBody PlanVersionRequest request) {
+        return ResponseEntity.ok(new ApiResponse<>(planService.cancelPlan(actor.identity(), planId, request)));
+    }
 }

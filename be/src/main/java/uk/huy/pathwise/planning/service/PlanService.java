@@ -23,6 +23,7 @@ import uk.huy.pathwise.job.model.JobType;
 import uk.huy.pathwise.job.service.JobService;
 import uk.huy.pathwise.planning.dto.request.*;
 import uk.huy.pathwise.planning.dto.response.PlanDetailResponse;
+import uk.huy.pathwise.planning.dto.response.ShiftOverlapDetail;
 import uk.huy.pathwise.planning.dto.response.PlanSummaryResponse;
 import uk.huy.pathwise.planning.infrastructure.mapper.PlanMapper;
 import uk.huy.pathwise.planning.model.*;
@@ -227,13 +228,123 @@ public class PlanService {
             checkComplete(plan);
             if (plan.getStops().stream().anyMatch(stop -> stop.getLat() == null))
                 throw new AppException(ErrorCode.STOPS_NOT_GEOCODED);
-            checkAssignmentsStillValid(plan);
+            checkAssignmentsStillValid(plan, false);
             plan.setProcessingStatus(ProcessingStatus.OPTIMIZING);
             attachJob(plan, actor, JobType.OPTIMIZE_PLAN);
             markModified(plan);
             return plan.getActiveJobId();
         });
         return jobService.findJob(storeId, Objects.requireNonNull(jobId)).orElseThrow();
+    }
+
+    /**
+     * Publishes an optimized draft (FR-P05): drivers then see their routes and the plan can no longer be edited. The
+     * shift of each used route must not overlap the shift of the same driver or vehicle in another PUBLISHED or
+     * IN_PROGRESS plan of the store on the same day (D-23, BR-12); routes without stops do not count, their driver
+     * and vehicle are free (P-34). Every plan of that day is locked while checking, so two publishes cannot both pass.
+     *
+     * @throws AppException {@code NOT_FOUND}, {@code PLAN_NOT_EDITABLE} if not a DRAFT, {@code PLAN_BUSY},
+     *                      {@code PLAN_MODIFIED}, {@code PLAN_NOT_OPTIMIZED} without a valid optimization result,
+     *                      {@code INVALID_ASSIGNMENT} if a driver or vehicle of a used route may no longer be used, and
+     *                      {@code SHIFT_OVERLAP} with one {@link ShiftOverlapDetail} per conflict
+     */
+    public PlanDetailResponse publishPlan(UserIdentity actor, long planId, PlanVersionRequest request) {
+        if (request == null) throw new NullPointerException("Publish plan request could not be null");
+        long storeId = storeIdOf(actor);
+        // Read the day in its own transaction: the locking read must be the first read of the publishing transaction.
+        // MariaDB snapshot isolation (on by default since 11.6) fails a locking read with error 1020 when the row has
+        // changed since an earlier read of the same transaction, which is exactly a concurrent publish (F-44).
+        LocalDate planDate = planRepository.findPlanDate(planId, storeId)
+                .orElseThrow(() -> new AppException(ErrorCode.NOT_FOUND));
+        return transactionTemplate.execute(status -> publishLocked(storeId, planId, planDate, request.version()));
+    }
+
+    private PlanDetailResponse publishLocked(long storeId, long planId, LocalDate planDate, Long version) {
+        List<RoutePlan> day = planRepository.findAllOfDayForUpdate(storeId, planDate);
+        RoutePlan plan = day.stream()
+                .filter(candidate -> candidate.getId() == planId)
+                .findFirst()
+                // The date changed between the two reads.
+                .orElseThrow(() -> new AppException(ErrorCode.PLAN_MODIFIED));
+        checkEditable(plan, version);
+        if (plan.getOptimizedAt() == null) throw new AppException(ErrorCode.PLAN_NOT_OPTIMIZED);
+        checkAssignmentsStillValid(plan, true);
+        checkNoShiftOverlap(plan, day);
+        plan.setStatus(PlanStatus.PUBLISHED);
+        plan.setPublishedAt(Instant.now());
+        markModified(plan);
+        planRepository.flush();
+        return planDetailAssembler.toDetail(plan);
+    }
+
+    /**
+     * Cancels a DRAFT or PUBLISHED plan (FR-P06). A plan already being delivered cannot be cancelled. The optimization
+     * result stays, for the record.
+     *
+     * @throws AppException {@code NOT_FOUND}, {@code PLAN_NOT_CANCELLABLE} from IN_PROGRESS, COMPLETED or CANCELLED,
+     *                      {@code PLAN_BUSY}, {@code PLAN_MODIFIED}
+     */
+    @Transactional
+    public PlanDetailResponse cancelPlan(UserIdentity actor, long planId, PlanVersionRequest request) {
+        if (request == null) throw new NullPointerException("Cancel plan request could not be null");
+        RoutePlan plan = planRepository.findByIdAndStoreIdForUpdate(planId, storeIdOf(actor))
+                .orElseThrow(() -> new AppException(ErrorCode.NOT_FOUND));
+        if (!PlanLifecycle.canMove(plan.getStatus(), PlanStatus.CANCELLED)) throw new AppException(ErrorCode.PLAN_NOT_CANCELLABLE);
+        if (plan.getProcessingStatus() != ProcessingStatus.IDLE) throw new AppException(ErrorCode.PLAN_BUSY);
+        if (!Objects.equals(request.version(), plan.getVersion())) throw new AppException(ErrorCode.PLAN_MODIFIED);
+        plan.setStatus(PlanStatus.CANCELLED);
+        plan.setCancelledAt(Instant.now());
+        markModified(plan);
+        planRepository.flush();
+        return planDetailAssembler.toDetail(plan);
+    }
+
+    /**
+     * Compares each used route of {@code plan} with the used routes of the other running plans of the day, by driver
+     * and by vehicle. Shifts are half-open {@code [start, end)}: 08:00–12:00 and 12:00–16:00 do not overlap.
+     */
+    private static void checkNoShiftOverlap(RoutePlan plan, List<RoutePlan> day) {
+        List<PlanRoute> routes = sortedRoutes(plan);
+        Set<Long> usedRoutes = usedRouteIds(plan);
+        List<ShiftOverlapDetail> conflicts = new ArrayList<>();
+        for (int i = 0; i < routes.size(); i++) {
+            PlanRoute route = routes.get(i);
+            if (!usedRoutes.contains(route.getId())) continue;
+            for (RoutePlan other : day) {
+                if (other.getId().equals(plan.getId())
+                        || (other.getStatus() != PlanStatus.PUBLISHED && other.getStatus() != PlanStatus.IN_PROGRESS)) continue;
+                Set<Long> usedByOther = usedRouteIds(other);
+                for (PlanRoute theirs : other.getRoutes()) {
+                    if (!usedByOther.contains(theirs.getId()) || !overlap(route, theirs)) continue;
+                    if (route.getDriverId().equals(theirs.getDriverId()))
+                        conflicts.add(new ShiftOverlapDetail("assignments[" + i + "].driverId", ShiftOverlapDetail.CODE, other.getId()));
+                    if (route.getVehicleId().equals(theirs.getVehicleId()))
+                        conflicts.add(new ShiftOverlapDetail("assignments[" + i + "].vehicleId", ShiftOverlapDetail.CODE, other.getId()));
+                }
+            }
+        }
+        if (!conflicts.isEmpty()) throw new DetailedAppException(ErrorCode.SHIFT_OVERLAP, conflicts);
+    }
+
+    private static boolean overlap(PlanRoute a, PlanRoute b) {
+        return a.getShiftStart().isBefore(b.getShiftEnd()) && b.getShiftStart().isBefore(a.getShiftEnd());
+    }
+
+    /**
+     * @return ids of the routes that have at least one stop
+     */
+    private static Set<Long> usedRouteIds(RoutePlan plan) {
+        return plan.getStops().stream()
+                .filter(stop -> stop.getRoute() != null)
+                .map(stop -> stop.getRoute().getId())
+                .collect(Collectors.toSet());
+    }
+
+    /**
+     * Routes numbered like {@code PlanDetail.routes} and {@code assignments[i]} in error details.
+     */
+    private static List<PlanRoute> sortedRoutes(RoutePlan plan) {
+        return plan.getRoutes().stream().sorted(Comparator.comparing(PlanRoute::getId)).toList();
     }
 
     private static void checkComplete(RoutePlan plan) {
@@ -244,15 +355,19 @@ public class PlanService {
     }
 
     /**
-     * BR-07 again at optimize time: since the draft was saved a driver may have been disabled or lost
+     * BR-07 again at optimize and publish time: since the draft was saved a driver may have been disabled or lost
      * {@code canDrive}, and a vehicle may have been deactivated. Assignments are numbered like
      * {@code PlanDetail.routes}.
+     *
+     * @param usedOnly only routes that have stops (publish: an unused driver or vehicle does not matter)
      */
-    private void checkAssignmentsStillValid(RoutePlan plan) {
-        List<PlanRoute> routes = plan.getRoutes().stream().sorted(Comparator.comparing(PlanRoute::getId)).toList();
+    private void checkAssignmentsStillValid(RoutePlan plan, boolean usedOnly) {
+        List<PlanRoute> routes = sortedRoutes(plan);
+        Set<Long> used = usedRouteIds(plan);
         List<FieldErrorDetail> invalid = new ArrayList<>();
         for (int i = 0; i < routes.size(); i++) {
             PlanRoute route = routes.get(i);
+            if (usedOnly && !used.contains(route.getId())) continue;
             boolean driverValid = storeMemberQuery.findActiveMember(plan.getStoreId(), route.getDriverId())
                     .filter(member -> UserIdentity.canBeAssignedRoutes(member.role(), member.canDrive()))
                     .isPresent();
@@ -266,10 +381,14 @@ public class PlanService {
     private RoutePlan lockEditablePlan(UserIdentity actor, long planId, Long version) {
         RoutePlan plan = planRepository.findByIdAndStoreIdForUpdate(planId, storeIdOf(actor))
                 .orElseThrow(() -> new AppException(ErrorCode.NOT_FOUND));
+        checkEditable(plan, version);
+        return plan;
+    }
+
+    private static void checkEditable(RoutePlan plan, Long version) {
         if (plan.getStatus() != PlanStatus.DRAFT) throw new AppException(ErrorCode.PLAN_NOT_EDITABLE);
         if (plan.getProcessingStatus() != ProcessingStatus.IDLE) throw new AppException(ErrorCode.PLAN_BUSY);
         if (version == null || version != plan.getVersion()) throw new AppException(ErrorCode.PLAN_MODIFIED);
-        return plan;
     }
 
     private static void checkSize(PlanDraftRequest request) {

@@ -60,6 +60,9 @@ public enum ErrorCode {
     JOB_NOT_FOUND(404),
     NOTHING_TO_GEOCODE(422),
     STOPS_NOT_GEOCODED(422),
-    PLAN_INCOMPLETE(422);
+    PLAN_INCOMPLETE(422),
+    PLAN_NOT_OPTIMIZED(422),
+    PLAN_NOT_CANCELLABLE(422),
+    SHIFT_OVERLAP(422);
     private final int httpCode;
 }

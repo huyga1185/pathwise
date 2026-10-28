@@ -343,9 +343,10 @@ T42 cũ (Docker, compose, README) đã được gộp vào T05 và T07 trong M0 
 
 ### T26. Publish, cancel và vòng đời trạng thái
 - **Tầng:** Must · **Ước lượng:** 1 ngày · **Quyết định:** D-23 · **FR:** P05, P06, BR-06, BR-10, BR-11, BR-12
-- **Phạm vi:** `publish` có kiểm tra trùng ca cho người được gán và xe (D-23, BR-12, khoá theo `ARCHITECTURE.md` §8.1); `cancel`; `PATCH /plans/{id}/stops/{stopId}/status` (dispatcher reset về PENDING); service chuyển trạng thái plan dùng chung cho T31.
-- **Ghi chú từ T44 (P-32):** cập nhật trạng thái stop không tăng `version` của plan (chỉ `version` của stop); `PATCH /plans/{id}/stops/{stopId}/status` trả `PlanDetail`; `SHIFT_OVERLAP` trả mỗi xung đột là một phần tử `details` `{field: "assignments[i].driverId|vehicleId", code, conflictPlanId}`, nên cần một kiểu detail có thêm field (`FieldErrorDetail` hiện chỉ có `field`, `code`).
-- **Acceptance criteria:** publish khi chưa optimize → 422; tài xế có ca 08:00–12:00 ở plan A đã publish, plan B cùng ngày ca 11:00–15:00 → 422 `SHIFT_OVERLAP`, còn ca 12:00–16:00 thì publish được; xe trùng ca tương tự; sửa plan sau khi publish → 422; cancel từ IN_PROGRESS → 422; unit test bảng chuyển trạng thái.
+- **Phạm vi:** `publish` có kiểm tra trùng ca cho người được gán và xe (D-23, BR-12, khoá theo `ARCHITECTURE.md` §8.1); `cancel`; service chuyển trạng thái plan dùng chung cho T31 (`PlanLifecycle`). Endpoint đặt lại stop về PENDING **bị bỏ** (P-34: không có đảo ngược trạng thái).
+- **Phát sinh khi làm (2026-10-29):** P-34 (chủ dự án chọn): không đảo ngược trạng thái; route không có stop không tính trùng ca. Publish khoá mọi plan của store trong ngày (`ORDER BY id`) thay cho khoá route theo driver/vehicle, vì plan kia còn DRAFT lúc kiểm tra. Phát hiện F-44 (MariaDB snapshot isolation: câu khoá phải là lệnh đọc đầu tiên của transaction) khi viết test publish đồng thời, sửa ngay. BR-07 kiểm lại lúc publish cho route có stop. `DetailedAppException` nhận detail có thêm field (`ShiftOverlapDetail`).
+- **Ghi chú từ T44 (P-32):** cập nhật trạng thái stop không tăng `version` của plan (chỉ `version` của stop); `SHIFT_OVERLAP` trả mỗi xung đột là một phần tử `details` `{field: "assignments[i].driverId|vehicleId", code, conflictPlanId}`, nên cần một kiểu detail có thêm field (`FieldErrorDetail` hiện chỉ có `field`, `code`).
+- **Acceptance criteria:** publish khi chưa optimize → 422; tài xế có ca 08:00–12:00 ở plan A đã publish, plan B cùng ngày ca 11:00–15:00 → 422 `SHIFT_OVERLAP`, còn ca 12:00–16:00 thì publish được; xe trùng ca tương tự; sửa plan sau khi publish → 422; cancel từ IN_PROGRESS → 422; unit test bảng chuyển trạng thái; hai publish đồng thời trùng ca → đúng một thành công.
 
 ### T27. Xoá API route optimizer cũ
 - **Tầng:** Must · **Ước lượng:** 0,25 ngày · **Gap:** Replace
@@ -357,12 +358,13 @@ T42 cũ (Docker, compose, README) đã được gộp vào T05 và T07 trong M0 
 ### T30. API tài xế: xem route
 - **Tầng:** Must · **Ước lượng:** 1 ngày · **Quyết định:** D-06, D-07 · **FR:** D01, D02
 - **Phạm vi:** `GET /driver/routes`, `GET /driver/routes/{routeId}` (có `start`/`end` riêng của route, không có `navigationUrl`; P-32); chỉ trả route của chính người gọi trong plan PUBLISHED, IN_PROGRESS hoặc COMPLETED; mở cho `role=DRIVER` hoặc `canDrive` (D-21).
-- **Acceptance criteria:** DRIVER không thấy route của driver khác (→ 404); OWNER có `canDrive` và được gán route thì thấy route của mình; DISPATCHER không có `canDrive` → 403; plan DRAFT không hiển thị; `start`/`end` lấy từ route (D-20).
+- **Acceptance criteria:** DRIVER không thấy route của driver khác (→ 404); OWNER có `canDrive` và được gán route thì thấy route của mình; DISPATCHER không có `canDrive` → 403; plan DRAFT không hiển thị; `start`/`end` lấy từ route (D-20); route không có stop không hiển thị cho tài xế (P-34).
 
 ### T31. Tài xế cập nhật trạng thái stop
 - **Tầng:** Must · **Ước lượng:** 1 ngày · **FR:** D03, BR-10, BR-11
 - **Phạm vi:** `PATCH /driver/routes/{routeId}/stops/{stopId}/status`; chuyển plan tự động PUBLISHED → IN_PROGRESS → COMPLETED; xử lý idempotent; concurrency theo `ARCHITECTURE.md` §7.
 - **Ghi chú từ T44 (P-32):** response là `{stop, routeStatus, planStatus}`; cập nhật không tăng `version` của plan, để dispatcher vẫn `cancel {version}` được trong lúc tài xế đang giao.
+- **Ghi chú từ T26:** dùng `PlanLifecycle.canMove(StopStatus, StopStatus)` và `PlanLifecycle.progress(...)`; một chiều, không đảo ngược (P-34), nên stop đã kết thúc mà gửi trạng thái khác → 422 `INVALID_STOP_TRANSITION`, gửi lại đúng trạng thái đang có → 200 idempotent. Tự chuyển `status` của plan (IN_PROGRESS, COMPLETED) không được tăng `version`: hoặc loại `status`/`completed_at` khỏi optimistic lock, hoặc cập nhật bằng câu `UPDATE` riêng; cần test. Nếu dùng `SELECT … FOR UPDATE`, đặt nó là lệnh đọc đầu tiên của transaction (F-44).
 - **Acceptance criteria:** FAILED không có lý do → 422; cập nhật lặp lại cùng trạng thái → 200 và không đổi gì; `version` của plan không đổi; stop cuối cùng xong → plan COMPLETED; plan CANCELLED → 422 `PLAN_NOT_ACTIVE`.
 
 ### T40. Rate limiting
