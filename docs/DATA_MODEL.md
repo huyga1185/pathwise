@@ -1,6 +1,6 @@
 # DATA_MODEL — Mô hình dữ liệu mục tiêu
 
-> Hiện trạng: có `users`, `refresh_tokens` (`V1__baseline.sql`), `stores` cùng các cột tenancy của `users` (`V2__stores_and_user_tenancy.sql`, T13) và `store_invitations` (`V3__store_invitations.sql`, T16). Các bảng từ §2.5 trở đi là **mục tiêu**, chưa tồn tại.
+> Hiện trạng: có `users`, `refresh_tokens` (`V1__baseline.sql`), `stores` cùng các cột tenancy của `users` (`V2__stores_and_user_tenancy.sql`, T13), `store_invitations` (`V3__store_invitations.sql`, T16) và `vehicles` (`V4__vehicles.sql`, T20). Các bảng từ §2.6 trở đi là **mục tiêu**, chưa tồn tại.
 > Dựa trên D-01..D-05, D-15, D-16, D-18..D-21, P-01, P-07, P-14 (đã Approved). Dữ liệu cũ không được giữ (D-29).
 > Quy ước: `BIGINT AUTO_INCREMENT` id; timestamp sự kiện `DATETIME(6)` lưu UTC (`hibernate.jdbc.time_zone: UTC`, Java `Instant`); toạ độ `DOUBLE`; khoảng cách mét `INT`, thời lượng giây `INT`; enum lưu `VARCHAR` (`@Enumerated(STRING)`); bảng thuộc store luôn có `store_id NOT NULL` + FK + index.
 
@@ -71,7 +71,7 @@ Giữ nguyên cột (timestamp đổi sang `DATETIME(6)`). Thêm `idx_refresh_to
 
 Index `(store_id, status)`, `(email, status)`. Tên ràng buộc trong V3: `uk_store_invitations_code_hash`, FK `fk_store_invitations_store_id`/`_invited_by`/`_accepted_user_id`, CHECK `chk_store_invitations_role`. Trạng thái `EXPIRED` không được ghi vào DB: lời mời `PENDING` có `expires_at` đã qua được báo là `EXPIRED` và không chấp nhận/huỷ được nữa (T16). Quy tắc: mời lại cùng email trong cùng store → lời mời PENDING cũ chuyển `REVOKED`. Email đã thuộc một user bất kỳ → 409 `EMAIL_EXISTED` (D-02).
 
-### 2.5 `vehicles` — New (V4)
+### 2.5 `vehicles` — New (V4, đã tạo ở T20)
 
 | Cột | Kiểu | Ràng buộc |
 |---|---|---|
@@ -80,10 +80,11 @@ Index `(store_id, status)`, `(email, status)`. Tên ràng buộc trong V3: `uk_s
 | name | VARCHAR(100) | NOT NULL; UNIQUE `(store_id, name)` |
 | plate_number | VARCHAR(20) | NULL |
 | capacity | INT | NOT NULL, CHECK > 0 |
+| capacity_unit | VARCHAR(20) | NOT NULL — `KG, BOX, PACKAGE, ORDER` (D-36); không có CHECK danh sách để thêm loại không cần migration |
 | active | BOOLEAN | NOT NULL DEFAULT TRUE |
 | created_at, updated_at | DATETIME(6) | NOT NULL |
 
-Không xoá cứng xe đã dùng trong plan; chỉ `active=false`.
+Không xoá cứng xe đã dùng trong plan; chỉ `active=false`. Tên ràng buộc trong V4: FK `fk_vehicles_store_id`, UNIQUE `uk_vehicles_store_name`, CHECK `chk_vehicles_capacity`. Unique theo collation của cột (mặc định không phân biệt hoa thường).
 
 ### 2.6 `route_plans` — New (V5)
 
@@ -119,6 +120,7 @@ Index `(store_id, plan_date)`, `(store_id, status)`.
 | driver_id | BIGINT | NOT NULL, FK users; UNIQUE `(plan_id, driver_id)` |
 | vehicle_id | BIGINT | NOT NULL, FK vehicles; UNIQUE `(plan_id, vehicle_id)` |
 | vehicle_capacity | INT | NOT NULL — snapshot lúc tạo/sửa phân công |
+| vehicle_capacity_unit | VARCHAR(20) | NOT NULL — snapshot cùng lúc (D-36) |
 | shift_start, shift_end | TIME | NOT NULL; `shift_start < shift_end` |
 | max_distance_m | INT | NULL |
 | start_address, end_address | VARCHAR(500) | NULL (D-20) |
@@ -146,7 +148,7 @@ Index `(driver_id)` cho truy vấn của tài xế.
 | geocode_status | VARCHAR(20) | NOT NULL. Giá trị: `PROVIDED` (client gửi toạ độ), `PENDING`, `RESOLVED`, `FAILED`. |
 | geocode_error | VARCHAR(50) | NULL. Ví dụ `NOT_FOUND`, `PROVIDER_ERROR`. |
 | geocoded_display_name | VARCHAR(500) | NULL. Tên địa chỉ provider trả về, để dispatcher kiểm tra độ chính xác. |
-| demand | INT | NOT NULL DEFAULT 0, CHECK ≥ 0 |
+| ~~demand~~ | — | Bỏ theo D-36: demand theo loại nằm ở `route_plan_stop_demands` (§2.8a). |
 | service_time_s | INT | NOT NULL DEFAULT 0, CHECK ≥ 0 |
 | tw_start, tw_end | TIME | NULL; cả hai cùng NULL hoặc `tw_start < tw_end` |
 | note | VARCHAR(500) | NULL |
@@ -159,6 +161,16 @@ Index `(driver_id)` cho truy vấn của tài xế.
 | created_at, updated_at | DATETIME(6) | NOT NULL |
 
 Index `(plan_id)`, `(route_id, sequence)`.
+
+### 2.8a `route_plan_stop_demands` — New (V5) (D-36)
+
+| Cột | Kiểu | Ràng buộc / ghi chú |
+|---|---|---|
+| stop_id | BIGINT | NOT NULL, FK route_plan_stops ON DELETE CASCADE |
+| unit | VARCHAR(20) | NOT NULL — `KG, BOX, PACKAGE` (`ORDER` không lưu: mỗi stop là 1) |
+| quantity | INT | NOT NULL, CHECK ≥ 0 |
+
+PK `(stop_id, unit)`. Không có dòng cho một loại nghĩa là demand loại đó bằng 0.
 
 ### 2.9 `background_jobs` — New (V5) (D-19)
 
@@ -203,8 +215,8 @@ Version được cấp trước — agent **không** tự chọn số khác:
 | V1 | `V1__baseline.sql` | T02 ✓ | Nội dung `be/db/db.sql` (bỏ `CREATE DATABASE`/`USE`). `baseline-on-migrate` cho DB tạo trước từ `db.sql`. **Đã tạo.** |
 | V2 | `V2__stores_and_user_tenancy.sql` | T13 ✓ | Bảng `stores`; cột mới của `users`; không chuyển dữ liệu (§5, D-29); index refresh_tokens; đổi timestamp sang `DATETIME(6)`. **Đã tạo.** |
 | V3 | `V3__store_invitations.sql` | T16 ✓ | Bảng `store_invitations`. **Đã tạo.** |
-| V4 | `V4__vehicles.sql` | T20 | Bảng `vehicles`. |
-| V5 | `V5__route_plans.sql` | T24 | `background_jobs`, `route_plans`, `route_plan_routes`, `route_plan_stops`. |
+| V4 | `V4__vehicles.sql` | T20 ✓ | Bảng `vehicles`. **Đã tạo.** |
+| V5 | `V5__route_plans.sql` | T24 | `background_jobs`, `route_plans`, `route_plan_routes`, `route_plan_stops`, `route_plan_stop_demands` (D-36). |
 
 Task phát sinh cần migration mới lấy số tiếp theo **sau khi** cập nhật bảng này trong cùng PR.
 

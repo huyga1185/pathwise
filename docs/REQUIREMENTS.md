@@ -53,14 +53,14 @@ Mỗi user thuộc tối đa 1 store và có đúng 1 role (D-02). OWNER hoặc 
 
 | ID | Yêu cầu | Tầng | Hiện trạng |
 |---|---|---|---|
-| FR-V01 | OWNER/DISPATCHER tạo, sửa, vô hiệu hoá xe: tên/biển số, capacity (số nguyên > 0). | Must | ❌ |
+| FR-V01 | OWNER/DISPATCHER tạo, sửa, vô hiệu hoá xe: tên/biển số, capacity (số nguyên > 0) và loại capacity (`KG`, `BOX`, `PACKAGE`, `ORDER`, D-36). | Must | ✅ (T20) |
 
 ### 3.4 Kế hoạch giao hàng (D-04, D-05, D-18, D-19, D-20, D-23, D-24, P-13, P-14)
 
 | ID | Yêu cầu | Tầng | Hiện trạng |
 |---|---|---|---|
 | FR-P01 | Tìm địa chỉ → danh sách ứng viên có toạ độ (geocoding search, dùng cho autocomplete hoặc sửa stop lỗi). | Should | ✅ (T21) |
-| FR-P02 | Tạo plan nháp (DRAFT) cho một ngày: depot, danh sách stop (nhãn, tên/số điện thoại người nhận, địa chỉ hiển thị, **địa chỉ và/hoặc toạ độ** (phải có ít nhất một trong hai), demand, thời gian phục vụ, time window tuỳ chọn, ghi chú) và danh sách phân công (tài xế + xe + giờ bắt đầu/kết thúc ca + quãng đường tối đa tuỳ chọn). | Must | ❌ |
+| FR-P02 | Tạo plan nháp (DRAFT) cho một ngày: depot, danh sách stop (nhãn, tên/số điện thoại người nhận, địa chỉ hiển thị, **địa chỉ và/hoặc toạ độ** (phải có ít nhất một trong hai), demand theo từng loại capacity (D-36), thời gian phục vụ, time window tuỳ chọn, ghi chú) và danh sách phân công (tài xế + xe + giờ bắt đầu/kết thúc ca + quãng đường tối đa tuỳ chọn). | Must | ❌ |
 | FR-P03 | Sửa plan DRAFT (thêm/sửa/xoá stop, phân công). Mọi chỉnh sửa xoá kết quả tối ưu cũ; stop không đổi địa chỉ thì giữ kết quả geocode. | Must | ❌ |
 | FR-P09 | Server geocode **chạy nền** các stop chỉ có địa chỉ ngay khi lưu plan. Dispatcher thấy tiến độ và từng stop thất bại kèm lý do, sửa được bằng địa chỉ mới hoặc toạ độ, và chạy lại được. Plan chỉ optimize khi mọi stop đã có toạ độ. | Must | ❌ (hiện geocode tuần tự trong request) |
 | FR-P04 | Tối ưu plan: chia stop cho các route và sắp thứ tự, tôn trọng time window, capacity, ca làm, quãng đường tối đa; trả ETA từng stop, tổng quãng đường/thời gian mỗi route, và danh sách stop **không xếp được**. API dạng job, MVP chạy ngay trong request nhưng chuyển sang chạy nền được bằng cấu hình (D-19). | Must | 🟡 solver VRPTW (capacity, time window, ca, max distance, drop) đã có ở `routing` (T23), chưa nối với plan (T25); `/route/optimize` cũ chỉ theo khoảng cách |

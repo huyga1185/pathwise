@@ -5,11 +5,14 @@ package uk.huy.pathwise.routing.solver;
  *
  * @param startNode         matrix node the route starts at; vehicles may share it (one depot in the MVP)
  * @param endNode           matrix node the route ends at; may differ from {@code startNode} (D-20, multi-depot later)
- * @param capacity          load limit, in the same unit as stop demand
+ * @param capacityUnit      what {@code capacity} counts (D-36), e.g. {@code "KG"}; the vehicle is not limited in other
+ *                          units
+ * @param capacity          load limit in {@code capacityUnit}
  * @param maxDistanceMeters route length limit, or null for none
  */
 public record VrpVehicle(int startNode,
                          int endNode,
+                         String capacityUnit,
                          int capacity,
                          int shiftStartSeconds,
                          int shiftEndSeconds,

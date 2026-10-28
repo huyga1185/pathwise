@@ -21,7 +21,7 @@ public record VrpSolution(Status status, List<VrpRoute> routes, List<Integer> dr
      * @param endSeconds      arrival at the end node
      * @param distanceMeters  start to end, along the visits
      * @param durationSeconds {@code endSeconds - startSeconds}: driving, service and waiting
-     * @param load            sum of the demand of the visits
+     * @param load            sum of the demand of the visits in the vehicle's capacity unit
      */
     public record VrpRoute(int vehicleIndex,
                            int startNode,

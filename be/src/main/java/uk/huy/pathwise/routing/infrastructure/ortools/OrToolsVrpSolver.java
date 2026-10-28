@@ -25,12 +25,14 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.TreeSet;
 
 /**
  * OR-Tools routing solver for {@link VrpProblem} (ARCHITECTURE.md §8.3):
  * <ul>
  *   <li>arc cost = travel duration;</li>
- *   <li>Capacity dimension on stop demand, bounded by each vehicle's capacity;</li>
+ *   <li>one capacity dimension per capacity unit in the problem (D-36): bounded by the capacity of the vehicles that
+ *       count in that unit, unbounded for the others;</li>
  *   <li>Time dimension with transit = travel duration + service time at the origin, slack for waiting, stop cumuls
  *       inside the time window, route start and end inside the vehicle's shift;</li>
  *   <li>Distance dimension bounded by each vehicle's {@code maxDistanceMeters};</li>
@@ -71,14 +73,12 @@ public class OrToolsVrpSolver implements SolverProvider {
         RoutingIndexManager manager = new RoutingIndexManager(matrix.size(), vehicleCount, starts, ends);
         RoutingModel routing = new RoutingModel(manager);
 
-        // Per node: demand, service time and the stop it belongs to (-1 for start/end nodes).
-        int[] demand = new int[matrix.size()];
+        // Per node: service time and the stop it belongs to (-1 for start/end nodes).
         int[] service = new int[matrix.size()];
         int[] stopOfNode = new int[matrix.size()];
         Arrays.fill(stopOfNode, -1);
         for (int s = 0; s < stops.size(); s++) {
             VrpStop stop = stops.get(s);
-            demand[stop.node()] = stop.demand();
             service[stop.node()] = stop.serviceTimeSeconds();
             stopOfNode[stop.node()] = s;
         }
@@ -89,9 +89,20 @@ public class OrToolsVrpSolver implements SolverProvider {
                 durations[manager.indexToNode(from)][manager.indexToNode(to)]);
         routing.setArcCostEvaluatorOfAllVehicles(durationCallback);
 
-        int demandCallback = routing.registerUnaryTransitCallback(index -> demand[manager.indexToNode(index)]);
-        routing.addDimensionWithVehicleCapacity(demandCallback, 0,
-                vehicles.stream().mapToLong(VrpVehicle::capacity).toArray(), true, "Capacity");
+        for (String unit : capacityUnits(problem)) {
+            int[] demand = new int[matrix.size()];
+            long total = 0;
+            for (VrpStop stop : stops) {
+                demand[stop.node()] = stop.demand(unit);
+                total += stop.demand(unit);
+            }
+            // A vehicle that counts another unit can take everything of this one.
+            long unbounded = total;
+            int demandCallback = routing.registerUnaryTransitCallback(index -> demand[manager.indexToNode(index)]);
+            routing.addDimensionWithVehicleCapacity(demandCallback, 0,
+                    vehicles.stream().mapToLong(v -> unit.equals(v.capacityUnit()) ? v.capacity() : unbounded).toArray(),
+                    true, "Capacity:" + unit);
+        }
 
         // Time windows may lie outside every shift; they must still fit the dimension, or OR-Tools fails while
         // building the model instead of simply dropping those stops.
@@ -146,7 +157,7 @@ public class OrToolsVrpSolver implements SolverProvider {
             while (!routing.isEnd(index)) {
                 int stopIndex = stopOfNode[manager.indexToNode(index)];
                 visits.add(new VrpVisit(stopIndex, (int) assignment.min(time.cumulVar(index))));
-                load += stops.get(stopIndex).demand();
+                load += stops.get(stopIndex).demand(vehicles.get(v).capacityUnit());
                 served.add(stopIndex);
                 index = assignment.value(routing.nextVar(index));
             }
@@ -165,6 +176,16 @@ public class OrToolsVrpSolver implements SolverProvider {
         List<Integer> dropped = new ArrayList<>();
         for (int s = 0; s < stops.size(); s++) if (!served.contains(s)) dropped.add(s);
         return new VrpSolution(VrpSolution.Status.SOLVED, List.copyOf(routes), List.copyOf(dropped));
+    }
+
+    /**
+     * Units counted by a vehicle or demanded by a stop, in a stable order.
+     */
+    private static Set<String> capacityUnits(VrpProblem problem) {
+        Set<String> units = new TreeSet<>();
+        problem.vehicles().forEach(vehicle -> units.add(vehicle.capacityUnit()));
+        problem.stops().forEach(stop -> units.addAll(stop.demands().keySet()));
+        return units;
     }
 
     /**
@@ -192,6 +213,8 @@ public class OrToolsVrpSolver implements SolverProvider {
         for (VrpVehicle vehicle : problem.vehicles()) {
             checkNode(vehicle.startNode(), n);
             checkNode(vehicle.endNode(), n);
+            if (vehicle.capacityUnit() == null || vehicle.capacityUnit().isBlank())
+                throw new IllegalArgumentException("Capacity unit is required");
             if (vehicle.capacity() < 0) throw new IllegalArgumentException("Capacity must not be negative");
             if (vehicle.shiftStartSeconds() < 0 || vehicle.shiftStartSeconds() >= vehicle.shiftEndSeconds())
                 throw new IllegalArgumentException("Shift start must be before shift end");
@@ -207,7 +230,8 @@ public class OrToolsVrpSolver implements SolverProvider {
             if (vehicleNodes.contains(stop.node()) || used[stop.node()])
                 throw new IllegalArgumentException("Node " + stop.node() + " is used twice");
             used[stop.node()] = true;
-            if (stop.demand() < 0 || stop.serviceTimeSeconds() < 0)
+            if (stop.demands() == null) throw new IllegalArgumentException("Demands are required, possibly empty");
+            if (stop.demands().values().stream().anyMatch(d -> d == null || d < 0) || stop.serviceTimeSeconds() < 0)
                 throw new IllegalArgumentException("Demand and service time must not be negative");
             if ((stop.timeWindowStartSeconds() == null) != (stop.timeWindowEndSeconds() == null))
                 throw new IllegalArgumentException("A time window needs both start and end");

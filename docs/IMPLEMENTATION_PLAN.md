@@ -304,7 +304,7 @@ T42 cũ (Docker, compose, README) đã được gộp vào T05 và T07 trong M0 
   - Migration V5 gồm cả `background_jobs` (entity và repository nằm ở `core.job`, chưa có executor, executor làm ở T29).
   - Stop nhận địa chỉ và/hoặc toạ độ, set `geocode_status` (`PROVIDED`/`PENDING`). Route lưu start/end = depot (D-20).
   - Người được gán phải là DRIVER hoặc `canDrive` (BR-07).
-  - Snapshot depot, timezone, capacity; optimistic lock bằng `version`; `processing_status` khác IDLE thì trả 409 `PLAN_BUSY`.
+  - Snapshot depot, timezone, capacity và `capacityUnit` của xe; stop nhận `demands` theo loại, lưu ở `route_plan_stop_demands` (D-36); optimistic lock bằng `version`; `processing_status` khác IDLE thì trả 409 `PLAN_BUSY`.
   - `PUT` thay toàn bộ draft, xoá kết quả tối ưu, giữ kết quả geocode của stop có `id` cũ không đổi địa chỉ/toạ độ. Thêm `PATCH /plans/{id}/stops/{stopId}`.
   - Kiểm tra giới hạn kích thước (D-19).
   - Task này **chưa** kích hoạt geocode (T29 làm). Stop `PENDING` cứ nằm đó.
