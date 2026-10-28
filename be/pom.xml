@@ -97,6 +97,13 @@
 			<scope>test</scope>
 		</dependency>
 
+		<!-- Conditional waiting for background jobs in tests (T29); version managed by Spring Boot. -->
+		<dependency>
+			<groupId>org.awaitility</groupId>
+			<artifactId>awaitility</artifactId>
+			<scope>test</scope>
+		</dependency>
+
 		<dependency>
 			<groupId>org.testcontainers</groupId>
 			<artifactId>testcontainers-mariadb</artifactId>

@@ -59,8 +59,10 @@ public class RoutePlan {
     @Enumerated(EnumType.STRING)
     private ProcessingStatus processingStatus;
 
-    // Plain id column: jobs belong to core.job and stay generic.
+    // Plain id column: jobs belong to the job module and stay generic. Excluded from the optimistic lock: attaching the job
+    // is part of the same change as setting processingStatus, which already moves the version.
     @Column(name = "active_job_id")
+    @OptimisticLock(excluded = true)
     private Long activeJobId;
 
     // Null while there is no valid optimization result.

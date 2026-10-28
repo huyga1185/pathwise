@@ -15,6 +15,8 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import uk.huy.pathwise.core.apiresponse.ApiResponse;
 import uk.huy.pathwise.core.pagination.PageResponse;
+import uk.huy.pathwise.job.dto.JobResponse;
+import uk.huy.pathwise.planning.dto.request.GeocodePlanRequest;
 import uk.huy.pathwise.planning.dto.request.PatchStopRequest;
 import uk.huy.pathwise.planning.dto.request.PlanDraftRequest;
 import uk.huy.pathwise.planning.dto.response.PlanDetailResponse;
@@ -74,5 +76,16 @@ public class PlanController {
                                                                      @PathVariable("stopId") long stopId,
                                                                      @Valid @RequestBody PatchStopRequest request) {
         return ResponseEntity.ok(new ApiResponse<>(planService.patchStop(actor.identity(), planId, stopId, request)));
+    }
+
+    /**
+     * Geocodes the PENDING and FAILED stops again; 202 with the job (clients poll it or the plan).
+     */
+    @PostMapping("/{id}/geocode")
+    public ResponseEntity<ApiResponse<JobResponse>> geocodePlan(@AuthenticationPrincipal AuthenticatedUser actor,
+                                                                @PathVariable("id") long planId,
+                                                                @Valid @RequestBody GeocodePlanRequest request) {
+        return ResponseEntity.status(HttpStatus.ACCEPTED)
+                .body(new ApiResponse<>(planService.geocodePlan(actor.identity(), planId, request)));
     }
 }

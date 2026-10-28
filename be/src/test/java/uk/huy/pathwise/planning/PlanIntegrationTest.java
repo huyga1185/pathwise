@@ -14,9 +14,9 @@ import org.springframework.test.web.servlet.ResultActions;
 import uk.huy.pathwise.shared.identity.UserRole;
 import uk.huy.pathwise.support.AbstractIntegrationTest;
 import uk.huy.pathwise.support.FakeEmailSender;
-import uk.huy.pathwise.support.TestUsers;
 import uk.huy.pathwise.support.TestUsers.TestStore;
 import uk.huy.pathwise.support.TestUsers.TestUser;
+import uk.huy.pathwise.support.TestUsers;
 
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -68,7 +68,9 @@ class PlanIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.status").value("DRAFT"))
                 .andExpect(jsonPath("$.data.version").value(0))
-                .andExpect(jsonPath("$.data.processingStatus").value("IDLE"))
+                .andExpect(jsonPath("$.data.processingStatus").value("GEOCODING"))
+                .andExpect(jsonPath("$.data.activeJob.type").value("GEOCODE_PLAN"))
+                .andExpect(jsonPath("$.data.activeJob.status").value("QUEUED"))
                 .andExpect(jsonPath("$.data.planDate").value("2026-11-02"))
                 .andExpect(jsonPath("$.data.timezone").value("Asia/Ho_Chi_Minh"))
                 .andExpect(jsonPath("$.data.depot.address").value("Kho Hải Châu"))
@@ -105,7 +107,12 @@ class PlanIntegrationTest extends AbstractIntegrationTest {
         mockMvc.perform(get(PLANS + "/" + id(body)).header(HttpHeaders.AUTHORIZATION, store.owner().bearer()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.unassignedStops", hasSize(2)))
-                .andExpect(jsonPath("$.data.routes[0].vehicle.id").value(vehicle));
+                .andExpect(jsonPath("$.data.routes[0].vehicle.id").value(vehicle))
+                // The geocoding job (inline in tests) has run: the fake provider does not know this address.
+                .andExpect(jsonPath("$.data.processingStatus").value("IDLE"))
+                .andExpect(jsonPath("$.data.activeJob").value(nullValue()))
+                .andExpect(jsonPath("$.data.unassignedStops[0].geocodeStatus").value("FAILED"))
+                .andExpect(jsonPath("$.data.unassignedStops[0].geocodeError").value("NOT_FOUND"));
     }
 
     @Test
@@ -244,13 +251,14 @@ class PlanIntegrationTest extends AbstractIntegrationTest {
         jdbcTemplate.update("UPDATE route_plan_stops SET geocode_status = 'RESOLVED', lat = 16.07, lon = 108.22, "
                 + "geocoded_display_name = '12 Lê Duẩn, Hải Châu' WHERE id IN (?, ?)", kept, changed);
 
-        replace(store.owner(), planId, 0, draft("P mới", """
+        long version = version(planId);
+        replace(store.owner(), planId, version, draft("P mới", """
                 [{"id":%d,"label":"Giữ (sửa nhãn)","address":"12 Lê Duẩn"},{"id":%d,"label":"Đổi","address":"2 Bạch Đằng"},
                  {"id":%d,"label":"Toạ độ","lat":16.1,"lon":108.1},{"label":"Mới","address":"9 Hùng Vương"}]"""
                 .formatted(kept, changed, provided), assignment(store.driver().id(), vehicle)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.name").value("P mới"))
-                .andExpect(jsonPath("$.data.version").value(1))
+                .andExpect(jsonPath("$.data.version").value(version + 1))
                 .andExpect(jsonPath("$.data.routes", hasSize(1)))
                 .andExpect(jsonPath("$.data.unassignedStops[*].label", contains("Giữ (sửa nhãn)", "Đổi", "Toạ độ", "Mới")))
                 .andExpect(jsonPath("$.data.unassignedStops[0].id").value(kept))
@@ -352,7 +360,7 @@ class PlanIntegrationTest extends AbstractIntegrationTest {
                 .andReturn().getResponse().getContentAsString();
         long own = stopId(first, 0);
 
-        replace(store.owner(), id(first), 0, draft("P", """
+        replace(store.owner(), id(first), version(id(first)), draft("P", """
                 [{"id":%d,"label":"A","address":"X"},{"id":%d,"label":"A","address":"X"},{"id":%d,"label":"B","address":"Y"}]"""
                 .formatted(own, own, stopId(second, 0)), ""))
                 .andExpect(status().isBadRequest())
@@ -386,35 +394,37 @@ class PlanIntegrationTest extends AbstractIntegrationTest {
         long planId = id(body);
         long stop = stopId(body, 0);
 
-        patch(store.owner(), planId, stop, "{\"version\":0,\"timeWindow\":null,\"demands\":null,\"note\":\"mới\"}")
+        long version = version(planId);
+        patch(store.owner(), planId, stop, "{\"version\":" + version + ",\"timeWindow\":null,\"demands\":null,\"note\":\"mới\"}")
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.version").value(1))
+                .andExpect(jsonPath("$.data.version").value(version + 1))
                 .andExpect(jsonPath("$.data.unassignedStops[0].timeWindow").value(nullValue()))
                 .andExpect(jsonPath("$.data.unassignedStops[0].demands.BOX").doesNotExist())
                 .andExpect(jsonPath("$.data.unassignedStops[0].note").value("mới"))
                 .andExpect(jsonPath("$.data.unassignedStops[0].recipientName").value("Lan"))
                 .andExpect(jsonPath("$.data.unassignedStops[0].serviceTimeSeconds").value(120))
                 .andExpect(jsonPath("$.data.unassignedStops[0].address").value("12 Lê Duẩn"))
-                .andExpect(jsonPath("$.data.unassignedStops[0].geocodeStatus").value("PENDING"));
-        patch(store.owner(), planId, stop, "{\"version\":1,\"lat\":16.06,\"lon\":108.22}")
+                // Location untouched: the geocoding result of the job stays.
+                .andExpect(jsonPath("$.data.unassignedStops[0].geocodeStatus").value("FAILED"));
+        patch(store.owner(), planId, stop, "{\"version\":" + version(planId) + ",\"lat\":16.06,\"lon\":108.22}")
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.unassignedStops[0].geocodeStatus").value("PROVIDED"))
                 .andExpect(jsonPath("$.data.unassignedStops[0].lat").value(16.06))
                 .andExpect(jsonPath("$.data.unassignedStops[0].address").value("12 Lê Duẩn"));
-        patch(store.owner(), planId, stop, "{\"version\":2,\"lat\":null,\"lon\":null}")
+        patch(store.owner(), planId, stop, "{\"version\":" + version(planId) + ",\"lat\":null,\"lon\":null}")
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.unassignedStops[0].geocodeStatus").value("PENDING"))
                 .andExpect(jsonPath("$.data.unassignedStops[0].lat").value(nullValue()));
-        patch(store.owner(), planId, stop, "{\"version\":3,\"address\":null}")
+        patch(store.owner(), planId, stop, "{\"version\":" + version(planId) + ",\"address\":null}")
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.details[0].code").value("ADDRESS_OR_COORDINATES_REQUIRED"));
-        patch(store.owner(), planId, stop, "{\"version\":3,\"label\":null}")
+        patch(store.owner(), planId, stop, "{\"version\":" + version(planId) + ",\"label\":null}")
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.details[0].code").value("STOP_LABEL_REQUIRED"));
-        patch(store.owner(), planId, stop, "{\"version\":3,\"lat\":16.0}")
+        patch(store.owner(), planId, stop, "{\"version\":" + version(planId) + ",\"lat\":16.0}")
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.details[0].code").value("COORDINATES_INCOMPLETE"));
-        patch(store.owner(), planId, stop, "{\"version\":2,\"note\":\"x\"}")
+        patch(store.owner(), planId, stop, "{\"version\":" + (version(planId) - 1) + ",\"note\":\"x\"}")
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("PLAN_MODIFIED"));
     }
@@ -428,10 +438,10 @@ class PlanIntegrationTest extends AbstractIntegrationTest {
         long stop = stopId(body, 0);
         jdbcTemplate.update("UPDATE route_plan_stops SET geocode_status = 'FAILED', geocode_error = 'NOT_FOUND' WHERE id = ?", stop);
 
-        patch(store.owner(), planId, stop, "{\"version\":0,\"address\":\"12 Lê Duẩn\",\"label\":\"B\"}")
+        patch(store.owner(), planId, stop, "{\"version\":" + version(planId) + ",\"address\":\"12 Lê Duẩn\",\"label\":\"B\"}")
                 .andExpect(jsonPath("$.data.unassignedStops[0].geocodeStatus").value("FAILED"))
                 .andExpect(jsonPath("$.data.unassignedStops[0].geocodeError").value("NOT_FOUND"));
-        patch(store.owner(), planId, stop, "{\"version\":1,\"address\":\"12 Lê Duẩn, Đà Nẵng\"}")
+        patch(store.owner(), planId, stop, "{\"version\":" + version(planId) + ",\"address\":\"12 Lê Duẩn, Đà Nẵng\"}")
                 .andExpect(jsonPath("$.data.unassignedStops[0].geocodeStatus").value("PENDING"))
                 .andExpect(jsonPath("$.data.unassignedStops[0].geocodeError").value(nullValue()));
     }
@@ -445,7 +455,7 @@ class PlanIntegrationTest extends AbstractIntegrationTest {
         jdbcTemplate.update("UPDATE route_plan_stops SET geocode_status = 'RESOLVED', lat = 16.07, lon = 108.22, "
                 + "geocoded_display_name = '12 Lê Duẩn, Hải Châu' WHERE id = ?", stop);
 
-        patch(store.owner(), id(body), stop, "{\"version\":0,\"address\":null}")
+        patch(store.owner(), id(body), stop, "{\"version\":" + version(id(body)) + ",\"address\":null}")
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.unassignedStops[0].address").value(nullValue()))
                 .andExpect(jsonPath("$.data.unassignedStops[0].lat").value(16.07))
@@ -472,7 +482,8 @@ class PlanIntegrationTest extends AbstractIntegrationTest {
 
         String other = create(storeA.owner(), draft("Q", "[{\"label\":\"B\",\"address\":\"Y\"}]", ""))
                 .andReturn().getResponse().getContentAsString();
-        patch(storeA.owner(), planId, stopId(other, 0), "{\"version\":0,\"note\":\"x\"}").andExpect(status().isNotFound());
+        patch(storeA.owner(), planId, stopId(other, 0), "{\"version\":" + version(planId) + ",\"note\":\"x\"}")
+                .andExpect(status().isNotFound());
     }
 
     @Test
@@ -550,6 +561,10 @@ class PlanIntegrationTest extends AbstractIntegrationTest {
         jdbcTemplate.update("UPDATE route_plan_routes SET planned_distance_m = 1000, planned_duration_s = 600 WHERE id = ?", routeId);
         jdbcTemplate.update("UPDATE route_plan_stops SET route_id = ?, sequence = 1, planned_arrival = UTC_TIMESTAMP(6) "
                 + "WHERE id = ?", routeId, stopId);
+    }
+
+    private long version(long planId) {
+        return jdbcTemplate.queryForObject("SELECT version FROM route_plans WHERE id = ?", Long.class, planId);
     }
 
     private static String draft(String name, String stops, String assignments) {

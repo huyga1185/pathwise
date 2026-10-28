@@ -7,6 +7,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 import uk.huy.pathwise.core.exception.AppException;
 import uk.huy.pathwise.core.exception.DetailedAppException;
 import uk.huy.pathwise.core.exception.ErrorCode;
@@ -17,6 +18,9 @@ import uk.huy.pathwise.core.phonenumber.PhoneNumberProcessor;
 import uk.huy.pathwise.fleet.dto.FleetVehicle;
 import uk.huy.pathwise.fleet.model.CapacityUnit;
 import uk.huy.pathwise.fleet.service.VehicleQuery;
+import uk.huy.pathwise.job.dto.JobResponse;
+import uk.huy.pathwise.job.model.JobType;
+import uk.huy.pathwise.job.service.JobService;
 import uk.huy.pathwise.planning.dto.request.*;
 import uk.huy.pathwise.planning.dto.response.PlanDetailResponse;
 import uk.huy.pathwise.planning.dto.response.PlanSummaryResponse;
@@ -40,8 +44,8 @@ import java.util.stream.Collectors;
  * another store is reported as not found (BR-01).
  * <p>
  * Every change locks the plan row, checks the {@code version} sent by the client (409 {@code PLAN_MODIFIED}) and
- * removes the optimization result (FR-P03). Geocoding is not started here: stops with only an address stay
- * {@code PENDING} until the job framework (T29).
+ * removes the optimization result (FR-P03). A save that leaves stops PENDING (address only) starts a
+ * {@code GEOCODE_PLAN} job and marks the plan GEOCODING (D-18); the job runs after the commit.
  */
 @Service
 @RequiredArgsConstructor
@@ -60,6 +64,8 @@ public class PlanService {
     private final PhoneNumberProcessor phoneNumberProcessor;
     private final PlanMapper planMapper;
     private final PlanDetailAssembler planDetailAssembler;
+    private final JobService jobService;
+    private final TransactionTemplate transactionTemplate;
 
     /**
      * @throws AppException {@code PLAN_TOO_LARGE}, {@code STORE_DEPOT_REQUIRED}, {@code INVALID_ASSIGNMENT}
@@ -76,7 +82,13 @@ public class PlanService {
                 .createdBy(actor.id())
                 .build();
         applyDraft(plan, request, Map.of());
+        // GEOCODING before the insert, so that attaching the job afterwards does not move the version past 0.
+        boolean geocode = markGeocodingIfPending(plan);
         planRepository.saveAndFlush(plan);
+        if (geocode) {
+            attachGeocodingJob(plan, actor);
+            planRepository.flush();
+        }
         return planDetailAssembler.toDetail(plan);
     }
 
@@ -131,6 +143,7 @@ public class PlanService {
                 .collect(Collectors.toMap(PlanStop::getId, Function.identity()));
         checkStopIds(request.stopsOrEmpty(), existing.keySet());
         applyDraft(plan, request, existing);
+        if (markGeocodingIfPending(plan)) attachGeocodingJob(plan, actor);
         markModified(plan);
         planRepository.flush();
         return planDetailAssembler.toDetail(plan);
@@ -155,9 +168,43 @@ public class PlanService {
                 .orElseThrow(() -> new AppException(ErrorCode.NOT_FOUND));
         applyPatch(stop, request);
         clearOptimization(plan);
+        if (markGeocodingIfPending(plan)) attachGeocodingJob(plan, actor);
         markModified(plan);
         planRepository.flush();
         return planDetailAssembler.toDetail(plan);
+    }
+
+    /**
+     * Geocodes again every PENDING or FAILED stop ({@code POST /plans/{id}/geocode}): FAILED stops go back to PENDING
+     * and a {@code GEOCODE_PLAN} job starts.
+     *
+     * @return the job, read after the commit: an inline job has already run, so its final status is returned
+     * @throws AppException {@code NOT_FOUND}, {@code PLAN_NOT_EDITABLE}, {@code PLAN_BUSY}, {@code PLAN_MODIFIED},
+     *                      {@code NOTHING_TO_GEOCODE} if no stop is PENDING or FAILED
+     */
+    public JobResponse geocodePlan(UserIdentity actor, long planId, GeocodePlanRequest request) {
+        if (request == null) throw new NullPointerException("Geocode plan request could not be null");
+        long storeId = storeIdOf(actor);
+        // Not @Transactional: the job is submitted when this transaction commits, and is read after that.
+        Long jobId = transactionTemplate.execute(status -> {
+            RoutePlan plan = lockEditablePlan(actor, planId, request.version());
+            List<PlanStop> stops = plan.getStops().stream()
+                    .filter(stop -> stop.getGeocodeStatus() == GeocodeStatus.PENDING
+                            || stop.getGeocodeStatus() == GeocodeStatus.FAILED)
+                    .toList();
+            if (stops.isEmpty()) throw new AppException(ErrorCode.NOTHING_TO_GEOCODE);
+            for (PlanStop stop : stops) {
+                stop.setGeocodeStatus(GeocodeStatus.PENDING);
+                stop.setGeocodeError(null);
+                stop.setGeocodedDisplayName(null);
+            }
+            clearOptimization(plan);
+            markGeocodingIfPending(plan);
+            attachGeocodingJob(plan, actor);
+            markModified(plan);
+            return plan.getActiveJobId();
+        });
+        return jobService.findJob(storeId, Objects.requireNonNull(jobId)).orElseThrow();
     }
 
     private RoutePlan lockEditablePlan(UserIdentity actor, long planId, Long version) {
@@ -378,6 +425,22 @@ public class PlanService {
             route.setPlannedStart(null);
             route.setPlannedEnd(null);
         }
+    }
+
+    /**
+     * @return true if some stop has only an address and is waiting for geocoding; the plan is then GEOCODING
+     */
+    private static boolean markGeocodingIfPending(RoutePlan plan) {
+        boolean pending = plan.getStops().stream().anyMatch(stop -> stop.getGeocodeStatus() == GeocodeStatus.PENDING);
+        if (pending) plan.setProcessingStatus(ProcessingStatus.GEOCODING);
+        return pending;
+    }
+
+    /**
+     * Records the job in this transaction; it is submitted after the commit (D-19).
+     */
+    private void attachGeocodingJob(RoutePlan plan, UserIdentity actor) {
+        plan.setActiveJobId(jobService.createJob(plan.getStoreId(), JobType.GEOCODE_PLAN, plan.getId(), actor.id()));
     }
 
     /**
