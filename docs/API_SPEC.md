@@ -5,11 +5,11 @@
 > Cột "Hiện trạng" ở mọi bảng: ✅ khớp spec và có test · 🟡 có nhưng còn lệch (ghi rõ lệch gì) · ❌ chưa có. Lịch sử triển khai theo task nằm ở `CURRENT_STATE.md` §5, không ghi ở đây.
 > Lần rà soát contract gần nhất: T44 (2026-10-29, P-32).
 
-## 0. Lệch hiện tại so với spec (cập nhật 2026-10-29, sau T44)
+## 0. Lệch hiện tại so với spec (cập nhật 2026-10-29, sau T25)
 
 - Chưa có 429 `RATE_LIMITED` cho `/register`, `/email/verify/resend`, `/log-in`, `/password/forgot`, `POST /store/invitations` (T40).
 - `GET /admin/users` chưa trả `storeId`, `status`.
-- §7: chưa có `optimize` (T25), `publish`, `cancel`, `stops/{stopId}/status` (T26), `driver-locations` (T32), `routes` (T28).
+- §7: chưa có `publish`, `cancel`, `stops/{stopId}/status` (T26), `driver-locations` (T32), `routes` (T28).
 - §8: chưa có endpoint nào (T30–T33).
 - Endpoint vận hành ngoài `/api/v1`, giữ có chủ đích: `GET /actuator/health` (kèm `/liveness`, `/readiness`), Public, chỉ trả `status` và tên các `groups` (T05, `ARCHITECTURE.md` §12.1). Mọi endpoint actuator khác tắt.
 - Endpoint có trong code nhưng **không thuộc spec**, sẽ bị xoá ở T27: `POST /api/v1/route/optimize`, `POST /api/v1/route/optimize/k` (chỉ OWNER/DISPATCHER). Mã lỗi riêng của chúng (`INVALID_DEPOT`, `COULD_NOT_FIND_*`) bỏ theo.
@@ -173,7 +173,7 @@ Ghi chú:
 ```
 
 - `startedAt`, `finishedAt` là `null` khi chưa tới bước đó.
-- `errorCode` khi `FAILED`: `ROUTING_PROVIDER_ERROR`, `GEOCODING_PROVIDER_ERROR`, `INTERRUPTED` (app khởi động lại khi job còn `QUEUED`/`RUNNING`), `JOB_QUEUE_FULL` (hàng đợi job nền đầy, thử lại sau) hoặc `INTERNAL_ERROR` (P-30). Job lỗi thì plan quay về `processingStatus = IDLE`.
+- `errorCode` khi `FAILED`: `ROUTING_PROVIDER_ERROR`, `GEOCODING_PROVIDER_ERROR`, `INTERRUPTED` (app khởi động lại khi job còn `QUEUED`/`RUNNING`), `JOB_QUEUE_FULL` (hàng đợi job nền đầy, thử lại sau) (P-30), `PLAN_MODIFIED` (plan đổi trong lúc optimize), `NO_SOLUTION` (solver không tìm được lời giải nào, P-33) hoặc `INTERNAL_ERROR`. Job lỗi thì plan quay về `processingStatus = IDLE` và kết quả tối ưu cũ giữ nguyên.
 
 ## 7. Plans (dispatcher) — `/api/v1/plans`
 
@@ -187,7 +187,7 @@ Ghi chú:
 | `PUT /plans/{id}` | O, D | `PlanDraftRequest` + `version`. Thay toàn bộ draft, xoá kết quả tối ưu. | 200 `PlanDetail` | 404 · 409 `PLAN_MODIFIED`/`PLAN_BUSY` · 422 `PLAN_NOT_EDITABLE` · 400 `INVALID_STOP_ID` | ✅ |
 | `PATCH /plans/{id}/stops/{stopId}` | O, D | merge patch `{version, …field của stop}` (xem dưới). Xoá kết quả tối ưu. | 200 `PlanDetail` | 404 · 409 `PLAN_MODIFIED`/`PLAN_BUSY` · 422 `PLAN_NOT_EDITABLE` | ✅ |
 | `POST /plans/{id}/geocode` | O, D | `{version}`. Geocode lại mọi stop `FAILED`/`PENDING`. | 202 `Job` (mode inline: job đã chạy xong khi trả về) | 404 · 409 `PLAN_MODIFIED`/`PLAN_BUSY` · 422 `PLAN_NOT_EDITABLE` · 422 `NOTHING_TO_GEOCODE` | ✅ |
-| `POST /plans/{id}/optimize` | O, D | `{version}` | 202 `Job` (MVP: thường đã `SUCCEEDED` hoặc `FAILED` khi trả về). Kết quả đọc qua `GET /plans/{id}`. | 409 `PLAN_MODIFIED`/`PLAN_BUSY` · 422 `PLAN_NOT_EDITABLE` · 422 `STOPS_NOT_GEOCODED` · 422 `PLAN_TOO_LARGE` | ❌ T25 |
+| `POST /plans/{id}/optimize` | O, D | `{version}` | 202 `Job` (mode inline mặc định: job đã chạy xong khi trả về). Kết quả đọc qua `GET /plans/{id}`. | 404 · 409 `PLAN_MODIFIED`/`PLAN_BUSY` · 422 `PLAN_NOT_EDITABLE` · 422 `PLAN_INCOMPLETE` · 422 `STOPS_NOT_GEOCODED` · 422 `INVALID_ASSIGNMENT` | ✅ |
 | `POST /plans/{id}/publish` | O, D | `{version}` | 200 `PlanDetail` (PUBLISHED) | 409 · 422 `PLAN_NOT_OPTIMIZED` · 422 `SHIFT_OVERLAP` | ❌ T26 |
 | `POST /plans/{id}/cancel` | O, D | `{version}` | 200 `PlanDetail` (CANCELLED) | 409 · 422 `PLAN_NOT_CANCELLABLE` | ❌ T26 |
 | `PATCH /plans/{id}/stops/{stopId}/status` | O, D | `{status: "PENDING"}` (đặt lại stop về PENDING) | 200 `PlanDetail` | 404 · 422 `INVALID_STOP_TRANSITION` | ❌ T26 |
@@ -275,9 +275,20 @@ Ghi chú:
 - Job kết thúc thì plan về `IDLE`, `activeJob = null`, **`version` tăng 1** (P-30): client polling `GET /plans/{id}` tới khi `IDLE` rồi dùng `version` mới. Ví dụ tạo plan có stop chỉ có địa chỉ: response `version = 0`, geocode xong `version = 1`.
 - Trong lúc `GEOCODING`, `PUT`, `PATCH` stop, `POST /geocode` → 409 `PLAN_BUSY`.
 
+**Optimize (T25, ARCHITECTURE §8.3):**
+- Kiểm tra theo thứ tự: 404 → `PLAN_NOT_EDITABLE` → `PLAN_BUSY` → `PLAN_MODIFIED` → `PLAN_INCOMPLETE` → `STOPS_NOT_GEOCODED` → `INVALID_ASSIGNMENT`. Giới hạn kích thước đã kiểm khi lưu draft.
+- `PLAN_INCOMPLETE` (P-33): plan không có stop hoặc không có phân công; `details` chỉ ra thiếu gì: `{field: "stops", code: "STOPS_REQUIRED"}`, `{field: "assignments", code: "ASSIGNMENTS_REQUIRED"}`. Plan 1 stop vẫn optimize được.
+- `STOPS_NOT_GEOCODED`: còn stop chưa có toạ độ (`PENDING` hoặc `FAILED`); `geocodingSummary` cho biết bao nhiêu.
+- `INVALID_ASSIGNMENT`: tài xế không còn ACTIVE hoặc không còn được gán route, hoặc xe đã tắt, kể từ lúc lưu draft; mỗi phân công sai là một phần tử `details` `{field: "assignments[i].driverId" | "assignments[i].vehicleId", code: "INVALID_ASSIGNMENT"}`, `i` theo thứ tự `PlanDetail.routes`.
+- Request thành công: plan `OPTIMIZING`, `version` tăng 1. Job ghi kết quả và đưa plan về `IDLE` trong cùng một bước, `version` tăng thêm 1. Job lỗi: plan về `IDLE`, kết quả cũ giữ nguyên, `version` tăng 1.
+- Kết quả: mỗi route có `stops` theo `sequence`, `plannedArrival` = giờ bắt đầu phục vụ (nằm trong time window), `plannedStart`/`plannedEnd` = giờ rời và về điểm đầu/cuối, `plannedDistanceMeters`, `plannedDurationSeconds` (lái, phục vụ và chờ), `load`. Route không được dùng: `stops` rỗng, `plannedDistanceMeters = 0`, `plannedDurationSeconds = 0`, `plannedStart`/`plannedEnd` null, `load = 0`. `totalDistanceMeters`/`totalDurationSeconds` là tổng các route. Stop không xếp được nằm trong `unassignedStops` với `dropReason = INFEASIBLE` (P-13).
+- Capacity theo snapshot của phân công (D-36), không theo giá trị hiện tại của xe.
+- Solver chạy đúng time limit cấu hình (mặc định 10 s), nên mỗi lần optimize có stop mất khoảng đó.
+- Solver không tìm được lời giải nào → job `FAILED/NO_SOLUTION`, kết quả cũ giữ nguyên (P-33). Thường do ca hoặc quãng đường tối đa quá chặt.
+
 **Publish (T26):** `SHIFT_OVERLAP` (D-23) trả mỗi xung đột là một phần tử `details`: `{field: "assignments[i].driverId" | "assignments[i].vehicleId", code: "SHIFT_OVERLAP", conflictPlanId}` (P-32); `i` là thứ tự route trong `PlanDetail.routes`.
 
-**Mã validation (`details[].code`) của plan:** `PLAN_NAME_REQUIRED`, `INVALID_PLAN_NAME_LENGTH` (≤ 150), `PLAN_DATE_REQUIRED`, `VERSION_REQUIRED` (`PUT`, `PATCH`, `POST /geocode`), `LATITUDE_REQUIRED`, `LONGITUDE_REQUIRED`, `INVALID_LATITUDE`, `INVALID_LONGITUDE`, `INVALID_ADDRESS_LENGTH` (≤ 500), `STOP_LABEL_REQUIRED`, `INVALID_STOP_LABEL_LENGTH` (≤ 150), `INVALID_RECIPIENT_NAME_LENGTH` (≤ 100), `PHONE_NUMBER_*`, `COORDINATES_INCOMPLETE` (trên field còn thiếu, `lat` hoặc `lon`), `ADDRESS_OR_COORDINATES_REQUIRED` (trên `address`), `INVALID_DEMAND` (số nguyên ≥ 0), `ORDER_DEMAND_NOT_ALLOWED` (trên `demands`), `INVALID_SERVICE_TIME` (0–86400), `TIME_WINDOW_START_REQUIRED`, `TIME_WINDOW_END_REQUIRED`, `INVALID_TIME_WINDOW` (trên `timeWindow.end`, `start < end`), `INVALID_NOTE_LENGTH` (≤ 500), `DRIVER_REQUIRED`, `VEHICLE_REQUIRED`, `SHIFT_START_REQUIRED`, `SHIFT_END_REQUIRED`, `INVALID_SHIFT` (trên `shiftEnd`, `shiftStart < shiftEnd`), `INVALID_MAX_DISTANCE` (> 0), `INVALID_STOP_ID`, `NOT_NULLABLE`.
+**Mã validation (`details[].code`) của plan:** `STOPS_REQUIRED`, `ASSIGNMENTS_REQUIRED` (trong `PLAN_INCOMPLETE`), `PLAN_NAME_REQUIRED`, `INVALID_PLAN_NAME_LENGTH` (≤ 150), `PLAN_DATE_REQUIRED`, `VERSION_REQUIRED` (`PUT`, `PATCH`, `POST /geocode`), `LATITUDE_REQUIRED`, `LONGITUDE_REQUIRED`, `INVALID_LATITUDE`, `INVALID_LONGITUDE`, `INVALID_ADDRESS_LENGTH` (≤ 500), `STOP_LABEL_REQUIRED`, `INVALID_STOP_LABEL_LENGTH` (≤ 150), `INVALID_RECIPIENT_NAME_LENGTH` (≤ 100), `PHONE_NUMBER_*`, `COORDINATES_INCOMPLETE` (trên field còn thiếu, `lat` hoặc `lon`), `ADDRESS_OR_COORDINATES_REQUIRED` (trên `address`), `INVALID_DEMAND` (số nguyên ≥ 0), `ORDER_DEMAND_NOT_ALLOWED` (trên `demands`), `INVALID_SERVICE_TIME` (0–86400), `TIME_WINDOW_START_REQUIRED`, `TIME_WINDOW_END_REQUIRED`, `INVALID_TIME_WINDOW` (trên `timeWindow.end`, `start < end`), `INVALID_NOTE_LENGTH` (≤ 500), `DRIVER_REQUIRED`, `VEHICLE_REQUIRED`, `SHIFT_START_REQUIRED`, `SHIFT_END_REQUIRED`, `INVALID_SHIFT` (trên `shiftEnd`, `shiftStart < shiftEnd`), `INVALID_MAX_DISTANCE` (> 0), `INVALID_STOP_ID`, `NOT_NULLABLE`, `INVALID_ASSIGNMENT` (trong `INVALID_ASSIGNMENT` của optimize).
 
 ## 8. Driver — `/api/v1/driver`
 
@@ -323,7 +334,7 @@ Người gọi phải có `role=DRIVER` hoặc `canDrive=true` (D-21), và chỉ
 | Không tìm thấy | `NOT_FOUND`, `INVITATION_INVALID` | 404 |
 | Method | `METHOD_NOT_ALLOWED` | 405 |
 | Xung đột | `EMAIL_EXISTED`, `EMAIL_ALREADY_VERIFIED`, `VEHICLE_NAME_EXISTED`, `PLAN_MODIFIED`, `PLAN_BUSY`, `CONFLICT` | 409 |
-| Nghiệp vụ | `CANNOT_MODIFY_OWNER`, `INVITATION_NOT_PENDING`, `STORE_DEPOT_REQUIRED`, `INVALID_ASSIGNMENT`, `PLAN_TOO_LARGE`, `PLAN_NOT_EDITABLE`, `NOTHING_TO_GEOCODE`, `STOPS_NOT_GEOCODED`, `PLAN_NOT_OPTIMIZED`, `PLAN_NOT_CANCELLABLE`, `PLAN_NOT_ACTIVE`, `SHIFT_OVERLAP`, `INVALID_STOP_TRANSITION`, `FAILURE_REASON_REQUIRED` | 422 |
+| Nghiệp vụ | `CANNOT_MODIFY_OWNER`, `INVITATION_NOT_PENDING`, `STORE_DEPOT_REQUIRED`, `INVALID_ASSIGNMENT`, `PLAN_TOO_LARGE`, `PLAN_NOT_EDITABLE`, `NOTHING_TO_GEOCODE`, `PLAN_INCOMPLETE`, `STOPS_NOT_GEOCODED`, `PLAN_NOT_OPTIMIZED`, `PLAN_NOT_CANCELLABLE`, `PLAN_NOT_ACTIVE`, `SHIFT_OVERLAP`, `INVALID_STOP_TRANSITION`, `FAILURE_REASON_REQUIRED` | 422 |
 | Giới hạn | `OTP_COOLDOWN`, `RATE_LIMITED` | 429 |
 | Provider | `GEOCODING_PROVIDER_ERROR`, `ROUTING_PROVIDER_ERROR` | 502 |
 | Provider | `GEOCODING_BUSY` | 503 |
@@ -331,5 +342,5 @@ Người gọi phải có `role=DRIVER` hoặc `canDrive=true` (D-21), và chỉ
 
 - `CONFLICT`: vi phạm ràng buộc DB không có mã nghiệp vụ riêng, ví dụ hai request đăng ký đồng thời.
 - Không còn trả (giữ trong enum dạng `@Deprecated` vì `ErrorCode` chỉ được thêm): `USER_NOT_FOUND`, `SESSION_NOT_FOUND`, `JOB_NOT_FOUND` (thay bằng `NOT_FOUND`, P-32), `COULD_NOT_FIND_USER`, `COULD_NOT_UPDATE_USER_PASSWORD`. Bỏ cùng `/route/optimize*` ở T27: `INVALID_DEPOT`, `COULD_NOT_FIND_CHEAPEST_ROUTE`, `COULD_NOT_FIND_ADDRESS`.
-- `Job.errorCode` (§6) có thêm các giá trị không phải `ErrorCode`: `INTERRUPTED`, `JOB_QUEUE_FULL`.
+- `Job.errorCode` (§6) có thêm các giá trị không phải `ErrorCode`: `INTERRUPTED`, `JOB_QUEUE_FULL`, `NO_SOLUTION`.
 - Mã validation trong `details[].code` dùng UPPER_SNAKE, ví dụ `EMAIL_REQUIRED`, `INVALID_EMAIL_FORMAT`, `INVALID_PASSWORD_LENGTH`, `PHONE_NUMBER_WRONG_REGION`, `NOT_NULLABLE`.

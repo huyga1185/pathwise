@@ -5,7 +5,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import uk.huy.pathwise.job.service.JobHandler;
-import uk.huy.pathwise.planning.model.*;
+import uk.huy.pathwise.planning.model.GeocodeError;
+import uk.huy.pathwise.planning.model.GeocodeStatus;
+import uk.huy.pathwise.planning.model.PlanStop;
+import uk.huy.pathwise.planning.model.RoutePlan;
 import uk.huy.pathwise.planning.repository.RoutePlanRepository;
 
 import java.util.List;
@@ -16,7 +19,7 @@ import java.util.stream.Collectors;
 
 /**
  * The short transactions of the geocoding job (ARCHITECTURE.md §8.2). All use {@code REQUIRES_NEW} because an inline
- * job runs right after the request's commit (see {@link uk.huy.pathwise.job.JobHandler}).
+ * job runs right after the request's commit (see {@link JobHandler}).
  */
 @Service
 @RequiredArgsConstructor
@@ -70,19 +73,5 @@ class PlanGeocodingService {
             stop.setGeocodeError(outcome.error());
             stop.setGeocodeStatus(outcome.error() == null ? GeocodeStatus.RESOLVED : GeocodeStatus.FAILED);
         }
-    }
-
-    /**
-     * Puts the plan back to IDLE if {@code jobId} is still its active job. Changing {@code processingStatus}
-     * increments the plan version, once per job: the job has changed the stops (chosen by the owner in T29).
-     */
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void release(long storeId, long planId, long jobId) {
-        planRepository.findByIdAndStoreIdForUpdate(planId, storeId)
-                .filter(plan -> Objects.equals(plan.getActiveJobId(), jobId))
-                .ifPresent(plan -> {
-                    plan.setProcessingStatus(ProcessingStatus.IDLE);
-                    plan.setActiveJobId(null);
-                });
     }
 }

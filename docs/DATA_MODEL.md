@@ -125,8 +125,8 @@ Index `(store_id, plan_date)`, `(store_id, status)`. Tên ràng buộc trong V5:
 | max_distance_m | INT | NULL |
 | start_address, end_address | VARCHAR(500) | NULL (D-20) |
 | start_lat, start_lon, end_lat, end_lon | DOUBLE | NOT NULL. Điểm đầu/cuối riêng của route; MVP luôn bằng depot của plan. Đây là điểm mở rộng cho nhiều kho/multi-depot (D-20). |
-| planned_distance_m, planned_duration_s | INT | NULL — kết quả |
-| planned_start, planned_end | DATETIME(6) | NULL — kết quả |
+| planned_distance_m, planned_duration_s | INT | NULL — kết quả; 0 với route không được dùng (T25) |
+| planned_start, planned_end | DATETIME(6) | NULL — kết quả; NULL với route không được dùng (T25) |
 | created_at, updated_at | DATETIME(6) | NOT NULL |
 
 Index `(driver_id)` cho truy vấn của tài xế. Tên ràng buộc trong V5: FK `fk_route_plan_routes_plan_id`/`_store_id`/`_driver_id`/`_vehicle_id`, UNIQUE `uk_route_plan_routes_plan_driver`/`_plan_vehicle`, CHECK `chk_route_plan_routes_shift` (`shift_start < shift_end`), `chk_route_plan_routes_max_distance` (`max_distance_m` NULL hoặc > 0, BR-09), `chk_route_plan_routes_capacity` (`vehicle_capacity > 0`). `PUT` plan xoá rồi tạo lại mọi route (id route đổi), vì giữ route rồi đổi xe giữa hai route sẽ vướng unique key giữa chừng (T24).
@@ -183,7 +183,7 @@ Bảng job dùng chung. MVP có 2 loại job: `GEOCODE_PLAN` (chạy nền) và 
 | type | VARCHAR(30) | NOT NULL — `GEOCODE_PLAN, OPTIMIZE_PLAN` |
 | target_id | BIGINT | NOT NULL. Là plan id. Không có FK để bảng dùng chung cho mọi loại job. |
 | status | VARCHAR(20) | NOT NULL — `QUEUED, RUNNING, SUCCEEDED, FAILED` (`CANCELLED` bỏ ở T44, P-32: không có gì huỷ job) |
-| error_code | VARCHAR(50) | NULL. Khi `FAILED`: `INTERRUPTED`, `JOB_QUEUE_FULL`, `INTERNAL_ERROR` (hằng `job.model.JobErrors`) hoặc tên `ErrorCode` của provider, ví dụ `GEOCODING_PROVIDER_ERROR` (T29, P-30). |
+| error_code | VARCHAR(50) | NULL. Khi `FAILED`: `INTERRUPTED`, `JOB_QUEUE_FULL`, `INTERNAL_ERROR` (hằng `job.model.JobErrors`), mã riêng của handler (`NO_SOLUTION`, T25, P-33) hoặc tên `ErrorCode`, ví dụ `GEOCODING_PROVIDER_ERROR`, `ROUTING_PROVIDER_ERROR`, `PLAN_MODIFIED` (T29, P-30). |
 | attempts | INT | NOT NULL DEFAULT 0. Tăng mỗi lần job chuyển sang `RUNNING`. |
 | created_by | BIGINT | NOT NULL, FK users |
 | started_at, finished_at | DATETIME(6) | NULL |

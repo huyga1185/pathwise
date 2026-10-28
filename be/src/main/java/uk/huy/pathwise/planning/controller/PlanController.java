@@ -16,9 +16,9 @@ import org.springframework.web.bind.annotation.*;
 import uk.huy.pathwise.core.apiresponse.ApiResponse;
 import uk.huy.pathwise.core.pagination.PageResponse;
 import uk.huy.pathwise.job.dto.JobResponse;
-import uk.huy.pathwise.planning.dto.request.GeocodePlanRequest;
 import uk.huy.pathwise.planning.dto.request.PatchStopRequest;
 import uk.huy.pathwise.planning.dto.request.PlanDraftRequest;
+import uk.huy.pathwise.planning.dto.request.PlanVersionRequest;
 import uk.huy.pathwise.planning.dto.response.PlanDetailResponse;
 import uk.huy.pathwise.planning.dto.response.PlanSummaryResponse;
 import uk.huy.pathwise.planning.model.PlanStatus;
@@ -84,8 +84,19 @@ public class PlanController {
     @PostMapping("/{id}/geocode")
     public ResponseEntity<ApiResponse<JobResponse>> geocodePlan(@AuthenticationPrincipal AuthenticatedUser actor,
                                                                 @PathVariable("id") long planId,
-                                                                @Valid @RequestBody GeocodePlanRequest request) {
+                                                                @Valid @RequestBody PlanVersionRequest request) {
         return ResponseEntity.status(HttpStatus.ACCEPTED)
                 .body(new ApiResponse<>(planService.geocodePlan(actor.identity(), planId, request)));
+    }
+
+    /**
+     * Optimizes the plan; 202 with the job. Inline by default, so the job is usually finished when this returns.
+     */
+    @PostMapping("/{id}/optimize")
+    public ResponseEntity<ApiResponse<JobResponse>> optimizePlan(@AuthenticationPrincipal AuthenticatedUser actor,
+                                                                 @PathVariable("id") long planId,
+                                                                 @Valid @RequestBody PlanVersionRequest request) {
+        return ResponseEntity.status(HttpStatus.ACCEPTED)
+                .body(new ApiResponse<>(planService.optimizePlan(actor.identity(), planId, request)));
     }
 }
