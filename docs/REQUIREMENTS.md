@@ -60,13 +60,13 @@ Mỗi user thuộc tối đa 1 store và có đúng 1 role (D-02). OWNER hoặc 
 | ID | Yêu cầu | Tầng | Hiện trạng |
 |---|---|---|---|
 | FR-P01 | Tìm địa chỉ → danh sách ứng viên có toạ độ (geocoding search, dùng cho autocomplete hoặc sửa stop lỗi). | Should | ✅ (T21) |
-| FR-P02 | Tạo plan nháp (DRAFT) cho một ngày: depot, danh sách stop (nhãn, tên/số điện thoại người nhận, địa chỉ hiển thị, **địa chỉ và/hoặc toạ độ** (phải có ít nhất một trong hai), demand theo từng loại capacity (D-36), thời gian phục vụ, time window tuỳ chọn, ghi chú) và danh sách phân công (tài xế + xe + giờ bắt đầu/kết thúc ca + quãng đường tối đa tuỳ chọn). | Must | ❌ |
-| FR-P03 | Sửa plan DRAFT (thêm/sửa/xoá stop, phân công). Mọi chỉnh sửa xoá kết quả tối ưu cũ; stop không đổi địa chỉ thì giữ kết quả geocode. | Must | ❌ |
+| FR-P02 | Tạo plan nháp (DRAFT) cho một ngày: depot, danh sách stop (nhãn, tên/số điện thoại người nhận, địa chỉ hiển thị, **địa chỉ và/hoặc toạ độ** (phải có ít nhất một trong hai), demand theo từng loại capacity (D-36), thời gian phục vụ, time window tuỳ chọn, ghi chú) và danh sách phân công (tài xế + xe + giờ bắt đầu/kết thúc ca + quãng đường tối đa tuỳ chọn). | Must | ✅ (T24) |
+| FR-P03 | Sửa plan DRAFT (thêm/sửa/xoá stop, phân công). Mọi chỉnh sửa xoá kết quả tối ưu cũ; stop không đổi địa chỉ thì giữ kết quả geocode. | Must | ✅ (T24): `PUT /plans/{id}`, `PATCH /plans/{id}/stops/{stopId}` |
 | FR-P09 | Server geocode **chạy nền** các stop chỉ có địa chỉ ngay khi lưu plan. Dispatcher thấy tiến độ và từng stop thất bại kèm lý do, sửa được bằng địa chỉ mới hoặc toạ độ, và chạy lại được. Plan chỉ optimize khi mọi stop đã có toạ độ. | Must | ❌ (hiện geocode tuần tự trong request) |
 | FR-P04 | Tối ưu plan: chia stop cho các route và sắp thứ tự, tôn trọng time window, capacity, ca làm, quãng đường tối đa; trả ETA từng stop, tổng quãng đường/thời gian mỗi route, và danh sách stop **không xếp được**. API dạng job, MVP chạy ngay trong request nhưng chuyển sang chạy nền được bằng cấu hình (D-19). | Must | 🟡 solver VRPTW (capacity, time window, ca, max distance, drop) đã có ở `routing` (T23), chưa nối với plan (T25); `/route/optimize` cũ chỉ theo khoảng cách |
 | FR-P05 | Publish plan đã tối ưu → tài xế thấy route của mình; sau publish không sửa stop/phân công được. Từ chối publish nếu ca của một tài xế hoặc xe chồng giờ với plan đã publish khác cùng ngày (D-23). | Must | ❌ |
 | FR-P06 | Huỷ plan (DRAFT hoặc PUBLISHED). | Must | ❌ |
-| FR-P07 | Xem danh sách plan theo ngày/trạng thái và chi tiết plan với tiến độ từng stop. | Must | ❌ |
+| FR-P07 | Xem danh sách plan theo ngày/trạng thái và chi tiết plan với tiến độ từng stop. | Must | ✅ (T24): `GET /plans`, `GET /plans/{id}`; trạng thái stop đổi từ T26/T31 |
 | FR-P08 | Chỉnh tay sau tối ưu: chuyển stop giữa route, đổi thứ tự; hệ thống tính lại ETA/quãng đường và cảnh báo vi phạm ràng buộc. Endpoint có sẵn trong API contract (D-24). | Should | ❌ |
 
 ### 3.5 Tài xế (D-06, D-07, D-08)

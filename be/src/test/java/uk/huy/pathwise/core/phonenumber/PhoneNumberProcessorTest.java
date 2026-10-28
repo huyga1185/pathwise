@@ -1,8 +1,6 @@
-package uk.huy.pathwise.shared.phonenumber;
+package uk.huy.pathwise.core.phonenumber;
 
 import org.junit.jupiter.api.Test;
-import uk.huy.pathwise.user.infrastructure.phonenumber.PhoneCheck;
-import uk.huy.pathwise.user.infrastructure.phonenumber.PhoneNumberProcessor;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -42,5 +40,29 @@ public class PhoneNumberProcessorTest {
     @Test
     void check_rawValidNumber_returnValid() {
         assertEquals(PhoneCheck.VALID, phoneNumberProcessor.check("+84942594999"));
+    }
+
+    @Test
+    void toE164_whenValidNationalNumber_returnE164() {
+        assertEquals("+84905123456", phoneNumberProcessor.toE164("0905 123 456"));
+    }
+
+    @Test
+    void toNational_whenE164_returnNationalFormat() {
+        assertEquals("0905 123 456", phoneNumberProcessor.toNational("+84905123456"));
+    }
+
+    @Test
+    void toE164AndToNational_whenNull_returnNull() {
+        assertNull(phoneNumberProcessor.toE164(null));
+        assertNull(phoneNumberProcessor.toNational(null));
+    }
+
+    @Test
+    void toE164AndToNational_whenNotAPhoneNumber_throwIllegalArgumentWithoutTheNumber() {
+        IllegalArgumentException e164 = assertThrows(IllegalArgumentException.class, () -> phoneNumberProcessor.toE164("abc"));
+        IllegalArgumentException national = assertThrows(IllegalArgumentException.class, () -> phoneNumberProcessor.toNational("abc"));
+        assertFalse(e164.getMessage().contains("abc"));
+        assertFalse(national.getMessage().contains("abc"));
     }
 }

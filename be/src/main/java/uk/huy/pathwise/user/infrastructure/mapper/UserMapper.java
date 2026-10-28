@@ -1,7 +1,7 @@
 package uk.huy.pathwise.user.infrastructure.mapper;
 
 import org.mapstruct.*;
-import uk.huy.pathwise.user.infrastructure.phonenumber.PhoneNumberProcessor;
+import uk.huy.pathwise.core.phonenumber.PhoneNumberProcessor;
 import uk.huy.pathwise.user.dto.request.UserModificationRequest;
 import uk.huy.pathwise.user.dto.response.AdminGetUserResponse;
 import uk.huy.pathwise.user.dto.response.GetUserResponse;

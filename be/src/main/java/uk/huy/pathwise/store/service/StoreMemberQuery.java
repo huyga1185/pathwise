@@ -2,6 +2,8 @@ package uk.huy.pathwise.store.service;
 
 import uk.huy.pathwise.store.dto.StoreMember;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -14,4 +16,13 @@ public interface StoreMemberQuery {
      * including for a user of another store. Whether the member may drive (D-21) is left to the caller.
      */
     Optional<StoreMember> findActiveMember(long storeId, long userId);
+
+    /**
+     * For showing members already referenced elsewhere (for example the driver of a route), so a member disabled
+     * since then is still returned.
+     *
+     * @return the members among {@code userIds} that belong to {@code storeId}, whatever their status; ids of other
+     * stores' users are left out
+     */
+    List<StoreMember> findMembers(long storeId, Collection<Long> userIds);
 }

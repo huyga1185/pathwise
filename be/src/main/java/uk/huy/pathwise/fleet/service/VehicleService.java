@@ -14,6 +14,7 @@ import uk.huy.pathwise.fleet.model.Vehicle;
 import uk.huy.pathwise.fleet.repository.VehicleRepository;
 import uk.huy.pathwise.shared.identity.UserIdentity;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -96,6 +97,15 @@ public class VehicleService implements VehicleQuery {
     @Transactional(readOnly = true)
     public List<FleetVehicle> listActive(long storeId) {
         return vehicleRepository.findAllByStoreIdAndActiveOrderByNameAscIdAsc(storeId, true).stream()
+                .map(vehicleMapper::toFleetVehicle)
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<FleetVehicle> findAll(long storeId, Collection<Long> vehicleIds) {
+        if (vehicleIds.isEmpty()) return List.of();
+        return vehicleRepository.findAllByStoreIdAndIdIn(storeId, vehicleIds).stream()
                 .map(vehicleMapper::toFleetVehicle)
                 .toList();
     }

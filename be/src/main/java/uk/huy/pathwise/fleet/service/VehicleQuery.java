@@ -2,6 +2,7 @@ package uk.huy.pathwise.fleet.service;
 
 import uk.huy.pathwise.fleet.dto.FleetVehicle;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -19,4 +20,13 @@ public interface VehicleQuery {
      * @return the active vehicles of the store, by name
      */
     List<FleetVehicle> listActive(long storeId);
+
+    /**
+     * For showing vehicles already referenced elsewhere (for example by a plan), so a vehicle deactivated since then
+     * is still returned.
+     *
+     * @return the vehicles among {@code vehicleIds} that belong to {@code storeId}, active or not; ids of other
+     * stores' vehicles are left out
+     */
+    List<FleetVehicle> findAll(long storeId, Collection<Long> vehicleIds);
 }

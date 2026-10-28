@@ -25,7 +25,7 @@ import uk.huy.pathwise.shared.identity.UserIdentity;
 import uk.huy.pathwise.shared.identity.UserRole;
 import uk.huy.pathwise.user.controller.AdminUserController;
 import uk.huy.pathwise.user.controller.UserController;
-import uk.huy.pathwise.user.infrastructure.phonenumber.PhoneNumberProcessor;
+import uk.huy.pathwise.core.phonenumber.PhoneNumberProcessor;
 import uk.huy.pathwise.user.service.UserProfileService;
 
 

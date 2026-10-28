@@ -8,6 +8,7 @@ import uk.huy.pathwise.core.exception.ErrorCode;
 import uk.huy.pathwise.shared.identity.UserIdentity;
 import uk.huy.pathwise.shared.identity.UserStatus;
 import uk.huy.pathwise.store.dto.StoreMember;
+import uk.huy.pathwise.store.dto.StoreProfile;
 import uk.huy.pathwise.store.dto.request.UpdateStoreRequest;
 import uk.huy.pathwise.store.dto.response.StoreResponse;
 import uk.huy.pathwise.store.infrastructure.mapper.StoreMapper;
@@ -17,6 +18,8 @@ import uk.huy.pathwise.user.service.StoreUserService;
 
 import java.time.DateTimeException;
 import java.time.ZoneId;
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -25,7 +28,7 @@ import java.util.Optional;
  */
 @Service
 @RequiredArgsConstructor
-public class StoreService implements StoreProvisioningService, StoreMemberQuery {
+public class StoreService implements StoreProvisioningService, StoreMemberQuery, StoreQuery {
     static final String DEFAULT_TIMEZONE = "Asia/Ho_Chi_Minh";
 
     private final StoreRepository storeRepository;
@@ -68,6 +71,18 @@ public class StoreService implements StoreProvisioningService, StoreMemberQuery 
         return storeUserService.findInStore(storeId, userId)
                 .filter(user -> user.status() == UserStatus.ACTIVE)
                 .map(storeMapper::toStoreMember);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<StoreMember> findMembers(long storeId, Collection<Long> userIds) {
+        return storeUserService.findAllInStore(storeId, userIds).stream().map(storeMapper::toStoreMember).toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<StoreProfile> findStore(long storeId) {
+        return storeRepository.findById(storeId).map(storeMapper::toStoreProfile);
     }
 
     private Store getStoreOf(UserIdentity actor) {

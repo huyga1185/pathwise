@@ -1,4 +1,4 @@
-package uk.huy.pathwise.user.infrastructure.phonenumber;
+package uk.huy.pathwise.core.phonenumber;
 
 import com.google.i18n.phonenumbers.NumberParseException;
 import com.google.i18n.phonenumbers.PhoneNumberUtil;
@@ -9,6 +9,11 @@ import org.springframework.stereotype.Component;
 import java.util.EnumSet;
 import java.util.Set;
 
+/**
+ * Vietnamese phone numbers (P-29). Callers validate with {@link #check(String)} (or {@link ValidPhoneNumber}) before
+ * converting. The conversions never expose libphonenumber's checked {@link NumberParseException}: a number that cannot
+ * be parsed at that point is a bug or corrupt stored data, reported as {@link IllegalArgumentException} (500, P-24).
+ */
 @Component
 public class PhoneNumberProcessor {
     private final PhoneNumberUtil phoneNumberUtil;
@@ -26,20 +31,33 @@ public class PhoneNumberProcessor {
         return phoneNumberUtil.parse(raw, REGION);
     }
 
+    /**
+     * @param raw a number accepted by {@link #check(String)}, or null
+     * @throws IllegalArgumentException if {@code raw} is not a phone number
+     */
     @Named("toE164")
-    public String toE164(String raw) throws NumberParseException {
+    public String toE164(String raw) {
         if (raw == null) return null;
-        return phoneNumberUtil.format(
-                parseToPhoneNumber(raw),
-                PhoneNumberUtil.PhoneNumberFormat.E164);
+        return format(raw, PhoneNumberUtil.PhoneNumberFormat.E164);
     }
 
+    /**
+     * @param e164 a stored E.164 number, or null
+     * @throws IllegalArgumentException if {@code e164} is not a phone number
+     */
     @Named("toNational")
-    public String toNational(String e164) throws NumberParseException {
+    public String toNational(String e164) {
         if (e164 == null) return null;
-        return phoneNumberUtil.format(
-                    parseToPhoneNumber(e164),
-                    PhoneNumberUtil.PhoneNumberFormat.NATIONAL);
+        return format(e164, PhoneNumberUtil.PhoneNumberFormat.NATIONAL);
+    }
+
+    private String format(String number, PhoneNumberUtil.PhoneNumberFormat format) {
+        try {
+            return phoneNumberUtil.format(parseToPhoneNumber(number), format);
+        } catch (NumberParseException e) {
+            // No number in the message: it is personal data.
+            throw new IllegalArgumentException("Phone number could not be parsed: " + e.getErrorType(), e);
+        }
     }
 
     public PhoneCheck check(String raw) {

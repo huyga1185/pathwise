@@ -35,7 +35,8 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(AppException.class)
     public ResponseEntity<ErrorResponse> handleAppException(AppException ae) {
-        return errors.response(ae.getErrorCode(), null, null);
+        Object details = ae instanceof DetailedAppException detailed ? detailed.getDetails() : null;
+        return errors.response(ae.getErrorCode(), details, null);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

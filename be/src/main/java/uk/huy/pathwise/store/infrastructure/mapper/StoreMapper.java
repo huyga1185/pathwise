@@ -5,6 +5,7 @@ import org.mapstruct.Mapping;
 import org.mapstruct.ReportingPolicy;
 import uk.huy.pathwise.shared.identity.UserIdentity;
 import uk.huy.pathwise.store.dto.StoreMember;
+import uk.huy.pathwise.store.dto.StoreProfile;
 import uk.huy.pathwise.store.dto.response.MemberResponse;
 import uk.huy.pathwise.store.dto.response.StoreResponse;
 import uk.huy.pathwise.store.model.Store;
@@ -16,6 +17,8 @@ import uk.huy.pathwise.user.dto.StoreUser;
         unmappedSourcePolicy = ReportingPolicy.IGNORE)
 public interface StoreMapper {
     StoreResponse toStoreResponse(Store store);
+
+    StoreProfile toStoreProfile(Store store);
 
     StoreMember toStoreMember(StoreUser user);
 
