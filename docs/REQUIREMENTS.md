@@ -64,8 +64,8 @@ Mỗi user thuộc tối đa 1 store và có đúng 1 role (D-02). OWNER hoặc 
 | FR-P03 | Sửa plan DRAFT (thêm/sửa/xoá stop, phân công). Mọi chỉnh sửa xoá kết quả tối ưu cũ; stop không đổi địa chỉ thì giữ kết quả geocode. | Must | ✅ (T24): `PUT /plans/{id}`, `PATCH /plans/{id}/stops/{stopId}` |
 | FR-P09 | Server geocode **chạy nền** các stop chỉ có địa chỉ ngay khi lưu plan. Dispatcher thấy tiến độ và từng stop thất bại kèm lý do, sửa được bằng địa chỉ mới hoặc toạ độ, và chạy lại được. Plan chỉ optimize khi mọi stop đã có toạ độ. | Must | ✅ (T29): job `GEOCODE_PLAN` nền, `POST /plans/{id}/geocode`; điều kiện optimize kiểm ở T25 |
 | FR-P04 | Tối ưu plan: chia stop cho các route và sắp thứ tự, tôn trọng time window, capacity, ca làm, quãng đường tối đa; trả ETA từng stop, tổng quãng đường/thời gian mỗi route, và danh sách stop **không xếp được**. API dạng job, MVP chạy ngay trong request nhưng chuyển sang chạy nền được bằng cấu hình (D-19). | Must | ✅ (T25): `POST /plans/{id}/optimize` (job, mặc định inline), solver VRPTW của T23; `/route/optimize` cũ còn tới T27 |
-| FR-P05 | Publish plan đã tối ưu → tài xế thấy route của mình; sau publish không sửa stop/phân công được. Từ chối publish nếu ca của một tài xế hoặc xe chồng giờ với plan đã publish khác cùng ngày (D-23). | Must | ❌ |
-| FR-P06 | Huỷ plan (DRAFT hoặc PUBLISHED). | Must | ❌ |
+| FR-P05 | Publish plan đã tối ưu → tài xế thấy route của mình; sau publish không sửa stop/phân công được. Từ chối publish nếu ca của một tài xế hoặc xe chồng giờ với plan đã publish khác cùng ngày (D-23). | Must | ✅ (T26): route không có stop không tính (P-34) |
+| FR-P06 | Huỷ plan (DRAFT hoặc PUBLISHED). | Must | ✅ (T26) |
 | FR-P07 | Xem danh sách plan theo ngày/trạng thái và chi tiết plan với tiến độ từng stop. | Must | ✅ (T24): `GET /plans`, `GET /plans/{id}`; trạng thái stop đổi từ T26/T31 |
 | FR-P08 | Chỉnh tay sau tối ưu: chuyển stop giữa route, đổi thứ tự; hệ thống tính lại ETA/quãng đường và cảnh báo vi phạm ràng buộc. Endpoint có sẵn trong API contract (D-24). | Should | ❌ |
 
@@ -103,10 +103,10 @@ Mỗi user thuộc tối đa 1 store và có đúng 1 role (D-02). OWNER hoặc 
 - BR-07 Trong một plan: mỗi người được gán xuất hiện tối đa 1 lần, mỗi xe tối đa 1 lần. Người được gán phải là thành viên ACTIVE của store và có `role=DRIVER` hoặc `canDrive=true`. Xe phải ACTIVE và thuộc store.
 - BR-08 Stop: phải có địa chỉ hoặc toạ độ. Toạ độ (nếu có) hợp lệ: lat ∈ [-90,90], lon ∈ [-180,180]. Demand ≥ 0; service time ≥ 0; nếu có time window thì `start < end`.
 - BR-09 Phân công: `shiftStart < shiftEnd`; `maxDistance` nếu có > 0.
-- BR-10 Tài xế chỉ cập nhật stop thuộc route của mình, trong plan PUBLISHED/IN_PROGRESS. Chuyển trạng thái hợp lệ: `PENDING → DELIVERED | FAILED | SKIPPED`; DISPATCHER/OWNER có thể đặt lại về `PENDING`.
+- BR-10 Tài xế chỉ cập nhật stop thuộc route của mình, trong plan PUBLISHED/IN_PROGRESS. Chuyển trạng thái hợp lệ: `PENDING → DELIVERED | FAILED | SKIPPED`, một chiều; trạng thái kết thúc không đổi được nữa, kể cả bởi DISPATCHER/OWNER (P-34, thay cho "DISPATCHER/OWNER có thể đặt lại về `PENDING`").
 - BR-12 Không publish được nếu, với cùng `plan_date`, khoảng ca của một người được gán hoặc một xe giao với khoảng ca của họ trong một plan PUBLISHED/IN_PROGRESS khác (D-23).
 - BR-13 Plan đang có job chạy (`processingStatus` khác IDLE) thì không sửa, optimize hay publish được. Optimize yêu cầu mọi stop đã có toạ độ.
-- BR-11 Plan tự chuyển `PUBLISHED → IN_PROGRESS` khi có stop đầu tiên rời PENDING, và `→ COMPLETED` khi mọi stop đã gán đều ở trạng thái kết thúc.
+- BR-11 Plan tự chuyển `PUBLISHED → IN_PROGRESS` khi có stop đầu tiên rời PENDING, và `→ COMPLETED` khi mọi stop đã gán đều ở trạng thái kết thúc (thẳng từ PUBLISHED nếu lần cập nhật đầu tiên đã kết thúc mọi stop). COMPLETED là cuối cùng (P-34).
 
 ## 5. Yêu cầu phi chức năng
 

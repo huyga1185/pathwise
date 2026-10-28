@@ -319,8 +319,17 @@ abstract class OptimizePlanIntegrationTest extends AbstractIntegrationTest {
         return mockMvc.perform(get("/api/v1/jobs/" + jobId).header(HttpHeaders.AUTHORIZATION, caller.bearer()));
     }
 
+    /**
+     * Until the plan is IDLE and its jobs have finished. The handler releases the plan before the executor records
+     * the final job status, so an async job may still read RUNNING for a moment after the plan is IDLE (F-45).
+     */
     void awaitIdle(long planId) {
-        await().atMost(Duration.ofSeconds(30)).until(() -> processingStatus(planId).equals("IDLE"));
+        await().atMost(Duration.ofSeconds(30)).until(() -> processingStatus(planId).equals("IDLE") && unfinishedJobs(planId) == 0);
+    }
+
+    int unfinishedJobs(long planId) {
+        return jdbcTemplate.queryForObject("SELECT COUNT(*) FROM background_jobs WHERE target_id = ? AND status IN ('QUEUED', 'RUNNING')",
+                Integer.class, planId);
     }
 
     String processingStatus(long planId) {

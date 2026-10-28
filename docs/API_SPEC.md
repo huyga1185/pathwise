@@ -5,11 +5,11 @@
 > Cột "Hiện trạng" ở mọi bảng: ✅ khớp spec và có test · 🟡 có nhưng còn lệch (ghi rõ lệch gì) · ❌ chưa có. Lịch sử triển khai theo task nằm ở `CURRENT_STATE.md` §5, không ghi ở đây.
 > Lần rà soát contract gần nhất: T44 (2026-10-29, P-32).
 
-## 0. Lệch hiện tại so với spec (cập nhật 2026-10-29, sau T25)
+## 0. Lệch hiện tại so với spec (cập nhật 2026-10-29, sau T26)
 
 - Chưa có 429 `RATE_LIMITED` cho `/register`, `/email/verify/resend`, `/log-in`, `/password/forgot`, `POST /store/invitations` (T40).
 - `GET /admin/users` chưa trả `storeId`, `status`.
-- §7: chưa có `publish`, `cancel`, `stops/{stopId}/status` (T26), `driver-locations` (T32), `routes` (T28).
+- §7: chưa có `driver-locations` (T32), `routes` (T28).
 - §8: chưa có endpoint nào (T30–T33).
 - Endpoint vận hành ngoài `/api/v1`, giữ có chủ đích: `GET /actuator/health` (kèm `/liveness`, `/readiness`), Public, chỉ trả `status` và tên các `groups` (T05, `ARCHITECTURE.md` §12.1). Mọi endpoint actuator khác tắt.
 - Endpoint có trong code nhưng **không thuộc spec**, sẽ bị xoá ở T27: `POST /api/v1/route/optimize`, `POST /api/v1/route/optimize/k` (chỉ OWNER/DISPATCHER). Mã lỗi riêng của chúng (`INVALID_DEPOT`, `COULD_NOT_FIND_*`) bỏ theo.
@@ -173,6 +173,7 @@ Ghi chú:
 ```
 
 - `startedAt`, `finishedAt` là `null` khi chưa tới bước đó.
+- Plan về `processingStatus = IDLE` ngay trước khi job ghi trạng thái cuối, nên với job chạy nền có thể có một khoảng rất ngắn plan đã `IDLE` mà job vẫn `RUNNING` (F-45). Client theo dõi job thì polling `GET /jobs/{id}` tới khi `status` là `SUCCEEDED` hoặc `FAILED`; client theo dõi plan thì dừng khi `processingStatus = IDLE`.
 - `errorCode` khi `FAILED`: `ROUTING_PROVIDER_ERROR`, `GEOCODING_PROVIDER_ERROR`, `INTERRUPTED` (app khởi động lại khi job còn `QUEUED`/`RUNNING`), `JOB_QUEUE_FULL` (hàng đợi job nền đầy, thử lại sau) (P-30), `PLAN_MODIFIED` (plan đổi trong lúc optimize), `NO_SOLUTION` (solver không tìm được lời giải nào, P-33) hoặc `INTERNAL_ERROR`. Job lỗi thì plan quay về `processingStatus = IDLE` và kết quả tối ưu cũ giữ nguyên.
 
 ## 7. Plans (dispatcher) — `/api/v1/plans`
@@ -188,9 +189,8 @@ Ghi chú:
 | `PATCH /plans/{id}/stops/{stopId}` | O, D | merge patch `{version, …field của stop}` (xem dưới). Xoá kết quả tối ưu. | 200 `PlanDetail` | 404 · 409 `PLAN_MODIFIED`/`PLAN_BUSY` · 422 `PLAN_NOT_EDITABLE` | ✅ |
 | `POST /plans/{id}/geocode` | O, D | `{version}`. Geocode lại mọi stop `FAILED`/`PENDING`. | 202 `Job` (mode inline: job đã chạy xong khi trả về) | 404 · 409 `PLAN_MODIFIED`/`PLAN_BUSY` · 422 `PLAN_NOT_EDITABLE` · 422 `NOTHING_TO_GEOCODE` | ✅ |
 | `POST /plans/{id}/optimize` | O, D | `{version}` | 202 `Job` (mode inline mặc định: job đã chạy xong khi trả về). Kết quả đọc qua `GET /plans/{id}`. | 404 · 409 `PLAN_MODIFIED`/`PLAN_BUSY` · 422 `PLAN_NOT_EDITABLE` · 422 `PLAN_INCOMPLETE` · 422 `STOPS_NOT_GEOCODED` · 422 `INVALID_ASSIGNMENT` | ✅ |
-| `POST /plans/{id}/publish` | O, D | `{version}` | 200 `PlanDetail` (PUBLISHED) | 409 · 422 `PLAN_NOT_OPTIMIZED` · 422 `SHIFT_OVERLAP` | ❌ T26 |
-| `POST /plans/{id}/cancel` | O, D | `{version}` | 200 `PlanDetail` (CANCELLED) | 409 · 422 `PLAN_NOT_CANCELLABLE` | ❌ T26 |
-| `PATCH /plans/{id}/stops/{stopId}/status` | O, D | `{status: "PENDING"}` (đặt lại stop về PENDING) | 200 `PlanDetail` | 404 · 422 `INVALID_STOP_TRANSITION` | ❌ T26 |
+| `POST /plans/{id}/publish` | O, D | `{version}` | 200 `PlanDetail` (PUBLISHED) | 404 · 409 `PLAN_MODIFIED`/`PLAN_BUSY` · 422 `PLAN_NOT_EDITABLE` · 422 `PLAN_NOT_OPTIMIZED` · 422 `INVALID_ASSIGNMENT` · 422 `SHIFT_OVERLAP` | ✅ |
+| `POST /plans/{id}/cancel` | O, D | `{version}` | 200 `PlanDetail` (CANCELLED) | 404 · 409 `PLAN_MODIFIED`/`PLAN_BUSY` · 422 `PLAN_NOT_CANCELLABLE` | ✅ |
 | `GET /plans/{id}/driver-locations` | O, D | — | `[{driverId, routeId, lat, lon, accuracyMeters, headingDegrees, speedMps, recordedAt}]` (Should) | 404 | ❌ T32 |
 | `PUT /plans/{id}/routes` | O, D | `{version, routes:[{routeId, stopIds:[...]}], unassignedStopIds:[...]}`. Chỉnh tay, tính lại ETA và quãng đường (Should, D-24). | 200 `PlanDetail`, có `violations[]` (hình dạng chốt ở T28) | 409 · 422 | ❌ T28 |
 
@@ -286,7 +286,16 @@ Ghi chú:
 - Solver chạy đúng time limit cấu hình (mặc định 10 s), nên mỗi lần optimize có stop mất khoảng đó.
 - Solver không tìm được lời giải nào → job `FAILED/NO_SOLUTION`, kết quả cũ giữ nguyên (P-33). Thường do ca hoặc quãng đường tối đa quá chặt.
 
-**Publish (T26):** `SHIFT_OVERLAP` (D-23) trả mỗi xung đột là một phần tử `details`: `{field: "assignments[i].driverId" | "assignments[i].vehicleId", code: "SHIFT_OVERLAP", conflictPlanId}` (P-32); `i` là thứ tự route trong `PlanDetail.routes`.
+**Vòng đời plan và stop (P-34):** `DRAFT → PUBLISHED → IN_PROGRESS → COMPLETED`, và `DRAFT | PUBLISHED → CANCELLED`. Plan PUBLISHED chuyển thẳng sang COMPLETED nếu lần cập nhật đầu tiên đã kết thúc mọi stop. Stop đi một chiều `PENDING → DELIVERED | FAILED | SKIPPED`. **Không có đảo ngược**: stop đã kết thúc và plan COMPLETED/CANCELLED không đổi được nữa; không có endpoint đặt lại stop về PENDING. Giao lại thì tạo stop trong một plan mới.
+
+**Publish (T26):**
+- Kiểm tra theo thứ tự: 404 → `PLAN_NOT_EDITABLE` (không phải DRAFT) → `PLAN_BUSY` → `PLAN_MODIFIED` → `PLAN_NOT_OPTIMIZED` (chưa có kết quả tối ưu còn hiệu lực, BR-06) → `INVALID_ASSIGNMENT` (tài xế/xe của route có stop không còn dùng được, `details` như optimize) → `SHIFT_OVERLAP`.
+- Trùng ca (D-23, BR-12): với mỗi route **có stop**, ca `[shiftStart, shiftEnd)` không được giao với ca của cùng tài xế hoặc cùng xe trong một route có stop của plan PUBLISHED/IN_PROGRESS khác **cùng `planDate`** trong store. Ca nửa mở: 08:00–12:00 và 12:00–16:00 không trùng. Route không có stop không tính (P-34). Plan CANCELLED, COMPLETED, DRAFT không tính.
+- `SHIFT_OVERLAP` trả mỗi xung đột là một phần tử `details`: `{field: "assignments[i].driverId" | "assignments[i].vehicleId", code: "SHIFT_OVERLAP", conflictPlanId}` (P-32); `i` là thứ tự route trong `PlanDetail.routes`. Trùng cả tài xế lẫn xe với một plan thì có hai phần tử.
+- Plan còn stop trong `unassignedStops` (`INFEASIBLE`) vẫn publish được (P-13); client cảnh báo dựa vào `unassignedStops`.
+- Thành công: `status = PUBLISHED`, `version` tăng 1. Sau đó `PUT`, `PATCH` stop, `geocode`, `optimize`, `publish` → 422 `PLAN_NOT_EDITABLE`.
+
+**Cancel (T26):** được từ DRAFT và PUBLISHED; IN_PROGRESS, COMPLETED, CANCELLED → 422 `PLAN_NOT_CANCELLABLE`. Kiểm tra theo thứ tự: 404 → `PLAN_NOT_CANCELLABLE` → `PLAN_BUSY` → `PLAN_MODIFIED`. Kết quả tối ưu giữ lại để tra cứu; `version` tăng 1.
 
 **Mã validation (`details[].code`) của plan:** `STOPS_REQUIRED`, `ASSIGNMENTS_REQUIRED` (trong `PLAN_INCOMPLETE`), `PLAN_NAME_REQUIRED`, `INVALID_PLAN_NAME_LENGTH` (≤ 150), `PLAN_DATE_REQUIRED`, `VERSION_REQUIRED` (`PUT`, `PATCH`, `POST /geocode`), `LATITUDE_REQUIRED`, `LONGITUDE_REQUIRED`, `INVALID_LATITUDE`, `INVALID_LONGITUDE`, `INVALID_ADDRESS_LENGTH` (≤ 500), `STOP_LABEL_REQUIRED`, `INVALID_STOP_LABEL_LENGTH` (≤ 150), `INVALID_RECIPIENT_NAME_LENGTH` (≤ 100), `PHONE_NUMBER_*`, `COORDINATES_INCOMPLETE` (trên field còn thiếu, `lat` hoặc `lon`), `ADDRESS_OR_COORDINATES_REQUIRED` (trên `address`), `INVALID_DEMAND` (số nguyên ≥ 0), `ORDER_DEMAND_NOT_ALLOWED` (trên `demands`), `INVALID_SERVICE_TIME` (0–86400), `TIME_WINDOW_START_REQUIRED`, `TIME_WINDOW_END_REQUIRED`, `INVALID_TIME_WINDOW` (trên `timeWindow.end`, `start < end`), `INVALID_NOTE_LENGTH` (≤ 500), `DRIVER_REQUIRED`, `VEHICLE_REQUIRED`, `SHIFT_START_REQUIRED`, `SHIFT_END_REQUIRED`, `INVALID_SHIFT` (trên `shiftEnd`, `shiftStart < shiftEnd`), `INVALID_MAX_DISTANCE` (> 0), `INVALID_STOP_ID`, `NOT_NULLABLE`, `INVALID_ASSIGNMENT` (trong `INVALID_ASSIGNMENT` của optimize).
 
@@ -321,7 +330,7 @@ Người gọi phải có `role=DRIVER` hoặc `canDrive=true` (D-21), và chỉ
 ```
 
 - Dẫn đường (D-07): client tự dựng deep link Google Maps hoặc Apple Maps theo nền tảng từ `lat`/`lon` của stop; server không trả URL (P-32).
-- `PATCH …/status` của tài xế trả `routeStatus` và `planStatus` để app biết route/plan đã chuyển `IN_PROGRESS` hay `COMPLETED` (BR-11). Cập nhật trạng thái stop không tăng `version` của plan (§1).
+- `PATCH …/status` của tài xế trả `routeStatus` và `planStatus` để app biết route/plan đã chuyển `IN_PROGRESS` hay `COMPLETED` (BR-11). Cập nhật trạng thái stop không tăng `version` của plan (§1). Chỉ đi từ `PENDING`; stop đã kết thúc không đổi được nữa (P-34).
 
 ## 9. Mã lỗi (`ErrorCode`)
 
