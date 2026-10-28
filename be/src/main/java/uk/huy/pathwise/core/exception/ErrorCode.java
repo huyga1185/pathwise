@@ -7,7 +7,9 @@ import lombok.Getter;
 @Getter
 public enum ErrorCode {
     EMAIL_EXISTED(409),
-    INVALID_DEPOT( 400),
+    /** @deprecated only used by the removed {@code /route/optimize} endpoints (T27); kept because error codes are only ever added. */
+    @Deprecated
+    INVALID_DEPOT(400),
     INVALID_EMAIL_OR_PASSWORD(401),
     INVALID_SORT_FIELD(400),
     INVALID_PHONE_NUMBER(400),
@@ -17,7 +19,11 @@ public enum ErrorCode {
     /** @deprecated no longer used since the old change-password flow was removed (T15); kept because error codes are only ever added. */
     @Deprecated
     COULD_NOT_UPDATE_USER_PASSWORD(400),
+    /** @deprecated only used by the removed {@code /route/optimize} endpoints (T27); kept because error codes are only ever added. */
+    @Deprecated
     COULD_NOT_FIND_CHEAPEST_ROUTE(400),
+    /** @deprecated only used by the removed {@code /route/optimize} endpoints (T27); kept because error codes are only ever added. */
+    @Deprecated
     COULD_NOT_FIND_ADDRESS(400),
     /** @deprecated replaced by {@link #USER_NOT_FOUND}; kept because error codes are only ever added. */
     @Deprecated
