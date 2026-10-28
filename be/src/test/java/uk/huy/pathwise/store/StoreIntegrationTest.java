@@ -21,6 +21,7 @@ import uk.huy.pathwise.support.TestAccounts;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -57,7 +58,7 @@ class StoreIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.id").value(owner.storeId()))
                 .andExpect(jsonPath("$.data.name").value("Cửa hàng " + owner.email()))
-                .andExpect(jsonPath("$.data.depotLat").doesNotExist())
+                .andExpect(jsonPath("$.data.depot").value(nullValue()))
                 .andExpect(jsonPath("$.data.timezone").value("Asia/Ho_Chi_Minh"));
     }
 
@@ -65,16 +66,16 @@ class StoreIntegrationTest extends AbstractIntegrationTest {
     void updateStore_whenValid_saveAndReturnStore() throws Exception {
         Owner owner = newOwner();
 
-        updateStore(owner.accessToken(), "{\"name\":\"Tiệm Mới\",\"depotAddress\":\"12 Lê Duẩn, Đà Nẵng\","
-                + "\"depotLat\":16.05,\"depotLon\":108.2,\"timezone\":\"Asia/Bangkok\"}")
+        updateStore(owner.accessToken(), "{\"name\":\"Tiệm Mới\",\"depot\":{\"address\":\"12 Lê Duẩn, Đà Nẵng\","
+                + "\"lat\":16.05,\"lon\":108.2},\"timezone\":\"Asia/Bangkok\"}")
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.name").value("Tiệm Mới"))
-                .andExpect(jsonPath("$.data.depotLat").value(16.05))
+                .andExpect(jsonPath("$.data.depot.lat").value(16.05))
                 .andExpect(jsonPath("$.data.timezone").value("Asia/Bangkok"));
 
         getStore(owner.accessToken())
-                .andExpect(jsonPath("$.data.depotAddress").value("12 Lê Duẩn, Đà Nẵng"))
-                .andExpect(jsonPath("$.data.depotLon").value(108.2));
+                .andExpect(jsonPath("$.data.depot.address").value("12 Lê Duẩn, Đà Nẵng"))
+                .andExpect(jsonPath("$.data.depot.lon").value(108.2));
     }
 
     @Test
@@ -102,13 +103,25 @@ class StoreIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void updateStore_whenOnlyLatitude_return400DepotCoordinatesIncomplete() throws Exception {
+    void updateStore_whenDepotWithoutLongitude_return400OnThatField() throws Exception {
         Owner owner = newOwner();
 
-        updateStore(owner.accessToken(), "{\"name\":\"Shop\",\"depotLat\":16.05,\"timezone\":\"Asia/Ho_Chi_Minh\"}")
+        updateStore(owner.accessToken(), "{\"name\":\"Shop\",\"depot\":{\"lat\":16.05},\"timezone\":\"Asia/Ho_Chi_Minh\"}")
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"))
-                .andExpect(jsonPath("$.details[0].code").value("DEPOT_COORDINATES_INCOMPLETE"));
+                .andExpect(jsonPath("$.details[0].field").value("depot.lon"))
+                .andExpect(jsonPath("$.details[0].code").value("LONGITUDE_REQUIRED"));
+    }
+
+    @Test
+    void updateStore_whenDepotNull_removeIt() throws Exception {
+        Owner owner = newOwner();
+        updateStore(owner.accessToken(), "{\"name\":\"Shop\",\"depot\":{\"lat\":16.05,\"lon\":108.2},\"timezone\":\"Asia/Ho_Chi_Minh\"}")
+                .andExpect(status().isOk());
+
+        updateStore(owner.accessToken(), "{\"name\":\"Shop\",\"depot\":null,\"timezone\":\"Asia/Ho_Chi_Minh\"}")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.depot").value(nullValue()));
     }
 
     @Test

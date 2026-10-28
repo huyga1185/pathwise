@@ -60,7 +60,8 @@ Bảng dependency (→ nghĩa là "phải xong trước"):
 | T20 | T17 | T14–T16 |
 | T24 | T20, T13 | T14–T16 |
 | T29 | T24, T21 | — |
-| T25 | T29, T22, T23 | — |
+| T44 | T29 | — |
+| T25 | T29, T22, T23, T44 | — |
 | T26 | T25 | — |
 | T27 | T25 | T26 |
 | T30 | T26 | T40 |
@@ -327,6 +328,12 @@ T42 cũ (Docker, compose, README) đã được gộp vào T05 và T07 trong M0 
 - **Rủi ro:** quản lý transaction trong thread nền (handler phải tự mở transaction ngắn); test async cần chờ có điều kiện (Awaitility; dependency test được phép thêm).
 - **Phát sinh khi làm (2026-10-29):** 4 quyết định của chủ dự án ghi ở P-30 (job `QUEUED` cũng INTERRUPTED lúc khởi động; hàng đợi đầy → `JOB_QUEUE_FULL`; job xong tăng `version` 1; `POST /geocode` không có gì để geocode → 422 `NOTHING_TO_GEOCODE`). Mọi transaction phía job dùng `REQUIRES_NEW` (job inline chạy trong `afterCommit`). Job framework tách từ `core.job` thành module cấp 1 `job` (P-31, chủ dự án chọn), thêm mũi tên `planning → job`. Test: `FakeGeocodingProvider` `@Primary` cho mọi integration test (trước đó test plan có thể gọi Nominatim thật khi job chạy); profile test đặt `jobs.geocode-plan.mode=inline`, bộ test acceptance chạy lại ở async bằng subclass. Test T24 đọc `version` hiện tại thay vì hardcode, vì job inline đã tăng version.
 
+### T44. Làm sạch API contract (phát sinh 2026-10-29)
+- **Tầng:** Must · **Ước lượng:** 0,5–1 ngày · **Quyết định:** P-32 · **Phạm vi do chủ dự án duyệt sau khi rà soát `API_SPEC.md`**
+- **Phạm vi (code):** `details[].field` của kiểm tra chéo là field thật (`core.validation`: `@SelfValidated`/`SelfValidating` thay `@AssertTrue`); `MergePatch` làm lớp cơ sở cho mọi PATCH (`NOT_NULLABLE`); response trả số điện thoại E.164; `PATCH /users/me` (merge patch, thêm `fullName`, trả 200 `User`) thay `PUT`; `PATCH /store/members/{userId}` theo merge patch; `/store` dùng `depot: {address, lat, lon} | null`; 404 tài nguyên trên path là `NOT_FOUND`; bỏ `JobStatus.CANCELLED`; `POST /store/invitations/{id}/revoke` thay `DELETE`.
+- **Phạm vi (chỉ contract, task sau làm):** trạng thái stop không tăng `version` của plan; response của các endpoint trạng thái stop; format `details` của `SHIFT_OVERLAP`; `DriverRouteDetail.start/end`; bỏ `navigationUrl`. Ghi chú nằm ở T26, T30, T31.
+- **Acceptance criteria:** các test hiện có cập nhật theo contract mới và xanh; test mới cho merge patch của `/users/me` và member, E.164 trong response, `depot` của store, tên field của lỗi kiểm tra chéo.
+
 ### T25. Optimize plan
 - **Tầng:** Must · **Ước lượng:** 1,5 ngày · **Quyết định:** D-19, D-20, P-13 · **FR:** P04
 - **Phạm vi:** `POST /plans/{id}/optimize` tạo job `OPTIMIZE_PLAN` qua framework T29 (mặc định `inline`), trả 202 `Job`. Handler theo mẫu 3 bước (tx đọc → matrix + solver ngoài transaction → tx ghi kèm kiểm tra version), như `ARCHITECTURE.md` §8.3. Dựng node start/end riêng từng route. Tính `plannedArrival` theo timezone. Stop bị drop có `dropReason = INFEASIBLE`.
@@ -336,6 +343,7 @@ T42 cũ (Docker, compose, README) đã được gộp vào T05 và T07 trong M0 
 ### T26. Publish, cancel và vòng đời trạng thái
 - **Tầng:** Must · **Ước lượng:** 1 ngày · **Quyết định:** D-23 · **FR:** P05, P06, BR-06, BR-10, BR-11, BR-12
 - **Phạm vi:** `publish` có kiểm tra trùng ca cho người được gán và xe (D-23, BR-12, khoá theo `ARCHITECTURE.md` §8.1); `cancel`; `PATCH /plans/{id}/stops/{stopId}/status` (dispatcher reset về PENDING); service chuyển trạng thái plan dùng chung cho T31.
+- **Ghi chú từ T44 (P-32):** cập nhật trạng thái stop không tăng `version` của plan (chỉ `version` của stop); `PATCH /plans/{id}/stops/{stopId}/status` trả `PlanDetail`; `SHIFT_OVERLAP` trả mỗi xung đột là một phần tử `details` `{field: "assignments[i].driverId|vehicleId", code, conflictPlanId}`, nên cần một kiểu detail có thêm field (`FieldErrorDetail` hiện chỉ có `field`, `code`).
 - **Acceptance criteria:** publish khi chưa optimize → 422; tài xế có ca 08:00–12:00 ở plan A đã publish, plan B cùng ngày ca 11:00–15:00 → 422 `SHIFT_OVERLAP`, còn ca 12:00–16:00 thì publish được; xe trùng ca tương tự; sửa plan sau khi publish → 422; cancel từ IN_PROGRESS → 422; unit test bảng chuyển trạng thái.
 
 ### T27. Xoá API route optimizer cũ
@@ -347,13 +355,14 @@ T42 cũ (Docker, compose, README) đã được gộp vào T05 và T07 trong M0 
 
 ### T30. API tài xế: xem route
 - **Tầng:** Must · **Ước lượng:** 1 ngày · **Quyết định:** D-06, D-07 · **FR:** D01, D02
-- **Phạm vi:** `GET /driver/routes`, `GET /driver/routes/{routeId}` với `navigationUrl`; chỉ trả route của chính người gọi trong plan PUBLISHED, IN_PROGRESS hoặc COMPLETED; mở cho `role=DRIVER` hoặc `canDrive` (D-21).
-- **Acceptance criteria:** DRIVER không thấy route của driver khác (→ 404); OWNER có `canDrive` và được gán route thì thấy route của mình; DISPATCHER không có `canDrive` → 403; plan DRAFT không hiển thị; `navigationUrl` đúng định dạng.
+- **Phạm vi:** `GET /driver/routes`, `GET /driver/routes/{routeId}` (có `start`/`end` riêng của route, không có `navigationUrl`; P-32); chỉ trả route của chính người gọi trong plan PUBLISHED, IN_PROGRESS hoặc COMPLETED; mở cho `role=DRIVER` hoặc `canDrive` (D-21).
+- **Acceptance criteria:** DRIVER không thấy route của driver khác (→ 404); OWNER có `canDrive` và được gán route thì thấy route của mình; DISPATCHER không có `canDrive` → 403; plan DRAFT không hiển thị; `start`/`end` lấy từ route (D-20).
 
 ### T31. Tài xế cập nhật trạng thái stop
 - **Tầng:** Must · **Ước lượng:** 1 ngày · **FR:** D03, BR-10, BR-11
 - **Phạm vi:** `PATCH /driver/routes/{routeId}/stops/{stopId}/status`; chuyển plan tự động PUBLISHED → IN_PROGRESS → COMPLETED; xử lý idempotent; concurrency theo `ARCHITECTURE.md` §7.
-- **Acceptance criteria:** FAILED không có lý do → 422; cập nhật lặp lại cùng trạng thái → 200 và không đổi gì; stop cuối cùng xong → plan COMPLETED; plan CANCELLED → 422 `PLAN_NOT_ACTIVE`.
+- **Ghi chú từ T44 (P-32):** response là `{stop, routeStatus, planStatus}`; cập nhật không tăng `version` của plan, để dispatcher vẫn `cancel {version}` được trong lúc tài xế đang giao.
+- **Acceptance criteria:** FAILED không có lý do → 422; cập nhật lặp lại cùng trạng thái → 200 và không đổi gì; `version` của plan không đổi; stop cuối cùng xong → plan COMPLETED; plan CANCELLED → 422 `PLAN_NOT_ACTIVE`.
 
 ### T40. Rate limiting
 - **Tầng:** Must · **Ước lượng:** 0,5 ngày · **Quyết định:** P-16 · **NFR:** 01
@@ -381,11 +390,13 @@ T42 cũ (Docker, compose, README) đã được gộp vào T05 và T07 trong M0 
 - **Ước lượng:** 1,5 ngày · **Quyết định:** D-07 · **FR:** D05
 - **Phạm vi:** `DirectionsProvider` dùng OSRM route (`steps=true`, `polyline6`); `GET /driver/routes/{routeId}/directions`; cache theo `routeId` và version của plan.
 - **Acceptance criteria:** parse response mẫu; route có n stop → n+1 leg (về depot); provider lỗi → 502 (app fallback sang deep link).
+- **Ghi chú từ T44:** `DirectionsResponse` ở API_SPEC §8 đang theo OSRM (`geometry` polyline6, `maneuver`/`modifier` theo từ vựng OSRM). Trước khi làm, chốt một dạng trung tính với provider (ghi rõ độ chính xác polyline, enum maneuver riêng), để đổi provider sau này không phải đổi contract; đây là quyết định cần chủ dự án duyệt.
 
 ### T28. Chỉnh tay route sau optimize
 - **Ước lượng:** 1,5 ngày · **FR:** P08 · **Quyết định:** D-24
 - **Phạm vi:** `PUT /plans/{id}/routes`; tính lại ETA và quãng đường bằng matrix (không giải lại); trả `violations` (vượt capacity, trễ time window, quá ca).
 - **Acceptance criteria:** chuyển stop gây vượt capacity → lưu được nhưng có violation `CAPACITY_EXCEEDED`; stopIds không thuộc plan → 422.
+- **Ghi chú từ T44:** hình dạng `violations[]` chưa có trong API_SPEC, chốt khi làm task này (đề xuất mỗi phần tử có `code`, `routeId`, `stopId?` và dữ liệu đo được như vượt bao nhiêu). `PUT /plans/{id}` tạo lại route nên `routeId` đổi sau mỗi lần sửa draft; request của task này dùng `routeId` lấy từ `PlanDetail` mới nhất.
 
 ## 9. Sau MVP (Could, chưa lên lịch)
 

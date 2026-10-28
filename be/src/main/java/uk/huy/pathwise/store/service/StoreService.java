@@ -58,9 +58,9 @@ public class StoreService implements StoreProvisioningService, StoreMemberQuery,
         if (request == null) throw new NullPointerException("Update store request could not be null");
         Store store = getStoreOf(actor);
         store.setName(request.name().trim());
-        store.setDepotAddress(request.depotAddress());
-        store.setDepotLat(request.depotLat());
-        store.setDepotLon(request.depotLon());
+        store.setDepotAddress(request.depot() == null ? null : trimToNull(request.depot().address()));
+        store.setDepotLat(request.depot() == null ? null : request.depot().lat());
+        store.setDepotLon(request.depot() == null ? null : request.depot().lon());
         store.setTimezone(parseTimezone(request.timezone()));
         return storeMapper.toStoreResponse(storeRepository.save(store));
     }
@@ -98,6 +98,10 @@ public class StoreService implements StoreProvisioningService, StoreMemberQuery,
         if (actor == null) throw new NullPointerException("Actor could not be null");
         if (actor.storeId() == null) throw new AppException(ErrorCode.NOT_FOUND);
         return actor.storeId();
+    }
+
+    private static String trimToNull(String value) {
+        return value == null || value.isBlank() ? null : value.trim();
     }
 
     private static String parseTimezone(String timezone) {

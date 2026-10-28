@@ -28,7 +28,11 @@ public enum ErrorCode {
     UNAUTHORIZED(401),
     FORBIDDEN(403),
     NOT_FOUND(404),
+    /** @deprecated a missing resource on the path is {@link #NOT_FOUND} (API_SPEC §1); kept because error codes are only ever added. */
+    @Deprecated
     USER_NOT_FOUND(404),
+    /** @deprecated a missing resource on the path is {@link #NOT_FOUND} (API_SPEC §1); kept because error codes are only ever added. */
+    @Deprecated
     SESSION_NOT_FOUND(404),
     METHOD_NOT_ALLOWED(405),
     CONFLICT(409),
@@ -51,6 +55,8 @@ public enum ErrorCode {
     PLAN_TOO_LARGE(422),
     STORE_DEPOT_REQUIRED(422),
     INVALID_ASSIGNMENT(422),
+    /** @deprecated a missing resource on the path is {@link #NOT_FOUND} (API_SPEC §1); kept because error codes are only ever added. */
+    @Deprecated
     JOB_NOT_FOUND(404),
     NOTHING_TO_GEOCODE(422);
     private final int httpCode;

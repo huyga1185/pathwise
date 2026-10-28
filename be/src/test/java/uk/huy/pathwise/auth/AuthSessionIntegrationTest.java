@@ -128,7 +128,7 @@ class AuthSessionIntegrationTest extends AbstractIntegrationTest {
         mockMvc.perform(delete("/api/v1/auth/sessions/{id}", victim.sessionId())
                         .header(HttpHeaders.AUTHORIZATION, bearer(attacker)))
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.code").value("SESSION_NOT_FOUND"));
+                .andExpect(jsonPath("$.code").value("NOT_FOUND"));
 
         refresh(victim).andExpect(status().isOk());
     }
@@ -140,7 +140,7 @@ class AuthSessionIntegrationTest extends AbstractIntegrationTest {
         mockMvc.perform(delete("/api/v1/auth/sessions/{id}", UUID.randomUUID().toString())
                         .header(HttpHeaders.AUTHORIZATION, bearer(session)))
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.code").value("SESSION_NOT_FOUND"));
+                .andExpect(jsonPath("$.code").value("NOT_FOUND"));
     }
 
     @Test

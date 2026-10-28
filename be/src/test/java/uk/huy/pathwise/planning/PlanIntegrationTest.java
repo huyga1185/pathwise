@@ -191,14 +191,14 @@ class PlanIntegrationTest extends AbstractIntegrationTest {
 
         create(store.owner(), draft("P", "[{\"label\":\"A\",\"address\":\"X\",\"timeWindow\":{\"start\":\"11:00\",\"end\":\"11:00\"}}]", ""))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.details[0].field").value("stops[0].timeWindow.ordered"))
+                .andExpect(jsonPath("$.details[0].field").value("stops[0].timeWindow.end"))
                 .andExpect(jsonPath("$.details[0].code").value("INVALID_TIME_WINDOW"));
         create(store.owner(), draft("P", "[{\"label\":\"A\",\"address\":\"  \"}]", ""))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.details[?(@.field == 'stops[0].located')].code").value("ADDRESS_OR_COORDINATES_REQUIRED"));
+                .andExpect(jsonPath("$.details[?(@.field == 'stops[0].address')].code").value("ADDRESS_OR_COORDINATES_REQUIRED"));
         create(store.owner(), draft("P", "[{\"label\":\"A\",\"lat\":16.0}]", ""))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.details[?(@.field == 'stops[0].coordinatesComplete')].code").value("COORDINATES_INCOMPLETE"));
+                .andExpect(jsonPath("$.details[?(@.field == 'stops[0].lon')].code").value("COORDINATES_INCOMPLETE"));
         create(store.owner(), draft("P", "[{\"label\":\"A\",\"address\":\"X\",\"demands\":{\"ORDER\":1}}]", ""))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.details[0].code").value("ORDER_DEMAND_NOT_ALLOWED"));
@@ -218,7 +218,7 @@ class PlanIntegrationTest extends AbstractIntegrationTest {
                 {"driverId":%d,"vehicleId":%d,"shiftStart":"17:00","shiftEnd":"08:00","maxDistanceMeters":0}"""
                 .formatted(store.driver().id(), vehicle)))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.details[?(@.field == 'assignments[0].shiftOrdered')].code").value("INVALID_SHIFT"))
+                .andExpect(jsonPath("$.details[?(@.field == 'assignments[0].shiftEnd')].code").value("INVALID_SHIFT"))
                 .andExpect(jsonPath("$.details[?(@.field == 'assignments[0].maxDistanceMeters')].code").value("INVALID_MAX_DISTANCE"));
     }
 
@@ -420,7 +420,8 @@ class PlanIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.details[0].code").value("ADDRESS_OR_COORDINATES_REQUIRED"));
         patch(store.owner(), planId, stop, "{\"version\":" + version(planId) + ",\"label\":null}")
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.details[0].code").value("STOP_LABEL_REQUIRED"));
+                .andExpect(jsonPath("$.details[0].field").value("label"))
+                .andExpect(jsonPath("$.details[0].code").value("NOT_NULLABLE"));
         patch(store.owner(), planId, stop, "{\"version\":" + version(planId) + ",\"lat\":16.0}")
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.details[0].code").value("COORDINATES_INCOMPLETE"));
@@ -537,7 +538,7 @@ class PlanIntegrationTest extends AbstractIntegrationTest {
         TestStore store = users.createStore();
         mockMvc.perform(put("/api/v1/store").header(HttpHeaders.AUTHORIZATION, store.owner().bearer())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"name\":\"Shop\",\"depotAddress\":\"Kho Hải Châu\",\"depotLat\":16.05,\"depotLon\":108.2,"
+                        .content("{\"name\":\"Shop\",\"depot\":{\"address\":\"Kho Hải Châu\",\"lat\":16.05,\"lon\":108.2},"
                                 + "\"timezone\":\"Asia/Ho_Chi_Minh\"}"))
                 .andExpect(status().isOk());
         return store;

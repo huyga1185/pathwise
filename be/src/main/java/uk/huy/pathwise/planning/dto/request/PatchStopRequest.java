@@ -4,25 +4,20 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
 import lombok.Getter;
 import uk.huy.pathwise.core.phonenumber.ValidPhoneNumber;
+import uk.huy.pathwise.core.validation.FieldErrors;
+import uk.huy.pathwise.core.validation.MergePatch;
 import uk.huy.pathwise.fleet.model.CapacityUnit;
 
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 
 /**
- * Partial change of one stop ({@code PATCH /plans/{id}/stops/{stopId}}), with JSON Merge Patch semantics (RFC 7396):
- * <ul>
- *     <li>a field <b>absent</b> from the JSON keeps its value;</li>
- *     <li>a field present with {@code null} clears it: no time window, no demand, service time 0, no coordinates
- *     (the stop is geocoded again from its address);</li>
- *     <li>{@code label} cannot be cleared; {@code lat} and {@code lon} are sent together.</li>
- * </ul>
- * A class with setters rather than a record, because a record cannot tell an absent field from a {@code null} one:
- * Jackson calls a setter only for fields present in the JSON.
+ * Partial change of one stop ({@code PATCH /plans/{id}/stops/{stopId}}), as a merge patch ({@link MergePatch}): an
+ * absent field keeps its value, {@code null} clears it (no time window, no demand, service time 0, no coordinates and
+ * the stop is geocoded again from its address). {@code label} cannot be cleared; {@code lat} and {@code lon} are sent
+ * together.
  */
 @Getter
-public class PatchStopRequest {
+public class PatchStopRequest extends MergePatch {
     @NotNull(message = "VERSION_REQUIRED")
     private Long version;
 
@@ -58,29 +53,13 @@ public class PatchStopRequest {
     @Size(max = 500, message = "INVALID_NOTE_LENGTH")
     private String note;
 
-    @Getter(lombok.AccessLevel.NONE)
-    private final Set<String> present = new HashSet<>();
-
-    /**
-     * @return true if the field was in the JSON, even with {@code null}
-     */
-    public boolean has(String field) {
-        return present.contains(field);
-    }
-
-    @AssertTrue(message = "STOP_LABEL_REQUIRED")
-    public boolean isLabelKept() {
-        return !has("label") || (label != null && !label.isBlank());
-    }
-
-    @AssertTrue(message = "COORDINATES_INCOMPLETE")
-    public boolean isCoordinatesComplete() {
-        return has("lat") == has("lon") && (lat == null) == (lon == null);
-    }
-
-    @AssertTrue(message = "ORDER_DEMAND_NOT_ALLOWED")
-    public boolean isWithoutOrderDemand() {
-        return demands == null || !demands.containsKey(CapacityUnit.ORDER);
+    @Override
+    public void validate(FieldErrors errors) {
+        rejectNull(errors, "label", label);
+        if (label != null && label.isBlank()) errors.reject("label", "STOP_LABEL_REQUIRED");
+        if (has("lat") != has("lon") || (lat == null) != (lon == null))
+            errors.reject(has("lat") && lat != null ? "lon" : "lat", "COORDINATES_INCOMPLETE");
+        if (demands != null && demands.containsKey(CapacityUnit.ORDER)) errors.reject("demands", "ORDER_DEMAND_NOT_ALLOWED");
     }
 
     public void setVersion(Long version) {
@@ -89,51 +68,51 @@ public class PatchStopRequest {
 
     public void setLabel(String label) {
         this.label = label;
-        present.add("label");
+        present("label");
     }
 
     public void setRecipientName(String recipientName) {
         this.recipientName = recipientName;
-        present.add("recipientName");
+        present("recipientName");
     }
 
     public void setRecipientPhone(String recipientPhone) {
         this.recipientPhone = recipientPhone;
-        present.add("recipientPhone");
+        present("recipientPhone");
     }
 
     public void setAddress(String address) {
         this.address = address;
-        present.add("address");
+        present("address");
     }
 
     public void setLat(Double lat) {
         this.lat = lat;
-        present.add("lat");
+        present("lat");
     }
 
     public void setLon(Double lon) {
         this.lon = lon;
-        present.add("lon");
+        present("lon");
     }
 
     public void setDemands(Map<CapacityUnit, Integer> demands) {
         this.demands = demands;
-        present.add("demands");
+        present("demands");
     }
 
     public void setServiceTimeSeconds(Integer serviceTimeSeconds) {
         this.serviceTimeSeconds = serviceTimeSeconds;
-        present.add("serviceTimeSeconds");
+        present("serviceTimeSeconds");
     }
 
     public void setTimeWindow(TimeWindowRequest timeWindow) {
         this.timeWindow = timeWindow;
-        present.add("timeWindow");
+        present("timeWindow");
     }
 
     public void setNote(String note) {
         this.note = note;
-        present.add("note");
+        present("note");
     }
 }

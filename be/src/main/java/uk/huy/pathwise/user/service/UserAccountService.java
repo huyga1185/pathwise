@@ -22,7 +22,7 @@ public interface UserAccountService {
 
     /**
      * @return true if {@code rawPassword} is the current password of user {@code id}
-     * @throws uk.huy.pathwise.core.exception.AppException {@code USER_NOT_FOUND} if there is no such user
+     * @throws uk.huy.pathwise.core.exception.AppException {@code NOT_FOUND} if there is no such user
      */
     boolean matchesPassword(long id, String rawPassword);
     void updateUserEmail(long id, String newEmail);

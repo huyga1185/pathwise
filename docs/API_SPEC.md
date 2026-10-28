@@ -1,64 +1,73 @@
 # API_SPEC — Hợp đồng REST API mục tiêu
 
-> Đây là **hợp đồng mục tiêu** cho web và Flutter. Cột "Hiện trạng" cho biết endpoint tương ứng trong code hiện tại (nếu có). Mọi endpoint chưa có = chưa tồn tại.
-> Mọi quyết định nền tảng của contract này đã được duyệt (`DECISIONS.md`, 2026-10-22). Frontend web và Flutter có thể dựa vào tài liệu này để thiết kế song song (D-09).
+> Đây là **hợp đồng mục tiêu** cho web và Flutter (D-09). Frontend có thể dựa vào tài liệu này để thiết kế song song.
 > Khi implementation khác spec: sửa code cho khớp spec, **hoặc** cập nhật spec trong cùng PR kèm lý do. Không để lệch.
+> Cột "Hiện trạng" ở mọi bảng: ✅ khớp spec và có test · 🟡 có nhưng còn lệch (ghi rõ lệch gì) · ❌ chưa có. Lịch sử triển khai theo task nằm ở `CURRENT_STATE.md` §5, không ghi ở đây.
+> Lần rà soát contract gần nhất: T44 (2026-10-29, P-32).
 
-## 0. Tình trạng implementation so với spec (cập nhật 2026-10-29, sau T29)
+## 0. Lệch hiện tại so với spec (cập nhật 2026-10-29, sau T44)
 
-- ✅ Mọi endpoint đã dùng prefix `/api/v1` (P-02).
-- ✅ Body lỗi đã theo `{code, details?}`, kể cả lỗi từ Spring Security: thiếu hoặc sai access token trả 401 `UNAUTHORIZED`, sai role trả 403 `FORBIDDEN`. `exception`/`stackTrace` chỉ có ở profile `dev` (P-03). Có slice test kiểm chứng (`ErrorHandlingWebMvcTest`).
-- ✅ Mã HTTP đã khớp §9 cho các lỗi hiện có: sai đăng nhập 401, không tìm thấy user 404 (`USER_NOT_FOUND`), trùng email 409, JSON hỏng 400 `MALFORMED_REQUEST`, path không tồn tại 404 `NOT_FOUND`, sai method 405 `METHOD_NOT_ALLOWED`, vi phạm ràng buộc DB 409 `CONFLICT`, thiếu cookie credential 401 `INVALID_TOKEN`.
-- §4: đã có `GET /store` và `PUT /store` (T13, có test, kể cả tenant isolation). Store luôn lấy từ claim `storeId` của access token. Quyền đúng cột Quyền (T17, có test ma trận): `GET` cho OWNER và DISPATCHER, `PUT` chỉ OWNER, role khác (kể cả ADMIN) 403 `FORBIDDEN`. T16 thêm toàn bộ phần còn lại của §4, có test (kể cả quyền và tenant isolation): `GET /store/members` (lọc `role`, `status`, `assignable`), `PATCH /store/members/{userId}`, `PATCH /store/members/me/can-drive`, `POST/GET /store/invitations`, `DELETE /store/invitations/{id}`, `GET /invitations/{code}`, `POST /invitations/accept`. Chi tiết hành vi mà spec chưa ghi:
-  - `canDrive` trong member luôn `true` với DRIVER (D-21). `phoneNumber` trả dạng national.
-  - `PATCH /store/members/{userId}`: user không thuộc store của actor → 404 `USER_NOT_FOUND`. OWNER chỉ đổi được `canDrive`, đổi `role`/`status` → 422 `CANNOT_MODIFY_OWNER`. `status`/`role` ngoài `ACTIVE|DISABLED` / `DISPATCHER|DRIVER` → 400 `MALFORMED_REQUEST`.
-  - `DELETE /store/invitations/{id}` của store khác → 404 `NOT_FOUND`.
-  - Lời mời PENDING đã quá `expiresAt` được trả với `status: EXPIRED` (lọc `status=EXPIRED` cũng tính chúng), DB không ghi lại.
-  - `POST /invitations/accept`: mọi mã không dùng được (không tồn tại, đã dùng, đã huỷ, hết hạn) → 404 `INVITATION_INVALID` (không có 400, vì một `ErrorCode` chỉ có một HTTP status); `phoneNumber` sai → 400 `INVALID_PHONE_NUMBER`, lời mời vẫn PENDING.
-  - `POST /store/invitations`: email lỗi vẫn trả 201 (ARCHITECTURE §7), OWNER mời lại để gửi mã mới. Chưa có 429 (T40).
-- §6: `GET /geocoding/search` đã có (T21, có test): quyền OWNER/DISPATCHER, `q` 3–300 ký tự và `limit` 1–10 (sai → 400 `VALIDATION_ERROR`, detail `INVALID_QUERY_LENGTH`/`INVALID_LIMIT`; thiếu `q` → 400 `MALFORMED_REQUEST`), 503 `GEOCODING_BUSY`, 502 `GEOCODING_PROVIDER_ERROR`. Kết quả chỉ trong Việt Nam (`countrycodes=vn`). `GET /jobs/{id}` đã có (T29, có test kể cả tenant isolation): OWNER/DISPATCHER, job của store khác hoặc không tồn tại → 404 `JOB_NOT_FOUND`.
-- §5: đủ 4 endpoint `/vehicles` (T20, có test, kể cả quyền và tenant isolation): OWNER/DISPATCHER, role khác 403; xe của store khác → 404 `NOT_FOUND`; trùng tên trong store → 409 `VEHICLE_NAME_EXISTED`, so sánh theo collation của DB (không phân biệt hoa thường); `PUT` thay toàn bộ, thiếu `plateNumber` thì xoá biển số; `capacityUnit` bắt buộc (D-36); `GET /vehicles` sắp theo tên. Không có endpoint xoá (xe chỉ chuyển `active=false`).
-- §7: đã có `POST /plans`, `GET /plans`, `GET /plans/{id}`, `PUT /plans/{id}`, `PATCH /plans/{id}/stops/{stopId}` (T24, có test, kể cả quyền và tenant isolation). Khác biệt còn lại so với spec:
-  - T29 (có test, chạy cả mode inline lẫn async): lưu draft có stop `PENDING` → `processingStatus = GEOCODING`, `activeJob` là job `GEOCODE_PLAN` `QUEUED`; geocode nền rồi về `IDLE`, `activeJob = null`. `POST /plans/{id}/geocode` đã có.
-  - Còn thiếu: `optimize`, `publish`, `cancel`, `stops/{stopId}/status`, `driver-locations`, `routes` (T25, T26, T32, T28).
-  - Hành vi spec chưa ghi trước T24/T29 nay đã ghi ở §7 (PlanSummary, merge patch, `INVALID_STOP_ID`, mã validation, định dạng giờ, `version` khi job chạy).
-- §8 (driver) **chưa có endpoint nào trong code**.
-- T29 thêm `ErrorCode`: `JOB_NOT_FOUND` 404 (đã có ở §9), `NOTHING_TO_GEOCODE` 422 (mới, P-30).
-- T24 thêm `ErrorCode` (khớp §9): `PLAN_MODIFIED` 409, `PLAN_BUSY` 409, `PLAN_NOT_EDITABLE` 422, `PLAN_TOO_LARGE` 422, `STORE_DEPOT_REQUIRED` 422, `INVALID_ASSIGNMENT` 422.
-- Đã thêm `ErrorCode` ở T13: `EMAIL_NOT_VERIFIED` 403, `ACCOUNT_DISABLED` 403, `EMAIL_ALREADY_VERIFIED` 409, `INVALID_TIMEZONE` 400 (khớp §9). T14 thêm `INVALID_RESET_TOKEN` 400 (P-26): spec §2 trước đó ghi `/password/reset` trả 400 `INVALID_TOKEN`, nhưng `INVALID_TOKEN` là 401 nên đã đổi sang mã mới.
-- Endpoint vận hành ngoài `/api/v1`, giữ có chủ đích: `GET /actuator/health` (kèm `/liveness`, `/readiness`), Public, chỉ trả `status` và tên các `groups`, không lộ chi tiết thành phần (T05, `ARCHITECTURE.md` §12.1). Mọi endpoint actuator khác tắt.
-- Endpoint đang có trong code nhưng **không thuộc spec**, sẽ bị xoá ở T27: `POST /api/v1/route/optimize` và `POST /api/v1/route/optimize/k` (từ T17 chỉ OWNER/DISPATCHER, role khác 403). Mã lỗi riêng của chúng (`INVALID_DEPOT`, `COULD_NOT_FIND_*`) cũng bỏ theo.
-- Cột "Hiện trạng" chỉ có ở §2 và §3. Ký hiệu: ✅ khớp spec và đã có test · 🟡 có nhưng khác spec hoặc có lỗi · ❌ chưa có.
+- Chưa có 429 `RATE_LIMITED` cho `/register`, `/email/verify/resend`, `/log-in`, `/password/forgot`, `POST /store/invitations` (T40).
+- `GET /admin/users` chưa trả `storeId`, `status`.
+- §7: chưa có `optimize` (T25), `publish`, `cancel`, `stops/{stopId}/status` (T26), `driver-locations` (T32), `routes` (T28).
+- §8: chưa có endpoint nào (T30–T33).
+- Endpoint vận hành ngoài `/api/v1`, giữ có chủ đích: `GET /actuator/health` (kèm `/liveness`, `/readiness`), Public, chỉ trả `status` và tên các `groups` (T05, `ARCHITECTURE.md` §12.1). Mọi endpoint actuator khác tắt.
+- Endpoint có trong code nhưng **không thuộc spec**, sẽ bị xoá ở T27: `POST /api/v1/route/optimize`, `POST /api/v1/route/optimize/k` (chỉ OWNER/DISPATCHER). Mã lỗi riêng của chúng (`INVALID_DEPOT`, `COULD_NOT_FIND_*`) bỏ theo.
 
 ## 1. Quy ước chung
 
-- Base path: **`/api/v1`**. JSON UTF-8. Thời gian sự kiện: ISO-8601 UTC (`2026-10-22T03:15:00Z`). Ngày: `YYYY-MM-DD`. Giờ trong ngày: `HH:mm` theo timezone của store.
-- Xác thực: `Authorization: Bearer <accessToken>` trừ endpoint ghi **Public**.
+**Định dạng**
+- Base path **`/api/v1`**. JSON UTF-8.
+- Thời gian sự kiện: ISO-8601 UTC (`2026-10-22T03:15:00Z`). Ngày: `YYYY-MM-DD`. Giờ trong ngày: đúng dạng `HH:mm`, theo timezone của store (P-14); dạng khác (ví dụ `09:00:30`) → 400 `MALFORMED_REQUEST`. Client đổi thời gian sự kiện sang giờ địa phương bằng `timezone` của resource (ví dụ `PlanDetail.timezone`).
+- **Số điện thoại** (P-32): request nhận số VN ở dạng bất kỳ (`0905 123 456`, `+84905123456`); response **luôn trả E.164** (`+84905123456`). Định dạng hiển thị là việc của client. Số sai → 400 với mã `PHONE_NUMBER_*` (`PHONE_NUMBER_INVALID`, `PHONE_NUMBER_WRONG_REGION`, `PHONE_NUMBER_TOO_SHORT`, `PHONE_NUMBER_TOO_LONG`, `PHONE_NUMBER_TYPE_NOT_ALLOWED`). Chuỗi rỗng là số sai; muốn bỏ số thì gửi `null` hoặc không gửi field (F-43).
+- Vị trí luôn là object `{address, lat, lon}` (`address` có thể null), ví dụ `depot`, `start`, `end`.
+- Đơn vị: mét, giây; capacity và demand là số nguyên (P-14).
+
+**Xác thực và quyền**
+- `Authorization: Bearer <accessToken>` trừ endpoint ghi **Public**.
 - Header `X-Client-Platform: mobile` → refresh token đi qua body; không có → cookie `refreshToken` (web).
-- Thành công: `{ "data": ..., "message"?: "..." }`. Danh sách phân trang: `data = { items, page, size, totalPages, totalElements }`, query `page` (từ 0), `size` (mặc định 20, tối đa 100), `sort=field,asc|desc` (whitelist).
-- Lỗi: `{ "code": "ERROR_CODE", "details"?: [ { "field": "...", "code": "..." } ] }` (P-03).
-- Optimistic concurrency cho plan: request thay đổi plan gửi `version`; lệch → 409 `PLAN_MODIFIED`.
-- Ký hiệu quyền: **P** Public · **A** mọi user đã đăng nhập · **O** OWNER · **D** DISPATCHER · **R** người được gán route, tức `role=DRIVER` hoặc `canDrive=true` (D-21) · **AD** ADMIN.
+- Ký hiệu quyền: **P** Public · **A** mọi user đã đăng nhập · **O** OWNER · **D** DISPATCHER · **R** người được gán route, tức `role=DRIVER` hoặc `canDrive=true` (D-21) · **AD** ADMIN. Sai role → 403 `FORBIDDEN`; thiếu hoặc sai access token → 401 `UNAUTHORIZED`.
+- Dữ liệu của store luôn là store trong access token (BR-01). Tài nguyên của store khác trả 404 như không tồn tại.
+
+**Thành công**
+- `{ "data": ..., "message"?: "..." }`.
+- Danh sách phân trang: `data = { items, page, size, totalPages, totalElements }`, query `page` (từ 0), `size` (mặc định 20, tối đa 100; lớn hơn thì dùng 100), `sort=field,asc|desc` (whitelist từng endpoint; ngoài whitelist → 400 `INVALID_SORT_FIELD`).
+- Danh sách nhỏ theo bản chất (xe, thành viên, lời mời, session của một store hay một user) trả mảng, không phân trang.
+- Endpoint sửa một resource trả lại resource đó (200), trừ khi ghi khác.
+
+**Lỗi** (P-03)
+- `{ "code": "ERROR_CODE", "details"?: [ { "field": "...", "code": "...", ...thêm field theo mã } ] }`. `exception`/`stackTrace` chỉ có ở profile `dev`.
+- `details[].field` là **đường dẫn tới field trong request** mà client cần sửa, kể cả với kiểm tra chéo nhiều field: ví dụ `stops[0].timeWindow.end` cho `start ≥ end`, `stops[0].address` khi stop không có địa chỉ lẫn toạ độ, `depot.lon` khi thiếu kinh độ (P-32).
+- Một mã lỗi có thể thêm field vào từng phần tử `details` khi client cần dữ liệu đó; các field thêm được ghi ở mã lỗi tương ứng (ví dụ `SHIFT_OVERLAP` ở §7).
+- 404: tài nguyên trên path không tồn tại hoặc thuộc store khác → `NOT_FOUND`. Mã 404 riêng chỉ dùng khi client phải xử lý khác đi (P-24), hiện chỉ có `INVITATION_INVALID` (P-32).
+- Mã HTTP chuẩn: JSON hỏng hoặc giá trị enum lạ → 400 `MALFORMED_REQUEST`; path không tồn tại → 404 `NOT_FOUND`; sai method → 405 `METHOD_NOT_ALLOWED`; vi phạm ràng buộc DB không có mã riêng → 409 `CONFLICT`.
+
+**PATCH = JSON Merge Patch** (RFC 7396, P-32)
+- Mọi `PATCH`: field **vắng** trong JSON thì giữ nguyên; field có mặt với `null` thì **xoá** giá trị.
+- Field không xoá được mà gửi `null` → 400 `VALIDATION_ERROR`, detail `{field, code: "NOT_NULLABLE"}`.
+
+**Concurrency và job**
+- Optimistic concurrency cho plan: request thay đổi plan gửi `version`; lệch → 409 `PLAN_MODIFIED`. `version` chỉ tăng khi **nội dung plan** đổi (sửa draft, kết quả geocode/optimize, publish, cancel); cập nhật trạng thái stop **không** tăng `version` của plan (P-32).
 - Thao tác chạy lâu dùng **job** (D-19): endpoint trả `202 { data: Job }`. Client theo dõi bằng `GET /jobs/{id}` hoặc qua `processingStatus` của resource. Một số job trong MVP hoàn tất ngay (status trả về đã là `SUCCEEDED`), nhưng client **phải luôn xử lý như job bất đồng bộ**.
 
 ## 2. Auth — `/api/v1/auth`
 
 | Method & path | Quyền | Request | Response | Lỗi chính | Hiện trạng |
 |---|---|---|---|---|---|
-| `POST /register` | P | `{email, password(8–72), storeName(1–150), fullName?}` | 201 `{data:{email, status:"PENDING_VERIFICATION"}}`; gửi OTP `VERIFY_EMAIL` | 400 validation · 409 `EMAIL_EXISTED` · 429 | 🟡 Khớp spec (T13, có test): 201 `{email, status}`, tạo store và OWNER trong một transaction, gửi OTP sau commit (email lỗi vẫn 201, gửi lại bằng `/email/verify/resend`), email chuẩn hoá nên trùng khác hoa thường → 409 `EMAIL_EXISTED`. Còn thiếu 429 (T40) |
-| `POST /email/verify` | P | `{email, otp}` | 204 | 400 `INVALID_OTP` · 409 `EMAIL_ALREADY_VERIFIED` | ✅ T13: email không tồn tại cũng trả 400 `INVALID_OTP` |
-| `POST /email/verify/resend` | P | `{email}` | 204 (luôn, không tiết lộ email tồn tại) | 429 `RATE_LIMITED` | 🟡 T13 (có test): luôn 204; chỉ gửi khi tài khoản đang `PENDING_VERIFICATION` và hết cooldown OTP (cooldown không trả `OTP_COOLDOWN`, để không lộ email có tồn tại). Còn thiếu 429 `RATE_LIMITED` (T40) |
-| `POST /log-in` | P | `{email, password}` | 200 `LoginResponse` (+ cookie nếu web) | 401 `INVALID_EMAIL_OR_PASSWORD` · 403 `EMAIL_NOT_VERIFIED` · 403 `ACCOUNT_DISABLED` · 429 | 🟡 Transport và body khớp spec (T10, có test): `accessToken`, `accessTokenExpiresAt`, `refreshTokenExpiresAt`, `refreshToken` chỉ khi mobile, cookie `Path=/api/v1/auth; SameSite` cho web; sai thông tin 401 ✓. T13 (có test): `user` đủ `id`, `email`, `fullName` (bỏ khi chưa đặt), `role`, `storeId` (bỏ với ADMIN), `canDrive`; đúng mật khẩu nhưng chưa verify → 403 `EMAIL_NOT_VERIFIED`, DISABLED → 403 `ACCOUNT_DISABLED` (sai mật khẩu luôn 401, không lộ trạng thái). Còn thiếu 429 (T40) |
-| `POST /refresh` | P | web: cookie · mobile: `{refreshToken}` | 200 `TokenResponse` (+ cookie mới nếu web) | 401 `INVALID_TOKEN` | ✅ T10, T13: cookie (web) hoặc body (mobile), trả `TokenResponse`, thiếu/sai/hết hạn token → 401 `INVALID_TOKEN`; user không còn ACTIVE (DISABLED, đã xoá) → 401 `INVALID_TOKEN` (T13, có test) |
-| `POST /log-out` | P | web: cookie · mobile: `{refreshToken}` | 204 (idempotent; xoá cookie nếu web) | — | ✅ T10: public, cookie (web) hoặc body (mobile), luôn 204, web xoá cookie |
-| `GET /sessions` | A | — | 200 `[SessionResponse]` | — | ✅ T11: mỗi session (family) còn hiệu lực một dòng, `current` theo claim `sid` |
-| `DELETE /sessions/{sessionId}` | A | — | 204 | 404 `SESSION_NOT_FOUND` | ✅ T11: `sessionId` có thể là bất kỳ session nào của chính user. Nếu là **session hiện tại** (`current: true`) thì xử lý **như `/log-out`**: cùng thu hồi session, response giống `/log-out` (204, `no-store`, web xoá cookie `refreshToken`); client phải bỏ token như sau khi log-out. Session của user khác, không tồn tại, đã thu hồi hoặc hết hạn đều 404 `SESSION_NOT_FOUND` |
-| `POST /sessions/revoke-others` | A | — | 204 | — | ✅ T11 (access token cấp trước T11 không có `sid` thì thu hồi mọi session) |
-| `POST /password/forgot` | P | `{email}` | 204 (luôn); gửi OTP `RESET_PASSWORD` nếu email ACTIVE | 429 | 🟡 T14 (có test): luôn 204, chỉ gửi khi tài khoản ACTIVE và hết cooldown OTP; email lỗi vẫn 204. Còn thiếu 429 (T40) |
-| `POST /password/reset/verify` | P | `{email, otp}` | 200 `{data:{resetToken, expiresAt}}` | 400 `INVALID_OTP` | ✅ T14: `resetToken` hạn 10 phút; email không tồn tại hoặc không ACTIVE cũng 400 `INVALID_OTP` |
-| `POST /password/reset` | P | `{resetToken, newPassword}` | 204; revoke **mọi** session | 400 `INVALID_RESET_TOKEN` (P-26) | ✅ T14: đổi mật khẩu và thu hồi mọi session trong một transaction; token dùng một lần (lần thử đầu tiên tiêu thụ token, kể cả khi sai secret) |
-| `POST /password/change/otp` | A | `{currentPassword}` | 204; gửi OTP `CHANGE_PASSWORD` | 400 `INVALID_CURRENT_PASSWORD` · 429 `OTP_COOLDOWN` | ✅ T15: sai mật khẩu hiện tại → 400 và không gửi email; trong cooldown → 429 `OTP_COOLDOWN`. Gửi email lỗi → 500 `INTERNAL_ERROR` (spec không có mã riêng; cooldown đã được xoá nên gọi lại được ngay) |
-| `PUT /password` | A | `{otp, newPassword}` | 204; revoke mọi session **khác** | 400 `INVALID_OTP` | ✅ T15: OTP gắn userId của người gọi; đổi mật khẩu và thu hồi mọi session khác trong một transaction, session hiện tại (claim `sid`) vẫn refresh được. Luồng cũ `/update-password*` đã xoá (404) |
+| `POST /register` | P | `{email, password(8–72), storeName(1–150), fullName?}` | 201 `{email, status: "PENDING_VERIFICATION"}`; gửi OTP `VERIFY_EMAIL` | 400 · 409 `EMAIL_EXISTED` · 429 | 🟡 chưa có 429 |
+| `POST /email/verify` | P | `{email, otp}` | 204 | 400 `INVALID_OTP` · 409 `EMAIL_ALREADY_VERIFIED` | ✅ |
+| `POST /email/verify/resend` | P | `{email}` | 204 (luôn) | 429 `RATE_LIMITED` | 🟡 chưa có 429 |
+| `POST /log-in` | P | `{email, password}` | 200 `LoginResponse` (+ cookie nếu web) | 401 `INVALID_EMAIL_OR_PASSWORD` · 403 `EMAIL_NOT_VERIFIED` · 403 `ACCOUNT_DISABLED` · 429 | 🟡 chưa có 429 |
+| `POST /refresh` | P | web: cookie · mobile: `{refreshToken}` | 200 `TokenResponse` (+ cookie mới nếu web) | 401 `INVALID_TOKEN` | ✅ |
+| `POST /log-out` | P | web: cookie · mobile: `{refreshToken}` | 204 (idempotent; xoá cookie nếu web) | — | ✅ |
+| `GET /sessions` | A | — | 200 `[SessionResponse]` | — | ✅ |
+| `DELETE /sessions/{sessionId}` | A | — | 204 | 404 `NOT_FOUND` | ✅ |
+| `POST /sessions/revoke-others` | A | — | 204 | — | ✅ |
+| `POST /password/forgot` | P | `{email}` | 204 (luôn); gửi OTP `RESET_PASSWORD` nếu email ACTIVE | 429 | 🟡 chưa có 429 |
+| `POST /password/reset/verify` | P | `{email, otp}` | 200 `{resetToken, expiresAt}` | 400 `INVALID_OTP` | ✅ |
+| `POST /password/reset` | P | `{resetToken, newPassword}` | 204; revoke **mọi** session | 400 `INVALID_RESET_TOKEN` (P-26) | ✅ |
+| `POST /password/change/otp` | A | `{currentPassword}` | 204; gửi OTP `CHANGE_PASSWORD` | 400 `INVALID_CURRENT_PASSWORD` · 429 `OTP_COOLDOWN` | ✅ |
+| `PUT /password` | A | `{otp, newPassword}` | 204; revoke mọi session **khác** | 400 `INVALID_OTP` | ✅ |
 
 ```jsonc
 // LoginResponse.data
@@ -74,106 +83,116 @@
 ```
 
 Ghi chú:
-- Access token chứa claim `sid` = sessionId (family) để xác định `current` (bổ sung cho P-09).
-- `lastUsedAt` = thời điểm phát hành refresh token hiện tại của session, tức lần log-in hoặc refresh gần nhất (sai lệch tối đa bằng tuổi access token, 14 phút).
-- `resetToken` là chuỗi opaque (client không phân tích).
+- Không tiết lộ email có tồn tại hay không: `/email/verify` với email không tồn tại → 400 `INVALID_OTP`; `/email/verify/resend`, `/password/forgot` luôn 204 (chỉ gửi khi tài khoản đúng trạng thái và hết cooldown OTP); `/log-in` sai mật khẩu luôn 401, chỉ báo `EMAIL_NOT_VERIFIED`/`ACCOUNT_DISABLED` khi mật khẩu đúng; `/password/reset/verify` với email không tồn tại hoặc không ACTIVE → 400 `INVALID_OTP`.
+- `/register`: tạo store và OWNER trong một transaction, gửi OTP sau commit; email lỗi vẫn 201, gửi lại bằng `/email/verify/resend`. Email chuẩn hoá (`trim().toLowerCase()`, P-19), trùng khác hoa thường → 409.
+- `LoginResponse.user`: `fullName` bỏ khi chưa đặt, `storeId` bỏ với ADMIN, `canDrive` luôn `true` với DRIVER.
+- Cookie web: `HttpOnly; Secure; SameSite=<cấu hình>; Path=/api/v1/auth`. Thiếu, sai, hết hạn refresh token, hoặc user không còn ACTIVE → 401 `INVALID_TOKEN`.
+- Access token chứa claim `sid` = sessionId (family) để xác định `current` (P-09). `lastUsedAt` = lần log-in hoặc refresh gần nhất của session.
+- `DELETE /sessions/{sessionId}`: session của chính user. Nếu là session hiện tại thì xử lý **như `/log-out`** (204, `no-store`, web xoá cookie); client bỏ token như sau khi log-out. Session của user khác, không tồn tại, đã thu hồi hoặc hết hạn → 404.
+- `POST /sessions/revoke-others`: access token cấp trước khi có claim `sid` thì thu hồi mọi session.
+- `resetToken` là chuỗi opaque, hạn 10 phút, dùng một lần (lần thử đầu tiên tiêu thụ token, kể cả khi sai). `/password/reset` đổi mật khẩu và thu hồi mọi session trong một transaction.
+- `/password/change/otp`: sai mật khẩu hiện tại → 400 và không gửi email; gửi email lỗi → 500 `INTERNAL_ERROR` (cooldown đã được xoá nên gọi lại được ngay). `PUT /password`: OTP gắn userId của người gọi; session hiện tại vẫn refresh được.
 - OTP: 6 chữ số; sai quá 3 lần → OTP huỷ, phải xin mã mới.
 
 ## 3. Users — `/api/v1/users`, `/api/v1/admin/users`
 
-| Method & path | Quyền | Request | Response | Hiện trạng |
-|---|---|---|---|---|
-| `GET /users/me` | A | — | `{id, email, fullName, phoneNumber, role, storeId, status, canDrive}` | ✅ T13 (có test): đủ field. `canDrive` = true với DRIVER, còn lại theo cờ (D-21) |
-| `PUT /users/me` | A | `{fullName?, phoneNumber?}` (số VN, lưu E.164, trả dạng national) | 204 | 🟡 `PUT /api/v1/users/me` `{phoneNumber}`; chưa có fullName |
-| `GET /admin/users` | AD | paging; sort `id,email,createdAt,updatedAt` | Page `{id, email, phoneNumber, role, storeId, status, createdAt, updatedAt}` | 🟡 `GET /api/v1/admin/users` → `{id, email, phoneNumber, role, createdAt, updatedAt}`; role đã là `ADMIN/OWNER/DISPATCHER/DRIVER` (T13); thiếu storeId, status |
+| Method & path | Quyền | Request | Response | Lỗi chính | Hiện trạng |
+|---|---|---|---|---|---|
+| `GET /users/me` | A | — | `User` | — | ✅ |
+| `PATCH /users/me` | A | merge patch `{fullName?, phoneNumber?}`; `null` xoá giá trị | 200 `User` | 400 (`FULL_NAME_REQUIRED` khi chuỗi trắng, `INVALID_FULL_NAME_LENGTH` ≤ 100, `PHONE_NUMBER_*`) | ✅ |
+| `GET /admin/users` | AD | paging; sort `id`, `email`, `createdAt`, `updatedAt` | Page `{id, email, phoneNumber, role, storeId, status, createdAt, updatedAt}` | 400 `INVALID_SORT_FIELD` | 🟡 chưa trả `storeId`, `status` |
+
+```jsonc
+// User
+{ "id": 12, "email": "a@b.vn", "fullName": "An", "phoneNumber": "+84905123456", "role": "OWNER", "storeId": 3,
+  "status": "ACTIVE", "canDrive": false }   // canDrive luôn true với DRIVER (D-21)
+```
 
 ## 4. Store — `/api/v1/store`, `/api/v1/invitations`
 
 Store luôn là store của actor (không có `storeId` trong path).
 
-| Method & path | Quyền | Request | Response | Lỗi chính |
-|---|---|---|---|---|
-| `GET /store` | O, D | — | `{id, name, depotAddress, depotLat, depotLon, timezone}` | — |
-| `PUT /store` | O | `{name, depotAddress?, depotLat?, depotLon?, timezone}` | 200 store | 400 `INVALID_TIMEZONE` |
-| `GET /store/members` | O, D | query `role?`, `status?`, `assignable?` (true thì chỉ trả người được gán route: DRIVER hoặc `canDrive`, đang ACTIVE) | `[{id, email, fullName, phoneNumber, role, status, canDrive}]` | — |
-| `PATCH /store/members/{userId}` | O | `{status?: ACTIVE|DISABLED, role?: DISPATCHER|DRIVER, canDrive?: boolean}` | 200 member. DISABLED thì revoke mọi session. | 404 · 422 `CANNOT_MODIFY_OWNER` (đổi role/status của OWNER) |
-| `PATCH /store/members/me/can-drive` | O | `{canDrive}`. OWNER tự bật hoặc tắt việc tự đi giao. | 200 member | — |
-| `POST /store/invitations` | O | `{email, role: DISPATCHER|DRIVER}` | 201 `{id, email, role, status, expiresAt}`; gửi email mã mời | 409 `EMAIL_EXISTED` · 429 |
-| `GET /store/invitations` | O | query `status?` | `[invitation]` | — |
-| `DELETE /store/invitations/{id}` | O | — | 204 (→ REVOKED) | 404 · 422 `INVITATION_NOT_PENDING` |
-| `GET /invitations/{code}` | P | — | `{storeName, email, role, expiresAt}` (Should) | 404 `INVITATION_INVALID` |
-| `POST /invitations/accept` | P | `{code, password, fullName, phoneNumber?}` | 204 (user ACTIVE, email verified; sau đó log-in) | 400/404 `INVITATION_INVALID` · 409 `EMAIL_EXISTED` |
+| Method & path | Quyền | Request | Response | Lỗi chính | Hiện trạng |
+|---|---|---|---|---|---|
+| `GET /store` | O, D | — | `Store` | — | ✅ |
+| `PUT /store` | O | `{name, depot?: {address?, lat, lon} \| null, timezone}`; `depot` null hoặc vắng = không có depot | 200 `Store` | 400 `INVALID_TIMEZONE` | ✅ |
+| `GET /store/members` | O, D | query `role?`, `status?`, `assignable?` (true: chỉ người được gán route, tức DRIVER hoặc `canDrive`, đang ACTIVE) | `[Member]` | — | ✅ |
+| `PATCH /store/members/{userId}` | O | merge patch `{status?: ACTIVE\|DISABLED, role?: DISPATCHER\|DRIVER, canDrive?}`; không field nào xoá được (`null` → `NOT_NULLABLE`). DISABLED thì thu hồi mọi session. | 200 `Member` | 404 · 422 `CANNOT_MODIFY_OWNER` | ✅ |
+| `PATCH /store/members/me/can-drive` | O | `{canDrive}`: OWNER tự bật/tắt việc tự đi giao | 200 `Member` | — | ✅ |
+| `POST /store/invitations` | O | `{email, role: DISPATCHER\|DRIVER}` | 201 `Invitation`; gửi email mã mời | 409 `EMAIL_EXISTED` · 429 | 🟡 chưa có 429 |
+| `GET /store/invitations` | O | query `status?` | `[Invitation]` | — | ✅ |
+| `POST /store/invitations/{id}/revoke` | O | — | 204; lời mời thành `REVOKED`, vẫn có trong danh sách | 404 · 422 `INVITATION_NOT_PENDING` | ✅ |
+| `GET /invitations/{code}` | P | — | `{storeName, email, role, expiresAt}` | 404 `INVITATION_INVALID` | ✅ |
+| `POST /invitations/accept` | P | `{code, password, fullName, phoneNumber?}` | 204 (user ACTIVE, email đã xác thực; sau đó log-in) | 404 `INVITATION_INVALID` · 409 `EMAIL_EXISTED` · 400 `INVALID_PHONE_NUMBER` | ✅ |
+
+```jsonc
+// Store
+{ "id": 3, "name": "Tiệm A", "depot": { "address": "12 Lê Duẩn", "lat": 16.05, "lon": 108.2 }, "timezone": "Asia/Ho_Chi_Minh" }
+// depot là null khi store chưa có depot
+// Member
+{ "id": 21, "email": "…", "fullName": "Tùng", "phoneNumber": "+84905…", "role": "DRIVER", "status": "ACTIVE", "canDrive": true }
+// Invitation
+{ "id": 5, "email": "…", "role": "DRIVER", "status": "PENDING|ACCEPTED|REVOKED|EXPIRED", "expiresAt": "…" }
+```
+
+Ghi chú:
+- `depot` trong `PUT /store`: `lat`, `lon` bắt buộc (depot không được geocode), `address` tuỳ chọn ≤ 500. Mã validation: `STORE_NAME_REQUIRED`, `INVALID_STORE_NAME_LENGTH` (≤ 150), `LATITUDE_REQUIRED`, `LONGITUDE_REQUIRED`, `INVALID_LATITUDE`, `INVALID_LONGITUDE`, `INVALID_ADDRESS_LENGTH`, `TIMEZONE_REQUIRED`. `timezone` là IANA zone id.
+- `PATCH /store/members/{userId}`: OWNER chỉ đổi được `canDrive`; đổi `role`/`status` của OWNER → 422 `CANNOT_MODIFY_OWNER`. Giá trị enum ngoài danh sách → 400 `MALFORMED_REQUEST`.
+- Lời mời hết hạn sau 7 ngày (D-27). Lời mời PENDING đã quá `expiresAt` được trả với `status: EXPIRED` (lọc `status=EXPIRED` cũng tính chúng). Mời lại cùng email → lời mời PENDING cũ thành `REVOKED`. Email đã thuộc một tài khoản bất kỳ → 409 `EMAIL_EXISTED` (D-02).
+- `POST /store/invitations`: gửi email lỗi vẫn 201; OWNER mời lại để gửi mã mới.
+- `POST /invitations/accept`: mọi mã không dùng được (không tồn tại, đã dùng, đã huỷ, hết hạn) → 404 `INVITATION_INVALID`; `phoneNumber` sai → 400 `INVALID_PHONE_NUMBER`, lời mời vẫn PENDING. Ở endpoint này chuỗi `phoneNumber` rỗng được coi là không có số (F-43).
 
 ## 5. Fleet — `/api/v1/vehicles`
 
-| Method & path | Quyền | Request | Response | Lỗi chính |
-|---|---|---|---|---|
-| `GET /vehicles` | O, D | query `active?` | `[{id, name, plateNumber, capacity, capacityUnit, active}]` | — |
-| `POST /vehicles` | O, D | `{name, plateNumber?, capacity(>0), capacityUnit}` | 201 vehicle | 409 `VEHICLE_NAME_EXISTED` |
-| `GET /vehicles/{id}` | O, D | — | vehicle | 404 |
-| `PUT /vehicles/{id}` | O, D | `{name, plateNumber?, capacity, capacityUnit, active}` | 200 vehicle | 404 · 409 |
+| Method & path | Quyền | Request | Response | Lỗi chính | Hiện trạng |
+|---|---|---|---|---|---|
+| `GET /vehicles` | O, D | query `active?` | `[Vehicle]`, theo tên | — | ✅ |
+| `POST /vehicles` | O, D | `{name, plateNumber?, capacity(>0), capacityUnit}` | 201 `Vehicle` | 409 `VEHICLE_NAME_EXISTED` | ✅ |
+| `GET /vehicles/{id}` | O, D | — | `Vehicle` | 404 | ✅ |
+| `PUT /vehicles/{id}` | O, D | `{name, plateNumber?, capacity, capacityUnit, active}`; thay toàn bộ, thiếu `plateNumber` thì xoá biển số | 200 `Vehicle` | 404 · 409 `VEHICLE_NAME_EXISTED` | ✅ |
 
-`capacityUnit` (D-36): `KG`, `BOX` (thùng), `PACKAGE` (kiện), `ORDER` (đơn, tức số điểm giao). Giá trị khác → 400 `MALFORMED_REQUEST`. Xe chỉ bị giới hạn theo loại của nó khi optimize.
+```jsonc
+// Vehicle
+{ "id": 5, "name": "Xe 1", "plateNumber": "43A-123.45", "capacity": 40, "capacityUnit": "BOX", "active": true }
+```
+
+- `capacityUnit` (D-36): `KG`, `BOX` (thùng), `PACKAGE` (kiện), `ORDER` (đơn, tức số điểm giao). Giá trị khác → 400 `MALFORMED_REQUEST`. Xe chỉ bị giới hạn theo loại của nó khi optimize.
+- Tên unique trong store, so sánh không phân biệt hoa thường; store khác được dùng cùng tên. Không có endpoint xoá: xe chỉ chuyển `active = false`.
 
 ## 6. Geocoding và Jobs
 
-| Method & path | Quyền | Request | Response | Lỗi chính |
-|---|---|---|---|---|
-| `GET /geocoding/search` | O, D | `q` (3–300 ký tự), `limit` (1–10, mặc định 5) | `[{displayName, lat, lon}]`. Dùng cho autocomplete hoặc sửa stop geocode lỗi (Should). | 503 `GEOCODING_BUSY` (không lấy được slot rate limit trong 2 s) · 502 `GEOCODING_PROVIDER_ERROR` |
-| `GET /jobs/{id}` | O, D | — | `Job` | 404 `JOB_NOT_FOUND` |
+| Method & path | Quyền | Request | Response | Lỗi chính | Hiện trạng |
+|---|---|---|---|---|---|
+| `GET /geocoding/search` | O, D | `q` (3–300 ký tự), `limit` (1–10, mặc định 5) | `[{displayName, lat, lon}]`, chỉ trong Việt Nam. Dùng cho autocomplete hoặc sửa stop geocode lỗi. | 400 (`INVALID_QUERY_LENGTH`, `INVALID_LIMIT`; thiếu `q` → `MALFORMED_REQUEST`) · 503 `GEOCODING_BUSY` (không lấy được slot rate limit trong 2 s) · 502 `GEOCODING_PROVIDER_ERROR` | ✅ |
+| `GET /jobs/{id}` | O, D | — | `Job` | 404 | ✅ |
 
 ```jsonc
 // Job
-{ "id": 55, "type": "GEOCODE_PLAN|OPTIMIZE_PLAN", "status": "QUEUED|RUNNING|SUCCEEDED|FAILED|CANCELLED",
+{ "id": 55, "type": "GEOCODE_PLAN|OPTIMIZE_PLAN", "status": "QUEUED|RUNNING|SUCCEEDED|FAILED",
   "planId": 7, "errorCode": null, "createdAt": "…", "startedAt": "…", "finishedAt": "…" }
 ```
 
-`startedAt`, `finishedAt` là `null` khi chưa tới bước đó. Khi app khởi động lại, job còn `QUEUED` hoặc `RUNNING` thành `FAILED` với `errorCode = INTERRUPTED` (P-30).
+- `startedAt`, `finishedAt` là `null` khi chưa tới bước đó.
+- `errorCode` khi `FAILED`: `ROUTING_PROVIDER_ERROR`, `GEOCODING_PROVIDER_ERROR`, `INTERRUPTED` (app khởi động lại khi job còn `QUEUED`/`RUNNING`), `JOB_QUEUE_FULL` (hàng đợi job nền đầy, thử lại sau) hoặc `INTERNAL_ERROR` (P-30). Job lỗi thì plan quay về `processingStatus = IDLE`.
 
 ## 7. Plans (dispatcher) — `/api/v1/plans`
 
 **Vòng đời phía client:** tạo/sửa draft → nếu có stop chỉ có địa chỉ thì server tự tạo job `GEOCODE_PLAN` (`processingStatus = GEOCODING`) → client polling `GET /plans/{id}` cho tới khi `processingStatus = IDLE` → sửa các stop có `geocodeStatus = FAILED` → `optimize` (job) → xem kết quả → `publish`.
 
-| Method & path | Quyền | Request | Response | Lỗi chính |
-|---|---|---|---|---|
-| `POST /plans` | O, D | `PlanDraftRequest` | 201 `PlanDetail` (DRAFT). Có stop chỉ có địa chỉ thì `processingStatus = GEOCODING` và `activeJob` khác null. | 400 · 422 `STORE_DEPOT_REQUIRED` · 422 `INVALID_ASSIGNMENT` · 422 `PLAN_TOO_LARGE` |
-| `GET /plans` | O, D | `date?` (`YYYY-MM-DD`), `status?`, paging; sort `planDate` (mặc định, mới nhất trước), `createdAt`, `name` | Page `PlanSummary` | 400 `INVALID_SORT_FIELD` |
-| `GET /plans/{id}` | O, D | — | `PlanDetail` | 404 |
-| `PUT /plans/{id}` | O, D | `PlanDraftRequest` + `version`. Thay toàn bộ draft. Stop có `id` cũ và địa chỉ/toạ độ không đổi thì **giữ nguyên kết quả geocode**. Xoá kết quả tối ưu. | 200 `PlanDetail` | 409 `PLAN_MODIFIED` · 409 `PLAN_BUSY` · 422 `PLAN_NOT_EDITABLE` |
-| `PATCH /plans/{id}/stops/{stopId}` | O, D | `{version, address?, lat?, lon?, …các field stop khác}`, **merge patch** (xem dưới bảng). Dùng để sửa một stop, chủ yếu là stop geocode lỗi. Có toạ độ thì `geocodeStatus = PROVIDED`; chỉ đổi địa chỉ thì geocode lại. Xoá kết quả tối ưu. | 200 `PlanDetail` | 404 (stop không thuộc plan) · 409 `PLAN_MODIFIED`/`PLAN_BUSY` · 422 `PLAN_NOT_EDITABLE` |
-| `POST /plans/{id}/geocode` | O, D | `{version}`. Thử lại geocode cho mọi stop đang `FAILED`/`PENDING`: stop `FAILED` về `PENDING`, plan `GEOCODING`, `version` tăng 1. | 202 `Job` (mode inline: job đã chạy xong khi trả về) | 404 · 409 `PLAN_MODIFIED`/`PLAN_BUSY` · 422 `PLAN_NOT_EDITABLE` · 422 `NOTHING_TO_GEOCODE` (không có stop `PENDING`/`FAILED`, P-30) |
-| `POST /plans/{id}/optimize` | O, D | `{version}` | 202 `Job` (MVP: thường đã `SUCCEEDED` hoặc `FAILED` ngay khi trả về). Kết quả đọc qua `GET /plans/{id}`. | 409 `PLAN_MODIFIED`/`PLAN_BUSY` · 422 `PLAN_NOT_EDITABLE` · 422 `STOPS_NOT_GEOCODED` · 422 `PLAN_TOO_LARGE` |
-| `POST /plans/{id}/publish` | O, D | `{version}` | 200 `PlanDetail` (PUBLISHED) | 409 · 422 `PLAN_NOT_OPTIMIZED` · 422 `SHIFT_OVERLAP` (`details` liệt kê driverId/vehicleId và plan bị trùng ca) |
-| `POST /plans/{id}/cancel` | O, D | `{version}` | 200 `PlanDetail` (CANCELLED) | 409 · 422 `PLAN_NOT_CANCELLABLE` |
-| `PATCH /plans/{id}/stops/{stopId}/status` | O, D | `{status: "PENDING"}` | 200 stop | 404 · 422 `INVALID_STOP_TRANSITION` |
-| `GET /plans/{id}/driver-locations` | O, D | — | `[{driverId, routeId, lat, lon, accuracyMeters, headingDegrees, speedMps, recordedAt}]` (Should) | 404 |
-| `PUT /plans/{id}/routes` | O, D | `{version, routes:[{routeId, stopIds:[...]}], unassignedStopIds:[...]}`. Chỉnh tay, tính lại ETA và quãng đường (Should, D-24). | 200 `PlanDetail`, có `violations[]` | 409 · 422 |
-
-**`PATCH /plans/{id}/stops/{stopId}` theo JSON Merge Patch (RFC 7396, chủ dự án chọn ở T24):** field **vắng** trong JSON thì giữ nguyên; field có mặt với giá trị `null` thì **xoá**: `timeWindow: null` bỏ time window, `demands: null` bỏ mọi demand, `serviceTimeSeconds: null` về 0, `recipientName`/`recipientPhone`/`note`/`address: null` bỏ giá trị, `"lat": null, "lon": null` bỏ toạ độ và geocode lại từ địa chỉ. `label` không xoá được (`null` → 400 `STOP_LABEL_REQUIRED`); `lat` và `lon` phải gửi cùng nhau (400 `COORDINATES_INCOMPLETE`). Vị trí sau khi patch:
-- gửi toạ độ khác `null` → `PROVIDED` với toạ độ đó;
-- không gửi toạ độ, địa chỉ đổi sang giá trị khác → toạ độ cũ bị bỏ, `PENDING` (geocode lại);
-- không gửi toạ độ, `address: null` → giữ toạ độ hiện tại, thành `PROVIDED`;
-- địa chỉ và toạ độ không đổi → giữ nguyên kết quả geocode (kể cả `FAILED`);
-- stop không còn địa chỉ lẫn toạ độ → 400 `VALIDATION_ERROR`, detail `{field: "address", code: "ADDRESS_OR_COORDINATES_REQUIRED"}`.
-
-**Quy tắc lưu draft (T24):**
-- `POST`/`PUT` không có `depot` thì snapshot depot hiện tại của store; store chưa có depot → 422 `STORE_DEPOT_REQUIRED`. `depot` trong request phải có `lat`, `lon` (depot không được geocode). Timezone luôn snapshot từ store mỗi lần lưu.
-- `PUT` tạo lại mọi route từ `assignments` (id route đổi sau mỗi `PUT`). Stop có `id` được sửa tại chỗ; stop của plan không có trong request bị xoá. `id` không phải stop của plan này hoặc lặp lại → 400 `VALIDATION_ERROR`, detail `{field: "stops[i].id", code: "INVALID_STOP_ID"}` (cùng một lỗi cho mọi trường hợp, không lộ stop của store khác).
-- Stop có `id` giữ kết quả geocode khi địa chỉ không đổi và: hoặc request gửi đúng toạ độ đang lưu, hoặc request không gửi toạ độ và toạ độ đang lưu không do client nhập (`geocodeStatus` khác `PROVIDED`). Ngược lại: có toạ độ → `PROVIDED`, chỉ có địa chỉ → `PENDING`.
-- Phân công: driver phải là thành viên ACTIVE của store và là DRIVER hoặc có `canDrive`; xe phải ACTIVE và thuộc store; mỗi driver và mỗi xe một lần. Sai → 422 `INVALID_ASSIGNMENT`. Capacity và `capacityUnit` của xe được snapshot.
-- Quá 100 stop hoặc 20 assignment → 422 `PLAN_TOO_LARGE`. `stops`, `assignments` bỏ trống = danh sách rỗng (draft được phép chưa có stop hay phân công).
-- Thứ tự kiểm tra của `PUT`/`PATCH`: 404 → `PLAN_NOT_EDITABLE` → `PLAN_BUSY` → `PLAN_MODIFIED`. Mỗi lần sửa thành công tăng `version` đúng 1.
-- Giờ (`shiftStart`, `shiftEnd`, `timeWindow`) đúng dạng `HH:mm`, cả request lẫn response; dạng khác (ví dụ `09:00:30`) → 400 `MALFORMED_REQUEST`.
-
-**Mã validation (`details[].code`) của plan:** `PLAN_NAME_REQUIRED`, `INVALID_PLAN_NAME_LENGTH` (≤ 150), `PLAN_DATE_REQUIRED`, `VERSION_REQUIRED` (`PUT`, `PATCH`), `LATITUDE_REQUIRED`, `LONGITUDE_REQUIRED`, `INVALID_LATITUDE`, `INVALID_LONGITUDE`, `INVALID_ADDRESS_LENGTH` (≤ 500), `STOP_LABEL_REQUIRED`, `INVALID_STOP_LABEL_LENGTH` (≤ 150), `INVALID_RECIPIENT_NAME_LENGTH` (≤ 100), mã số điện thoại như `/users/me` (`PHONE_NUMBER_*`), `COORDINATES_INCOMPLETE`, `ADDRESS_OR_COORDINATES_REQUIRED`, `INVALID_DEMAND` (số nguyên ≥ 0), `ORDER_DEMAND_NOT_ALLOWED`, `INVALID_SERVICE_TIME` (0–86400), `TIME_WINDOW_START_REQUIRED`, `TIME_WINDOW_END_REQUIRED`, `INVALID_TIME_WINDOW` (`start < end`), `INVALID_NOTE_LENGTH` (≤ 500), `DRIVER_REQUIRED`, `VEHICLE_REQUIRED`, `SHIFT_START_REQUIRED`, `SHIFT_END_REQUIRED`, `INVALID_SHIFT` (`shiftStart < shiftEnd`), `INVALID_MAX_DISTANCE` (> 0), `INVALID_STOP_ID`. Lỗi kiểm tra chéo field có `field` là tên kiểm tra, ví dụ `stops[0].timeWindow.ordered`, `stops[0].located`, `assignments[0].shiftOrdered`.
-
-Job lỗi thì `Job.errorCode` có thể là `ROUTING_PROVIDER_ERROR`, `GEOCODING_PROVIDER_ERROR`, `INTERRUPTED`, `JOB_QUEUE_FULL` (hàng đợi job nền đầy, thử lại sau bằng `POST /plans/{id}/geocode`; P-30) hoặc `INTERNAL_ERROR`, và plan quay về `processingStatus = IDLE`.
-
-**Geocode nền (T29):**
-- Mọi lần lưu (`POST`, `PUT`, `PATCH` stop) còn stop `PENDING` → tạo job `GEOCODE_PLAN`; response có `processingStatus = GEOCODING`, `activeJob` (thường `QUEUED`). Stop `FAILED` không tự chạy lại; dùng `POST /plans/{id}/geocode` hoặc sửa stop.
-- Stop không tìm thấy → `FAILED/NOT_FOUND`; provider lỗi → `FAILED/PROVIDER_ERROR`; job vẫn `SUCCEEDED`. Kết quả được ghi theo lô nên `geocodingSummary` thay đổi dần khi polling.
-- Job kết thúc thì plan về `IDLE`, `activeJob = null`, và **`version` tăng 1** (P-30): client polling `GET /plans/{id}` tới khi `IDLE` rồi dùng `version` mới cho lần sửa sau. Vì vậy tạo plan có stop chỉ có địa chỉ: response `version = 0`, sau khi geocode xong `version = 1`.
-- Trong lúc `GEOCODING`, `PUT`, `PATCH` stop, `POST /geocode` → 409 `PLAN_BUSY`.
+| Method & path | Quyền | Request | Response | Lỗi chính | Hiện trạng |
+|---|---|---|---|---|---|
+| `POST /plans` | O, D | `PlanDraftRequest` | 201 `PlanDetail` (DRAFT) | 400 · 422 `STORE_DEPOT_REQUIRED` · 422 `INVALID_ASSIGNMENT` · 422 `PLAN_TOO_LARGE` | ✅ |
+| `GET /plans` | O, D | `date?` (`YYYY-MM-DD`), `status?`, paging; sort `planDate` (mặc định, mới nhất trước), `createdAt`, `name` | Page `PlanSummary` | 400 `INVALID_SORT_FIELD` | ✅ |
+| `GET /plans/{id}` | O, D | — | `PlanDetail` | 404 | ✅ |
+| `PUT /plans/{id}` | O, D | `PlanDraftRequest` + `version`. Thay toàn bộ draft, xoá kết quả tối ưu. | 200 `PlanDetail` | 404 · 409 `PLAN_MODIFIED`/`PLAN_BUSY` · 422 `PLAN_NOT_EDITABLE` · 400 `INVALID_STOP_ID` | ✅ |
+| `PATCH /plans/{id}/stops/{stopId}` | O, D | merge patch `{version, …field của stop}` (xem dưới). Xoá kết quả tối ưu. | 200 `PlanDetail` | 404 · 409 `PLAN_MODIFIED`/`PLAN_BUSY` · 422 `PLAN_NOT_EDITABLE` | ✅ |
+| `POST /plans/{id}/geocode` | O, D | `{version}`. Geocode lại mọi stop `FAILED`/`PENDING`. | 202 `Job` (mode inline: job đã chạy xong khi trả về) | 404 · 409 `PLAN_MODIFIED`/`PLAN_BUSY` · 422 `PLAN_NOT_EDITABLE` · 422 `NOTHING_TO_GEOCODE` | ✅ |
+| `POST /plans/{id}/optimize` | O, D | `{version}` | 202 `Job` (MVP: thường đã `SUCCEEDED` hoặc `FAILED` khi trả về). Kết quả đọc qua `GET /plans/{id}`. | 409 `PLAN_MODIFIED`/`PLAN_BUSY` · 422 `PLAN_NOT_EDITABLE` · 422 `STOPS_NOT_GEOCODED` · 422 `PLAN_TOO_LARGE` | ❌ T25 |
+| `POST /plans/{id}/publish` | O, D | `{version}` | 200 `PlanDetail` (PUBLISHED) | 409 · 422 `PLAN_NOT_OPTIMIZED` · 422 `SHIFT_OVERLAP` | ❌ T26 |
+| `POST /plans/{id}/cancel` | O, D | `{version}` | 200 `PlanDetail` (CANCELLED) | 409 · 422 `PLAN_NOT_CANCELLABLE` | ❌ T26 |
+| `PATCH /plans/{id}/stops/{stopId}/status` | O, D | `{status: "PENDING"}` (đặt lại stop về PENDING) | 200 `PlanDetail` | 404 · 422 `INVALID_STOP_TRANSITION` | ❌ T26 |
+| `GET /plans/{id}/driver-locations` | O, D | — | `[{driverId, routeId, lat, lon, accuracyMeters, headingDegrees, speedMps, recordedAt}]` (Should) | 404 | ❌ T32 |
+| `PUT /plans/{id}/routes` | O, D | `{version, routes:[{routeId, stopIds:[...]}], unassignedStopIds:[...]}`. Chỉnh tay, tính lại ETA và quãng đường (Should, D-24). | 200 `PlanDetail`, có `violations[]` (hình dạng chốt ở T28) | 409 · 422 | ❌ T28 |
 
 ```jsonc
 // PlanDraftRequest
@@ -186,8 +205,8 @@ Job lỗi thì `Job.errorCode` có thể là `ROUTING_PROVIDER_ERROR`, `GEOCODIN
       "label": "ĐH-1024", "recipientName": "Chị Lan", "recipientPhone": "0905…",
       "address": "12 Lê Duẩn, Hải Châu, Đà Nẵng",
       "lat": null, "lon": null,          // tuỳ chọn; có thì bỏ qua geocode (D-18). Phải có address hoặc lat+lon.
-      "demands": { "KG": 12, "BOX": 2 },  // tuỳ chọn, theo loại capacity (D-36); thiếu loại nào là 0. Không nhập ORDER: mỗi stop tự tính 1.
-      "serviceTimeSeconds": 300,
+      "demands": { "KG": 12, "BOX": 2 },  // tuỳ chọn, theo loại capacity (D-36); thiếu loại nào là 0. Không nhập ORDER.
+      "serviceTimeSeconds": 300,          // tuỳ chọn, mặc định 0
       "timeWindow": { "start": "09:00", "end": "11:00" },  // tuỳ chọn
       "note": "Gọi trước 10 phút" }
   ],
@@ -196,100 +215,121 @@ Job lỗi thì `Job.errorCode` có thể là `ROUTING_PROVIDER_ERROR`, `GEOCODIN
     // MVP: start/end của route = depot của plan. Sau này có thể thêm "start"/"end" riêng cho từng route (D-20).
   ]
 }
-// PlanSummary (một phần tử của GET /plans, chủ dự án chọn ở T24)
+// PlanSummary (một phần tử của GET /plans)
 { "id": 7, "name": "…", "planDate": "2026-10-22", "status": "DRAFT", "processingStatus": "IDLE", "version": 3,
   "stopCount": 30, "routeCount": 2, "optimizedAt": "…|null", "totalDistanceMeters": 52340, "totalDurationSeconds": 9800,
   "createdAt": "…" }
 // PlanDetail
 {
   "id": 7, "name": "…", "planDate": "2026-10-22", "status": "DRAFT", "version": 3,
-  "processingStatus": "IDLE|GEOCODING|OPTIMIZING", "activeJob": null,   // hoặc object Job
+  "processingStatus": "IDLE|GEOCODING|OPTIMIZING", "activeJob": null,   // Job khi processingStatus khác IDLE
   "geocodingSummary": { "total": 30, "resolved": 27, "provided": 1, "pending": 0, "failed": 2 },
   "depot": { "address": "…", "lat": 16.05, "lon": 108.2 }, "timezone": "Asia/Ho_Chi_Minh",
   "optimizedAt": "…|null", "totalDistanceMeters": 52340, "totalDurationSeconds": 9800,
   "routes": [
     { "id": 11, "driver": { "id": 21, "fullName": "Tùng", "role": "DRIVER" }, "vehicle": { "id": 5, "name": "Xe 1", "capacity": 40, "capacityUnit": "BOX" },
       "shiftStart": "08:00", "shiftEnd": "17:00", "maxDistanceMeters": 80000,
-      "start": { "lat": 16.05, "lon": 108.2, "address": "…" }, "end": { "lat": 16.05, "lon": 108.2, "address": "…" },
+      "start": { "address": "…", "lat": 16.05, "lon": 108.2 }, "end": { "address": "…", "lat": 16.05, "lon": 108.2 },
       "plannedDistanceMeters": 30100, "plannedDurationSeconds": 5400,
-      "plannedStart": "…", "plannedEnd": "…", "load": 31,   // theo capacityUnit của xe (D-36)
-      "stops": [ { "id": 101, "sequence": 1, "label": "ĐH-1024", "lat": 16.06, "lon": 108.22,
-                   "plannedArrival": "…", "timeWindow": {…}, "demands": { "BOX": 3 }, "status": "PENDING", "failureReason": null } ] }
+      "plannedStart": "…", "plannedEnd": "…", "load": 31,   // theo capacityUnit của xe (D-36); null khi chưa optimize
+      "stops": [ PlanStop, … ] }                            // theo sequence
   ],
-  "unassignedStops": [   // stop chưa được gán route: plan chưa optimize, hoặc solver đã bỏ (P-13)
-    { "id": 109, "label": "…", "address": "…", "lat": null, "lon": null,
-      "geocodeStatus": "PROVIDED|PENDING|RESOLVED|FAILED", "geocodeError": "NOT_FOUND",
-      "geocodedDisplayName": null, "dropReason": "NOT_OPTIMIZED|INFEASIBLE" }
-  ]
+  "unassignedStops": [ PlanStop, … ]   // stop chưa gán route: plan chưa optimize, hoặc solver đã bỏ (P-13); theo id
 }
+// PlanStop (cùng một dạng trong routes[].stops và unassignedStops)
+{ "id": 101, "sequence": 1, "label": "ĐH-1024", "recipientName": "Chị Lan", "recipientPhone": "+84905…",
+  "address": "…", "lat": 16.06, "lon": 108.22,
+  "geocodeStatus": "PROVIDED|PENDING|RESOLVED|FAILED", "geocodeError": "NOT_FOUND|PROVIDER_ERROR|null",
+  "geocodedDisplayName": "…|null", "demands": { "BOX": 3 }, "serviceTimeSeconds": 300,
+  "timeWindow": { "start": "09:00", "end": "11:00" } | null, "note": "…", "plannedArrival": "…|null",
+  "status": "PENDING|DELIVERED|FAILED|SKIPPED", "failureReason": null,
+  "dropReason": "NOT_OPTIMIZED|INFEASIBLE|null" }   // null trong route
 ```
 
-Mọi stop trong `PlanDetail` (cả trong `routes[].stops`) có cùng một dạng: `id, sequence, label, recipientName, recipientPhone, address, lat, lon, geocodeStatus, geocodeError, geocodedDisplayName, demands, serviceTimeSeconds, timeWindow, note, plannedArrival, status, failureReason, dropReason` (`dropReason` là `null` trong route). Ví dụ trên rút gọn bớt. `recipientPhone` trả dạng E.164 (`+84905…`, như `DriverRouteDetail`). `demands` chỉ có các loại khác 0. `routes` theo id, `routes[].stops` theo `sequence`, `unassignedStops` theo id. `load` là `null` khi plan chưa optimize. `routes[].driver` (`fullName`, `role`) và `routes[].vehicle.name` là giá trị hiện tại, kể cả khi thành viên đã bị vô hiệu hoá hay xe đã tắt; `vehicle.capacity`, `vehicle.capacityUnit` là snapshot lúc phân công.
+`PlanDetail`:
+- `routes` theo id. `PUT` tạo lại mọi route từ `assignments`, nên id route đổi sau mỗi `PUT`; client tải lại `PlanDetail` sau khi `PUT`.
+- `routes[].driver` (`fullName`, `role`) và `routes[].vehicle.name` là giá trị hiện tại, kể cả khi thành viên đã bị vô hiệu hoá hay xe đã tắt; `vehicle.capacity`, `vehicle.capacityUnit` là snapshot lúc phân công.
+- `PlanStop.demands` chỉ có các loại khác 0. `dropReason`: `NOT_OPTIMIZED` khi plan chưa có kết quả tối ưu, `INFEASIBLE` khi solver không xếp được.
 
-Demand (D-36): mỗi giá trị trong `demands` là số nguyên ≥ 0, khoá là `KG`, `BOX`, `PACKAGE` (khoá khác hoặc `ORDER` → 400). Xe tính theo `ORDER` chở tối đa `capacity` stop.
+**Lưu draft (`POST`, `PUT`):**
+- Không có `depot` thì snapshot depot hiện tại của store; store chưa có depot → 422 `STORE_DEPOT_REQUIRED`. `depot` trong request phải có `lat`, `lon`. Timezone luôn snapshot từ store mỗi lần lưu.
+- Stop có `id` được sửa tại chỗ; stop của plan không có trong request bị xoá. `id` không phải stop của plan này hoặc lặp lại → 400 `VALIDATION_ERROR`, detail `{field: "stops[i].id", code: "INVALID_STOP_ID"}` (cùng một lỗi cho mọi trường hợp, không lộ stop của store khác).
+- Stop có `id` giữ kết quả geocode khi địa chỉ không đổi và: hoặc request gửi đúng toạ độ đang lưu, hoặc request không gửi toạ độ và toạ độ đang lưu không do client nhập (`geocodeStatus` khác `PROVIDED`). Ngược lại: có toạ độ → `PROVIDED`, chỉ có địa chỉ → `PENDING`.
+- Phân công: driver phải là thành viên ACTIVE của store và là DRIVER hoặc có `canDrive`; xe phải ACTIVE và thuộc store; mỗi driver và mỗi xe một lần. Sai → 422 `INVALID_ASSIGNMENT`. Capacity và `capacityUnit` của xe được snapshot.
+- Giới hạn (D-19): ≤ 100 stop, ≤ 20 assignment, quá → 422 `PLAN_TOO_LARGE`. `stops`, `assignments` bỏ trống = danh sách rỗng (draft được phép chưa có stop hay phân công).
+- Demand (D-36): số nguyên ≥ 0, khoá `KG`, `BOX`, `PACKAGE`; `ORDER` → 400 `ORDER_DEMAND_NOT_ALLOWED`, khoá lạ → 400 `MALFORMED_REQUEST`. Xe tính theo `ORDER` chở tối đa `capacity` stop.
 
-Giới hạn (D-19): ≤ 100 stop, ≤ 20 assignment mỗi plan. Mỗi người được gán (DRIVER hoặc `canDrive`) và mỗi xe chỉ xuất hiện một lần trong một plan.
+**`PATCH /plans/{id}/stops/{stopId}`** (merge patch, §1): `timeWindow: null` bỏ time window, `demands: null` bỏ mọi demand, `serviceTimeSeconds: null` về 0, `recipientName`/`recipientPhone`/`note`/`address: null` bỏ giá trị, `"lat": null, "lon": null` bỏ toạ độ và geocode lại từ địa chỉ. `label` không xoá được (`null` → `NOT_NULLABLE`, chuỗi trắng → `STOP_LABEL_REQUIRED`); `lat` và `lon` gửi cùng nhau (`COORDINATES_INCOMPLETE`). Vị trí sau khi patch:
+- gửi toạ độ khác `null` → `PROVIDED` với toạ độ đó;
+- không gửi toạ độ, địa chỉ đổi sang giá trị khác → toạ độ cũ bị bỏ, `PENDING` (geocode lại);
+- không gửi toạ độ, `address: null` → giữ toạ độ hiện tại, thành `PROVIDED`;
+- địa chỉ và toạ độ không đổi → giữ nguyên kết quả geocode (kể cả `FAILED`);
+- stop không còn địa chỉ lẫn toạ độ → 400, detail `{field: "address", code: "ADDRESS_OR_COORDINATES_REQUIRED"}`.
+
+**Thứ tự kiểm tra** của `PUT`, `PATCH`, `POST /geocode`: 404 → `PLAN_NOT_EDITABLE` → `PLAN_BUSY` → `PLAN_MODIFIED`. Mỗi lần sửa thành công tăng `version` đúng 1.
+
+**Geocode nền:**
+- Mọi lần lưu (`POST`, `PUT`, `PATCH` stop) còn stop `PENDING` → tạo job `GEOCODE_PLAN`; response có `processingStatus = GEOCODING`, `activeJob` (thường `QUEUED`). Stop `FAILED` không tự chạy lại; dùng `POST /plans/{id}/geocode` hoặc sửa stop.
+- `POST /plans/{id}/geocode`: stop `FAILED` về `PENDING`, plan `GEOCODING`, `version` tăng 1. Không có stop `PENDING`/`FAILED` nào → 422 `NOTHING_TO_GEOCODE` (P-30).
+- Stop không tìm thấy → `FAILED/NOT_FOUND`; provider lỗi → `FAILED/PROVIDER_ERROR`; job vẫn `SUCCEEDED`. Kết quả ghi theo lô nên `geocodingSummary` thay đổi dần khi polling.
+- Job kết thúc thì plan về `IDLE`, `activeJob = null`, **`version` tăng 1** (P-30): client polling `GET /plans/{id}` tới khi `IDLE` rồi dùng `version` mới. Ví dụ tạo plan có stop chỉ có địa chỉ: response `version = 0`, geocode xong `version = 1`.
+- Trong lúc `GEOCODING`, `PUT`, `PATCH` stop, `POST /geocode` → 409 `PLAN_BUSY`.
+
+**Publish (T26):** `SHIFT_OVERLAP` (D-23) trả mỗi xung đột là một phần tử `details`: `{field: "assignments[i].driverId" | "assignments[i].vehicleId", code: "SHIFT_OVERLAP", conflictPlanId}` (P-32); `i` là thứ tự route trong `PlanDetail.routes`.
+
+**Mã validation (`details[].code`) của plan:** `PLAN_NAME_REQUIRED`, `INVALID_PLAN_NAME_LENGTH` (≤ 150), `PLAN_DATE_REQUIRED`, `VERSION_REQUIRED` (`PUT`, `PATCH`, `POST /geocode`), `LATITUDE_REQUIRED`, `LONGITUDE_REQUIRED`, `INVALID_LATITUDE`, `INVALID_LONGITUDE`, `INVALID_ADDRESS_LENGTH` (≤ 500), `STOP_LABEL_REQUIRED`, `INVALID_STOP_LABEL_LENGTH` (≤ 150), `INVALID_RECIPIENT_NAME_LENGTH` (≤ 100), `PHONE_NUMBER_*`, `COORDINATES_INCOMPLETE` (trên field còn thiếu, `lat` hoặc `lon`), `ADDRESS_OR_COORDINATES_REQUIRED` (trên `address`), `INVALID_DEMAND` (số nguyên ≥ 0), `ORDER_DEMAND_NOT_ALLOWED` (trên `demands`), `INVALID_SERVICE_TIME` (0–86400), `TIME_WINDOW_START_REQUIRED`, `TIME_WINDOW_END_REQUIRED`, `INVALID_TIME_WINDOW` (trên `timeWindow.end`, `start < end`), `INVALID_NOTE_LENGTH` (≤ 500), `DRIVER_REQUIRED`, `VEHICLE_REQUIRED`, `SHIFT_START_REQUIRED`, `SHIFT_END_REQUIRED`, `INVALID_SHIFT` (trên `shiftEnd`, `shiftStart < shiftEnd`), `INVALID_MAX_DISTANCE` (> 0), `INVALID_STOP_ID`, `NOT_NULLABLE`.
 
 ## 8. Driver — `/api/v1/driver`
 
 Người gọi phải có `role=DRIVER` hoặc `canDrive=true` (D-21), và chỉ thấy route có `driverId = mình` thuộc plan PUBLISHED, IN_PROGRESS hoặc COMPLETED.
 
-| Method & path | Quyền | Request | Response | Lỗi chính |
-|---|---|---|---|---|
-| `GET /driver/routes` | R | `date` (mặc định hôm nay theo timezone store) | `[{routeId, planId, planName, planDate, status, stopCount, completedCount, plannedStart}]` | — |
-| `GET /driver/routes/{routeId}` | R | — | `DriverRouteDetail` | 404 |
-| `PATCH /driver/routes/{routeId}/stops/{stopId}/status` | R | `{status: DELIVERED|FAILED|SKIPPED, failureReason?}` | 200 stop | 404 · 422 `INVALID_STOP_TRANSITION` · 422 `FAILURE_REASON_REQUIRED` · 422 `PLAN_NOT_ACTIVE` |
-| `POST /driver/location` | R | `{points:[{lat, lon, accuracyMeters?, headingDegrees?, speedMps?, recordedAt}]}`, gồm 1–100 điểm theo thứ tự thời gian. App gom các điểm bị mất mạng rồi gửi một lần (D-26). | 204 (Should). MVP chỉ giữ điểm có `recordedAt` mới nhất. | 400 |
-| `GET /driver/routes/{routeId}/directions` | R | — | `DirectionsResponse` (Should, T33) | 404 · 502 |
+| Method & path | Quyền | Request | Response | Lỗi chính | Hiện trạng |
+|---|---|---|---|---|---|
+| `GET /driver/routes` | R | `date` (mặc định hôm nay theo timezone store) | `[{routeId, planId, planName, planDate, status, stopCount, completedCount, plannedStart}]` | — | ❌ T30 |
+| `GET /driver/routes/{routeId}` | R | — | `DriverRouteDetail` | 404 | ❌ T30 |
+| `PATCH /driver/routes/{routeId}/stops/{stopId}/status` | R | `{status: DELIVERED\|FAILED\|SKIPPED, failureReason?}` | 200 `{stop: DriverStop, routeStatus, planStatus}` | 404 · 422 `INVALID_STOP_TRANSITION` · 422 `FAILURE_REASON_REQUIRED` · 422 `PLAN_NOT_ACTIVE` | ❌ T31 |
+| `POST /driver/location` | R | `{points:[{lat, lon, accuracyMeters?, headingDegrees?, speedMps?, recordedAt}]}`, 1–100 điểm theo thứ tự thời gian (D-26) | 204 (Should). MVP chỉ giữ điểm có `recordedAt` mới nhất. | 400 | ❌ T32 |
+| `GET /driver/routes/{routeId}/directions` | R | — | `DirectionsResponse` (Should) | 404 · 502 | ❌ T33 |
 
 ```jsonc
 // DriverRouteDetail
 {
   "routeId": 11, "planId": 7, "planDate": "2026-10-22", "status": "IN_PROGRESS",
-  "depot": { "lat": 16.05, "lon": 108.2, "address": "…" },
-  "stops": [
-    { "id": 101, "sequence": 1, "label": "ĐH-1024", "recipientName": "Chị Lan", "recipientPhone": "+84905…",
-      "address": "…", "lat": 16.06, "lon": 108.22, "plannedArrival": "…",
-      "timeWindow": { "start": "09:00", "end": "11:00" }, "note": "…", "status": "PENDING",
-      "navigationUrl": "https://www.google.com/maps/dir/?api=1&destination=16.06,108.22&travelmode=driving" }
-  ]
+  "start": { "address": "…", "lat": 16.05, "lon": 108.2 }, "end": { "address": "…", "lat": 16.05, "lon": 108.2 },  // D-20
+  "stops": [ DriverStop, … ]   // theo sequence
 }
-// DirectionsResponse (Should)
+// DriverStop
+{ "id": 101, "sequence": 1, "label": "ĐH-1024", "recipientName": "Chị Lan", "recipientPhone": "+84905…",
+  "address": "…", "lat": 16.06, "lon": 108.22, "plannedArrival": "…",
+  "timeWindow": { "start": "09:00", "end": "11:00" }, "note": "…", "status": "PENDING", "failureReason": null }
+// DirectionsResponse (Should; hình dạng sẽ chốt lại ở T33, xem IMPLEMENTATION_PLAN)
 { "legs": [ { "fromStopId": null, "toStopId": 101, "distanceMeters": 2100, "durationSeconds": 360,
               "geometry": "<polyline6>",
               "steps": [ { "maneuver": "turn", "modifier": "left", "roadName": "Nguyễn Văn Linh",
                            "distanceMeters": 400, "durationSeconds": 60, "location": [108.21, 16.055] } ] } ] }
 ```
 
+- Dẫn đường (D-07): client tự dựng deep link Google Maps hoặc Apple Maps theo nền tảng từ `lat`/`lon` của stop; server không trả URL (P-32).
+- `PATCH …/status` của tài xế trả `routeStatus` và `planStatus` để app biết route/plan đã chuyển `IN_PROGRESS` hay `COMPLETED` (BR-11). Cập nhật trạng thái stop không tăng `version` của plan (§1).
+
 ## 9. Mã lỗi (`ErrorCode`)
 
-| Code | HTTP | | Code | HTTP |
-|---|---|---|---|---|
-| `VALIDATION_ERROR` | 400 | | `PLAN_MODIFIED` | 409 |
-| `MALFORMED_REQUEST` | 400 | | `PLAN_NOT_EDITABLE` | 422 |
-| `UNAUTHORIZED` | 401 | | `PLAN_NOT_OPTIMIZED` | 422 |
-| `INVALID_TOKEN` | 401 | | `PLAN_NOT_CANCELLABLE` | 422 |
-| `INVALID_EMAIL_OR_PASSWORD` | 401 | | `PLAN_NOT_ACTIVE` | 422 |
-| `FORBIDDEN` | 403 | | `PLAN_TOO_LARGE` | 422 |
-| `EMAIL_NOT_VERIFIED` | 403 | | `STORE_DEPOT_REQUIRED` | 422 |
-| `ACCOUNT_DISABLED` | 403 | | `INVALID_ASSIGNMENT` | 422 |
-| `NOT_FOUND` / `*_NOT_FOUND` (kể cả `JOB_NOT_FOUND`) | 404 | | `INVALID_STOP_TRANSITION` | 422 |
-| `EMAIL_EXISTED` | 409 | | `FAILURE_REASON_REQUIRED` | 422 |
-| `EMAIL_ALREADY_VERIFIED` | 409 | | `CANNOT_MODIFY_OWNER` | 422 |
-| `VEHICLE_NAME_EXISTED` | 409 | | `INVITATION_INVALID` | 404 |
-| `INVALID_OTP` | 400 | | `INVITATION_NOT_PENDING` | 422 |
-| `INVALID_CURRENT_PASSWORD` | 400 | | `INVALID_TIMEZONE` | 400 |
-| `INVALID_SORT_FIELD` | 400 | | `INVALID_PHONE_NUMBER` | 400 |
-| `OTP_COOLDOWN` | 429 | | `RATE_LIMITED` | 429 |
-| `GEOCODING_BUSY` | 503 | | `GEOCODING_PROVIDER_ERROR` | 502 |
-| `ROUTING_PROVIDER_ERROR` | 502 | | `INTERNAL_ERROR` | 500 |
-| `PLAN_BUSY` | 409 | | `STOPS_NOT_GEOCODED` | 422 |
-| `CONFLICT` | 409 | | `METHOD_NOT_ALLOWED` | 405 |
-| `SHIFT_OVERLAP` | 422 | | `INVALID_RESET_TOKEN` | 400 |
-| `NOTHING_TO_GEOCODE` | 422 | | | |
+| Nhóm | Code | HTTP |
+|---|---|---|
+| Request | `VALIDATION_ERROR`, `MALFORMED_REQUEST`, `INVALID_SORT_FIELD`, `INVALID_TIMEZONE`, `INVALID_PHONE_NUMBER` | 400 |
+| Xác thực | `UNAUTHORIZED`, `INVALID_TOKEN`, `INVALID_EMAIL_OR_PASSWORD` | 401 |
+| Xác thực | `INVALID_OTP`, `INVALID_CURRENT_PASSWORD`, `INVALID_RESET_TOKEN` | 400 |
+| Quyền | `FORBIDDEN`, `EMAIL_NOT_VERIFIED`, `ACCOUNT_DISABLED` | 403 |
+| Không tìm thấy | `NOT_FOUND`, `INVITATION_INVALID` | 404 |
+| Method | `METHOD_NOT_ALLOWED` | 405 |
+| Xung đột | `EMAIL_EXISTED`, `EMAIL_ALREADY_VERIFIED`, `VEHICLE_NAME_EXISTED`, `PLAN_MODIFIED`, `PLAN_BUSY`, `CONFLICT` | 409 |
+| Nghiệp vụ | `CANNOT_MODIFY_OWNER`, `INVITATION_NOT_PENDING`, `STORE_DEPOT_REQUIRED`, `INVALID_ASSIGNMENT`, `PLAN_TOO_LARGE`, `PLAN_NOT_EDITABLE`, `NOTHING_TO_GEOCODE`, `STOPS_NOT_GEOCODED`, `PLAN_NOT_OPTIMIZED`, `PLAN_NOT_CANCELLABLE`, `PLAN_NOT_ACTIVE`, `SHIFT_OVERLAP`, `INVALID_STOP_TRANSITION`, `FAILURE_REASON_REQUIRED` | 422 |
+| Giới hạn | `OTP_COOLDOWN`, `RATE_LIMITED` | 429 |
+| Provider | `GEOCODING_PROVIDER_ERROR`, `ROUTING_PROVIDER_ERROR` | 502 |
+| Provider | `GEOCODING_BUSY` | 503 |
+| Khác | `INTERNAL_ERROR` | 500 |
 
-Mã bị bỏ so với hiện tại: `INVALID_DEPOT`, `COULD_NOT_FIND_CHEAPEST_ROUTE`, `COULD_NOT_FIND_ADDRESS`, `COULD_NOT_UPDATE_USER_PASSWORD` (không còn dùng từ T15, giữ trong enum dạng `@Deprecated` vì `ErrorCode` chỉ được thêm). `COULD_NOT_FIND_USER` → `USER_NOT_FOUND` (404).
-
-`CONFLICT` (vi phạm ràng buộc DB không có mã nghiệp vụ riêng, ví dụ hai request đăng ký đồng thời) và `METHOD_NOT_ALLOWED` được thêm ở T03 để không có lỗi framework nào rơi vào 500.
-
-Validation detail codes (trong `details[].code`) dùng UPPER_SNAKE, ví dụ `EMAIL_REQUIRED`, `INVALID_EMAIL_FORMAT`, `INVALID_PASSWORD_LENGTH`, `PHONE_NUMBER_WRONG_REGION`.
+- `CONFLICT`: vi phạm ràng buộc DB không có mã nghiệp vụ riêng, ví dụ hai request đăng ký đồng thời.
+- Không còn trả (giữ trong enum dạng `@Deprecated` vì `ErrorCode` chỉ được thêm): `USER_NOT_FOUND`, `SESSION_NOT_FOUND`, `JOB_NOT_FOUND` (thay bằng `NOT_FOUND`, P-32), `COULD_NOT_FIND_USER`, `COULD_NOT_UPDATE_USER_PASSWORD`. Bỏ cùng `/route/optimize*` ở T27: `INVALID_DEPOT`, `COULD_NOT_FIND_CHEAPEST_ROUTE`, `COULD_NOT_FIND_ADDRESS`.
+- `Job.errorCode` (§6) có thêm các giá trị không phải `ErrorCode`: `INTERRUPTED`, `JOB_QUEUE_FULL`.
+- Mã validation trong `details[].code` dùng UPPER_SNAKE, ví dụ `EMAIL_REQUIRED`, `INVALID_EMAIL_FORMAT`, `INVALID_PASSWORD_LENGTH`, `PHONE_NUMBER_WRONG_REGION`, `NOT_NULLABLE`.

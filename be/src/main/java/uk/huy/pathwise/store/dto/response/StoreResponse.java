@@ -1,8 +1,9 @@
 package uk.huy.pathwise.store.dto.response;
 
+/**
+ * @param depot null when the store has no depot
+ */
 public record StoreResponse(long id,
                             String name,
-                            String depotAddress,
-                            Double depotLat,
-                            Double depotLon,
+                            DepotResponse depot,
                             String timezone) {}
