@@ -308,6 +308,7 @@ T42 cũ (Docker, compose, README) đã được gộp vào T05 và T07 trong M0 
   - `PUT` thay toàn bộ draft, xoá kết quả tối ưu, giữ kết quả geocode của stop có `id` cũ không đổi địa chỉ/toạ độ. Thêm `PATCH /plans/{id}/stops/{stopId}`.
   - Kiểm tra giới hạn kích thước (D-19).
   - Task này **chưa** kích hoạt geocode (T29 làm). Stop `PENDING` cứ nằm đó.
+  - Phát sinh khi làm (2026-10-28): chuyển tiện ích số điện thoại sang `core.phonenumber` (P-29) để lưu `recipientPhone` E.164; thêm `StoreQuery.findStore` (depot, timezone), `StoreMemberQuery.findMembers` và `VehicleQuery.findAll` (gồm cả thành viên bị vô hiệu hoá, xe đã tắt, để hiển thị `PlanDetail`); `DetailedAppException` để trả `INVALID_STOP_ID` trong `details`. Hợp đồng `PlanSummary`, ngữ nghĩa merge patch của `PATCH` stop và `INVALID_STOP_ID` do chủ dự án chọn (API_SPEC §7).
 - **Acceptance criteria:** tạo plan với driver hoặc vehicle của store khác → 422 `INVALID_ASSIGNMENT`; `version` cũ → 409; time window `start >= end` → 400; store chưa có depot và request không truyền depot → 422 `STORE_DEPOT_REQUIRED`; stop không có cả địa chỉ lẫn toạ độ → 400; OWNER có `canDrive` gán được, DISPATCHER không có `canDrive` → 422 `INVALID_ASSIGNMENT`; PUT giữ geocode của stop không đổi; test tenant isolation.
 
 ### T29. Job framework và geocode chạy nền

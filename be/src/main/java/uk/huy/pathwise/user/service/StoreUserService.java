@@ -4,6 +4,7 @@ import uk.huy.pathwise.shared.identity.UserRole;
 import uk.huy.pathwise.shared.identity.UserStatus;
 import uk.huy.pathwise.user.dto.StoreUser;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -21,6 +22,12 @@ public interface StoreUserService {
      * @return every user of the store, ordered by id
      */
     List<StoreUser> listInStore(long storeId);
+
+    /**
+     * @return the users among {@code userIds} that belong to {@code storeId}, whatever their status; ids of other
+     * stores' users are left out
+     */
+    List<StoreUser> findAllInStore(long storeId, Collection<Long> userIds);
 
     /**
      * @return true if any user, of any store, has this email (normalized, P-19)

@@ -1,6 +1,6 @@
 # DATA_MODEL — Mô hình dữ liệu mục tiêu
 
-> Hiện trạng: có `users`, `refresh_tokens` (`V1__baseline.sql`), `stores` cùng các cột tenancy của `users` (`V2__stores_and_user_tenancy.sql`, T13), `store_invitations` (`V3__store_invitations.sql`, T16) và `vehicles` (`V4__vehicles.sql`, T20). Các bảng từ §2.6 trở đi là **mục tiêu**, chưa tồn tại.
+> Hiện trạng: có `users`, `refresh_tokens` (`V1__baseline.sql`), `stores` cùng các cột tenancy của `users` (`V2__stores_and_user_tenancy.sql`, T13), `store_invitations` (`V3__store_invitations.sql`, T16), `vehicles` (`V4__vehicles.sql`, T20) và `background_jobs`, `route_plans`, `route_plan_routes`, `route_plan_stops`, `route_plan_stop_demands` (`V5__route_plans.sql`, T24). Mọi bảng mục tiêu đã tồn tại.
 > Dựa trên D-01..D-05, D-15, D-16, D-18..D-21, P-01, P-07, P-14 (đã Approved). Dữ liệu cũ không được giữ (D-29).
 > Quy ước: `BIGINT AUTO_INCREMENT` id; timestamp sự kiện `DATETIME(6)` lưu UTC (`hibernate.jdbc.time_zone: UTC`, Java `Instant`); toạ độ `DOUBLE`; khoảng cách mét `INT`, thời lượng giây `INT`; enum lưu `VARCHAR` (`@Enumerated(STRING)`); bảng thuộc store luôn có `store_id NOT NULL` + FK + index.
 
@@ -86,7 +86,7 @@ Index `(store_id, status)`, `(email, status)`. Tên ràng buộc trong V3: `uk_s
 
 Không xoá cứng xe đã dùng trong plan; chỉ `active=false`. Tên ràng buộc trong V4: FK `fk_vehicles_store_id`, UNIQUE `uk_vehicles_store_name`, CHECK `chk_vehicles_capacity`. Unique theo collation của cột (mặc định không phân biệt hoa thường).
 
-### 2.6 `route_plans` — New (V5)
+### 2.6 `route_plans` — New (V5, đã tạo ở T24)
 
 | Cột | Kiểu | Ràng buộc / ghi chú |
 |---|---|---|
@@ -108,9 +108,9 @@ Không xoá cứng xe đã dùng trong plan; chỉ `active=false`. Tên ràng bu
 | version | BIGINT | NOT NULL DEFAULT 0 (`@Version`) |
 | created_at, updated_at | DATETIME(6) | NOT NULL |
 
-Index `(store_id, plan_date)`, `(store_id, status)`.
+Index `(store_id, plan_date)`, `(store_id, status)`. Tên ràng buộc trong V5: FK `fk_route_plans_store_id`/`_active_job_id`/`_created_by`, index `idx_route_plans_store_date`/`_store_status`. Depot và timezone được snapshot mỗi lần lưu draft (`POST`, `PUT`): request không có `depot` thì lấy depot hiện tại của store (T24).
 
-### 2.7 `route_plan_routes` — New (V5): phân công + kết quả
+### 2.7 `route_plan_routes` — New (V5, đã tạo ở T24): phân công + kết quả
 
 | Cột | Kiểu | Ràng buộc / ghi chú |
 |---|---|---|
@@ -129,9 +129,9 @@ Index `(store_id, plan_date)`, `(store_id, status)`.
 | planned_start, planned_end | DATETIME(6) | NULL — kết quả |
 | created_at, updated_at | DATETIME(6) | NOT NULL |
 
-Index `(driver_id)` cho truy vấn của tài xế.
+Index `(driver_id)` cho truy vấn của tài xế. Tên ràng buộc trong V5: FK `fk_route_plan_routes_plan_id`/`_store_id`/`_driver_id`/`_vehicle_id`, UNIQUE `uk_route_plan_routes_plan_driver`/`_plan_vehicle`, CHECK `chk_route_plan_routes_shift` (`shift_start < shift_end`), `chk_route_plan_routes_max_distance` (`max_distance_m` NULL hoặc > 0, BR-09), `chk_route_plan_routes_capacity` (`vehicle_capacity > 0`). `PUT` plan xoá rồi tạo lại mọi route (id route đổi), vì giữ route rồi đổi xe giữa hai route sẽ vướng unique key giữa chừng (T24).
 
-### 2.8 `route_plan_stops` — New (V5)
+### 2.8 `route_plan_stops` — New (V5, đã tạo ở T24)
 
 | Cột | Kiểu | Ràng buộc / ghi chú |
 |---|---|---|
@@ -160,9 +160,9 @@ Index `(driver_id)` cho truy vấn của tài xế.
 | version | BIGINT | NOT NULL DEFAULT 0 |
 | created_at, updated_at | DATETIME(6) | NOT NULL |
 
-Index `(plan_id)`, `(route_id, sequence)`.
+Index `(plan_id)`, `(route_id, sequence)`. Tên ràng buộc trong V5: FK `fk_route_plan_stops_plan_id`/`_store_id`/`_route_id`/`_status_updated_by`, CHECK `chk_route_plan_stops_location` (có địa chỉ hoặc toạ độ), `chk_route_plan_stops_coordinates` (`lat`, `lon` cùng NULL hoặc cùng có), `chk_route_plan_stops_service_time`, `chk_route_plan_stops_time_window`. `geocode_error` lưu tên enum `GeocodeError` (`NOT_FOUND`, `PROVIDER_ERROR`).
 
-### 2.8a `route_plan_stop_demands` — New (V5) (D-36)
+### 2.8a `route_plan_stop_demands` — New (V5, đã tạo ở T24) (D-36)
 
 | Cột | Kiểu | Ràng buộc / ghi chú |
 |---|---|---|
@@ -170,9 +170,9 @@ Index `(plan_id)`, `(route_id, sequence)`.
 | unit | VARCHAR(20) | NOT NULL — `KG, BOX, PACKAGE` (`ORDER` không lưu: mỗi stop là 1) |
 | quantity | INT | NOT NULL, CHECK ≥ 0 |
 
-PK `(stop_id, unit)`. Không có dòng cho một loại nghĩa là demand loại đó bằng 0.
+PK `(stop_id, unit)`. Không có dòng cho một loại nghĩa là demand loại đó bằng 0; service không ghi dòng có `quantity = 0`. Tên ràng buộc trong V5: `pk_route_plan_stop_demands`, FK `fk_route_plan_stop_demands_stop_id`, CHECK `chk_route_plan_stop_demands_quantity`.
 
-### 2.9 `background_jobs` — New (V5) (D-19)
+### 2.9 `background_jobs` — New (V5, đã tạo ở T24) (D-19)
 
 Bảng job dùng chung. MVP có 2 loại job: `GEOCODE_PLAN` (chạy nền) và `OPTIMIZE_PLAN` (chạy ngay trong request, nhưng vẫn ghi job).
 
@@ -181,7 +181,7 @@ Bảng job dùng chung. MVP có 2 loại job: `GEOCODE_PLAN` (chạy nền) và 
 | id | BIGINT | PK |
 | store_id | BIGINT | NOT NULL, FK |
 | type | VARCHAR(30) | NOT NULL — `GEOCODE_PLAN, OPTIMIZE_PLAN` |
-| target_id | BIGINT | NOT NULL. Là plan id. |
+| target_id | BIGINT | NOT NULL. Là plan id. Không có FK để bảng dùng chung cho mọi loại job. |
 | status | VARCHAR(20) | NOT NULL — `QUEUED, RUNNING, SUCCEEDED, FAILED, CANCELLED` |
 | error_code | VARCHAR(50) | NULL |
 | attempts | INT | NOT NULL DEFAULT 0 |
@@ -189,7 +189,7 @@ Bảng job dùng chung. MVP có 2 loại job: `GEOCODE_PLAN` (chạy nền) và 
 | started_at, finished_at | DATETIME(6) | NULL |
 | created_at, updated_at | DATETIME(6) | NOT NULL |
 
-Index `(status, created_at)`, `(store_id, target_id)`. Khi ứng dụng khởi động, job đang `RUNNING` được chuyển sang `FAILED` (`error_code = INTERRUPTED`) và plan tương ứng trả về `processing_status = IDLE`. MVP giả định chỉ chạy **một instance**; muốn chạy nhiều instance thì phải có cơ chế claim job (ghi vào Could).
+Index `(status, created_at)`, `(store_id, target_id)`. Tên ràng buộc trong V5: FK `fk_background_jobs_store_id`/`_created_by`, index `idx_background_jobs_status_created`/`_store_target`. T24 chỉ tạo entity `core.job.BackgroundJob` và repository; executor ở T29. Khi ứng dụng khởi động, job đang `RUNNING` được chuyển sang `FAILED` (`error_code = INTERRUPTED`) và plan tương ứng trả về `processing_status = IDLE`. MVP giả định chỉ chạy **một instance**; muốn chạy nhiều instance thì phải có cơ chế claim job (ghi vào Could).
 
 ## 3. Redis keys (mọi key có TTL)
 
@@ -216,7 +216,7 @@ Version được cấp trước — agent **không** tự chọn số khác:
 | V2 | `V2__stores_and_user_tenancy.sql` | T13 ✓ | Bảng `stores`; cột mới của `users`; không chuyển dữ liệu (§5, D-29); index refresh_tokens; đổi timestamp sang `DATETIME(6)`. **Đã tạo.** |
 | V3 | `V3__store_invitations.sql` | T16 ✓ | Bảng `store_invitations`. **Đã tạo.** |
 | V4 | `V4__vehicles.sql` | T20 ✓ | Bảng `vehicles`. **Đã tạo.** |
-| V5 | `V5__route_plans.sql` | T24 | `background_jobs`, `route_plans`, `route_plan_routes`, `route_plan_stops`, `route_plan_stop_demands` (D-36). |
+| V5 | `V5__route_plans.sql` | T24 ✓ | `background_jobs`, `route_plans`, `route_plan_routes`, `route_plan_stops`, `route_plan_stop_demands` (D-36). **Đã tạo.** |
 
 Task phát sinh cần migration mới lấy số tiếp theo **sau khi** cập nhật bảng này trong cùng PR.
 

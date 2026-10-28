@@ -1,4 +1,4 @@
-package uk.huy.pathwise.user.infrastructure.phonenumber;
+package uk.huy.pathwise.core.phonenumber;
 
 import jakarta.validation.Constraint;
 import jakarta.validation.Payload;

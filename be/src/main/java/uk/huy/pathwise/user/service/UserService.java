@@ -1,6 +1,5 @@
 package uk.huy.pathwise.user.service;
 
-import com.google.i18n.phonenumbers.NumberParseException;
 import lombok.AllArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -20,13 +19,14 @@ import uk.huy.pathwise.user.dto.request.UserModificationRequest;
 import uk.huy.pathwise.user.dto.response.AdminGetUserResponse;
 import uk.huy.pathwise.user.dto.response.GetUserResponse;
 import uk.huy.pathwise.user.infrastructure.mapper.UserMapper;
-import uk.huy.pathwise.user.infrastructure.phonenumber.PhoneCheck;
-import uk.huy.pathwise.user.infrastructure.phonenumber.PhoneNumberProcessor;
+import uk.huy.pathwise.core.phonenumber.PhoneCheck;
+import uk.huy.pathwise.core.phonenumber.PhoneNumberProcessor;
 import uk.huy.pathwise.user.model.User;
 import uk.huy.pathwise.shared.identity.UserIdentity;
 import uk.huy.pathwise.user.repository.UserRepository;
 
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
@@ -170,6 +170,12 @@ public class UserService implements UserAccountService, UserProfileService, Stor
     }
 
     @Override
+    public List<StoreUser> findAllInStore(long storeId, Collection<Long> userIds) {
+        if (userIds.isEmpty()) return List.of();
+        return userRepository.findAllByStoreIdAndIdIn(storeId, userIds).stream().map(userMapper::toStoreUser).toList();
+    }
+
+    @Override
     public List<StoreUser> listInStore(long storeId) {
         return userRepository.findAllByStoreIdOrderById(storeId).stream().map(userMapper::toStoreUser).toList();
     }
@@ -212,11 +218,7 @@ public class UserService implements UserAccountService, UserProfileService, Stor
     private String toE164(String phoneNumber) {
         if (phoneNumber == null || phoneNumber.isBlank()) return null;
         if (phoneNumberProcessor.check(phoneNumber) != PhoneCheck.VALID) throw new AppException(ErrorCode.INVALID_PHONE_NUMBER);
-        try {
-            return phoneNumberProcessor.toE164(phoneNumber);
-        } catch (NumberParseException e) {
-            throw new AppException(ErrorCode.INVALID_PHONE_NUMBER);
-        }
+        return phoneNumberProcessor.toE164(phoneNumber);
     }
 
     @Override

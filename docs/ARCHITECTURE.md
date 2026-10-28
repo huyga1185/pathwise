@@ -38,15 +38,15 @@ Package gốc `uk.huy.pathwise`. Mỗi module là một package cấp 1.
 
 | Module | Trách nhiệm | Trạng thái |
 |---|---|---|
-| `core` | Hạ tầng dùng chung, không chứa nghiệp vụ: envelope response, `ErrorCode`/`AppException`/handler, pagination, `StateStore`, `core.security` (`Hasher` SHA-256, `OpaqueTokenGenerator`; P-28), rate limiter, **job framework** (`core.job`, §8.4), cấu hình web/JSON. | Có — mở rộng |
+| `core` | Hạ tầng dùng chung, không chứa nghiệp vụ: envelope response, `ErrorCode`/`AppException`/handler, pagination, `StateStore`, `core.security` (`Hasher` SHA-256, `OpaqueTokenGenerator`; P-28), `core.phonenumber` (chuẩn hoá và validate số VN, P-29), rate limiter, **job framework** (`core.job`, §8.4), cấu hình web/JSON. | Có — mở rộng |
 | `shared` | Kiểu dữ liệu chia sẻ giữa module: `UserIdentity`, `UserRole`, `UserStatus`, principal `AuthenticatedUser` (P-25). Chỉ record/enum, **không** bean. | Có — sửa |
 | `user` | Tài khoản người dùng: entity `User`, mật khẩu, hồ sơ, trạng thái. | Có — mở rộng |
 | `auth` | Xác thực: đăng ký (orchestrate user + store), đăng nhập, token (access/refresh/OTP token), OTP, session, đổi/quên mật khẩu, security filter chain. | Có — sửa |
 | `notification` | Gửi email theo template (chuyển từ `auth.email.infrastructure` sang, để `store` gửi được lời mời mà không phụ thuộc `auth`). API công khai: `EmailNotificationService.send(templateName, to, variables)`, lỗi gửi là `EmailDeliveryException`. | Có (T12) |
-| `store` | Store, thành viên, lời mời. API công khai: `StoreProvisioningService.createStore(name)` (cho đăng ký, tham gia transaction của bên gọi), `StoreMemberQuery.findActiveMember(storeId, userId)`, event `MemberDisabledEvent` (P-27, auth nghe để thu hồi session). Đọc và ghi user qua `StoreUserService` của `user`. | Có (T13, T16) |
-| `fleet` | Xe. API công khai: `VehicleQuery.findActive(storeId, vehicleId)`, `listActive(storeId)` trả `FleetVehicle`. | Có (T20) |
+| `store` | Store, thành viên, lời mời. API công khai: `StoreProvisioningService.createStore(name)` (cho đăng ký, tham gia transaction của bên gọi), `StoreMemberQuery.findActiveMember(storeId, userId)` và `findMembers(storeId, ids)` (mọi trạng thái, để hiển thị), `StoreQuery.findStore(storeId)` → `StoreProfile` (depot, timezone), event `MemberDisabledEvent` (P-27, auth nghe để thu hồi session). Đọc và ghi user qua `StoreUserService` của `user`. | Có (T13, T16) |
+| `fleet` | Xe. API công khai: `VehicleQuery.findActive(storeId, vehicleId)`, `listActive(storeId)`, `findAll(storeId, ids)` (cả xe đã tắt, để hiển thị) trả `FleetVehicle`. | Có (T20) |
 | `routing` | Adapter định tuyến **không có DB**: `GeocodingProvider`, `MatrixProvider`, `SolverProvider`, (Should) `DirectionsProvider`; endpoint geocoding search. Đổi tên từ `routeoptimizer`. | Có — geocoding (T21), matrix (T22), solver (T23) |
-| `planning` | Route plan, route, stop; optimize, publish, trạng thái; API cho dispatcher **và** API cho driver; vị trí tài xế. | Mới — T24+ |
+| `planning` | Route plan, route, stop; optimize, publish, trạng thái; API cho dispatcher **và** API cho driver; vị trí tài xế. | Có — draft CRUD (T24); T25+ |
 
 ### 2.1 Quy tắc phụ thuộc giữa module (bắt buộc)
 
@@ -93,7 +93,7 @@ Không bắt buộc module nào cũng đủ thư mục; chỉ tạo khi có nộ
 | `*Manager` | Đóng gói vòng đời một khả năng kỹ thuật dùng lại được (sinh/verify/thu hồi token, OTP). | Biết HTTP; kiểm tra quyền nghiệp vụ; được gọi từ controller. | Store/repository/generator/hasher. |
 | `*Repository` | Truy vấn JPA. Mọi truy vấn dữ liệu thuộc store **phải có tham số `storeId`**. | Logic nghiệp vụ. | — |
 | `*Store` | Thao tác Redis có TTL; fail-closed bằng `StateStoreException`. | Logic nghiệp vụ ngoài thao tác atomic cần thiết (ví dụ Lua verify OTP). | `RedisTemplate`. |
-| `*Provider` | Adapter tới hệ thống ngoài; dịch lỗi ngoài thành `ExternalServiceException` (T03). | Biết entity/DTO API của module khác. | HTTP client. |
+| `*Provider` | Adapter tới hệ thống ngoài; dịch lỗi ngoài thành `ExternalServiceException` (T03). Tương tự, class bọc thư viện ngoài (ví dụ `PhoneNumberProcessor`) không để checked exception của thư viện lọt ra nơi gọi (F-42). | Biết entity/DTO API của module khác. | HTTP client. |
 | Mapper (MapStruct) | Entity ↔ DTO trong cùng module. | Gọi service/repository. | — |
 
 **Optional, kết quả và lỗi (P-24):**
@@ -103,7 +103,7 @@ Không bắt buộc module nào cũng đủ thư mục; chỉ tạo khi có nộ
 | Tra cứu có thể không có dữ liệu | `Optional<T>` (chỉ làm kiểu trả về) | `UserRepository.findByEmail`, `StateStore.find` |
 | Kiểm tra/quyết định có nhiều kết quả cần xử lý hoặc log khác nhau, hoặc nhánh thành công mang dữ liệu | `sealed interface` + `record` theo nghiệp vụ (không dùng `Result<T, E>` chung), lý do là enum, xử lý bằng `switch`; chỉ dùng giữa manager và service | `RotationResult` (`Rotated`/`Rejected(reason)`), `AuthenticationResult` |
 | Kiểm tra chỉ có đúng/sai, không cần lý do | `boolean` | `OtpStore.verifyOtp` |
-| Lỗi nghiệp vụ trả cho client | `AppException(ErrorCode)`, chỉ ném từ service (controller khi kiểm tra input) | `AppException(ErrorCode.EMAIL_EXISTED)` |
+| Lỗi nghiệp vụ trả cho client | `AppException(ErrorCode)`, chỉ ném từ service (controller khi kiểm tra input). Cần chỉ ra field sai trong `details` (kiểm tra phải đọc DB) thì dùng `DetailedAppException(code, details)` | `AppException(ErrorCode.EMAIL_EXISTED)`; `DetailedAppException(VALIDATION_ERROR, [stops[1].id: INVALID_STOP_ID])` |
 | Lỗi kỹ thuật | Exception cấp thấp trong `infrastructure`; handler map hoặc service dịch; lỗi bug/cấu hình để về 500 | `ExternalServiceException`, `StateStoreException` |
 
 Chỉ thêm `ErrorCode` khi client phải hành động khác đi; lý do chi tiết để ở kiểu kết quả và log. Không tạo exception riêng cho từng lỗi nghiệp vụ (chỉ subclass `AppException` khi cần dữ liệu cho `details`). Không dùng `Optional` làm field/tham số; dùng `orElseThrow`/`map` thay cho `isEmpty()` + `get()`.
@@ -193,7 +193,7 @@ ADMIN không có `storeId` và **không** truy cập API của store trong MVP.
   - Đăng ký/mời: transaction tạo dữ liệu → commit → gửi email. Email lỗi → user dùng endpoint gửi lại (không rollback dữ liệu).
   - Optimize: tx đọc input → gọi matrix + solver ngoài tx → tx ghi kết quả, kiểm tra `version` của plan (optimistic lock); plan đã đổi → 409 `PLAN_MODIFIED`.
 - Concurrency:
-  - `route_plans.version` (`@Version`) cho mọi sửa plan.
+  - `route_plans.version` (`@Version`) cho mọi sửa plan. Service khoá dòng plan (`SELECT … FOR UPDATE`) rồi so `version` client gửi, nên kiểm tra và ghi là một bước; mỗi request đánh dấu plan đã sửa đúng một lần, và collection route/stop được loại khỏi optimistic lock (`@OptimisticLock(excluded = true)`), nên `version` tăng đúng 1 dù chỉ stop đổi (T24).
   - Cập nhật trạng thái stop: `UPDATE ... WHERE id=? AND status=?` hoặc `@Version` trên stop; thao tác lặp lại cùng trạng thái là idempotent.
   - Refresh token: giữ pessimistic lock khi rotate.
   - Đăng ký/mời trùng email: dựa vào unique constraint; `DataIntegrityViolationException` → 409 `EMAIL_EXISTED`.

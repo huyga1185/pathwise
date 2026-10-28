@@ -4,6 +4,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 import uk.huy.pathwise.fleet.model.Vehicle;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -14,6 +15,8 @@ public interface VehicleRepository extends JpaRepository<Vehicle, Long> {
     List<Vehicle> findAllByStoreIdOrderByNameAscIdAsc(long storeId);
 
     List<Vehicle> findAllByStoreIdAndActiveOrderByNameAscIdAsc(long storeId, boolean active);
+
+    List<Vehicle> findAllByStoreIdAndIdIn(long storeId, Collection<Long> ids);
 
     boolean existsByStoreIdAndName(long storeId, String name);
 

@@ -1,4 +1,4 @@
-package uk.huy.pathwise.user.infrastructure.phonenumber;
+package uk.huy.pathwise.core.phonenumber;
 
 public enum PhoneCheck {
     VALID,

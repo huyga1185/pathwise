@@ -1,5 +1,5 @@
 package uk.huy.pathwise.user.dto.request;
 
-import uk.huy.pathwise.user.infrastructure.phonenumber.ValidPhoneNumber;
+import uk.huy.pathwise.core.phonenumber.ValidPhoneNumber;
 
 public record UserModificationRequest(@ValidPhoneNumber String phoneNumber) {}
