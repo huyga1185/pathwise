@@ -8,11 +8,13 @@ import java.util.List;
 /**
  * {@code DriverRouteDetail} of API_SPEC §8.
  *
- * @param start the route's own start, the plan depot in the MVP (D-20)
- * @param stops in visiting order
+ * @param planName the plan's name, as in the route list, so the app can title a route it opens directly (P-39)
+ * @param start    the route's own start, the plan depot in the MVP (D-20)
+ * @param stops    in visiting order
  */
 public record DriverRouteDetailResponse(long routeId,
                                         long planId,
+                                        String planName,
                                         LocalDate planDate,
                                         RouteStatus status,
                                         LocationResponse start,

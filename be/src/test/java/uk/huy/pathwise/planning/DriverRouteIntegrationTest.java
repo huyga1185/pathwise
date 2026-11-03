@@ -81,6 +81,7 @@ class DriverRouteIntegrationTest extends AbstractIntegrationTest {
         getRoute(store.driver(), routeId)
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.routeId").value(routeId))
+                .andExpect(jsonPath("$.data.planName").value("Giao sáng"))
                 .andExpect(jsonPath("$.data.status").value("PENDING"))
                 .andExpect(jsonPath("$.data.start.address").value("Kho"))
                 .andExpect(jsonPath("$.data.end.lat").value(16.05))

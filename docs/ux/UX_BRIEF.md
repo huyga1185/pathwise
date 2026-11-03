@@ -59,7 +59,7 @@ Một người có `canDrive` dùng cả hai: web để điều phối, mobile �
 |---|---|---|
 | Đăng nhập, quên mật khẩu, nhận lời mời | như web, kèm `X-Client-Platform: mobile` | |
 | Route trong ngày | `GET /driver/routes?date=` | Mặc định hôm nay; mỗi route: tên plan, số stop đã xong/tổng, giờ xuất phát, `status` riêng của route. |
-| Chi tiết route | `GET /driver/routes/{routeId}` | Danh sách stop theo `sequence`: nhãn, người nhận (nút gọi), địa chỉ, ETA, time window, ghi chú, trạng thái. Stop kế tiếp nổi bật. |
+| Chi tiết route | `GET /driver/routes/{routeId}` | Tiêu đề lấy `planName` của response (mở thẳng màn này vẫn có tên). Danh sách stop theo `sequence`: nhãn, người nhận (nút gọi), địa chỉ, ETA, time window, ghi chú, trạng thái. Stop kế tiếp nổi bật. |
 | Dẫn đường | không có endpoint | Nút mở Google Maps (`https://www.google.com/maps/dir/?api=1&destination={lat},{lon}`) hoặc Apple Maps (`https://maps.apple.com/?daddr={lat},{lon}`) theo nền tảng (D-07, FR-D02). |
 | Báo kết quả stop | `PATCH /driver/routes/{routeId}/stops/{stopId}/status` | Ba nút: Đã giao, Không giao được (bắt buộc lý do, ≤ 255 ký tự), Bỏ qua. **Không hoàn tác được** (P-34): cần bước xác nhận. Response có `routeStatus`, `planStatus` để báo "đã xong route". Mất mạng thì gửi lại cùng trạng thái: server trả 200 (idempotent). |
 
@@ -77,7 +77,7 @@ Một người có `canDrive` dùng cả hai: web để điều phối, mobile �
 | Stop (giao hàng) | `PENDING` → `DELIVERED` / `FAILED` / `SKIPPED` | chờ xám, đã giao xanh lá, thất bại đỏ (kèm lý do), bỏ qua vàng |
 | Stop (vị trí) | `geocodeStatus`: `PROVIDED`, `PENDING`, `RESOLVED`, `FAILED` (+ `geocodeError`: `NOT_FOUND`, `PROVIDER_ERROR`) | `RESOLVED` hiện `geocodedDisplayName` để dispatcher đối chiếu |
 | Stop chưa xếp | `dropReason`: `NOT_OPTIMIZED` (chưa tối ưu), `INFEASIBLE` (solver không xếp được) | |
-| Route (tài xế) | `PENDING`, `IN_PROGRESS`, `COMPLETED` | tính riêng cho từng route (P-35) |
+| Route | `PENDING`, `IN_PROGRESS`, `COMPLETED` | tính riêng cho từng route (P-35); tài xế thấy ở `/driver/routes`, dispatcher thấy ở `PlanDetail.routes[].status` (P-39); client không tự tính |
 | Job | `QUEUED`, `RUNNING`, `SUCCEEDED`, `FAILED` (+ `errorCode`) | |
 
 ### 5.3 Xung đột và giới hạn

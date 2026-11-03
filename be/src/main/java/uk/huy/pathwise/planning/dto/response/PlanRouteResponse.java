@@ -2,6 +2,7 @@ package uk.huy.pathwise.planning.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import uk.huy.pathwise.fleet.model.CapacityUnit;
+import uk.huy.pathwise.planning.model.RouteStatus;
 import uk.huy.pathwise.shared.identity.UserRole;
 
 import java.time.Instant;
@@ -9,12 +10,15 @@ import java.time.LocalTime;
 import java.util.List;
 
 /**
- * @param load  total demand of the route's stops in the vehicle's capacity unit (D-36); null until optimized
- * @param stops in visiting order; empty until optimized
+ * @param status the route's own status, from its stops (P-35, P-39); PENDING until the first stop is reported, so
+ *               always PENDING in a draft
+ * @param load   total demand of the route's stops in the vehicle's capacity unit (D-36); null until optimized
+ * @param stops  in visiting order; empty until optimized
  */
 public record PlanRouteResponse(long id,
                                 Driver driver,
                                 Vehicle vehicle,
+                                RouteStatus status,
                                 @JsonFormat(pattern = "HH:mm") LocalTime shiftStart,
                                 @JsonFormat(pattern = "HH:mm") LocalTime shiftEnd,
                                 Integer maxDistanceMeters,

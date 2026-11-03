@@ -89,6 +89,8 @@ abstract class OptimizePlanIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.data.routes[0].stops", hasSize(3)))
                 .andExpect(jsonPath("$.data.routes[0].stops[*].sequence", contains(1, 2, 3)))
                 .andExpect(jsonPath("$.data.routes[0].load").value(5))
+                // Nothing is reported on a draft (P-39).
+                .andExpect(jsonPath("$.data.routes[0].status").value("PENDING"))
                 .andExpect(jsonPath("$.data.routes[0].plannedDistanceMeters").isNumber())
                 .andReturn().getResponse().getContentAsString();
         int routeDistance = JsonPath.read(body, "$.data.routes[0].plannedDistanceMeters");

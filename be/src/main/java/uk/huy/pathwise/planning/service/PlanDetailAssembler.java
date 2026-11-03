@@ -10,6 +10,7 @@ import uk.huy.pathwise.job.service.JobService;
 import uk.huy.pathwise.planning.dto.response.*;
 import uk.huy.pathwise.planning.infrastructure.mapper.PlanMapper;
 import uk.huy.pathwise.planning.model.GeocodeStatus;
+import uk.huy.pathwise.planning.model.PlanLifecycle;
 import uk.huy.pathwise.planning.model.PlanRoute;
 import uk.huy.pathwise.planning.model.PlanStop;
 import uk.huy.pathwise.planning.model.RoutePlan;
@@ -89,6 +90,7 @@ class PlanDetailAssembler {
                         vehicle == null ? null : vehicle.name(),
                         route.getVehicleCapacity(),
                         route.getVehicleCapacityUnit()),
+                PlanLifecycle.routeStatus(ordered.stream().map(PlanStop::getStatus).toList()),
                 route.getShiftStart(),
                 route.getShiftEnd(),
                 route.getMaxDistanceMeters(),
