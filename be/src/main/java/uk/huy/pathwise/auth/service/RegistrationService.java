@@ -8,17 +8,24 @@ import uk.huy.pathwise.auth.dto.request.RegisterRequest;
 import uk.huy.pathwise.auth.dto.request.ResendVerificationRequest;
 import uk.huy.pathwise.auth.dto.request.VerifyEmailRequest;
 import uk.huy.pathwise.auth.dto.response.RegisterResponse;
+import uk.huy.pathwise.auth.infrastructure.ratelimit.AuthRateLimitPolicy;
+import uk.huy.pathwise.auth.model.ClientDetail;
 import uk.huy.pathwise.auth.otp.dto.OtpSendResult;
 import uk.huy.pathwise.auth.otp.manager.OtpManager;
 import uk.huy.pathwise.auth.otp.model.OtpPurpose;
 import uk.huy.pathwise.core.exception.AppException;
 import uk.huy.pathwise.core.exception.ErrorCode;
+import uk.huy.pathwise.core.ratelimit.RateLimitDecision;
+import uk.huy.pathwise.core.ratelimit.RateLimitedException;
+import uk.huy.pathwise.core.statestore.StateStoreException;
 import uk.huy.pathwise.notification.service.EmailDeliveryException;
 import uk.huy.pathwise.shared.identity.UserIdentity;
 import uk.huy.pathwise.shared.identity.UserStatus;
 import uk.huy.pathwise.store.service.StoreProvisioningService;
 import uk.huy.pathwise.user.dto.AccountState;
 import uk.huy.pathwise.user.service.UserAccountService;
+
+import java.util.function.Supplier;
 
 /**
  * OWNER sign-up and email verification (D-15, FR-A01, FR-A02).
@@ -34,22 +41,26 @@ public class RegistrationService {
     private final StoreProvisioningService storeProvisioningService;
     private final OtpManager otpManager;
     private final TransactionTemplate transactionTemplate;
+    private final AuthRateLimitPolicy rateLimitPolicy;
 
     public RegistrationService(UserAccountService userService,
                                StoreProvisioningService storeProvisioningService,
                                OtpManager otpManager,
-                               PlatformTransactionManager transactionManager) {
+                               PlatformTransactionManager transactionManager,
+                               AuthRateLimitPolicy rateLimitPolicy) {
         this.userService = userService;
         this.storeProvisioningService = storeProvisioningService;
         this.otpManager = otpManager;
         this.transactionTemplate = new TransactionTemplate(transactionManager);
+        this.rateLimitPolicy = rateLimitPolicy;
     }
 
     /**
-     * @throws AppException {@code EMAIL_EXISTED} if the email (in any case) is already used
+     * @throws AppException {@code EMAIL_EXISTED} if the email (in any case) is already used; {@code RATE_LIMITED} by IP
      */
-    public RegisterResponse register(RegisterRequest request) {
+    public RegisterResponse register(ClientDetail clientDetail, RegisterRequest request) {
         if (request == null) throw new NullPointerException("Register request could not be null");
+        enforce(() -> rateLimitPolicy.register(clientDetail.ip()));
         // Programmatic transaction: the OTP email must be sent after the commit, from this same method.
         UserIdentity owner = transactionTemplate.execute(status -> {
             long storeId = storeProvisioningService.createStore(request.storeName().trim());
@@ -78,9 +89,12 @@ public class RegistrationService {
     /**
      * Sends a new code when the account is waiting for verification. Always succeeds, so the response does not
      * reveal whether the email is registered; a running cooldown or a failed email is only logged.
+     *
+     * @throws AppException {@code RATE_LIMITED} by IP or email, registered or not
      */
-    public void resendVerification(ResendVerificationRequest request) {
+    public void resendVerification(ClientDetail clientDetail, ResendVerificationRequest request) {
         if (request == null) throw new NullPointerException("Resend verification request could not be null");
+        enforce(() -> rateLimitPolicy.resendVerification(clientDetail.ip(), request.email()));
         userService.findAccountState(request.email())
                 .filter(account -> !account.emailVerified() && account.status() == UserStatus.PENDING_VERIFICATION)
                 .ifPresent(account -> sendVerificationOtp(account.userId(), account.email()));
@@ -98,5 +112,25 @@ public class RegistrationService {
 
     private static String blankToNull(String value) {
         return value == null || value.isBlank() ? null : value.trim();
+    }
+
+    /**
+     * Fails closed: a limit that cannot be checked refuses the request (NFR-01, P-37).
+     *
+     * @throws RateLimitedException if a limit of the endpoint is used up
+     * @throws AppException         {@code SERVICE_UNAVAILABLE} if the counters cannot be reached
+     */
+    private static void enforce(Supplier<RateLimitDecision> rateLimit) {
+        RateLimitDecision decision;
+        try {
+            decision = rateLimit.get();
+        } catch (StateStoreException e) {
+            log.error("Rate limit could not be checked, refusing the request", e);
+            throw new AppException(ErrorCode.SERVICE_UNAVAILABLE);
+        }
+        switch (decision) {
+            case RateLimitDecision.Allowed allowed -> {}
+            case RateLimitDecision.Limited limited -> throw new RateLimitedException(limited.retryAfter());
+        }
     }
 }

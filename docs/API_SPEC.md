@@ -5,9 +5,8 @@
 > Cột "Hiện trạng" ở mọi bảng: ✅ khớp spec và có test · 🟡 có nhưng còn lệch (ghi rõ lệch gì) · ❌ chưa có. Lịch sử triển khai theo task nằm ở `CURRENT_STATE.md` §5, không ghi ở đây.
 > Lần rà soát contract gần nhất: T44 (2026-10-29, P-32).
 
-## 0. Lệch hiện tại so với spec (cập nhật 2026-11-02, sau T31)
+## 0. Lệch hiện tại so với spec (cập nhật 2026-11-03, sau T40)
 
-- Chưa có 429 `RATE_LIMITED` cho `/register`, `/email/verify/resend`, `/log-in`, `/password/forgot`, `POST /store/invitations` (T40).
 - `GET /admin/users` chưa trả `storeId`, `status`.
 - §7: chưa có `driver-locations` (T32), `routes` (T28).
 - §8: chưa có `POST /driver/location` (T32), `directions` (T33).
@@ -41,6 +40,11 @@
 - 404: tài nguyên trên path không tồn tại hoặc thuộc store khác → `NOT_FOUND`. Mã 404 riêng chỉ dùng khi client phải xử lý khác đi (P-24), hiện chỉ có `INVITATION_INVALID` (P-32).
 - Mã HTTP chuẩn: JSON hỏng hoặc giá trị enum lạ → 400 `MALFORMED_REQUEST`; path không tồn tại → 404 `NOT_FOUND`; sai method → 405 `METHOD_NOT_ALLOWED`; vi phạm ràng buộc DB không có mã riêng → 409 `CONFLICT`.
 
+**Rate limit** (P-16, P-37)
+- Áp dụng cho `POST /auth/log-in` (theo IP và email), `/auth/register` (IP), `/auth/email/verify/resend` và `/auth/password/forgot` (IP và email), `/auth/password/change/otp` (user), `POST /store/invitations` (store). Fixed window; ngưỡng ở `rate-limit.rules.*`, mặc định ghi ở P-37. Mọi request đều được đếm, kể cả thành công, và được đếm trước khi xử lý.
+- Vượt ngưỡng → 429 `RATE_LIMITED`, header `Retry-After` = số giây tới khi hết window (làm tròn lên). `/email/verify/resend`, `/password/forgot` vẫn trả 429 với email không tồn tại, nên không lộ email nào đã đăng ký.
+- Không kiểm được giới hạn (Redis lỗi) → 503 `SERVICE_UNAVAILABLE` (fail-closed); client thử lại sau.
+
 **PATCH = JSON Merge Patch** (RFC 7396, P-32)
 - Mọi `PATCH`: field **vắng** trong JSON thì giữ nguyên; field có mặt với `null` thì **xoá** giá trị.
 - Field không xoá được mà gửi `null` → 400 `VALIDATION_ERROR`, detail `{field, code: "NOT_NULLABLE"}`.
@@ -53,19 +57,19 @@
 
 | Method & path | Quyền | Request | Response | Lỗi chính | Hiện trạng |
 |---|---|---|---|---|---|
-| `POST /register` | P | `{email, password(8–72), storeName(1–150), fullName?}` | 201 `{email, status: "PENDING_VERIFICATION"}`; gửi OTP `VERIFY_EMAIL` | 400 · 409 `EMAIL_EXISTED` · 429 | 🟡 chưa có 429 |
+| `POST /register` | P | `{email, password(8–72), storeName(1–150), fullName?}` | 201 `{email, status: "PENDING_VERIFICATION"}`; gửi OTP `VERIFY_EMAIL` | 400 · 409 `EMAIL_EXISTED` · 429 `RATE_LIMITED` | ✅ |
 | `POST /email/verify` | P | `{email, otp}` | 204 | 400 `INVALID_OTP` · 409 `EMAIL_ALREADY_VERIFIED` | ✅ |
-| `POST /email/verify/resend` | P | `{email}` | 204 (luôn) | 429 `RATE_LIMITED` | 🟡 chưa có 429 |
-| `POST /log-in` | P | `{email, password}` | 200 `LoginResponse` (+ cookie nếu web) | 401 `INVALID_EMAIL_OR_PASSWORD` · 403 `EMAIL_NOT_VERIFIED` · 403 `ACCOUNT_DISABLED` · 429 | 🟡 chưa có 429 |
+| `POST /email/verify/resend` | P | `{email}` | 204 (khi không bị giới hạn) | 429 `RATE_LIMITED` | ✅ |
+| `POST /log-in` | P | `{email, password}` | 200 `LoginResponse` (+ cookie nếu web) | 401 `INVALID_EMAIL_OR_PASSWORD` · 403 `EMAIL_NOT_VERIFIED` · 403 `ACCOUNT_DISABLED` · 429 `RATE_LIMITED` | ✅ |
 | `POST /refresh` | P | web: cookie · mobile: `{refreshToken}` | 200 `TokenResponse` (+ cookie mới nếu web) | 401 `INVALID_TOKEN` | ✅ |
 | `POST /log-out` | P | web: cookie · mobile: `{refreshToken}` | 204 (idempotent; xoá cookie nếu web) | — | ✅ |
 | `GET /sessions` | A | — | 200 `[SessionResponse]` | — | ✅ |
 | `DELETE /sessions/{sessionId}` | A | — | 204 | 404 `NOT_FOUND` | ✅ |
 | `POST /sessions/revoke-others` | A | — | 204 | — | ✅ |
-| `POST /password/forgot` | P | `{email}` | 204 (luôn); gửi OTP `RESET_PASSWORD` nếu email ACTIVE | 429 | 🟡 chưa có 429 |
+| `POST /password/forgot` | P | `{email}` | 204 (khi không bị giới hạn); gửi OTP `RESET_PASSWORD` nếu email ACTIVE | 429 `RATE_LIMITED` | ✅ |
 | `POST /password/reset/verify` | P | `{email, otp}` | 200 `{resetToken, expiresAt}` | 400 `INVALID_OTP` | ✅ |
 | `POST /password/reset` | P | `{resetToken, newPassword}` | 204; revoke **mọi** session | 400 `INVALID_RESET_TOKEN` (P-26) | ✅ |
-| `POST /password/change/otp` | A | `{currentPassword}` | 204; gửi OTP `CHANGE_PASSWORD` | 400 `INVALID_CURRENT_PASSWORD` · 429 `OTP_COOLDOWN` | ✅ |
+| `POST /password/change/otp` | A | `{currentPassword}` | 204; gửi OTP `CHANGE_PASSWORD` | 400 `INVALID_CURRENT_PASSWORD` · 429 `OTP_COOLDOWN` · 429 `RATE_LIMITED` | ✅ |
 | `PUT /password` | A | `{otp, newPassword}` | 204; revoke mọi session **khác** | 400 `INVALID_OTP` | ✅ |
 
 ```jsonc
@@ -82,7 +86,7 @@
 ```
 
 Ghi chú:
-- Không tiết lộ email có tồn tại hay không: `/email/verify` với email không tồn tại → 400 `INVALID_OTP`; `/email/verify/resend`, `/password/forgot` luôn 204 (chỉ gửi khi tài khoản đúng trạng thái và hết cooldown OTP); `/log-in` sai mật khẩu luôn 401, chỉ báo `EMAIL_NOT_VERIFIED`/`ACCOUNT_DISABLED` khi mật khẩu đúng; `/password/reset/verify` với email không tồn tại hoặc không ACTIVE → 400 `INVALID_OTP`.
+- Không tiết lộ email có tồn tại hay không: `/email/verify` với email không tồn tại → 400 `INVALID_OTP`; `/email/verify/resend`, `/password/forgot` luôn 204 trừ khi bị rate limit (429 như nhau với mọi email; chỉ gửi khi tài khoản đúng trạng thái và hết cooldown OTP); `/log-in` sai mật khẩu luôn 401, chỉ báo `EMAIL_NOT_VERIFIED`/`ACCOUNT_DISABLED` khi mật khẩu đúng; `/password/reset/verify` với email không tồn tại hoặc không ACTIVE → 400 `INVALID_OTP`.
 - `/register`: tạo store và OWNER trong một transaction, gửi OTP sau commit; email lỗi vẫn 201, gửi lại bằng `/email/verify/resend`. Email chuẩn hoá (`trim().toLowerCase()`, P-19), trùng khác hoa thường → 409.
 - `LoginResponse.user`: `fullName` bỏ khi chưa đặt, `storeId` bỏ với ADMIN, `canDrive` luôn `true` với DRIVER.
 - Cookie web: `HttpOnly; Secure; SameSite=<cấu hình>; Path=/api/v1/auth`. Thiếu, sai, hết hạn refresh token, hoặc user không còn ACTIVE → 401 `INVALID_TOKEN`.
@@ -118,7 +122,7 @@ Store luôn là store của actor (không có `storeId` trong path).
 | `GET /store/members` | O, D | query `role?`, `status?`, `assignable?` (true: chỉ người được gán route, tức DRIVER hoặc `canDrive`, đang ACTIVE) | `[Member]` | — | ✅ |
 | `PATCH /store/members/{userId}` | O | merge patch `{status?: ACTIVE\|DISABLED, role?: DISPATCHER\|DRIVER, canDrive?}`; không field nào xoá được (`null` → `NOT_NULLABLE`). DISABLED thì thu hồi mọi session. | 200 `Member` | 404 · 422 `CANNOT_MODIFY_OWNER` | ✅ |
 | `PATCH /store/members/me/can-drive` | O | `{canDrive}`: OWNER tự bật/tắt việc tự đi giao | 200 `Member` | — | ✅ |
-| `POST /store/invitations` | O | `{email, role: DISPATCHER\|DRIVER}` | 201 `Invitation`; gửi email mã mời | 409 `EMAIL_EXISTED` · 429 | 🟡 chưa có 429 |
+| `POST /store/invitations` | O | `{email, role: DISPATCHER\|DRIVER}` | 201 `Invitation`; gửi email mã mời | 409 `EMAIL_EXISTED` · 429 `RATE_LIMITED` | ✅ |
 | `GET /store/invitations` | O | query `status?` | `[Invitation]` | — | ✅ |
 | `POST /store/invitations/{id}/revoke` | O | — | 204; lời mời thành `REVOKED`, vẫn có trong danh sách | 404 · 422 `INVITATION_NOT_PENDING` | ✅ |
 | `GET /invitations/{code}` | P | — | `{storeName, email, role, expiresAt}` | 404 `INVITATION_INVALID` | ✅ |
@@ -352,10 +356,11 @@ Người gọi phải có `role=DRIVER` hoặc `canDrive=true` (D-21); người 
 | Nghiệp vụ | `CANNOT_MODIFY_OWNER`, `INVITATION_NOT_PENDING`, `STORE_DEPOT_REQUIRED`, `INVALID_ASSIGNMENT`, `PLAN_TOO_LARGE`, `PLAN_NOT_EDITABLE`, `NOTHING_TO_GEOCODE`, `PLAN_INCOMPLETE`, `STOPS_NOT_GEOCODED`, `PLAN_NOT_OPTIMIZED`, `PLAN_NOT_CANCELLABLE`, `PLAN_NOT_ACTIVE`, `SHIFT_OVERLAP`, `INVALID_STOP_TRANSITION`, `FAILURE_REASON_REQUIRED` | 422 |
 | Giới hạn | `OTP_COOLDOWN`, `RATE_LIMITED` | 429 |
 | Provider | `GEOCODING_PROVIDER_ERROR`, `ROUTING_PROVIDER_ERROR` | 502 |
-| Provider | `GEOCODING_BUSY` | 503 |
+| Provider / hạ tầng | `GEOCODING_BUSY`, `SERVICE_UNAVAILABLE` | 503 |
 | Khác | `INTERNAL_ERROR` | 500 |
 
 - `CONFLICT`: vi phạm ràng buộc DB không có mã nghiệp vụ riêng, ví dụ hai request đăng ký đồng thời.
+- `SERVICE_UNAVAILABLE`: endpoint có rate limit không kiểm được giới hạn vì Redis lỗi (P-37).
 - Không còn trả (giữ trong enum dạng `@Deprecated` vì `ErrorCode` chỉ được thêm): `USER_NOT_FOUND`, `SESSION_NOT_FOUND`, `JOB_NOT_FOUND` (thay bằng `NOT_FOUND`, P-32), `COULD_NOT_FIND_USER`, `COULD_NOT_UPDATE_USER_PASSWORD`. Đã bỏ cùng `/route/optimize*` ở T27 (`@Deprecated`): `INVALID_DEPOT`, `COULD_NOT_FIND_CHEAPEST_ROUTE`, `COULD_NOT_FIND_ADDRESS`.
 - `Job.errorCode` (§6) có thêm các giá trị không phải `ErrorCode`: `INTERRUPTED`, `JOB_QUEUE_FULL`, `NO_SOLUTION`.
 - Mã validation trong `details[].code` dùng UPPER_SNAKE, ví dụ `EMAIL_REQUIRED`, `INVALID_EMAIL_FORMAT`, `INVALID_PASSWORD_LENGTH`, `PHONE_NUMBER_WRONG_REGION`, `NOT_NULLABLE`.

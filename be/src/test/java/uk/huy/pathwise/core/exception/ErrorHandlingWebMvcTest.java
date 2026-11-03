@@ -26,8 +26,10 @@ import uk.huy.pathwise.shared.identity.UserRole;
 import uk.huy.pathwise.user.controller.AdminUserController;
 import uk.huy.pathwise.user.controller.UserController;
 import uk.huy.pathwise.core.phonenumber.PhoneNumberProcessor;
+import uk.huy.pathwise.core.ratelimit.RateLimitedException;
 import uk.huy.pathwise.user.service.UserProfileService;
 
+import java.time.Duration;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
@@ -37,6 +39,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -118,8 +121,31 @@ class ErrorHandlingWebMvcTest {
     }
 
     @Test
+    void forgotPassword_whenRateLimited_return429WithRetryAfterRoundedUp() throws Exception {
+        doThrow(new RateLimitedException(Duration.ofMillis(1500))).when(passwordResetService).forgotPassword(any(), any());
+
+        mockMvc.perform(post("/api/v1/auth/password/forgot")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"email\":\"a@pathwise.test\"}"))
+                .andExpect(status().isTooManyRequests())
+                .andExpect(header().string(HttpHeaders.RETRY_AFTER, "2"))
+                .andExpect(jsonPath("$.code").value("RATE_LIMITED"));
+    }
+
+    @Test
+    void forgotPassword_whenRateLimitCannotBeChecked_return503() throws Exception {
+        doThrow(new AppException(ErrorCode.SERVICE_UNAVAILABLE)).when(passwordResetService).forgotPassword(any(), any());
+
+        mockMvc.perform(post("/api/v1/auth/password/forgot")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"email\":\"a@pathwise.test\"}"))
+                .andExpect(status().isServiceUnavailable())
+                .andExpect(jsonPath("$.code").value("SERVICE_UNAVAILABLE"));
+    }
+
+    @Test
     void register_whenEmailExisted_return409() throws Exception {
-        doThrow(new AppException(ErrorCode.EMAIL_EXISTED)).when(registrationService).register(any());
+        doThrow(new AppException(ErrorCode.EMAIL_EXISTED)).when(registrationService).register(any(), any());
 
         mockMvc.perform(post("/api/v1/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -130,7 +156,7 @@ class ErrorHandlingWebMvcTest {
 
     @Test
     void register_whenConcurrentInsertViolatesConstraint_return409Conflict() throws Exception {
-        doThrow(new DataIntegrityViolationException("Duplicate entry")).when(registrationService).register(any());
+        doThrow(new DataIntegrityViolationException("Duplicate entry")).when(registrationService).register(any(), any());
 
         mockMvc.perform(post("/api/v1/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)

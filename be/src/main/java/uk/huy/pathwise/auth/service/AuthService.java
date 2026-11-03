@@ -6,6 +6,7 @@ import uk.huy.pathwise.auth.dto.request.LogInRequest;
 import uk.huy.pathwise.auth.dto.response.LogInResponse;
 import uk.huy.pathwise.auth.dto.response.RefreshTokenResponse;
 import uk.huy.pathwise.auth.dto.response.SessionResponse;
+import uk.huy.pathwise.auth.infrastructure.ratelimit.AuthRateLimitPolicy;
 import uk.huy.pathwise.auth.token.jwt.manager.AccessTokenManager;
 import uk.huy.pathwise.auth.token.opaque.refreshtoken.dto.RefreshTokenGenerationDetail;
 import uk.huy.pathwise.auth.token.opaque.refreshtoken.dto.RotationResult.Rejected;
@@ -15,6 +16,9 @@ import uk.huy.pathwise.auth.model.ClientDetail;
 import uk.huy.pathwise.auth.model.SessionRevocation;
 import uk.huy.pathwise.core.exception.AppException;
 import uk.huy.pathwise.core.exception.ErrorCode;
+import uk.huy.pathwise.core.ratelimit.RateLimitDecision;
+import uk.huy.pathwise.core.ratelimit.RateLimitedException;
+import uk.huy.pathwise.core.statestore.StateStoreException;
 import uk.huy.pathwise.shared.identity.AuthenticatedUser;
 import uk.huy.pathwise.shared.identity.UserIdentity;
 import uk.huy.pathwise.user.dto.AuthenticationResult.Authenticated;
@@ -24,6 +28,7 @@ import uk.huy.pathwise.user.dto.AuthenticationResult.InvalidCredentials;
 import uk.huy.pathwise.user.service.UserAccountService;
 
 import java.util.List;
+import java.util.function.Supplier;
 
 @Service
 @Slf4j
@@ -31,21 +36,26 @@ public class AuthService {
     private final UserAccountService userService;
     private final AccessTokenManager accessTokenManager;
     private final RefreshTokenManager refreshTokenManager;
+    private final AuthRateLimitPolicy rateLimitPolicy;
 
     public AuthService(UserAccountService userService,
                        AccessTokenManager accessTokenManager,
-                       RefreshTokenManager refreshTokenManager) {
+                       RefreshTokenManager refreshTokenManager,
+                       AuthRateLimitPolicy rateLimitPolicy) {
         this.userService = userService;
         this.accessTokenManager = accessTokenManager;
         this.refreshTokenManager = refreshTokenManager;
+        this.rateLimitPolicy = rateLimitPolicy;
     }
 
     /**
      * @throws AppException {@code INVALID_EMAIL_OR_PASSWORD} (401), or for a correct password on an account that
-     *                      cannot log in (BR-04) {@code EMAIL_NOT_VERIFIED} or {@code ACCOUNT_DISABLED} (403)
+     *                      cannot log in (BR-04) {@code EMAIL_NOT_VERIFIED} or {@code ACCOUNT_DISABLED} (403);
+     *                      {@code RATE_LIMITED} (429) by IP or email before the password is checked
      */
     public LogInResponse logIn(ClientDetail clientDetail, LogInRequest request) {
         if (request == null) throw new NullPointerException("Log in request could not be null");
+        enforce(() -> rateLimitPolicy.logIn(clientDetail.ip(), request.email()));
         Authenticated user = switch (userService.authenticate(request.email(), request.password())) {
             case Authenticated authenticated -> authenticated;
             case InvalidCredentials ignored -> throw new AppException(ErrorCode.INVALID_EMAIL_OR_PASSWORD);
@@ -125,5 +135,25 @@ public class AuthService {
     public void revokeOtherSessions(AuthenticatedUser actor) {
         if (actor == null) throw new NullPointerException("Actor could not be null");
         refreshTokenManager.revokeAllForUser(actor.identity().id(), actor.sessionId());
+    }
+
+    /**
+     * Fails closed: a limit that cannot be checked refuses the request (NFR-01, P-37).
+     *
+     * @throws RateLimitedException if a limit of the endpoint is used up
+     * @throws AppException         {@code SERVICE_UNAVAILABLE} if the counters cannot be reached
+     */
+    private static void enforce(Supplier<RateLimitDecision> rateLimit) {
+        RateLimitDecision decision;
+        try {
+            decision = rateLimit.get();
+        } catch (StateStoreException e) {
+            log.error("Rate limit could not be checked, refusing the request", e);
+            throw new AppException(ErrorCode.SERVICE_UNAVAILABLE);
+        }
+        switch (decision) {
+            case RateLimitDecision.Allowed allowed -> {}
+            case RateLimitDecision.Limited limited -> throw new RateLimitedException(limited.retryAfter());
+        }
     }
 }

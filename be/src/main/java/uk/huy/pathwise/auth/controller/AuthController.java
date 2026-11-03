@@ -59,8 +59,9 @@ public class AuthController {
     private static final String MOBILE_PLATFORM = "mobile";
 
     @PostMapping("/register")
-    public ResponseEntity<ApiResponse<RegisterResponse>> register(@Valid @RequestBody RegisterRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(new ApiResponse<>(registrationService.register(request)));
+    public ResponseEntity<ApiResponse<RegisterResponse>> register(@CurrentClient ClientDetail clientDetail,
+                                                                  @Valid @RequestBody RegisterRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(new ApiResponse<>(registrationService.register(clientDetail, request)));
     }
 
     @PostMapping("/email/verify")
@@ -73,8 +74,9 @@ public class AuthController {
      * Always 204, whether or not the email is registered.
      */
     @PostMapping("/email/verify/resend")
-    public ResponseEntity<Void> resendVerification(@Valid @RequestBody ResendVerificationRequest request) {
-        registrationService.resendVerification(request);
+    public ResponseEntity<Void> resendVerification(@CurrentClient ClientDetail clientDetail,
+                                                   @Valid @RequestBody ResendVerificationRequest request) {
+        registrationService.resendVerification(clientDetail, request);
         return ResponseEntity.noContent().build();
     }
 
@@ -82,8 +84,9 @@ public class AuthController {
      * Always 204, whether or not the email is registered (P-06).
      */
     @PostMapping("/password/forgot")
-    public ResponseEntity<Void> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
-        passwordResetService.forgotPassword(request);
+    public ResponseEntity<Void> forgotPassword(@CurrentClient ClientDetail clientDetail,
+                                               @Valid @RequestBody ForgotPasswordRequest request) {
+        passwordResetService.forgotPassword(clientDetail, request);
         return ResponseEntity.noContent().build();
     }
 

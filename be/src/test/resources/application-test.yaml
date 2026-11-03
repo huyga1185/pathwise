@@ -40,3 +40,17 @@ jobs:
 routing:
   solver:
     time-limit: 1s
+
+# Every test runs from the same IP and many share a user or store: no test may hit a limit by accident.
+# RateLimitIntegrationTest sets its own low limits.
+rate-limit:
+  rules:
+    log-in-ip: { limit: 1000000 }
+    log-in-email: { limit: 1000000 }
+    register-ip: { limit: 1000000 }
+    resend-verification-ip: { limit: 1000000 }
+    resend-verification-email: { limit: 1000000 }
+    forgot-password-ip: { limit: 1000000 }
+    forgot-password-email: { limit: 1000000 }
+    change-password-otp-user: { limit: 1000000 }
+    create-invitation-store: { limit: 1000000 }
