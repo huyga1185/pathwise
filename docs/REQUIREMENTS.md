@@ -131,3 +131,5 @@ MVP được coi là xong khi **tất cả** điều sau được kiểm chứng
 5. Không còn lỗi nào thuộc nhóm "Critical/High" trong `CURRENT_STATE.md` ở trạng thái mở.
 6. `docker compose --profile app up` chạy được từ repo sạch theo README; image `develop-<sha>` được publish lên GHCR và deploy được theo `docs/DEPLOYMENT.md`.
 7. `API_SPEC.md` khớp với implementation (kiểm bằng OpenAPI sinh ra).
+
+Kết quả nghiệm thu từng tiêu chí và bằng chứng: `ACCEPTANCE.md` (T43).

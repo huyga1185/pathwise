@@ -385,6 +385,7 @@ T42 cũ (Docker, compose, README) đã được gộp vào T05 và T07 trong M0 
 - **Tầng:** Must · **Ước lượng:** 1 ngày · **REQ:** §6
 - **Phạm vi:** integration test kịch bản E2E trong `REQUIREMENTS.md` §6.2 (Testcontainers, matrix giả); checklist demo thủ công với Nominatim/OSRM thật; đối chiếu OpenAPI với `API_SPEC.md`; cập nhật `CURRENT_STATE.md`.
 - **Acceptance criteria:** toàn bộ tiêu chí MVP trong `REQUIREMENTS.md` §6 được đánh dấu kèm bằng chứng.
+- **Phát sinh khi làm (2026-11-03), chủ dự án chọn:** bằng chứng và checklist ở file mới `docs/ACCEPTANCE.md`; đối chiếu OpenAPI bằng test tự động (method + path, `ApiSpecContractIntegrationTest`, đọc `docs/API_SPEC.md`) cộng một lần so field thủ công; agent chạy demo local, chủ dự án làm phần VPS. Thêm `scripts/acceptance_demo.py` (thư viện chuẩn Python) chạy kịch bản trên stack thật. Máy chạy demo không vào được Nominatim nên geocode thành công với Nominatim thật còn chờ chủ dự án (ACCEPTANCE §2.2). Phát hiện F-47 (tài liệu OpenAPI), F-48 (log geocode thiếu nguyên nhân).
 
 ## 8. Should (làm nếu kịp, theo thứ tự)
 
