@@ -78,3 +78,17 @@ springdoc:
     enabled: false
   swagger-ui:
     enabled: false
+
+# Fixed window per IP, email, user or store (P-16, T40). Exceeding a limit returns 429 RATE_LIMITED with Retry-After;
+# Redis down returns 503 SERVICE_UNAVAILABLE (fail-closed). Every rule a service checks must be listed here.
+rate-limit:
+  rules:
+    log-in-ip: { limit: 20, window: 5m }
+    log-in-email: { limit: 10, window: 15m }
+    register-ip: { limit: 5, window: 1h }
+    resend-verification-ip: { limit: 10, window: 15m }
+    resend-verification-email: { limit: 5, window: 1h }
+    forgot-password-ip: { limit: 10, window: 15m }
+    forgot-password-email: { limit: 5, window: 1h }
+    change-password-otp-user: { limit: 5, window: 1h }
+    create-invitation-store: { limit: 30, window: 1h }

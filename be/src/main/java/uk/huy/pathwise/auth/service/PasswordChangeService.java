@@ -6,14 +6,20 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 import uk.huy.pathwise.auth.dto.request.ChangePasswordRequest;
 import uk.huy.pathwise.auth.dto.request.RequestPasswordChangeOtpRequest;
+import uk.huy.pathwise.auth.infrastructure.ratelimit.AuthRateLimitPolicy;
 import uk.huy.pathwise.auth.otp.dto.OtpSendResult;
 import uk.huy.pathwise.auth.otp.manager.OtpManager;
 import uk.huy.pathwise.auth.otp.model.OtpPurpose;
 import uk.huy.pathwise.auth.token.opaque.refreshtoken.manager.RefreshTokenManager;
 import uk.huy.pathwise.core.exception.AppException;
 import uk.huy.pathwise.core.exception.ErrorCode;
+import uk.huy.pathwise.core.ratelimit.RateLimitDecision;
+import uk.huy.pathwise.core.ratelimit.RateLimitedException;
+import uk.huy.pathwise.core.statestore.StateStoreException;
 import uk.huy.pathwise.shared.identity.AuthenticatedUser;
 import uk.huy.pathwise.user.service.UserAccountService;
+
+import java.util.function.Supplier;
 
 /**
  * Password change while logged in (D-17, P-05, FR-A08): the current password unlocks an emailed OTP, so a leaked
@@ -27,15 +33,18 @@ public class PasswordChangeService {
     private final OtpManager otpManager;
     private final RefreshTokenManager refreshTokenManager;
     private final TransactionTemplate transactionTemplate;
+    private final AuthRateLimitPolicy rateLimitPolicy;
 
     public PasswordChangeService(UserAccountService userService,
                                  OtpManager otpManager,
                                  RefreshTokenManager refreshTokenManager,
-                                 PlatformTransactionManager transactionManager) {
+                                 PlatformTransactionManager transactionManager,
+                                 AuthRateLimitPolicy rateLimitPolicy) {
         this.userService = userService;
         this.otpManager = otpManager;
         this.refreshTokenManager = refreshTokenManager;
         this.transactionTemplate = new TransactionTemplate(transactionManager);
+        this.rateLimitPolicy = rateLimitPolicy;
     }
 
     /**
@@ -48,6 +57,8 @@ public class PasswordChangeService {
         if (actor == null) throw new NullPointerException("Actor could not be null");
         if (request == null) throw new NullPointerException("Request password change OTP request could not be null");
         long userId = actor.identity().id();
+        // Before the password check: the limit also slows down guessing the current password.
+        enforce(() -> rateLimitPolicy.changePasswordOtp(userId));
         if (!userService.matchesPassword(userId, request.currentPassword()))
             throw new AppException(ErrorCode.INVALID_CURRENT_PASSWORD);
         if (otpManager.sendOtp(OtpPurpose.CHANGE_PASSWORD, userId, actor.identity().email()) == OtpSendResult.COOLDOWN)
@@ -71,5 +82,25 @@ public class PasswordChangeService {
             refreshTokenManager.revokeAllForUser(userId, actor.sessionId());
         });
         log.info("Password changed, other sessions revoked. userId={}", userId);
+    }
+
+    /**
+     * Fails closed: a limit that cannot be checked refuses the request (NFR-01, P-37).
+     *
+     * @throws RateLimitedException if a limit of the endpoint is used up
+     * @throws AppException         {@code SERVICE_UNAVAILABLE} if the counters cannot be reached
+     */
+    private static void enforce(Supplier<RateLimitDecision> rateLimit) {
+        RateLimitDecision decision;
+        try {
+            decision = rateLimit.get();
+        } catch (StateStoreException e) {
+            log.error("Rate limit could not be checked, refusing the request", e);
+            throw new AppException(ErrorCode.SERVICE_UNAVAILABLE);
+        }
+        switch (decision) {
+            case RateLimitDecision.Allowed allowed -> {}
+            case RateLimitDecision.Limited limited -> throw new RateLimitedException(limited.retryAfter());
+        }
     }
 }

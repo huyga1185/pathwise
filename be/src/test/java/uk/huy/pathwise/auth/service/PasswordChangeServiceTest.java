@@ -1,5 +1,6 @@
 package uk.huy.pathwise.auth.service;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -7,12 +8,14 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.transaction.PlatformTransactionManager;
 import uk.huy.pathwise.auth.dto.request.ChangePasswordRequest;
 import uk.huy.pathwise.auth.dto.request.RequestPasswordChangeOtpRequest;
+import uk.huy.pathwise.auth.infrastructure.ratelimit.AuthRateLimitPolicy;
 import uk.huy.pathwise.auth.otp.dto.OtpSendResult;
 import uk.huy.pathwise.auth.otp.manager.OtpManager;
 import uk.huy.pathwise.auth.otp.model.OtpPurpose;
 import uk.huy.pathwise.auth.token.opaque.refreshtoken.manager.RefreshTokenManager;
 import uk.huy.pathwise.core.exception.AppException;
 import uk.huy.pathwise.core.exception.ErrorCode;
+import uk.huy.pathwise.core.ratelimit.RateLimitDecision;
 import uk.huy.pathwise.shared.identity.AuthenticatedUser;
 import uk.huy.pathwise.shared.identity.UserIdentity;
 import uk.huy.pathwise.shared.identity.UserRole;
@@ -34,12 +37,19 @@ class PasswordChangeServiceTest {
     private RefreshTokenManager refreshTokenManager;
     @Mock
     private PlatformTransactionManager transactionManager;
+    @Mock
+    private AuthRateLimitPolicy rateLimitPolicy;
 
     private final AuthenticatedUser actor = new AuthenticatedUser(
             new UserIdentity(7L, "a@pathwise.test", UserRole.OWNER, 1L, false), "session-7");
 
     private PasswordChangeService service() {
-        return new PasswordChangeService(userService, otpManager, refreshTokenManager, transactionManager);
+        return new PasswordChangeService(userService, otpManager, refreshTokenManager, transactionManager, rateLimitPolicy);
+    }
+
+    @BeforeEach
+    void allowByDefault() {
+        lenient().when(rateLimitPolicy.changePasswordOtp(7L)).thenReturn(new RateLimitDecision.Allowed());
     }
 
     @Test

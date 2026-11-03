@@ -198,7 +198,7 @@ Index `(status, created_at)`, `(store_id, target_id)`. Tên ràng buộc trong V
 | `otp:{purpose}:{userId}` | `{sha256}{số lần sai}`; `purpose` là tên `OtpPurpose` (`VERIFY_EMAIL`, `RESET_PASSWORD`, `CHANGE_PASSWORD`) | `otp.ttl` (mặc định 5 phút) | auth |
 | `otp:cooldown:{purpose}:{userId}` | `1`; bị xoá cùng OTP khi email gửi lỗi | `otp.cooldown` (mặc định 60 s) | auth |
 | `otpToken:{purpose}:{ticket}` | `{userId}:{sha256(secret)}`; `purpose` là `RESET_PASSWORD` (T14; `updateUserPassword` của luồng đổi mật khẩu cũ đã bỏ ở T15) | 10 phút | auth |
-| `ratelimit:{scope}:{key}:{window}` | counter | = window | core |
+| `ratelimit:{rule}:{sha256(subject)}` | số request trong window; `rule` như `log-in-email`, subject là IP, email chuẩn hoá, userId hoặc storeId (T40, P-37). Lua `FixedWindowRateLimit.lua` tăng và đặt TTL trong một bước | = window, tính từ request đầu tiên (`rate-limit.rules.<rule>.window`) | core |
 | `geocode:nominatim:{sha256(normalizedQuery + "|" + limit)}` | JSON danh sách `{displayName, lat, lon}` (cả danh sách rỗng); query chuẩn hoá = trim, gộp khoảng trắng, chữ thường | `routing.geocoding.cache-ttl` (24 h) | routing |
 | `geocode:nominatim:next-slot` | thời điểm (ms, đồng hồ Redis) slot trống kế tiếp; Lua `ReserveThrottleSlot.lua` đặt slot theo thứ tự đến (P-11) | hết khi slot cuối đã đặt kết thúc (`chờ + 1000 / per-second` ms) | routing |
 | `driver:location:{storeId}:{driverId}` | JSON vị trí | 10 phút | planning |

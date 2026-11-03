@@ -7,8 +7,12 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 import uk.huy.pathwise.core.exception.AppException;
 import uk.huy.pathwise.core.exception.ErrorCode;
+import uk.huy.pathwise.core.ratelimit.RateLimitDecision;
+import uk.huy.pathwise.core.ratelimit.RateLimitedException;
+import uk.huy.pathwise.core.ratelimit.RateLimiter;
 import uk.huy.pathwise.core.security.Hasher;
 import uk.huy.pathwise.core.security.OpaqueTokenGenerator;
+import uk.huy.pathwise.core.statestore.StateStoreException;
 import uk.huy.pathwise.notification.service.EmailDeliveryException;
 import uk.huy.pathwise.notification.service.EmailNotificationService;
 import uk.huy.pathwise.shared.identity.UserIdentity;
@@ -32,6 +36,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.function.Supplier;
 
 /**
  * Invitations of DISPATCHERs and DRIVERs (D-16, FR-S02, FR-S03). The code is a random opaque token sent by email;
@@ -53,6 +58,7 @@ public class InvitationService {
     private final OpaqueTokenGenerator codeGenerator;
     private final Hasher hasher;
     private final TransactionTemplate transactionTemplate;
+    private final RateLimiter rateLimiter;
 
     public InvitationService(StoreInvitationRepository invitationRepository,
                              StoreRepository storeRepository,
@@ -60,7 +66,8 @@ public class InvitationService {
                              EmailNotificationService emailNotificationService,
                              OpaqueTokenGenerator codeGenerator,
                              Hasher hasher,
-                             PlatformTransactionManager transactionManager) {
+                             PlatformTransactionManager transactionManager,
+                             RateLimiter rateLimiter) {
         this.invitationRepository = invitationRepository;
         this.storeRepository = storeRepository;
         this.storeUserService = storeUserService;
@@ -68,6 +75,7 @@ public class InvitationService {
         this.codeGenerator = codeGenerator;
         this.hasher = hasher;
         this.transactionTemplate = new TransactionTemplate(transactionManager);
+        this.rateLimiter = rateLimiter;
     }
 
     private record Created(StoreInvitation invitation, Store store, String code) {}
@@ -75,11 +83,14 @@ public class InvitationService {
     /**
      * Invites {@code email}; a pending invitation of the same email in this store is revoked first.
      *
-     * @throws AppException {@code EMAIL_EXISTED} if the email already belongs to a user, of any store (D-02)
+     * @throws AppException {@code EMAIL_EXISTED} if the email already belongs to a user, of any store (D-02);
+     *                      {@code RATE_LIMITED} per store
      */
     public InvitationResponse createInvitation(UserIdentity actor, CreateInvitationRequest request) {
         if (request == null) throw new NullPointerException("Create invitation request could not be null");
         long storeId = StoreService.storeIdOf(actor);
+        // Per store: each invitation sends an email (P-16).
+        enforce(() -> rateLimiter.tryAcquire("create-invitation-store", String.valueOf(storeId)));
         String email = normalizeEmail(request.email());
         Created created = transactionTemplate.execute(status -> {
             if (storeUserService.emailExists(email)) throw new AppException(ErrorCode.EMAIL_EXISTED);
@@ -199,5 +210,25 @@ public class InvitationService {
      */
     private static String normalizeEmail(String email) {
         return email.trim().toLowerCase(Locale.ROOT);
+    }
+
+    /**
+     * Fails closed: a limit that cannot be checked refuses the request (NFR-01, P-37).
+     *
+     * @throws RateLimitedException if a limit of the endpoint is used up
+     * @throws AppException         {@code SERVICE_UNAVAILABLE} if the counters cannot be reached
+     */
+    private static void enforce(Supplier<RateLimitDecision> rateLimit) {
+        RateLimitDecision decision;
+        try {
+            decision = rateLimit.get();
+        } catch (StateStoreException e) {
+            log.error("Rate limit could not be checked, refusing the request", e);
+            throw new AppException(ErrorCode.SERVICE_UNAVAILABLE);
+        }
+        switch (decision) {
+            case RateLimitDecision.Allowed allowed -> {}
+            case RateLimitDecision.Limited limited -> throw new RateLimitedException(limited.retryAfter());
+        }
     }
 }
