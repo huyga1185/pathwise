@@ -2,4 +2,5 @@
 export const queryKeys = {
   me: ['me'] as const,
   store: ['store'] as const,
+  sessions: ['sessions'] as const,
 };

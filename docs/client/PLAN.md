@@ -79,6 +79,15 @@ File nóng của client (không hai task song song cùng sửa): `web/package.js
 - **Phạm vi:** 5 màn theo SCREENS và prototype; `OtpInput` (tự nhảy ô, dán, Backspace, autofill `one-time-code`); đếm ngược gửi lại 60 s; 429 đếm ngược `Retry-After`; danh sách phiên (đăng xuất từng phiên / mọi phiên khác; đăng xuất phiên hiện tại = đăng xuất).
 - **Acceptance:** mỗi màn có test luồng thành công và các lỗi của UX_BRIEF §6 liên quan; lỗi theo field hiện đúng ô; đổi mật khẩu xong thì danh sách phiên chỉ còn phiên hiện tại.
 
+- **Phát sinh khi làm (2026-11-04):**
+  - Bố cục hai cột của các màn tài khoản tách thành `features/auth/AuthLayout.tsx` (`AuthLayout`, `AuthCardHead`, hình `RouteArt`/`MainArt`/`CompactArt` vẽ đúng prototype); màn Đăng nhập dùng lại, giao diện không đổi. Màn Hồ sơ ở `features/account`.
+  - Thêm dùng chung: `shared/hooks/useCountdown` (khoá 429 và 60 s gửi lại mã, Đăng nhập cũng dùng), `shared/forms/serverErrors` (`applyServerErrors` đặt `details[]` vào ô của react-hook-form), `TextField` làm prop `multiline` (đã có trong `components.d.ts`), class `.pw-field-code` cho ô mã một dòng, `formatDayTime`/`formatDate`/`formatClock`.
+  - "Sai 3 lần phải xin mã mới": server chỉ trả `INVALID_OTP` cho mọi lần sai, nên client đếm số lần sai **của mã đang dùng** để báo trước và khoá nút; đếm lại khi xin mã mới. Server vẫn là nơi quyết định (lần thứ 4 vẫn nhận `INVALID_OTP`).
+  - Khác prototype có chủ đích: Xác thực email hỏi thêm email khi URL không có `?email=`; Quên mật khẩu bước 2 có nút "Gửi lại mã" (khoá 60 s) vì sai 3 lần phải xin mã mới; Nhận lời mời của DRIVER không có nút "Mở app tài xế" (chưa có link tải app, M03/W08) và không có "Đăng nhập trên web" (DRIVER không dùng web, P-46); hạn lời mời hiện theo giờ của máy vì `GET /invitations/{code}` không trả timezone của cửa hàng.
+  - Tên thiết bị trong danh sách phiên đọc từ `userAgent` ("Chrome trên Linux", "App PathWise trên Android"); chỉ để hiển thị.
+  - Không có mẫu `SessionResponse` trong `docs/ux/samples`, test dùng dữ liệu theo đúng dạng API_SPEC §2. Chưa chạy lại luồng W02 với backend thật (đã chạy ở W01 cho đăng ký/OTP/đăng nhập); E2E ở W07.
+  - Phát hiện F-50 (OpenAPI: mã 201/204 và `nullable` của PATCH).
+
 ### W03. Xe và thành viên
 - **Ước lượng:** 1,5 ngày · **Màn:** Xe, Thành viên và lời mời
 - **Phạm vi:** danh sách + form thêm/sửa xe (đơn vị KG/thùng/kiện/đơn, tắt xe); thành viên (đổi vai trò, bật "Đi giao", vô hiệu hoá/kích hoạt lại có xác nhận), lời mời (gửi, danh sách, thu hồi); chế độ chỉ xem cho DISPATCHER.

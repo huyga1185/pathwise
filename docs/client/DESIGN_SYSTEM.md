@@ -135,7 +135,8 @@ Nút bấm cho mọi hành động; mỗi màn hình chỉ một nút `primary`,
 - Nhãn luôn hiện phía trên ô, không dùng placeholder thay nhãn. Placeholder chỉ để gợi định dạng ("0905 123 456").
 - `error`: câu lỗi lấy từ bảng thông điệp theo mã lỗi API (`docs/ux/UX_BRIEF.md` §6); nói chuyện gì sai và sửa thế nào. Ô lỗi có viền `danger` 2px, câu lỗi `small` màu `danger` ngay dưới ô, liên kết qua `aria-describedby`.
 - Với lỗi validation từ API (`fields`), gắn từng câu vào đúng ô theo tên field.
-- `multiline` cho ghi chú stop.
+- `multiline` cho ghi chú stop và ô dán mã mời (web làm từ W02).
+- Ô mã một dòng (web W02, class `pw-field-code`, thêm `pw-field-code-sm` trong thẻ Hồ sơ): chữ số lớn, giãn chữ, căn giữa, `inputmode="numeric"`, `autocomplete="one-time-code"`; dùng ở Quên mật khẩu bước 2 và đổi mật khẩu theo prototype. Màn Xác thực email dùng `OtpInput` 6 ô.
 - Web (W01) thêm `startIcon` (icon trong ô, ví dụ thư, ổ khoá ở màn tài khoản), `endAction` (nút trong ô, ví dụ hiện mật khẩu, có `aria-label` và `aria-pressed`) và `size="lg"` (48px, chữ 16px cho màn tài khoản).
 - Trong app tài xế, form hiếm khi xuất hiện (chỉ lý do không giao được); khi có, dùng cỡ chữ `body-touch` qua CSS của client.
 

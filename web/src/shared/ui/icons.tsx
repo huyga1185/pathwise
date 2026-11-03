@@ -125,3 +125,29 @@ export function LogoMark({
     </svg>
   );
 }
+export const StoreIcon = () => (
+  <Icon>
+    <path d="M4 10h16l-1.5-5h-13z" />
+    <path d="M5 10v9h14v-9" />
+    <path d="M10 19v-5h4v5" />
+  </Icon>
+);
+export const PinIcon = () => (
+  <Icon>
+    <path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z" />
+    <circle cx="12" cy="9.5" r="2.5" />
+  </Icon>
+);
+export const UserIcon = () => (
+  <Icon>
+    <circle cx="12" cy="8" r="4" />
+    <path d="M4 21c0-4 3.6-7 8-7s8 3 8 7" />
+  </Icon>
+);
+export const UserPlusIcon = () => (
+  <Icon>
+    <circle cx="9" cy="8" r="3.5" />
+    <path d="M3 20c0-3.5 2.7-6 6-6s6 2.5 6 6" />
+    <path d="M17 8v6M14 11h6" />
+  </Icon>
+);

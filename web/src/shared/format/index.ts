@@ -46,3 +46,32 @@ export function formatDateLong(localDate: string): string {
   }).format(date);
   return `${weekday.charAt(0).toLocaleUpperCase('vi-VN')}${weekday.slice(1)}, ${dmy}`;
 }
+
+/** "03/11 16:20": a moment (ISO UTC) as day/month and 24-hour time in `timeZone`. */
+export function formatDayTime(instant: string | null | undefined, timeZone: string): string {
+  if (!instant) return '';
+  const parts = new Intl.DateTimeFormat('vi-VN', {
+    day: '2-digit',
+    month: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+    timeZone,
+  }).formatToParts(new Date(instant));
+  const get = (type: string) => parts.find((part) => part.type === type)?.value ?? '';
+  return `${get('day')}/${get('month')} ${get('hour')}:${get('minute')}`;
+}
+
+/** "10/11/2026": the date of a moment (ISO UTC) in `timeZone` (the device's when omitted). */
+export function formatDate(instant: string | null | undefined, timeZone?: string): string {
+  if (!instant) return '';
+  return new Intl.DateTimeFormat('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone }).format(
+    new Date(instant),
+  );
+}
+
+/** "0:42", "1:05": seconds as minutes and seconds, for a short wait shown on a button. */
+export function formatClock(seconds: number): string {
+  const s = Math.max(0, Math.ceil(seconds));
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+}

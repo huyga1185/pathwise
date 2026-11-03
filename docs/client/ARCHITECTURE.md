@@ -91,6 +91,7 @@ Mỗi port là một `interface` (TS) hoặc `abstract interface class` (Dart). 
 `shared/errors/` có:
 - `messageFor(code)`: bảng mã → câu tiếng Việt, **chép nguyên từ `docs/ux/UX_BRIEF.md` §6** (đổi câu thì sửa UX_BRIEF trước). Mã không có trong bảng → "Đã có lỗi xảy ra. Mã tra cứu: {requestId}".
 - `fieldErrors(details)`: map `details[].field` (đường dẫn kiểu `stops[3].timeWindow.end`) vào đường dẫn field của form (react-hook-form `setError` / Flutter form state) với câu theo `details[].code` (UX_BRIEF §6.2).
+- Web: `shared/forms/serverErrors.ts` có `applyServerErrors(error, setError, fields, labels)` đặt kết quả của `fieldErrors` vào ô của react-hook-form (W02); trả `false` khi không đặt được ô nào để màn hình hiện hộp lỗi đầu form.
 - Quy tắc hiển thị: lỗi theo field → dưới ô (không toast); lỗi toàn form → hộp lỗi đầu form (`role="alert"`); lỗi của hành động trong hộp thoại → trong hộp thoại; lỗi nền (polling) → toast `danger` có "Thử lại".
 - Mã cần xử lý riêng (không chỉ hiện câu): `UNAUTHORIZED`/`INVALID_TOKEN` (§4), `PLAN_MODIFIED` (409: hỏi tải lại, không ghi đè), `PLAN_BUSY` (khoá nút, polling), `RATE_LIMITED` (đếm ngược theo `Retry-After`), `EMAIL_NOT_VERIFIED` (dẫn sang xác thực), `SHIFT_OVERLAP` (liệt kê `details[].conflictPlanId` kèm link), `PLAN_NOT_ACTIVE` (app tài xế: báo plan đã huỷ/kết thúc).
 

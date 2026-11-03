@@ -21,6 +21,8 @@ interface SessionValue {
   /** @throws ApiError for a failed sign in */
   logIn(email: string, password: string): Promise<SessionUser>;
   logOut(): Promise<void>;
+  /** Changes the signed-in user after their profile was saved (`PATCH /users/me`), so the header shows it. */
+  updateUser(changes: Partial<Pick<SessionUser, 'fullName'>>): void;
 }
 
 const SessionContext = createContext<SessionValue | null>(null);
@@ -98,7 +100,13 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     setSession({ status: 'anonymous', expired: false });
   }, [api, tokenStore, queryClient]);
 
-  const value = useMemo(() => ({ session, logIn, logOut }), [session, logIn, logOut]);
+  const updateUser = useCallback((changes: Partial<Pick<SessionUser, 'fullName'>>) => {
+    setSession((current) =>
+      current.status === 'authenticated' ? { status: 'authenticated', user: { ...current.user, ...changes } } : current,
+    );
+  }, []);
+
+  const value = useMemo(() => ({ session, logIn, logOut, updateUser }), [session, logIn, logOut, updateUser]);
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;
 }
 

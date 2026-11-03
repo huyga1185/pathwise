@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { formatDateLong, formatDistance, formatDuration, formatPhone, formatTime } from './index';
+import {
+  formatClock,
+  formatDate,
+  formatDateLong,
+  formatDayTime,
+  formatDistance,
+  formatDuration,
+  formatPhone,
+  formatTime,
+} from './index';
 
 describe('format', () => {
   it('định dạng số điện thoại E.164 của Việt Nam như DESIGN_SYSTEM', () => {
@@ -27,5 +36,12 @@ describe('format', () => {
 
   it('hiện ngày dài có thứ', () => {
     expect(formatDateLong('2026-12-01')).toBe('Thứ Ba, 01/12/2026');
+  });
+
+  it('định dạng ngày giờ ngắn theo timezone, ngày và giờ chờ trên nút', () => {
+    expect(formatDayTime('2026-11-03T17:20:00Z', 'Asia/Ho_Chi_Minh')).toBe('04/11 00:20');
+    expect(formatDate('2026-11-10T03:00:00Z', 'Asia/Ho_Chi_Minh')).toBe('10/11/2026');
+    expect(formatClock(42)).toBe('0:42');
+    expect(formatClock(60)).toBe('1:00');
   });
 });
