@@ -3,6 +3,7 @@ package uk.huy.pathwise.planning.controller;
 import jakarta.validation.Valid;
 import jakarta.validation.groups.Default;
 import lombok.RequiredArgsConstructor;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
@@ -49,7 +50,7 @@ public class PlanController {
             @AuthenticationPrincipal AuthenticatedUser actor,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
             @RequestParam(required = false) PlanStatus status,
-            @PageableDefault(sort = "planDate", direction = Sort.Direction.DESC) Pageable pageable) {
+            @ParameterObject @PageableDefault(sort = "planDate", direction = Sort.Direction.DESC) Pageable pageable) {
         return ResponseEntity.ok(new ApiResponse<>(planService.listPlans(actor.identity(), date, status, pageable)));
     }
 

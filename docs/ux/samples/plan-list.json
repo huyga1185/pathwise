@@ -1,0 +1,24 @@
+{
+  "data": {
+    "items": [
+      {
+        "id": 83,
+        "name": "Giao sáng 01/12",
+        "planDate": "2026-12-01",
+        "status": "COMPLETED",
+        "processingStatus": "IDLE",
+        "version": 5,
+        "stopCount": 24,
+        "routeCount": 2,
+        "optimizedAt": "2026-11-03T09:17:26.585168Z",
+        "totalDistanceMeters": 15366,
+        "totalDurationSeconds": 18369,
+        "createdAt": "2026-11-03T09:17:25.279800Z"
+      }
+    ],
+    "page": 0,
+    "size": 10,
+    "totalPages": 1,
+    "totalElements": 1
+  }
+}

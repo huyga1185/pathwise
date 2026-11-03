@@ -1,0 +1,40 @@
+{
+  "data": [
+    {
+      "id": 449,
+      "email": "owner-f79b02ce-4b0d-4329-8282-9c46908da560@pathwise.test",
+      "fullName": null,
+      "phoneNumber": null,
+      "role": "OWNER",
+      "status": "ACTIVE",
+      "canDrive": false
+    },
+    {
+      "id": 450,
+      "email": "dispatcher-f79b02ce-4b0d-4329-8282-9c46908da560@pathwise.test",
+      "fullName": "Điều phối",
+      "phoneNumber": null,
+      "role": "DISPATCHER",
+      "status": "ACTIVE",
+      "canDrive": false
+    },
+    {
+      "id": 451,
+      "email": "driver-a-f79b02ce-4b0d-4329-8282-9c46908da560@pathwise.test",
+      "fullName": "Tài xế A",
+      "phoneNumber": null,
+      "role": "DRIVER",
+      "status": "ACTIVE",
+      "canDrive": true
+    },
+    {
+      "id": 452,
+      "email": "driver-b-f79b02ce-4b0d-4329-8282-9c46908da560@pathwise.test",
+      "fullName": "Tài xế B",
+      "phoneNumber": null,
+      "role": "DRIVER",
+      "status": "ACTIVE",
+      "canDrive": true
+    }
+  ]
+}

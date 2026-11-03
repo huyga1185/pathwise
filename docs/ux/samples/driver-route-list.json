@@ -1,0 +1,14 @@
+{
+  "data": [
+    {
+      "routeId": 64,
+      "planId": 83,
+      "planName": "Giao sáng 01/12",
+      "planDate": "2026-12-01",
+      "status": "PENDING",
+      "stopCount": 12,
+      "completedCount": 0,
+      "plannedStart": "2026-12-01T03:38:22Z"
+    }
+  ]
+}

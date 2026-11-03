@@ -1,0 +1,218 @@
+{
+  "data": {
+    "routeId": 64,
+    "planId": 83,
+    "planDate": "2026-12-01",
+    "status": "PENDING",
+    "start": {
+      "address": "Kho 45 Lê Lợi, Hải Châu, Đà Nẵng",
+      "lat": 16.05,
+      "lon": 108.2
+    },
+    "end": {
+      "address": "Kho 45 Lê Lợi, Hải Châu, Đà Nẵng",
+      "lat": 16.05,
+      "lon": 108.2
+    },
+    "stops": [
+      {
+        "id": 116,
+        "sequence": 1,
+        "label": "ĐH-1009",
+        "recipientName": "Chị Lan",
+        "recipientPhone": "+84905123008",
+        "address": "887 Nguyễn Tri Phương, Thanh Khê, Đà Nẵng",
+        "lat": 16.048,
+        "lon": 108.196,
+        "plannedArrival": "2026-12-01T03:39:10Z",
+        "timeWindow": {
+          "start": "09:00",
+          "end": "11:00"
+        },
+        "note": null,
+        "status": "PENDING",
+        "failureReason": null
+      },
+      {
+        "id": 122,
+        "sequence": 2,
+        "label": "ĐH-1015",
+        "recipientName": "Anh Khoa",
+        "recipientPhone": "+84905123014",
+        "address": "893 Lê Duẩn, Hải Châu, Đà Nẵng",
+        "lat": 16.048,
+        "lon": 108.202,
+        "plannedArrival": "2026-12-01T03:42:14Z",
+        "timeWindow": null,
+        "note": null,
+        "status": "PENDING",
+        "failureReason": null
+      },
+      {
+        "id": 128,
+        "sequence": 3,
+        "label": "ĐH-1021",
+        "recipientName": "Chị Mai",
+        "recipientPhone": "+84905123020",
+        "address": null,
+        "lat": 16.048,
+        "lon": 108.208,
+        "plannedArrival": "2026-12-01T03:45:18Z",
+        "timeWindow": {
+          "start": "09:00",
+          "end": "11:00"
+        },
+        "note": null,
+        "status": "PENDING",
+        "failureReason": null
+      },
+      {
+        "id": 127,
+        "sequence": 4,
+        "label": "ĐH-1020",
+        "recipientName": "Anh Tuấn",
+        "recipientPhone": "+84905123019",
+        "address": "898 Hoàng Diệu, Hải Châu, Đà Nẵng",
+        "lat": 16.044,
+        "lon": 108.208,
+        "plannedArrival": "2026-12-01T03:48:03Z",
+        "timeWindow": null,
+        "note": null,
+        "status": "PENDING",
+        "failureReason": null
+      },
+      {
+        "id": 126,
+        "sequence": 5,
+        "label": "ĐH-1019",
+        "recipientName": "Cô Hạnh",
+        "recipientPhone": "+84905123018",
+        "address": "897 Nguyễn Tri Phương, Thanh Khê, Đà Nẵng",
+        "lat": 16.04,
+        "lon": 108.208,
+        "plannedArrival": "2026-12-01T03:50:48Z",
+        "timeWindow": null,
+        "note": null,
+        "status": "PENDING",
+        "failureReason": null
+      },
+      {
+        "id": 120,
+        "sequence": 6,
+        "label": "ĐH-1013",
+        "recipientName": "Chị Mai",
+        "recipientPhone": "+84905123012",
+        "address": "891 Bạch Đằng, Hải Châu, Đà Nẵng",
+        "lat": 16.04,
+        "lon": 108.202,
+        "plannedArrival": "2026-12-01T03:53:52Z",
+        "timeWindow": {
+          "start": "09:00",
+          "end": "11:00"
+        },
+        "note": "Gọi trước 10 phút",
+        "status": "PENDING",
+        "failureReason": null
+      },
+      {
+        "id": 114,
+        "sequence": 7,
+        "label": "ĐH-1007",
+        "recipientName": "Anh Khoa",
+        "recipientPhone": "+84905123006",
+        "address": "885 Ông Ích Khiêm, Thanh Khê, Đà Nẵng",
+        "lat": 16.04,
+        "lon": 108.196,
+        "plannedArrival": "2026-12-01T03:56:56Z",
+        "timeWindow": null,
+        "note": null,
+        "status": "PENDING",
+        "failureReason": null
+      },
+      {
+        "id": 108,
+        "sequence": 8,
+        "label": "ĐH-1001",
+        "recipientName": "Chị Lan",
+        "recipientPhone": "+84905123000",
+        "address": "879 Hùng Vương, Hải Châu, Đà Nẵng",
+        "lat": 16.04,
+        "lon": 108.19,
+        "plannedArrival": "2026-12-01T04:00:00Z",
+        "timeWindow": {
+          "start": "09:00",
+          "end": "11:00"
+        },
+        "note": null,
+        "status": "PENDING",
+        "failureReason": null
+      },
+      {
+        "id": 109,
+        "sequence": 9,
+        "label": "ĐH-1002",
+        "recipientName": "Anh Minh",
+        "recipientPhone": "+84905123001",
+        "address": "880 Trần Phú, Hải Châu, Đà Nẵng",
+        "lat": 16.044,
+        "lon": 108.19,
+        "plannedArrival": "2026-12-01T06:00:00Z",
+        "timeWindow": {
+          "start": "13:00",
+          "end": "16:00"
+        },
+        "note": null,
+        "status": "PENDING",
+        "failureReason": null
+      },
+      {
+        "id": 110,
+        "sequence": 10,
+        "label": "ĐH-1003",
+        "recipientName": "Cô Hạnh",
+        "recipientPhone": "+84905123002",
+        "address": "881 Bạch Đằng, Hải Châu, Đà Nẵng",
+        "lat": 16.048,
+        "lon": 108.19,
+        "plannedArrival": "2026-12-01T06:02:45Z",
+        "timeWindow": null,
+        "note": "Gọi trước 10 phút",
+        "status": "PENDING",
+        "failureReason": null
+      },
+      {
+        "id": 111,
+        "sequence": 11,
+        "label": "ĐH-1004",
+        "recipientName": "Anh Tuấn",
+        "recipientPhone": "+84905123003",
+        "address": "882 Nguyễn Văn Linh, Thanh Khê, Đà Nẵng",
+        "lat": 16.052,
+        "lon": 108.19,
+        "plannedArrival": "2026-12-01T06:05:30Z",
+        "timeWindow": null,
+        "note": null,
+        "status": "PENDING",
+        "failureReason": null
+      },
+      {
+        "id": 117,
+        "sequence": 12,
+        "label": "ĐH-1010",
+        "recipientName": "Anh Minh",
+        "recipientPhone": "+84905123009",
+        "address": "888 Hoàng Diệu, Hải Châu, Đà Nẵng",
+        "lat": 16.052,
+        "lon": 108.196,
+        "plannedArrival": "2026-12-01T06:08:34Z",
+        "timeWindow": {
+          "start": "13:00",
+          "end": "16:00"
+        },
+        "note": null,
+        "status": "PENDING",
+        "failureReason": null
+      }
+    ]
+  }
+}

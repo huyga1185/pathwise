@@ -10,7 +10,7 @@
 - `GET /admin/users` chưa trả `storeId`, `status`.
 - §7: chưa có `driver-locations` (T32), `routes` (T28).
 - §8: chưa có `POST /driver/location` (T32), `directions` (T33).
-- Tài liệu OpenAPI sinh tự động (`/v3/api-docs`, staging) hiện `clientDetail` thành query param ở 5 endpoint auth và media type `*/*` (F-47); client đừng gửi `clientDetail`. Endpoint (method + path) được kiểm tự động khớp spec (`ApiSpecContractIntegrationTest`, T43).
+- Tài liệu OpenAPI sinh tự động (`/v3/api-docs` ở dev/staging; CI xuất artifact `api-contract` gồm `openapi.json` và dữ liệu mẫu) dùng để sinh code client; endpoint (method + path) được kiểm tự động khớp spec (`ApiSpecContractIntegrationTest`). Spec này vẫn là hợp đồng; hướng dẫn cho client ở `docs/ux/UX_BRIEF.md`.
 - Endpoint vận hành ngoài `/api/v1`, giữ có chủ đích: `GET /actuator/health` (kèm `/liveness`, `/readiness`), Public, chỉ trả `status` và tên các `groups` (T05, `ARCHITECTURE.md` §12.1). Mọi endpoint actuator khác tắt.
 
 ## 1. Quy ước chung

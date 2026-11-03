@@ -55,6 +55,20 @@ class ApiSpecContractIntegrationTest extends AbstractIntegrationTest {
                 .containsExactlyInAnyOrderElementsOf(specified());
     }
 
+    @Test
+    void openApi_describesRequestsAsClientsSendThem() throws Exception {
+        String openApi = mockMvc.perform(get("/v3/api-docs")).andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+
+        // F-47: filled by the server, never a parameter clients send.
+        assertThat(JsonPath.<List<String>>read(openApi, "$.paths..parameters[*].name")).doesNotContain("clientDetail", "pageable");
+        assertThat(JsonPath.<List<String>>read(openApi, "$.paths['/api/v1/plans'].get.parameters[*].name"))
+                .contains("page", "size", "sort");
+        assertThat(JsonPath.<Map<String, Object>>read(openApi, "$.paths['/api/v1/plans/{id}'].get.responses.200.content"))
+                .containsOnlyKeys("application/json");
+        assertThat(JsonPath.<String>read(openApi, "$.info.title")).isEqualTo("PathWise API");
+    }
+
     private static Set<String> generated(String openApi) {
         Map<String, Map<String, Object>> paths = JsonPath.read(openApi, "$.paths");
         Set<String> endpoints = new TreeSet<>();

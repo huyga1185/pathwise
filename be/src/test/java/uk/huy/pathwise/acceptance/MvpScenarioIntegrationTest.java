@@ -15,6 +15,10 @@ import uk.huy.pathwise.support.FakeEmailSender;
 import uk.huy.pathwise.support.FakeGeocodingProvider;
 import uk.huy.pathwise.support.TestAccounts;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Instant;
 import java.time.LocalTime;
 import java.time.ZoneId;
@@ -35,6 +39,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * T43: the end-to-end scenario of REQUIREMENTS.md §6 (criterion 2), through the public API only, from an OWNER who
  * registers to a COMPLETED plan. Geocoding and travel matrix are fakes; the solver is the real OR-Tools.
+ * <p>
+ * Responses at the main steps are written to {@code target/ux-samples/} as realistic sample data for client design
+ * (docs/ux/samples is a snapshot of them).
  */
 @AutoConfigureMockMvc
 class MvpScenarioIntegrationTest extends AbstractIntegrationTest {
@@ -70,7 +77,7 @@ class MvpScenarioIntegrationTest extends AbstractIntegrationTest {
                 "{\"email\":\"" + ownerEmail + "\",\"otp\":\"" + TestAccounts.lastOtp(emailSender, ownerEmail) + "\"}")
                 .andExpect(status().isNoContent());
         String owner = logIn(ownerEmail);
-        call(put("/api/v1/store"), owner, "{\"name\":\"Tiệm E2E\",\"depot\":{\"address\":\"Kho\",\"lat\":16.05,\"lon\":108.2},"
+        call(put("/api/v1/store"), owner, "{\"name\":\"Tiệm E2E\",\"depot\":{\"address\":\"Kho 45 Lê Lợi, Hải Châu, Đà Nẵng\",\"lat\":16.05,\"lon\":108.2},"
                 + "\"timezone\":\"Asia/Ho_Chi_Minh\"}").andExpect(status().isOk());
 
         // One DISPATCHER and two DRIVERs are invited and accept.
@@ -92,6 +99,7 @@ class MvpScenarioIntegrationTest extends AbstractIntegrationTest {
         long planId = id(call(post("/api/v1/plans"), dispatcher, planDraft(run, driverAId, vehicle1, driverBId, vehicle2))
                 .andExpect(status().isCreated()));
         DocumentContext plan = plan(dispatcher, planId);
+        sample("plan-detail-geocoded", plan);
         assertThat((String) plan.read("$.processingStatus")).isEqualTo("IDLE");
         assertThat((Integer) plan.read("$.geocodingSummary.failed")).isEqualTo(1);
         assertThat((Integer) plan.read("$.geocodingSummary.resolved")).isEqualTo(19);
@@ -109,9 +117,11 @@ class MvpScenarioIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isAccepted())
                 .andReturn().getResponse().getContentAsString();
         assertThat((String) JsonPath.read(job, "$.data.status")).isEqualTo("SUCCEEDED");
+        sample("job-optimize", job);
 
         // The result respects capacity, time windows and shifts, and lists the stop it could not place.
         plan = plan(dispatcher, planId);
+        sample("plan-detail-optimized", plan);
         assertResultRespectsConstraints(plan);
 
         // Publish; each DRIVER sees exactly their own route with coordinates for the map link.
@@ -127,6 +137,7 @@ class MvpScenarioIntegrationTest extends AbstractIntegrationTest {
         long routeB = driverRouteId(driverB);
         String first = updateStop(driverA, routeA, stopsOfA.getFirst(), "{\"status\":\"DELIVERED\"}");
         assertThat((String) JsonPath.read(first, "$.data.planStatus")).isEqualTo("IN_PROGRESS");
+        sample("driver-stop-status-update", first);
         assertThat((String) plan(dispatcher, planId).read("$.status")).isEqualTo("IN_PROGRESS");
         for (Long stop : stopsOfA.subList(1, stopsOfA.size())) updateStop(driverA, routeA, stop, "{\"status\":\"DELIVERED\"}");
         updateStop(driverB, routeB, stopsOfB.getFirst(), "{\"status\":\"FAILED\",\"failureReason\":\"Vắng nhà\"}");
@@ -140,16 +151,40 @@ class MvpScenarioIntegrationTest extends AbstractIntegrationTest {
         assertThat(((Number) plan.read("$.version")).longValue()).isEqualTo(publishedVersion);
         List<String> reasons = plan.read("$.routes[*].stops[?(@.status == 'FAILED')].failureReason");
         assertThat(reasons).containsExactly("Vắng nhà");
+        sample("plan-detail-completed", plan);
+
+        // More sample data for client design: lists and two error bodies.
+        sample("plan-list", body(get("/api/v1/plans?date=" + DAY), dispatcher));
+        sample("vehicle-list", body(get("/api/v1/vehicles"), dispatcher));
+        sample("member-list", body(get("/api/v1/store/members"), owner));
+        sample("invitation-list", body(get("/api/v1/store/invitations"), owner));
+        sample("store", body(get("/api/v1/store"), owner));
+        sample("user-me", body(get("/api/v1/users/me"), driverA));
+        sample("error-plan-not-editable", call(post("/api/v1/plans/" + planId + "/publish"), dispatcher,
+                "{\"version\":" + publishedVersion + "}").andExpect(status().isUnprocessableContent()).andReturn().getResponse().getContentAsString());
+        sample("error-validation", call(post("/api/v1/vehicles"), dispatcher, "{\"name\":\"\",\"capacity\":0}")
+                .andExpect(status().isBadRequest()).andReturn().getResponse().getContentAsString());
     }
 
+    private static final String[] STREETS = {"Hùng Vương, Hải Châu", "Trần Phú, Hải Châu", "Bạch Đằng, Hải Châu",
+            "Nguyễn Văn Linh, Thanh Khê", "Lê Duẩn, Hải Châu", "Phan Châu Trinh, Hải Châu", "Ông Ích Khiêm, Thanh Khê",
+            "Điện Biên Phủ, Thanh Khê", "Nguyễn Tri Phương, Thanh Khê", "Hoàng Diệu, Hải Châu"};
+    private static final String[] RECIPIENTS = {"Chị Lan", "Anh Minh", "Cô Hạnh", "Anh Tuấn", "Chị Mai", "Bác Sơn",
+            "Anh Khoa", "Chị Thảo"};
+
+    /**
+     * Realistic addresses for the sample data, each with this run's number so that no other test registers the same one
+     * in the shared fake geocoder.
+     */
     private String planDraft(String run, long driverA, long vehicleA, long driverB, long vehicleB) {
+        int house = 100 + Math.floorMod(run.hashCode(), 800);
         List<String> stops = new ArrayList<>();
         for (int i = 0; i < STOPS; i++) {
             double lat = 16.04 + 0.004 * (i % 6);
             double lon = 108.19 + 0.006 * (i / 6);
             String location;
             if (i < 20) {
-                String address = "E2E " + run + " số " + i;
+                String address = (house + i) + " " + STREETS[i % STREETS.length] + ", Đà Nẵng";
                 if (i != UNKNOWN_ADDRESS) geocoder.resolve(address, lat, lon);
                 location = "\"address\":\"" + address + "\"";
             } else {
@@ -159,10 +194,12 @@ class MvpScenarioIntegrationTest extends AbstractIntegrationTest {
                     : i % 4 == 0 ? ",\"timeWindow\":{\"start\":\"09:00\",\"end\":\"11:00\"}"
                     : i % 4 == 1 ? ",\"timeWindow\":{\"start\":\"13:00\",\"end\":\"16:00\"}"
                     : "";
-            stops.add("{\"label\":\"ĐH-" + i + "\",\"recipientName\":\"Khách " + i + "\",\"recipientPhone\":\"0905123" + String.format("%03d", i)
-                    + "\"," + location + ",\"demands\":{\"BOX\":2},\"serviceTimeSeconds\":120" + window + "}");
+            String note = i % 5 == 2 ? ",\"note\":\"Gọi trước 10 phút\"" : "";
+            stops.add("{\"label\":\"ĐH-" + (1001 + i) + "\",\"recipientName\":\"" + RECIPIENTS[i % RECIPIENTS.length]
+                    + "\",\"recipientPhone\":\"0905123" + String.format("%03d", i) + "\"," + location
+                    + ",\"demands\":{\"BOX\":2},\"serviceTimeSeconds\":120" + window + note + "}");
         }
-        return "{\"name\":\"Giao 01/12\",\"planDate\":\"" + DAY + "\",\"stops\":[" + String.join(",", stops) + "],\"assignments\":["
+        return "{\"name\":\"Giao sáng 01/12\",\"planDate\":\"" + DAY + "\",\"stops\":[" + String.join(",", stops) + "],\"assignments\":["
                 + assignment(driverA, vehicleA) + "," + assignment(driverB, vehicleB) + "]}";
     }
 
@@ -175,7 +212,7 @@ class MvpScenarioIntegrationTest extends AbstractIntegrationTest {
         assertThat((String) plan.read("$.optimizedAt")).isNotNull();
         List<Map<String, Object>> unassigned = plan.read("$.unassignedStops");
         assertThat(unassigned).singleElement().satisfies(stop -> {
-            assertThat(stop.get("label")).isEqualTo("ĐH-" + INFEASIBLE);
+            assertThat(stop.get("label")).isEqualTo("ĐH-" + (1001 + INFEASIBLE));
             assertThat(stop.get("dropReason")).isEqualTo("INFEASIBLE");
         });
         List<Map<String, Object>> routes = plan.read("$.routes");
@@ -212,12 +249,14 @@ class MvpScenarioIntegrationTest extends AbstractIntegrationTest {
     private List<Long> assertDriverSeesOwnRoute(String driver, long driverId, DocumentContext plan) throws Exception {
         String list = call(get("/api/v1/driver/routes?date=" + DAY), driver, null).andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
+        sample("driver-route-list", list);
         List<Integer> routeIds = JsonPath.read(list, "$.data[*].routeId");
         List<Integer> expected = plan.read("$.routes[?(@.driver.id == " + driverId + ")].id");
         assertThat(routeIds).isEqualTo(expected);
 
         String detail = call(get("/api/v1/driver/routes/" + routeIds.getFirst()), driver, null).andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
+        sample("driver-route-detail", detail);
         List<Number> stopIds = JsonPath.read(detail, "$.data.stops[*].id");
         List<Number> dispatcherView = plan.read("$.routes[?(@.driver.id == " + driverId + ")].stops[*].id");
         assertThat(stopIds).isEqualTo(dispatcherView);
@@ -271,6 +310,23 @@ class MvpScenarioIntegrationTest extends AbstractIntegrationTest {
         String body = call(get("/api/v1/plans/" + planId), bearer, null).andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
         return JsonPath.parse((Object) JsonPath.read(body, "$.data"));
+    }
+
+    private String body(MockHttpServletRequestBuilder request, String bearer) throws Exception {
+        return call(request, bearer, null).andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+    }
+
+    private static void sample(String name, DocumentContext data) throws IOException {
+        sample(name, "{\"data\":" + data.jsonString() + "}");
+    }
+
+    /**
+     * Writes a response body as sample data; the second driver's route overwrites the first, which is fine.
+     */
+    private static void sample(String name, String body) throws IOException {
+        Path directory = Path.of("target", "ux-samples");
+        Files.createDirectories(directory);
+        Files.writeString(directory.resolve(name + ".json"), body, StandardCharsets.UTF_8);
     }
 
     private ResultActions call(MockHttpServletRequestBuilder request, String bearer, String body) throws Exception {
