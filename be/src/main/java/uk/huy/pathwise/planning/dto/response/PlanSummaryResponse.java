@@ -1,5 +1,6 @@
 package uk.huy.pathwise.planning.dto.response;
 
+import org.jspecify.annotations.Nullable;
 import uk.huy.pathwise.planning.model.PlanStatus;
 import uk.huy.pathwise.planning.model.ProcessingStatus;
 
@@ -17,7 +18,7 @@ public record PlanSummaryResponse(long id,
                                   long version,
                                   long stopCount,
                                   long routeCount,
-                                  Instant optimizedAt,
-                                  Integer totalDistanceMeters,
-                                  Integer totalDurationSeconds,
+                                  @Nullable Instant optimizedAt,
+                                  @Nullable Integer totalDistanceMeters,
+                                  @Nullable Integer totalDurationSeconds,
                                   Instant createdAt) {}

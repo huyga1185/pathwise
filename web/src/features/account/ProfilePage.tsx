@@ -1,7 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { useForm } from 'react-hook-form';
 import { ApiError } from '@/data/apiError';
-import type { Schemas } from '@/data/types';
 import { MAX_OTP_TRIES, useSession } from '@/features/auth';
 import { errorMessages, fieldErrors, fieldMessage, formatWait, messageFor } from '@/shared/errors';
 import { applyServerErrors, errorCode } from '@/shared/forms/serverErrors';
@@ -72,9 +71,8 @@ function ProfileCard({ me }: { me: Me }) {
       const updated = await profileApi.updateMe({
         fullName: form.fullName.trim() || null,
         phoneNumber: form.phoneNumber.trim() || null,
-        // The generated type has no null (F-49): the API accepts it as JSON Merge Patch.
-      } as unknown as Schemas['UpdateProfileRequest']);
-      updateUser({ fullName: updated.fullName });
+      });
+      updateUser({ fullName: updated.fullName ?? undefined });
       setSaved(true);
     } catch (error) {
       if (!applyServerErrors(error, setError, PROFILE_FIELDS, PROFILE_LABELS)) setFailure(error);
@@ -92,7 +90,7 @@ function ProfileCard({ me }: { me: Me }) {
       </div>
       <div className="pw-field">
         <span className="pw-field-label">{vi.profile.role}</span>
-        <span>{me.role ? (vi.roles[me.role] ?? me.role) : ''}</span>
+        <span>{vi.roles[me.role] ?? me.role}</span>
       </div>
       <TextField
         label={vi.form.fullName}
@@ -304,8 +302,7 @@ function SessionsCard({ timeZone }: { timeZone: string }) {
   const [pending, setPending] = useState<string | null>(null);
 
   const list = [...(sessions.data ?? [])].sort(
-    (a, b) =>
-      Number(b.current === true) - Number(a.current === true) || (b.lastUsedAt ?? '').localeCompare(a.lastUsedAt ?? ''),
+    (a, b) => Number(b.current) - Number(a.current) || b.lastUsedAt.localeCompare(a.lastUsedAt),
   );
   const others = list.filter((item) => !item.current);
 
@@ -343,9 +340,7 @@ function SessionsCard({ timeZone }: { timeZone: string }) {
             timeZone={timeZone}
             busy={pending === item.sessionId}
             onSignOut={() =>
-              item.current
-                ? void logOut()
-                : void act(item.sessionId ?? '', () => profileApi.revokeSession(item.sessionId ?? ''))
+              item.current ? void logOut() : void act(item.sessionId, () => profileApi.revokeSession(item.sessionId))
             }
           />
         ))}

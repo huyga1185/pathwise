@@ -1,5 +1,6 @@
 package uk.huy.pathwise.planning.dto.response;
 
+import org.jspecify.annotations.Nullable;
 import uk.huy.pathwise.job.dto.JobResponse;
 import uk.huy.pathwise.planning.model.PlanStatus;
 import uk.huy.pathwise.planning.model.ProcessingStatus;
@@ -21,12 +22,12 @@ public record PlanDetailResponse(long id,
                                  PlanStatus status,
                                  long version,
                                  ProcessingStatus processingStatus,
-                                 JobResponse activeJob,
+                                 @Nullable JobResponse activeJob,
                                  GeocodingSummaryResponse geocodingSummary,
                                  LocationResponse depot,
                                  String timezone,
-                                 Instant optimizedAt,
-                                 Integer totalDistanceMeters,
-                                 Integer totalDurationSeconds,
+                                 @Nullable Instant optimizedAt,
+                                 @Nullable Integer totalDistanceMeters,
+                                 @Nullable Integer totalDurationSeconds,
                                  List<PlanRouteResponse> routes,
                                  List<PlanStopResponse> unassignedStops) {}

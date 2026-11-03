@@ -1,3 +1,4 @@
 package uk.huy.pathwise.planning.dto.response;
 
-public record LocationResponse(String address, double lat, double lon) {}
+import org.jspecify.annotations.Nullable;
+public record LocationResponse(@Nullable String address, double lat, double lon) {}

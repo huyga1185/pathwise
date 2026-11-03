@@ -143,7 +143,7 @@ export function AcceptInvitePage() {
               <dt>{vi.invite.email}</dt>
               <dd>{preview.email}</dd>
               <dt>{vi.invite.role}</dt>
-              <dd>{preview.role ? (vi.roles[preview.role] ?? preview.role) : ''}</dd>
+              <dd>{vi.roles[preview.role] ?? preview.role}</dd>
               <dt>{vi.invite.expires}</dt>
               <dd>{formatDate(preview.expiresAt)}</dd>
             </dl>

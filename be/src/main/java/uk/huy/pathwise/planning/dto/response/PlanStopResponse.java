@@ -1,5 +1,6 @@
 package uk.huy.pathwise.planning.dto.response;
 
+import org.jspecify.annotations.Nullable;
 import uk.huy.pathwise.fleet.model.CapacityUnit;
 import uk.huy.pathwise.planning.model.GeocodeError;
 import uk.huy.pathwise.planning.model.GeocodeStatus;
@@ -17,21 +18,21 @@ import java.util.Map;
  * @param dropReason     why the stop has no route; null inside a route
  */
 public record PlanStopResponse(long id,
-                               Integer sequence,
+                               @Nullable Integer sequence,
                                String label,
-                               String recipientName,
-                               String recipientPhone,
-                               String address,
-                               Double lat,
-                               Double lon,
+                               @Nullable String recipientName,
+                               @Nullable String recipientPhone,
+                               @Nullable String address,
+                               @Nullable Double lat,
+                               @Nullable Double lon,
                                GeocodeStatus geocodeStatus,
-                               GeocodeError geocodeError,
-                               String geocodedDisplayName,
+                               @Nullable GeocodeError geocodeError,
+                               @Nullable String geocodedDisplayName,
                                Map<CapacityUnit, Integer> demands,
                                int serviceTimeSeconds,
-                               TimeWindowResponse timeWindow,
-                               String note,
-                               Instant plannedArrival,
+                               @Nullable TimeWindowResponse timeWindow,
+                               @Nullable String note,
+                               @Nullable Instant plannedArrival,
                                StopStatus status,
-                               String failureReason,
-                               DropReason dropReason) {}
+                               @Nullable String failureReason,
+                               @Nullable DropReason dropReason) {}

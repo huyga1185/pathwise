@@ -3,6 +3,7 @@ package uk.huy.pathwise.planning.dto.request;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
 import lombok.Getter;
+import org.jspecify.annotations.Nullable;
 import uk.huy.pathwise.core.phonenumber.ValidPhoneNumber;
 import uk.huy.pathwise.core.validation.FieldErrors;
 import uk.huy.pathwise.core.validation.MergePatch;
@@ -25,33 +26,33 @@ public class PatchStopRequest extends MergePatch {
     private String label;
 
     @Size(max = 100, message = "INVALID_RECIPIENT_NAME_LENGTH")
-    private String recipientName;
+    private @Nullable String recipientName;
 
     @ValidPhoneNumber
-    private String recipientPhone;
+    private @Nullable String recipientPhone;
 
     @Size(max = 500, message = "INVALID_ADDRESS_LENGTH")
-    private String address;
+    private @Nullable String address;
 
     @DecimalMin(value = "-90", message = "INVALID_LATITUDE")
     @DecimalMax(value = "90", message = "INVALID_LATITUDE")
-    private Double lat;
+    private @Nullable Double lat;
 
     @DecimalMin(value = "-180", message = "INVALID_LONGITUDE")
     @DecimalMax(value = "180", message = "INVALID_LONGITUDE")
-    private Double lon;
+    private @Nullable Double lon;
 
-    private Map<CapacityUnit, @NotNull(message = "INVALID_DEMAND") @PositiveOrZero(message = "INVALID_DEMAND") Integer> demands;
+    private @Nullable Map<CapacityUnit, @NotNull(message = "INVALID_DEMAND") @PositiveOrZero(message = "INVALID_DEMAND") Integer> demands;
 
     @PositiveOrZero(message = "INVALID_SERVICE_TIME")
     @Max(value = 86_400, message = "INVALID_SERVICE_TIME")
-    private Integer serviceTimeSeconds;
+    private @Nullable Integer serviceTimeSeconds;
 
     @Valid
-    private TimeWindowRequest timeWindow;
+    private @Nullable TimeWindowRequest timeWindow;
 
     @Size(max = 500, message = "INVALID_NOTE_LENGTH")
-    private String note;
+    private @Nullable String note;
 
     @Override
     public void validate(FieldErrors errors) {

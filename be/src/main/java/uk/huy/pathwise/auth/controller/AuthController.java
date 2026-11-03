@@ -58,12 +58,14 @@ public class AuthController {
     private static final String CLIENT_PLATFORM_HEADER = "X-Client-Platform";
     private static final String MOBILE_PLATFORM = "mobile";
 
+    @ResponseStatus(HttpStatus.CREATED)
     @PostMapping("/register")
     public ResponseEntity<ApiResponse<RegisterResponse>> register(@CurrentClient ClientDetail clientDetail,
                                                                   @Valid @RequestBody RegisterRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(new ApiResponse<>(registrationService.register(clientDetail, request)));
     }
 
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     @PostMapping("/email/verify")
     public ResponseEntity<Void> verifyEmail(@Valid @RequestBody VerifyEmailRequest request) {
         registrationService.verifyEmail(request);
@@ -73,6 +75,7 @@ public class AuthController {
     /**
      * Always 204, whether or not the email is registered.
      */
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     @PostMapping("/email/verify/resend")
     public ResponseEntity<Void> resendVerification(@CurrentClient ClientDetail clientDetail,
                                                    @Valid @RequestBody ResendVerificationRequest request) {
@@ -83,6 +86,7 @@ public class AuthController {
     /**
      * Always 204, whether or not the email is registered (P-06).
      */
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     @PostMapping("/password/forgot")
     public ResponseEntity<Void> forgotPassword(@CurrentClient ClientDetail clientDetail,
                                                @Valid @RequestBody ForgotPasswordRequest request) {
@@ -98,6 +102,7 @@ public class AuthController {
                 .body(new ApiResponse<>(passwordResetService.verifyResetOtp(request)));
     }
 
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     @PostMapping("/password/reset")
     public ResponseEntity<Void> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
         passwordResetService.resetPassword(request);
@@ -118,7 +123,7 @@ public class AuthController {
                 new AuthUserResponse(user.id(),
                         user.email(),
                         logInResponse.user().fullName(),
-                        user.role().name(),
+                        user.role(),
                         user.storeId(),
                         user.assignableToRoutes()));
         return tokenResponse(body, mobile, logInResponse.refreshToken().token(), logInResponse.refreshToken().expiresAt());
@@ -147,6 +152,7 @@ public class AuthController {
      * Public and idempotent (P-04): the refresh token identifies the session, so an expired access token
      * must not prevent logging out. Always 204.
      */
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     @PostMapping("/log-out")
     public ResponseEntity<Void> logOut(@CookieValue(value = REFRESH_TOKEN_COOKIE, required = false) String cookieToken,
                                        @RequestHeader(value = CLIENT_PLATFORM_HEADER, required = false) String platform,
@@ -166,6 +172,7 @@ public class AuthController {
      * to revoke. Revoking the caller's current session is a log-out and gets the same response as {@code /log-out}.
      * See {@link AuthService#revokeSession}.
      */
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     @DeleteMapping("/sessions/{sessionId}")
     public ResponseEntity<Void> revokeSession(@AuthenticationPrincipal AuthenticatedUser actor,
                                               @RequestHeader(value = CLIENT_PLATFORM_HEADER, required = false) String platform,
@@ -176,6 +183,7 @@ public class AuthController {
         };
     }
 
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     @PostMapping("/sessions/revoke-others")
     public ResponseEntity<Void> revokeOtherSessions(@AuthenticationPrincipal AuthenticatedUser actor) {
         authService.revokeOtherSessions(actor);
@@ -185,6 +193,7 @@ public class AuthController {
     /**
      * Step 1 of a password change (P-05): checks the current password, then emails a {@code CHANGE_PASSWORD} OTP.
      */
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     @PostMapping("/password/change/otp")
     public ResponseEntity<Void> requestPasswordChangeOtp(@AuthenticationPrincipal AuthenticatedUser actor,
                                                          @Valid @RequestBody RequestPasswordChangeOtpRequest request) {
@@ -195,6 +204,7 @@ public class AuthController {
     /**
      * Step 2: sets the new password with the emailed OTP; every other session is revoked, this one stays.
      */
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     @PutMapping("/password")
     public ResponseEntity<Void> changePassword(@AuthenticationPrincipal AuthenticatedUser actor,
                                                @Valid @RequestBody ChangePasswordRequest request) {

@@ -624,98 +624,98 @@ export interface components {
         };
         AdminGetUserResponse: {
             /** Format: date-time */
-            createdAt?: string;
-            email?: string;
+            createdAt: string;
+            email: string;
             /** Format: int64 */
-            id?: number;
-            phoneNumber?: string;
+            id: number;
+            phoneNumber: string | null;
             /** @enum {string} */
-            role?: "ADMIN" | "OWNER" | "DISPATCHER" | "DRIVER";
+            role: "ADMIN" | "OWNER" | "DISPATCHER" | "DRIVER";
             /** Format: date-time */
-            updatedAt?: string;
+            updatedAt: string;
         };
         ApiResponseAuthTokenResponse: {
-            data?: components["schemas"]["AuthTokenResponse"];
+            data: components["schemas"]["AuthTokenResponse"];
             message?: string;
         };
         ApiResponseDriverRouteDetailResponse: {
-            data?: components["schemas"]["DriverRouteDetailResponse"];
+            data: components["schemas"]["DriverRouteDetailResponse"];
             message?: string;
         };
         ApiResponseDriverStopUpdateResponse: {
-            data?: components["schemas"]["DriverStopUpdateResponse"];
+            data: components["schemas"]["DriverStopUpdateResponse"];
             message?: string;
         };
         ApiResponseGetUserResponse: {
-            data?: components["schemas"]["GetUserResponse"];
+            data: components["schemas"]["GetUserResponse"];
             message?: string;
         };
         ApiResponseInvitationPreviewResponse: {
-            data?: components["schemas"]["InvitationPreviewResponse"];
+            data: components["schemas"]["InvitationPreviewResponse"];
             message?: string;
         };
         ApiResponseInvitationResponse: {
-            data?: components["schemas"]["InvitationResponse"];
+            data: components["schemas"]["InvitationResponse"];
             message?: string;
         };
         ApiResponseJobResponse: {
-            data?: components["schemas"]["JobResponse"];
+            data: components["schemas"]["JobResponse"];
             message?: string;
         };
         ApiResponseListDriverRouteSummaryResponse: {
-            data?: components["schemas"]["DriverRouteSummaryResponse"][];
+            data: components["schemas"]["DriverRouteSummaryResponse"][];
             message?: string;
         };
         ApiResponseListInvitationResponse: {
-            data?: components["schemas"]["InvitationResponse"][];
+            data: components["schemas"]["InvitationResponse"][];
             message?: string;
         };
         ApiResponseListMemberResponse: {
-            data?: components["schemas"]["MemberResponse"][];
+            data: components["schemas"]["MemberResponse"][];
             message?: string;
         };
         ApiResponseListPlaceResponse: {
-            data?: components["schemas"]["PlaceResponse"][];
+            data: components["schemas"]["PlaceResponse"][];
             message?: string;
         };
         ApiResponseListSessionResponse: {
-            data?: components["schemas"]["SessionResponse"][];
+            data: components["schemas"]["SessionResponse"][];
             message?: string;
         };
         ApiResponseListVehicleResponse: {
-            data?: components["schemas"]["VehicleResponse"][];
+            data: components["schemas"]["VehicleResponse"][];
             message?: string;
         };
         ApiResponseMemberResponse: {
-            data?: components["schemas"]["MemberResponse"];
+            data: components["schemas"]["MemberResponse"];
             message?: string;
         };
         ApiResponsePageResponseAdminGetUserResponse: {
-            data?: components["schemas"]["PageResponseAdminGetUserResponse"];
+            data: components["schemas"]["PageResponseAdminGetUserResponse"];
             message?: string;
         };
         ApiResponsePageResponsePlanSummaryResponse: {
-            data?: components["schemas"]["PageResponsePlanSummaryResponse"];
+            data: components["schemas"]["PageResponsePlanSummaryResponse"];
             message?: string;
         };
         ApiResponsePlanDetailResponse: {
-            data?: components["schemas"]["PlanDetailResponse"];
+            data: components["schemas"]["PlanDetailResponse"];
             message?: string;
         };
         ApiResponseRegisterResponse: {
-            data?: components["schemas"]["RegisterResponse"];
+            data: components["schemas"]["RegisterResponse"];
             message?: string;
         };
         ApiResponseResetTokenResponse: {
-            data?: components["schemas"]["ResetTokenResponse"];
+            data: components["schemas"]["ResetTokenResponse"];
             message?: string;
         };
         ApiResponseStoreResponse: {
-            data?: components["schemas"]["StoreResponse"];
+            data: components["schemas"]["StoreResponse"];
             message?: string;
         };
         ApiResponseVehicleResponse: {
-            data?: components["schemas"]["VehicleResponse"];
+            data: components["schemas"]["VehicleResponse"];
             message?: string;
         };
         AssignmentRequest: {
@@ -731,21 +731,22 @@ export interface components {
             vehicleId: number;
         };
         AuthTokenResponse: {
-            accessToken?: string;
+            accessToken: string;
             /** Format: date-time */
-            accessTokenExpiresAt?: string;
+            accessTokenExpiresAt: string;
             refreshToken?: string;
             /** Format: date-time */
-            refreshTokenExpiresAt?: string;
+            refreshTokenExpiresAt: string;
             user?: components["schemas"]["AuthUserResponse"];
         };
         AuthUserResponse: {
-            canDrive?: boolean;
-            email?: string;
+            canDrive: boolean;
+            email: string;
             fullName?: string;
             /** Format: int64 */
-            id?: number;
-            role?: string;
+            id: number;
+            /** @enum {string} */
+            role: "ADMIN" | "OWNER" | "DISPATCHER" | "DRIVER";
             /** Format: int64 */
             storeId?: number;
         };
@@ -775,77 +776,77 @@ export interface components {
             lon: number;
         };
         DepotResponse: {
-            address?: string;
+            address: string | null;
             /** Format: double */
-            lat?: number;
+            lat: number;
             /** Format: double */
-            lon?: number;
+            lon: number;
         };
         Driver: {
-            fullName?: string;
+            fullName: string | null;
             /** Format: int64 */
-            id?: number;
+            id: number;
             /** @enum {string} */
-            role?: "ADMIN" | "OWNER" | "DISPATCHER" | "DRIVER";
+            role: "ADMIN" | "OWNER" | "DISPATCHER" | "DRIVER";
         };
         DriverRouteDetailResponse: {
-            end?: components["schemas"]["LocationResponse"];
+            end: components["schemas"]["LocationResponse"];
             /** Format: date */
-            planDate?: string;
+            planDate: string;
             /** Format: int64 */
-            planId?: number;
-            planName?: string;
+            planId: number;
+            planName: string;
             /** Format: int64 */
-            routeId?: number;
-            start?: components["schemas"]["LocationResponse"];
+            routeId: number;
+            start: components["schemas"]["LocationResponse"];
             /** @enum {string} */
-            status?: "PENDING" | "IN_PROGRESS" | "COMPLETED";
-            stops?: components["schemas"]["DriverStopResponse"][];
+            status: "PENDING" | "IN_PROGRESS" | "COMPLETED";
+            stops: components["schemas"]["DriverStopResponse"][];
         };
         DriverRouteSummaryResponse: {
             /** Format: int32 */
-            completedCount?: number;
+            completedCount: number;
             /** Format: date */
-            planDate?: string;
+            planDate: string;
             /** Format: int64 */
-            planId?: number;
-            planName?: string;
+            planId: number;
+            planName: string;
             /** Format: date-time */
-            plannedStart?: string;
+            plannedStart: string | null;
             /** Format: int64 */
-            routeId?: number;
+            routeId: number;
             /** @enum {string} */
-            status?: "PENDING" | "IN_PROGRESS" | "COMPLETED";
+            status: "PENDING" | "IN_PROGRESS" | "COMPLETED";
             /** Format: int32 */
-            stopCount?: number;
+            stopCount: number;
         };
         DriverStopResponse: {
-            address?: string;
-            failureReason?: string;
+            address: string | null;
+            failureReason: string | null;
             /** Format: int64 */
-            id?: number;
-            label?: string;
+            id: number;
+            label: string;
             /** Format: double */
-            lat?: number;
+            lat: number;
             /** Format: double */
-            lon?: number;
-            note?: string;
+            lon: number;
+            note: string | null;
             /** Format: date-time */
-            plannedArrival?: string;
-            recipientName?: string;
-            recipientPhone?: string;
+            plannedArrival: string | null;
+            recipientName: string | null;
+            recipientPhone: string | null;
             /** Format: int32 */
-            sequence?: number;
+            sequence: number;
             /** @enum {string} */
-            status?: "PENDING" | "DELIVERED" | "FAILED" | "SKIPPED";
-            timeWindow?: components["schemas"]["TimeWindowResponse"];
+            status: "PENDING" | "DELIVERED" | "FAILED" | "SKIPPED";
+            timeWindow: components["schemas"]["TimeWindowResponse"] | null;
         };
         DriverStopUpdateResponse: {
             /** @enum {string} */
-            planStatus?: "DRAFT" | "PUBLISHED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
+            planStatus: "DRAFT" | "PUBLISHED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
             /** @enum {string} */
-            routeStatus?: "PENDING" | "IN_PROGRESS" | "COMPLETED";
-            stop?: components["schemas"]["DriverStopResponse"];
+            routeStatus: "PENDING" | "IN_PROGRESS" | "COMPLETED";
+            stop: components["schemas"]["DriverStopResponse"];
         };
         ForgotPasswordRequest: {
             /** Format: email */
@@ -853,72 +854,72 @@ export interface components {
         };
         GeocodingSummaryResponse: {
             /** Format: int32 */
-            failed?: number;
+            failed: number;
             /** Format: int32 */
-            pending?: number;
+            pending: number;
             /** Format: int32 */
-            provided?: number;
+            provided: number;
             /** Format: int32 */
-            resolved?: number;
+            resolved: number;
             /** Format: int32 */
-            total?: number;
+            total: number;
         };
         GetUserResponse: {
-            canDrive?: boolean;
-            email?: string;
-            fullName?: string;
+            canDrive: boolean;
+            email: string;
+            fullName: string | null;
             /** Format: int64 */
-            id?: number;
-            phoneNumber?: string;
+            id: number;
+            phoneNumber: string | null;
             /** @enum {string} */
-            role?: "ADMIN" | "OWNER" | "DISPATCHER" | "DRIVER";
+            role: "ADMIN" | "OWNER" | "DISPATCHER" | "DRIVER";
             /** @enum {string} */
-            status?: "PENDING_VERIFICATION" | "ACTIVE" | "DISABLED";
+            status: "PENDING_VERIFICATION" | "ACTIVE" | "DISABLED";
             /** Format: int64 */
-            storeId?: number;
+            storeId: number | null;
         };
         InvitationPreviewResponse: {
-            email?: string;
+            email: string;
             /** Format: date-time */
-            expiresAt?: string;
+            expiresAt: string;
             /** @enum {string} */
-            role?: "ADMIN" | "OWNER" | "DISPATCHER" | "DRIVER";
-            storeName?: string;
+            role: "ADMIN" | "OWNER" | "DISPATCHER" | "DRIVER";
+            storeName: string;
         };
         InvitationResponse: {
-            email?: string;
+            email: string;
             /** Format: date-time */
-            expiresAt?: string;
+            expiresAt: string;
             /** Format: int64 */
-            id?: number;
+            id: number;
             /** @enum {string} */
-            role?: "ADMIN" | "OWNER" | "DISPATCHER" | "DRIVER";
+            role: "ADMIN" | "OWNER" | "DISPATCHER" | "DRIVER";
             /** @enum {string} */
-            status?: "PENDING" | "ACCEPTED" | "REVOKED" | "EXPIRED";
+            status: "PENDING" | "ACCEPTED" | "REVOKED" | "EXPIRED";
         };
         JobResponse: {
             /** Format: date-time */
-            createdAt?: string;
-            errorCode?: string;
+            createdAt: string;
+            errorCode: string | null;
             /** Format: date-time */
-            finishedAt?: string;
+            finishedAt: string | null;
             /** Format: int64 */
-            id?: number;
+            id: number;
             /** Format: int64 */
-            planId?: number;
+            planId: number;
             /** Format: date-time */
-            startedAt?: string;
+            startedAt: string | null;
             /** @enum {string} */
-            status?: "QUEUED" | "RUNNING" | "SUCCEEDED" | "FAILED";
+            status: "QUEUED" | "RUNNING" | "SUCCEEDED" | "FAILED";
             /** @enum {string} */
-            type?: "GEOCODE_PLAN" | "OPTIMIZE_PLAN";
+            type: "GEOCODE_PLAN" | "OPTIMIZE_PLAN";
         };
         LocationResponse: {
-            address?: string;
+            address: string | null;
             /** Format: double */
-            lat?: number;
+            lat: number;
             /** Format: double */
-            lon?: number;
+            lon: number;
         };
         LogInRequest: {
             /** Format: email */
@@ -926,89 +927,89 @@ export interface components {
             password: string;
         };
         MemberResponse: {
-            canDrive?: boolean;
-            email?: string;
-            fullName?: string;
+            canDrive: boolean;
+            email: string;
+            fullName: string | null;
             /** Format: int64 */
-            id?: number;
-            phoneNumber?: string;
+            id: number;
+            phoneNumber: string | null;
             /** @enum {string} */
-            role?: "ADMIN" | "OWNER" | "DISPATCHER" | "DRIVER";
+            role: "ADMIN" | "OWNER" | "DISPATCHER" | "DRIVER";
             /** @enum {string} */
-            status?: "PENDING_VERIFICATION" | "ACTIVE" | "DISABLED";
+            status: "PENDING_VERIFICATION" | "ACTIVE" | "DISABLED";
         };
         PageResponseAdminGetUserResponse: {
-            items?: components["schemas"]["AdminGetUserResponse"][];
+            items: components["schemas"]["AdminGetUserResponse"][];
             /** Format: int32 */
-            page?: number;
+            page: number;
             /** Format: int32 */
-            size?: number;
+            size: number;
             /** Format: int64 */
-            totalElements?: number;
+            totalElements: number;
             /** Format: int32 */
-            totalPages?: number;
+            totalPages: number;
         };
         PageResponsePlanSummaryResponse: {
-            items?: components["schemas"]["PlanSummaryResponse"][];
+            items: components["schemas"]["PlanSummaryResponse"][];
             /** Format: int32 */
-            page?: number;
+            page: number;
             /** Format: int32 */
-            size?: number;
+            size: number;
             /** Format: int64 */
-            totalElements?: number;
+            totalElements: number;
             /** Format: int32 */
-            totalPages?: number;
+            totalPages: number;
         };
         PatchStopRequest: {
-            address?: string;
+            address?: string | null;
             demands?: {
                 [key: string]: number;
-            };
+            } | null;
             label?: string;
             /** Format: double */
-            lat?: number;
+            lat?: number | null;
             /** Format: double */
-            lon?: number;
-            note?: string;
-            recipientName?: string;
-            recipientPhone?: string;
+            lon?: number | null;
+            note?: string | null;
+            recipientName?: string | null;
+            recipientPhone?: string | null;
             /** Format: int32 */
-            serviceTimeSeconds?: number;
-            timeWindow?: components["schemas"]["TimeWindowRequest"];
+            serviceTimeSeconds?: number | null;
+            timeWindow?: components["schemas"]["TimeWindowRequest"] | null;
             /** Format: int64 */
             version: number;
         };
         PlaceResponse: {
-            displayName?: string;
+            displayName: string;
             /** Format: double */
-            lat?: number;
+            lat: number;
             /** Format: double */
-            lon?: number;
+            lon: number;
         };
         PlanDetailResponse: {
-            activeJob?: components["schemas"]["JobResponse"];
-            depot?: components["schemas"]["LocationResponse"];
-            geocodingSummary?: components["schemas"]["GeocodingSummaryResponse"];
+            activeJob: components["schemas"]["JobResponse"] | null;
+            depot: components["schemas"]["LocationResponse"];
+            geocodingSummary: components["schemas"]["GeocodingSummaryResponse"];
             /** Format: int64 */
-            id?: number;
-            name?: string;
+            id: number;
+            name: string;
             /** Format: date-time */
-            optimizedAt?: string;
+            optimizedAt: string | null;
             /** Format: date */
-            planDate?: string;
+            planDate: string;
             /** @enum {string} */
-            processingStatus?: "IDLE" | "GEOCODING" | "OPTIMIZING";
-            routes?: components["schemas"]["PlanRouteResponse"][];
+            processingStatus: "IDLE" | "GEOCODING" | "OPTIMIZING";
+            routes: components["schemas"]["PlanRouteResponse"][];
             /** @enum {string} */
-            status?: "DRAFT" | "PUBLISHED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
-            timezone?: string;
+            status: "DRAFT" | "PUBLISHED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
+            timezone: string;
             /** Format: int32 */
-            totalDistanceMeters?: number;
+            totalDistanceMeters: number | null;
             /** Format: int32 */
-            totalDurationSeconds?: number;
-            unassignedStops?: components["schemas"]["PlanStopResponse"][];
+            totalDurationSeconds: number | null;
+            unassignedStops: components["schemas"]["PlanStopResponse"][];
             /** Format: int64 */
-            version?: number;
+            version: number;
         };
         PlanDraftRequest: {
             assignments?: components["schemas"]["AssignmentRequest"][];
@@ -1021,31 +1022,31 @@ export interface components {
             version: number;
         };
         PlanRouteResponse: {
-            driver?: components["schemas"]["Driver"];
-            end?: components["schemas"]["LocationResponse"];
+            driver: components["schemas"]["Driver"];
+            end: components["schemas"]["LocationResponse"];
             /** Format: int64 */
-            id?: number;
+            id: number;
             /** Format: int32 */
-            load?: number;
+            load: number | null;
             /** Format: int32 */
-            maxDistanceMeters?: number;
+            maxDistanceMeters: number | null;
             /** Format: int32 */
-            plannedDistanceMeters?: number;
+            plannedDistanceMeters: number | null;
             /** Format: int32 */
-            plannedDurationSeconds?: number;
+            plannedDurationSeconds: number | null;
             /** Format: date-time */
-            plannedEnd?: string;
+            plannedEnd: string | null;
             /** Format: date-time */
-            plannedStart?: string;
+            plannedStart: string | null;
             /** Format: time-local */
-            shiftEnd?: string;
+            shiftEnd: string;
             /** Format: time-local */
-            shiftStart?: string;
-            start?: components["schemas"]["LocationResponse"];
+            shiftStart: string;
+            start: components["schemas"]["LocationResponse"];
             /** @enum {string} */
-            status?: "PENDING" | "IN_PROGRESS" | "COMPLETED";
-            stops?: components["schemas"]["PlanStopResponse"][];
-            vehicle?: components["schemas"]["Vehicle"];
+            status: "PENDING" | "IN_PROGRESS" | "COMPLETED";
+            stops: components["schemas"]["PlanStopResponse"][];
+            vehicle: components["schemas"]["Vehicle"];
         };
         PlanStopRequest: {
             address?: string;
@@ -1067,62 +1068,62 @@ export interface components {
             timeWindow?: components["schemas"]["TimeWindowRequest"];
         };
         PlanStopResponse: {
-            address?: string;
-            demands?: {
+            address: string | null;
+            demands: {
                 [key: string]: number;
             };
+            /** @enum {string|null} */
+            dropReason: "NOT_OPTIMIZED" | "INFEASIBLE" | null;
+            failureReason: string | null;
+            /** @enum {string|null} */
+            geocodeError: "NOT_FOUND" | "PROVIDER_ERROR" | null;
             /** @enum {string} */
-            dropReason?: "NOT_OPTIMIZED" | "INFEASIBLE";
-            failureReason?: string;
-            /** @enum {string} */
-            geocodeError?: "NOT_FOUND" | "PROVIDER_ERROR";
-            /** @enum {string} */
-            geocodeStatus?: "PROVIDED" | "PENDING" | "RESOLVED" | "FAILED";
-            geocodedDisplayName?: string;
+            geocodeStatus: "PROVIDED" | "PENDING" | "RESOLVED" | "FAILED";
+            geocodedDisplayName: string | null;
             /** Format: int64 */
-            id?: number;
-            label?: string;
+            id: number;
+            label: string;
             /** Format: double */
-            lat?: number;
+            lat: number | null;
             /** Format: double */
-            lon?: number;
-            note?: string;
+            lon: number | null;
+            note: string | null;
             /** Format: date-time */
-            plannedArrival?: string;
-            recipientName?: string;
-            recipientPhone?: string;
+            plannedArrival: string | null;
+            recipientName: string | null;
+            recipientPhone: string | null;
             /** Format: int32 */
-            sequence?: number;
+            sequence: number | null;
             /** Format: int32 */
-            serviceTimeSeconds?: number;
+            serviceTimeSeconds: number;
             /** @enum {string} */
-            status?: "PENDING" | "DELIVERED" | "FAILED" | "SKIPPED";
-            timeWindow?: components["schemas"]["TimeWindowResponse"];
+            status: "PENDING" | "DELIVERED" | "FAILED" | "SKIPPED";
+            timeWindow: components["schemas"]["TimeWindowResponse"] | null;
         };
         PlanSummaryResponse: {
             /** Format: date-time */
-            createdAt?: string;
+            createdAt: string;
             /** Format: int64 */
-            id?: number;
-            name?: string;
+            id: number;
+            name: string;
             /** Format: date-time */
-            optimizedAt?: string;
+            optimizedAt: string | null;
             /** Format: date */
-            planDate?: string;
+            planDate: string;
             /** @enum {string} */
-            processingStatus?: "IDLE" | "GEOCODING" | "OPTIMIZING";
+            processingStatus: "IDLE" | "GEOCODING" | "OPTIMIZING";
             /** Format: int64 */
-            routeCount?: number;
+            routeCount: number;
             /** @enum {string} */
-            status?: "DRAFT" | "PUBLISHED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
+            status: "DRAFT" | "PUBLISHED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
             /** Format: int64 */
-            stopCount?: number;
+            stopCount: number;
             /** Format: int32 */
-            totalDistanceMeters?: number;
+            totalDistanceMeters: number | null;
             /** Format: int32 */
-            totalDurationSeconds?: number;
+            totalDurationSeconds: number | null;
             /** Format: int64 */
-            version?: number;
+            version: number;
         };
         PlanVersionRequest: {
             /** Format: int64 */
@@ -1139,9 +1140,9 @@ export interface components {
             storeName: string;
         };
         RegisterResponse: {
-            email?: string;
+            email: string;
             /** @enum {string} */
-            status?: "PENDING_VERIFICATION" | "ACTIVE" | "DISABLED";
+            status: "PENDING_VERIFICATION" | "ACTIVE" | "DISABLED";
         };
         RequestPasswordChangeOtpRequest: {
             currentPassword: string;
@@ -1156,25 +1157,25 @@ export interface components {
         };
         ResetTokenResponse: {
             /** Format: date-time */
-            expiresAt?: string;
-            resetToken?: string;
+            expiresAt: string;
+            resetToken: string;
         };
         SessionResponse: {
-            current?: boolean;
+            current: boolean;
             /** Format: date-time */
-            expiresAt?: string;
-            ipAddress?: string;
+            expiresAt: string;
+            ipAddress: string | null;
             /** Format: date-time */
-            lastUsedAt?: string;
-            sessionId?: string;
-            userAgent?: string;
+            lastUsedAt: string;
+            sessionId: string;
+            userAgent: string | null;
         };
         StoreResponse: {
-            depot?: components["schemas"]["DepotResponse"];
+            depot: components["schemas"]["DepotResponse"] | null;
             /** Format: int64 */
-            id?: number;
-            name?: string;
-            timezone?: string;
+            id: number;
+            name: string;
+            timezone: string;
         };
         TimeWindowRequest: {
             /** Format: time-local */
@@ -1184,9 +1185,9 @@ export interface components {
         };
         TimeWindowResponse: {
             /** Format: time-local */
-            end?: string;
+            end: string;
             /** Format: time-local */
-            start?: string;
+            start: string;
         };
         UpdateCanDriveRequest: {
             canDrive: boolean;
@@ -1199,8 +1200,8 @@ export interface components {
             status?: "ACTIVE" | "DISABLED";
         };
         UpdateProfileRequest: {
-            fullName?: string;
-            phoneNumber?: string;
+            fullName?: string | null;
+            phoneNumber?: string | null;
         };
         UpdateStopStatusRequest: {
             failureReason?: string;
@@ -1223,23 +1224,23 @@ export interface components {
         };
         Vehicle: {
             /** Format: int32 */
-            capacity?: number;
+            capacity: number;
             /** @enum {string} */
-            capacityUnit?: "KG" | "BOX" | "PACKAGE" | "ORDER";
+            capacityUnit: "KG" | "BOX" | "PACKAGE" | "ORDER";
             /** Format: int64 */
-            id?: number;
-            name?: string;
+            id: number;
+            name: string;
         };
         VehicleResponse: {
-            active?: boolean;
+            active: boolean;
             /** Format: int32 */
-            capacity?: number;
+            capacity: number;
             /** @enum {string} */
-            capacityUnit?: "KG" | "BOX" | "PACKAGE" | "ORDER";
+            capacityUnit: "KG" | "BOX" | "PACKAGE" | "ORDER";
             /** Format: int64 */
-            id?: number;
-            name?: string;
-            plateNumber?: string;
+            id: number;
+            name: string;
+            plateNumber: string | null;
         };
         VerifyEmailRequest: {
             /** Format: email */
@@ -1300,8 +1301,8 @@ export interface operations {
             };
         };
         responses: {
-            /** @description OK */
-            200: {
+            /** @description No Content */
+            204: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -1322,8 +1323,8 @@ export interface operations {
             };
         };
         responses: {
-            /** @description OK */
-            200: {
+            /** @description No Content */
+            204: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -1374,8 +1375,8 @@ export interface operations {
             };
         };
         responses: {
-            /** @description OK */
-            200: {
+            /** @description No Content */
+            204: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -1396,8 +1397,8 @@ export interface operations {
             };
         };
         responses: {
-            /** @description OK */
-            200: {
+            /** @description No Content */
+            204: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -1418,8 +1419,8 @@ export interface operations {
             };
         };
         responses: {
-            /** @description OK */
-            200: {
+            /** @description No Content */
+            204: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -1440,8 +1441,8 @@ export interface operations {
             };
         };
         responses: {
-            /** @description OK */
-            200: {
+            /** @description No Content */
+            204: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -1462,8 +1463,8 @@ export interface operations {
             };
         };
         responses: {
-            /** @description OK */
-            200: {
+            /** @description No Content */
+            204: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -1536,8 +1537,8 @@ export interface operations {
             };
         };
         responses: {
-            /** @description OK */
-            200: {
+            /** @description Created */
+            201: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -1576,8 +1577,8 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description OK */
-            200: {
+            /** @description No Content */
+            204: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -1598,8 +1599,8 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description OK */
-            200: {
+            /** @description No Content */
+            204: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -1714,8 +1715,8 @@ export interface operations {
             };
         };
         responses: {
-            /** @description OK */
-            200: {
+            /** @description No Content */
+            204: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -1809,8 +1810,8 @@ export interface operations {
             };
         };
         responses: {
-            /** @description OK */
-            200: {
+            /** @description Created */
+            201: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -1909,8 +1910,8 @@ export interface operations {
             };
         };
         responses: {
-            /** @description OK */
-            200: {
+            /** @description Accepted */
+            202: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -1935,8 +1936,8 @@ export interface operations {
             };
         };
         responses: {
-            /** @description OK */
-            200: {
+            /** @description Accepted */
+            202: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -2078,8 +2079,8 @@ export interface operations {
             };
         };
         responses: {
-            /** @description OK */
-            200: {
+            /** @description Created */
+            201: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -2100,8 +2101,8 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description OK */
-            200: {
+            /** @description No Content */
+            204: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -2262,8 +2263,8 @@ export interface operations {
             };
         };
         responses: {
-            /** @description OK */
-            200: {
+            /** @description Created */
+            201: {
                 headers: {
                     [name: string]: unknown;
                 };

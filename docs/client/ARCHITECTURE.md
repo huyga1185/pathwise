@@ -77,6 +77,7 @@ Mỗi port là một `interface` (TS) hoặc `abstract interface class` (Dart). 
 - `api/openapi.json` là snapshot sinh từ backend (`ApiSpecContractIntegrationTest` ghi `be/target/openapi.json`; `scripts/sync_openapi.sh` chạy test đó rồi gọi `openapi_snapshot.py write`). Dạng chuẩn: bỏ `servers` (phụ thuộc môi trường), sắp xếp key, thụt 2 dấu cách, nên chạy lại không tạo diff. Commit cùng PR đổi API của backend.
 - CI kiểm **drift**: job `ci` chạy `openapi_snapshot.py check` sau `./mvnw verify`; khác nhau thì fail, in diff và lệnh `sync_openapi.sh`.
 - Web sinh kiểu bằng `openapi-typescript` → `web/src/data/schema.d.ts` (commit, không sửa tay); gọi qua `openapi-fetch`. Mobile sinh bằng `openapi-generator` (generator `dart-dio`) → package `mobile/packages/pathwise_api` (commit, không sửa tay).
+- Từ T46 (P-48): field response luôn có mặt là bắt buộc trong kiểu sinh ra, field có thể `null` có kiểu `X | null` (client đổi sang `undefined` ở view model nếu cần), field vắng mặt được (`@JsonInclude(NON_NULL)`, ví dụ `LoginResponse.user.fullName`) là `X?`; request PATCH có kiểu `X | null` ở field xoá được. Mã thành công trong OpenAPI là mã thật (201/202/204).
 - `API_SPEC.md` vẫn là hợp đồng nghiệp vụ; OpenAPI là bản máy đọc của nó. Client thấy hai bên lệch thì báo, không sửa client cho khớp chỗ sai.
 - **Client không đổi API.** Thiếu field hay endpoint → ghi vào báo cáo task, chủ dự án tạo task backend (mẫu T45).
 

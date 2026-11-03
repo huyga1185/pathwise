@@ -1,3 +1,4 @@
 package uk.huy.pathwise.store.dto.response;
 
-public record DepotResponse(String address, double lat, double lon) {}
+import org.jspecify.annotations.Nullable;
+public record DepotResponse(@Nullable String address, double lat, double lon) {}

@@ -44,7 +44,10 @@
             "type": "integer"
           },
           "phoneNumber": {
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "role": {
             "enum": [
@@ -60,6 +63,14 @@
             "type": "string"
           }
         },
+        "required": [
+          "createdAt",
+          "email",
+          "id",
+          "phoneNumber",
+          "role",
+          "updatedAt"
+        ],
         "type": "object"
       },
       "ApiResponseAuthTokenResponse": {
@@ -71,6 +82,9 @@
             "type": "string"
           }
         },
+        "required": [
+          "data"
+        ],
         "type": "object"
       },
       "ApiResponseDriverRouteDetailResponse": {
@@ -82,6 +96,9 @@
             "type": "string"
           }
         },
+        "required": [
+          "data"
+        ],
         "type": "object"
       },
       "ApiResponseDriverStopUpdateResponse": {
@@ -93,6 +110,9 @@
             "type": "string"
           }
         },
+        "required": [
+          "data"
+        ],
         "type": "object"
       },
       "ApiResponseGetUserResponse": {
@@ -104,6 +124,9 @@
             "type": "string"
           }
         },
+        "required": [
+          "data"
+        ],
         "type": "object"
       },
       "ApiResponseInvitationPreviewResponse": {
@@ -115,6 +138,9 @@
             "type": "string"
           }
         },
+        "required": [
+          "data"
+        ],
         "type": "object"
       },
       "ApiResponseInvitationResponse": {
@@ -126,6 +152,9 @@
             "type": "string"
           }
         },
+        "required": [
+          "data"
+        ],
         "type": "object"
       },
       "ApiResponseJobResponse": {
@@ -137,6 +166,9 @@
             "type": "string"
           }
         },
+        "required": [
+          "data"
+        ],
         "type": "object"
       },
       "ApiResponseListDriverRouteSummaryResponse": {
@@ -151,6 +183,9 @@
             "type": "string"
           }
         },
+        "required": [
+          "data"
+        ],
         "type": "object"
       },
       "ApiResponseListInvitationResponse": {
@@ -165,6 +200,9 @@
             "type": "string"
           }
         },
+        "required": [
+          "data"
+        ],
         "type": "object"
       },
       "ApiResponseListMemberResponse": {
@@ -179,6 +217,9 @@
             "type": "string"
           }
         },
+        "required": [
+          "data"
+        ],
         "type": "object"
       },
       "ApiResponseListPlaceResponse": {
@@ -193,6 +234,9 @@
             "type": "string"
           }
         },
+        "required": [
+          "data"
+        ],
         "type": "object"
       },
       "ApiResponseListSessionResponse": {
@@ -207,6 +251,9 @@
             "type": "string"
           }
         },
+        "required": [
+          "data"
+        ],
         "type": "object"
       },
       "ApiResponseListVehicleResponse": {
@@ -221,6 +268,9 @@
             "type": "string"
           }
         },
+        "required": [
+          "data"
+        ],
         "type": "object"
       },
       "ApiResponseMemberResponse": {
@@ -232,6 +282,9 @@
             "type": "string"
           }
         },
+        "required": [
+          "data"
+        ],
         "type": "object"
       },
       "ApiResponsePageResponseAdminGetUserResponse": {
@@ -243,6 +296,9 @@
             "type": "string"
           }
         },
+        "required": [
+          "data"
+        ],
         "type": "object"
       },
       "ApiResponsePageResponsePlanSummaryResponse": {
@@ -254,6 +310,9 @@
             "type": "string"
           }
         },
+        "required": [
+          "data"
+        ],
         "type": "object"
       },
       "ApiResponsePlanDetailResponse": {
@@ -265,6 +324,9 @@
             "type": "string"
           }
         },
+        "required": [
+          "data"
+        ],
         "type": "object"
       },
       "ApiResponseRegisterResponse": {
@@ -276,6 +338,9 @@
             "type": "string"
           }
         },
+        "required": [
+          "data"
+        ],
         "type": "object"
       },
       "ApiResponseResetTokenResponse": {
@@ -287,6 +352,9 @@
             "type": "string"
           }
         },
+        "required": [
+          "data"
+        ],
         "type": "object"
       },
       "ApiResponseStoreResponse": {
@@ -298,6 +366,9 @@
             "type": "string"
           }
         },
+        "required": [
+          "data"
+        ],
         "type": "object"
       },
       "ApiResponseVehicleResponse": {
@@ -309,6 +380,9 @@
             "type": "string"
           }
         },
+        "required": [
+          "data"
+        ],
         "type": "object"
       },
       "AssignmentRequest": {
@@ -363,6 +437,11 @@
             "$ref": "#/components/schemas/AuthUserResponse"
           }
         },
+        "required": [
+          "accessToken",
+          "accessTokenExpiresAt",
+          "refreshTokenExpiresAt"
+        ],
         "type": "object"
       },
       "AuthUserResponse": {
@@ -381,6 +460,12 @@
             "type": "integer"
           },
           "role": {
+            "enum": [
+              "ADMIN",
+              "OWNER",
+              "DISPATCHER",
+              "DRIVER"
+            ],
             "type": "string"
           },
           "storeId": {
@@ -388,6 +473,12 @@
             "type": "integer"
           }
         },
+        "required": [
+          "canDrive",
+          "email",
+          "id",
+          "role"
+        ],
         "type": "object"
       },
       "ChangePasswordRequest": {
@@ -493,7 +584,10 @@
       "DepotResponse": {
         "properties": {
           "address": {
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "lat": {
             "format": "double",
@@ -504,12 +598,20 @@
             "type": "number"
           }
         },
+        "required": [
+          "address",
+          "lat",
+          "lon"
+        ],
         "type": "object"
       },
       "Driver": {
         "properties": {
           "fullName": {
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "id": {
             "format": "int64",
@@ -525,6 +627,11 @@
             "type": "string"
           }
         },
+        "required": [
+          "fullName",
+          "id",
+          "role"
+        ],
         "type": "object"
       },
       "DriverRouteDetailResponse": {
@@ -565,6 +672,16 @@
             "type": "array"
           }
         },
+        "required": [
+          "end",
+          "planDate",
+          "planId",
+          "planName",
+          "routeId",
+          "start",
+          "status",
+          "stops"
+        ],
         "type": "object"
       },
       "DriverRouteSummaryResponse": {
@@ -586,7 +703,10 @@
           },
           "plannedStart": {
             "format": "date-time",
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "routeId": {
             "format": "int64",
@@ -605,15 +725,31 @@
             "type": "integer"
           }
         },
+        "required": [
+          "completedCount",
+          "planDate",
+          "planId",
+          "planName",
+          "plannedStart",
+          "routeId",
+          "status",
+          "stopCount"
+        ],
         "type": "object"
       },
       "DriverStopResponse": {
         "properties": {
           "address": {
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "failureReason": {
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "id": {
             "format": "int64",
@@ -631,17 +767,29 @@
             "type": "number"
           },
           "note": {
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "plannedArrival": {
             "format": "date-time",
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "recipientName": {
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "recipientPhone": {
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "sequence": {
             "format": "int32",
@@ -657,9 +805,31 @@
             "type": "string"
           },
           "timeWindow": {
-            "$ref": "#/components/schemas/TimeWindowResponse"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TimeWindowResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
+        "required": [
+          "address",
+          "failureReason",
+          "id",
+          "label",
+          "lat",
+          "lon",
+          "note",
+          "plannedArrival",
+          "recipientName",
+          "recipientPhone",
+          "sequence",
+          "status",
+          "timeWindow"
+        ],
         "type": "object"
       },
       "DriverStopUpdateResponse": {
@@ -686,6 +856,11 @@
             "$ref": "#/components/schemas/DriverStopResponse"
           }
         },
+        "required": [
+          "planStatus",
+          "routeStatus",
+          "stop"
+        ],
         "type": "object"
       },
       "ForgotPasswordRequest": {
@@ -724,6 +899,13 @@
             "type": "integer"
           }
         },
+        "required": [
+          "failed",
+          "pending",
+          "provided",
+          "resolved",
+          "total"
+        ],
         "type": "object"
       },
       "GetUserResponse": {
@@ -735,14 +917,20 @@
             "type": "string"
           },
           "fullName": {
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "id": {
             "format": "int64",
             "type": "integer"
           },
           "phoneNumber": {
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "role": {
             "enum": [
@@ -763,9 +951,22 @@
           },
           "storeId": {
             "format": "int64",
-            "type": "integer"
+            "type": [
+              "integer",
+              "null"
+            ]
           }
         },
+        "required": [
+          "canDrive",
+          "email",
+          "fullName",
+          "id",
+          "phoneNumber",
+          "role",
+          "status",
+          "storeId"
+        ],
         "type": "object"
       },
       "InvitationPreviewResponse": {
@@ -790,6 +991,12 @@
             "type": "string"
           }
         },
+        "required": [
+          "email",
+          "expiresAt",
+          "role",
+          "storeName"
+        ],
         "type": "object"
       },
       "InvitationResponse": {
@@ -824,6 +1031,13 @@
             "type": "string"
           }
         },
+        "required": [
+          "email",
+          "expiresAt",
+          "id",
+          "role",
+          "status"
+        ],
         "type": "object"
       },
       "JobResponse": {
@@ -833,11 +1047,17 @@
             "type": "string"
           },
           "errorCode": {
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "finishedAt": {
             "format": "date-time",
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "id": {
             "format": "int64",
@@ -849,7 +1069,10 @@
           },
           "startedAt": {
             "format": "date-time",
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "status": {
             "enum": [
@@ -868,12 +1091,25 @@
             "type": "string"
           }
         },
+        "required": [
+          "createdAt",
+          "errorCode",
+          "finishedAt",
+          "id",
+          "planId",
+          "startedAt",
+          "status",
+          "type"
+        ],
         "type": "object"
       },
       "LocationResponse": {
         "properties": {
           "address": {
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "lat": {
             "format": "double",
@@ -884,6 +1120,11 @@
             "type": "number"
           }
         },
+        "required": [
+          "address",
+          "lat",
+          "lon"
+        ],
         "type": "object"
       },
       "LogInRequest": {
@@ -913,14 +1154,20 @@
             "type": "string"
           },
           "fullName": {
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "id": {
             "format": "int64",
             "type": "integer"
           },
           "phoneNumber": {
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "role": {
             "enum": [
@@ -940,6 +1187,15 @@
             "type": "string"
           }
         },
+        "required": [
+          "canDrive",
+          "email",
+          "fullName",
+          "id",
+          "phoneNumber",
+          "role",
+          "status"
+        ],
         "type": "object"
       },
       "PageResponseAdminGetUserResponse": {
@@ -967,6 +1223,13 @@
             "type": "integer"
           }
         },
+        "required": [
+          "items",
+          "page",
+          "size",
+          "totalElements",
+          "totalPages"
+        ],
         "type": "object"
       },
       "PageResponsePlanSummaryResponse": {
@@ -994,6 +1257,13 @@
             "type": "integer"
           }
         },
+        "required": [
+          "items",
+          "page",
+          "size",
+          "totalElements",
+          "totalPages"
+        ],
         "type": "object"
       },
       "PatchStopRequest": {
@@ -1001,14 +1271,20 @@
           "address": {
             "maxLength": 500,
             "minLength": 0,
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "demands": {
             "additionalProperties": {
               "format": "int32",
               "type": "integer"
             },
-            "type": "object"
+            "type": [
+              "object",
+              "null"
+            ]
           },
           "label": {
             "maxLength": 150,
@@ -1019,35 +1295,60 @@
             "format": "double",
             "maximum": 90,
             "minimum": -90,
-            "type": "number"
+            "type": [
+              "number",
+              "null"
+            ]
           },
           "lon": {
             "format": "double",
             "maximum": 180,
             "minimum": -180,
-            "type": "number"
+            "type": [
+              "number",
+              "null"
+            ]
           },
           "note": {
             "maxLength": 500,
             "minLength": 0,
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "recipientName": {
             "maxLength": 100,
             "minLength": 0,
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "recipientPhone": {
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "serviceTimeSeconds": {
             "format": "int32",
             "maximum": 86400,
             "minimum": 0,
-            "type": "integer"
+            "type": [
+              "integer",
+              "null"
+            ]
           },
           "timeWindow": {
-            "$ref": "#/components/schemas/TimeWindowRequest"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TimeWindowRequest"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "version": {
             "format": "int64",
@@ -1073,12 +1374,24 @@
             "type": "number"
           }
         },
+        "required": [
+          "displayName",
+          "lat",
+          "lon"
+        ],
         "type": "object"
       },
       "PlanDetailResponse": {
         "properties": {
           "activeJob": {
-            "$ref": "#/components/schemas/JobResponse"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/JobResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "depot": {
             "$ref": "#/components/schemas/LocationResponse"
@@ -1095,7 +1408,10 @@
           },
           "optimizedAt": {
             "format": "date-time",
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "planDate": {
             "format": "date",
@@ -1130,11 +1446,17 @@
           },
           "totalDistanceMeters": {
             "format": "int32",
-            "type": "integer"
+            "type": [
+              "integer",
+              "null"
+            ]
           },
           "totalDurationSeconds": {
             "format": "int32",
-            "type": "integer"
+            "type": [
+              "integer",
+              "null"
+            ]
           },
           "unassignedStops": {
             "items": {
@@ -1147,6 +1469,23 @@
             "type": "integer"
           }
         },
+        "required": [
+          "activeJob",
+          "depot",
+          "geocodingSummary",
+          "id",
+          "name",
+          "optimizedAt",
+          "planDate",
+          "processingStatus",
+          "routes",
+          "status",
+          "timezone",
+          "totalDistanceMeters",
+          "totalDurationSeconds",
+          "unassignedStops",
+          "version"
+        ],
         "type": "object"
       },
       "PlanDraftRequest": {
@@ -1201,27 +1540,45 @@
           },
           "load": {
             "format": "int32",
-            "type": "integer"
+            "type": [
+              "integer",
+              "null"
+            ]
           },
           "maxDistanceMeters": {
             "format": "int32",
-            "type": "integer"
+            "type": [
+              "integer",
+              "null"
+            ]
           },
           "plannedDistanceMeters": {
             "format": "int32",
-            "type": "integer"
+            "type": [
+              "integer",
+              "null"
+            ]
           },
           "plannedDurationSeconds": {
             "format": "int32",
-            "type": "integer"
+            "type": [
+              "integer",
+              "null"
+            ]
           },
           "plannedEnd": {
             "format": "date-time",
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "plannedStart": {
             "format": "date-time",
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "shiftEnd": {
             "format": "time-local",
@@ -1252,6 +1609,23 @@
             "$ref": "#/components/schemas/Vehicle"
           }
         },
+        "required": [
+          "driver",
+          "end",
+          "id",
+          "load",
+          "maxDistanceMeters",
+          "plannedDistanceMeters",
+          "plannedDurationSeconds",
+          "plannedEnd",
+          "plannedStart",
+          "shiftEnd",
+          "shiftStart",
+          "start",
+          "status",
+          "stops",
+          "vehicle"
+        ],
         "type": "object"
       },
       "PlanStopRequest": {
@@ -1320,7 +1694,10 @@
       "PlanStopResponse": {
         "properties": {
           "address": {
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "demands": {
             "additionalProperties": {
@@ -1334,17 +1711,26 @@
               "NOT_OPTIMIZED",
               "INFEASIBLE"
             ],
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "failureReason": {
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "geocodeError": {
             "enum": [
               "NOT_FOUND",
               "PROVIDER_ERROR"
             ],
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "geocodeStatus": {
             "enum": [
@@ -1356,7 +1742,10 @@
             "type": "string"
           },
           "geocodedDisplayName": {
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "id": {
             "format": "int64",
@@ -1367,28 +1756,49 @@
           },
           "lat": {
             "format": "double",
-            "type": "number"
+            "type": [
+              "number",
+              "null"
+            ]
           },
           "lon": {
             "format": "double",
-            "type": "number"
+            "type": [
+              "number",
+              "null"
+            ]
           },
           "note": {
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "plannedArrival": {
             "format": "date-time",
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "recipientName": {
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "recipientPhone": {
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "sequence": {
             "format": "int32",
-            "type": "integer"
+            "type": [
+              "integer",
+              "null"
+            ]
           },
           "serviceTimeSeconds": {
             "format": "int32",
@@ -1404,9 +1814,37 @@
             "type": "string"
           },
           "timeWindow": {
-            "$ref": "#/components/schemas/TimeWindowResponse"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TimeWindowResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
+        "required": [
+          "address",
+          "demands",
+          "dropReason",
+          "failureReason",
+          "geocodeError",
+          "geocodeStatus",
+          "geocodedDisplayName",
+          "id",
+          "label",
+          "lat",
+          "lon",
+          "note",
+          "plannedArrival",
+          "recipientName",
+          "recipientPhone",
+          "sequence",
+          "serviceTimeSeconds",
+          "status",
+          "timeWindow"
+        ],
         "type": "object"
       },
       "PlanSummaryResponse": {
@@ -1424,7 +1862,10 @@
           },
           "optimizedAt": {
             "format": "date-time",
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "planDate": {
             "format": "date",
@@ -1458,17 +1899,37 @@
           },
           "totalDistanceMeters": {
             "format": "int32",
-            "type": "integer"
+            "type": [
+              "integer",
+              "null"
+            ]
           },
           "totalDurationSeconds": {
             "format": "int32",
-            "type": "integer"
+            "type": [
+              "integer",
+              "null"
+            ]
           },
           "version": {
             "format": "int64",
             "type": "integer"
           }
         },
+        "required": [
+          "createdAt",
+          "id",
+          "name",
+          "optimizedAt",
+          "planDate",
+          "processingStatus",
+          "routeCount",
+          "status",
+          "stopCount",
+          "totalDistanceMeters",
+          "totalDurationSeconds",
+          "version"
+        ],
         "type": "object"
       },
       "PlanVersionRequest": {
@@ -1535,6 +1996,10 @@
             "type": "string"
           }
         },
+        "required": [
+          "email",
+          "status"
+        ],
         "type": "object"
       },
       "RequestPasswordChangeOtpRequest": {
@@ -1590,6 +2055,10 @@
             "type": "string"
           }
         },
+        "required": [
+          "expiresAt",
+          "resetToken"
+        ],
         "type": "object"
       },
       "SessionResponse": {
@@ -1602,7 +2071,10 @@
             "type": "string"
           },
           "ipAddress": {
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "lastUsedAt": {
             "format": "date-time",
@@ -1612,15 +2084,33 @@
             "type": "string"
           },
           "userAgent": {
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ]
           }
         },
+        "required": [
+          "current",
+          "expiresAt",
+          "ipAddress",
+          "lastUsedAt",
+          "sessionId",
+          "userAgent"
+        ],
         "type": "object"
       },
       "StoreResponse": {
         "properties": {
           "depot": {
-            "$ref": "#/components/schemas/DepotResponse"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DepotResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "id": {
             "format": "int64",
@@ -1633,6 +2123,12 @@
             "type": "string"
           }
         },
+        "required": [
+          "depot",
+          "id",
+          "name",
+          "timezone"
+        ],
         "type": "object"
       },
       "TimeWindowRequest": {
@@ -1663,6 +2159,10 @@
             "type": "string"
           }
         },
+        "required": [
+          "end",
+          "start"
+        ],
         "type": "object"
       },
       "UpdateCanDriveRequest": {
@@ -1703,10 +2203,16 @@
           "fullName": {
             "maxLength": 100,
             "minLength": 0,
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "phoneNumber": {
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ]
           }
         },
         "type": "object"
@@ -1816,6 +2322,12 @@
             "type": "string"
           }
         },
+        "required": [
+          "capacity",
+          "capacityUnit",
+          "id",
+          "name"
+        ],
         "type": "object"
       },
       "VehicleResponse": {
@@ -1844,9 +2356,20 @@
             "type": "string"
           },
           "plateNumber": {
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ]
           }
         },
+        "required": [
+          "active",
+          "capacity",
+          "capacityUnit",
+          "id",
+          "name",
+          "plateNumber"
+        ],
         "type": "object"
       },
       "VerifyEmailRequest": {
@@ -1976,8 +2499,8 @@
           "required": true
         },
         "responses": {
-          "200": {
-            "description": "OK"
+          "204": {
+            "description": "No Content"
           }
         },
         "tags": [
@@ -1999,8 +2522,8 @@
           "required": true
         },
         "responses": {
-          "200": {
-            "description": "OK"
+          "204": {
+            "description": "No Content"
           }
         },
         "tags": [
@@ -2079,8 +2602,8 @@
           }
         },
         "responses": {
-          "200": {
-            "description": "OK"
+          "204": {
+            "description": "No Content"
           }
         },
         "tags": [
@@ -2102,8 +2625,8 @@
           "required": true
         },
         "responses": {
-          "200": {
-            "description": "OK"
+          "204": {
+            "description": "No Content"
           }
         },
         "tags": [
@@ -2125,8 +2648,8 @@
           "required": true
         },
         "responses": {
-          "200": {
-            "description": "OK"
+          "204": {
+            "description": "No Content"
           }
         },
         "tags": [
@@ -2148,8 +2671,8 @@
           "required": true
         },
         "responses": {
-          "200": {
-            "description": "OK"
+          "204": {
+            "description": "No Content"
           }
         },
         "tags": [
@@ -2171,8 +2694,8 @@
           "required": true
         },
         "responses": {
-          "200": {
-            "description": "OK"
+          "204": {
+            "description": "No Content"
           }
         },
         "tags": [
@@ -2271,7 +2794,7 @@
           "required": true
         },
         "responses": {
-          "200": {
+          "201": {
             "content": {
               "application/json": {
                 "schema": {
@@ -2279,7 +2802,7 @@
                 }
               }
             },
-            "description": "OK"
+            "description": "Created"
           }
         },
         "tags": [
@@ -2311,8 +2834,8 @@
       "post": {
         "operationId": "revokeOtherSessions",
         "responses": {
-          "200": {
-            "description": "OK"
+          "204": {
+            "description": "No Content"
           }
         },
         "tags": [
@@ -2342,8 +2865,8 @@
           }
         ],
         "responses": {
-          "200": {
-            "description": "OK"
+          "204": {
+            "description": "No Content"
           }
         },
         "tags": [
@@ -2521,8 +3044,8 @@
           "required": true
         },
         "responses": {
-          "200": {
-            "description": "OK"
+          "204": {
+            "description": "No Content"
           }
         },
         "tags": [
@@ -2686,7 +3209,7 @@
           "required": true
         },
         "responses": {
-          "200": {
+          "201": {
             "content": {
               "application/json": {
                 "schema": {
@@ -2694,7 +3217,7 @@
                 }
               }
             },
-            "description": "OK"
+            "description": "Created"
           }
         },
         "tags": [
@@ -2838,7 +3361,7 @@
           "required": true
         },
         "responses": {
-          "200": {
+          "202": {
             "content": {
               "application/json": {
                 "schema": {
@@ -2846,7 +3369,7 @@
                 }
               }
             },
-            "description": "OK"
+            "description": "Accepted"
           }
         },
         "tags": [
@@ -2879,7 +3402,7 @@
           "required": true
         },
         "responses": {
-          "200": {
+          "202": {
             "content": {
               "application/json": {
                 "schema": {
@@ -2887,7 +3410,7 @@
                 }
               }
             },
-            "description": "OK"
+            "description": "Accepted"
           }
         },
         "tags": [
@@ -3082,7 +3605,7 @@
           "required": true
         },
         "responses": {
-          "200": {
+          "201": {
             "content": {
               "application/json": {
                 "schema": {
@@ -3090,7 +3613,7 @@
                 }
               }
             },
-            "description": "OK"
+            "description": "Created"
           }
         },
         "tags": [
@@ -3113,8 +3636,8 @@
           }
         ],
         "responses": {
-          "200": {
-            "description": "OK"
+          "204": {
+            "description": "No Content"
           }
         },
         "tags": [
@@ -3341,7 +3864,7 @@
           "required": true
         },
         "responses": {
-          "200": {
+          "201": {
             "content": {
               "application/json": {
                 "schema": {
@@ -3349,7 +3872,7 @@
                 }
               }
             },
-            "description": "OK"
+            "description": "Created"
           }
         },
         "tags": [

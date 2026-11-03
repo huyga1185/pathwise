@@ -1,9 +1,11 @@
 package uk.huy.pathwise.job.dto;
 
-import java.time.Instant;
+import org.jspecify.annotations.Nullable;
 import uk.huy.pathwise.job.model.JobErrors;
 import uk.huy.pathwise.job.model.JobStatus;
 import uk.huy.pathwise.job.model.JobType;
+
+import java.time.Instant;
 
 /**
  * {@code Job} of API_SPEC §6.
@@ -15,7 +17,7 @@ public record JobResponse(long id,
                           JobType type,
                           JobStatus status,
                           long planId,
-                          String errorCode,
+                          @Nullable String errorCode,
                           Instant createdAt,
-                          Instant startedAt,
-                          Instant finishedAt) {}
+                          @Nullable Instant startedAt,
+                          @Nullable Instant finishedAt) {}

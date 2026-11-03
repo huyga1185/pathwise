@@ -82,7 +82,7 @@ export function ForgotPasswordPage() {
     await run(async () => {
       try {
         const result = await accountApi.verifyResetOtp({ email: email.trim(), otp: code });
-        setResetToken(result.resetToken ?? '');
+        setResetToken(result.resetToken);
         setErrors({});
         setStep(2);
       } catch (error) {

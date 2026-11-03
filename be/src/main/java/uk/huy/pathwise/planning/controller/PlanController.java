@@ -38,6 +38,7 @@ import java.time.LocalDate;
 public class PlanController {
     private final PlanService planService;
 
+    @ResponseStatus(HttpStatus.CREATED)
     @PostMapping
     public ResponseEntity<ApiResponse<PlanDetailResponse>> createPlan(@AuthenticationPrincipal AuthenticatedUser actor,
                                                                       @Valid @RequestBody PlanDraftRequest request) {
@@ -82,6 +83,7 @@ public class PlanController {
     /**
      * Geocodes the PENDING and FAILED stops again; 202 with the job (clients poll it or the plan).
      */
+    @ResponseStatus(HttpStatus.ACCEPTED)
     @PostMapping("/{id}/geocode")
     public ResponseEntity<ApiResponse<JobResponse>> geocodePlan(@AuthenticationPrincipal AuthenticatedUser actor,
                                                                 @PathVariable("id") long planId,
@@ -93,6 +95,7 @@ public class PlanController {
     /**
      * Optimizes the plan; 202 with the job. Inline by default, so the job is usually finished when this returns.
      */
+    @ResponseStatus(HttpStatus.ACCEPTED)
     @PostMapping("/{id}/optimize")
     public ResponseEntity<ApiResponse<JobResponse>> optimizePlan(@AuthenticationPrincipal AuthenticatedUser actor,
                                                                  @PathVariable("id") long planId,

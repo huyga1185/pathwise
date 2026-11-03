@@ -1,6 +1,7 @@
 package uk.huy.pathwise.auth.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import org.jspecify.annotations.Nullable;
 
 import java.time.Instant;
 
@@ -11,6 +12,6 @@ import java.time.Instant;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record AuthTokenResponse(String accessToken,
                                 Instant accessTokenExpiresAt,
-                                String refreshToken,
+                                @Nullable String refreshToken,
                                 Instant refreshTokenExpiresAt,
-                                AuthUserResponse user) {}
+                                @Nullable AuthUserResponse user) {}
