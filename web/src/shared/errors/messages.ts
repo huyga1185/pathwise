@@ -1,0 +1,55 @@
+/**
+ * Câu hiển thị theo mã lỗi của API, chép nguyên từ docs/ux/UX_BRIEF.md §6.1 (đổi câu thì sửa UX_BRIEF trước).
+ * Placeholder: {Retry-After} (thời gian chờ), {X-Request-Id} (mã tra cứu); thay ở messageFor.
+ */
+export const errorMessages: Record<string, string> = {
+  MALFORMED_REQUEST: 'Dữ liệu gửi lên không hợp lệ.',
+  UNAUTHORIZED: 'Phiên đăng nhập đã hết, vui lòng đăng nhập lại.',
+  INVALID_TOKEN: 'Phiên đăng nhập đã hết, vui lòng đăng nhập lại.',
+  INVALID_EMAIL_OR_PASSWORD: 'Email hoặc mật khẩu không đúng.',
+  EMAIL_NOT_VERIFIED: 'Email chưa được xác thực.',
+  ACCOUNT_DISABLED: 'Tài khoản đã bị vô hiệu hoá. Liên hệ chủ cửa hàng.',
+  EMAIL_EXISTED: 'Email này đã được dùng.',
+  EMAIL_ALREADY_VERIFIED: 'Email đã được xác thực, bạn có thể đăng nhập.',
+  INVALID_OTP: 'Mã OTP không đúng hoặc đã hết hạn.',
+  OTP_COOLDOWN: 'Vui lòng chờ trước khi xin mã mới.',
+  INVALID_RESET_TOKEN: 'Phiên đặt lại mật khẩu đã hết hạn, vui lòng làm lại.',
+  INVALID_CURRENT_PASSWORD: 'Mật khẩu hiện tại không đúng.',
+  INVALID_PHONE_NUMBER: 'Số điện thoại không hợp lệ.',
+  INVALID_TIMEZONE: 'Múi giờ không hợp lệ.',
+  FORBIDDEN: 'Bạn không có quyền thực hiện thao tác này.',
+  NOT_FOUND: 'Không tìm thấy (có thể đã bị xoá).',
+  INVITATION_INVALID: 'Lời mời không còn hiệu lực.',
+  INVITATION_NOT_PENDING: 'Lời mời này đã được dùng hoặc đã huỷ.',
+  CANNOT_MODIFY_OWNER: 'Không thể thay đổi chủ cửa hàng.',
+  VEHICLE_NAME_EXISTED: 'Tên xe đã tồn tại.',
+  STORE_DEPOT_REQUIRED: 'Cửa hàng chưa có kho xuất phát. Cập nhật trong phần Cửa hàng.',
+  INVALID_ASSIGNMENT: 'Tài xế hoặc xe không còn dùng được (`details` chỉ ra phân công nào).',
+  PLAN_TOO_LARGE: 'Plan vượt giới hạn 100 điểm giao hoặc 20 phân công.',
+  PLAN_NOT_EDITABLE: 'Plan đã giao việc, không sửa được nữa.',
+  PLAN_BUSY: 'Plan đang được xử lý, vui lòng chờ.',
+  PLAN_MODIFIED: 'Plan vừa được người khác thay đổi. Tải lại để xem bản mới.',
+  NOTHING_TO_GEOCODE: 'Không còn địa chỉ nào cần tìm toạ độ.',
+  PLAN_INCOMPLETE: 'Plan cần ít nhất một điểm giao và một phân công.',
+  STOPS_NOT_GEOCODED: 'Còn điểm giao chưa có toạ độ.',
+  PLAN_NOT_OPTIMIZED: 'Cần tối ưu lộ trình trước khi giao việc.',
+  SHIFT_OVERLAP: 'Ca làm trùng với plan khác cùng ngày (`details` chỉ ra phân công và plan).',
+  PLAN_NOT_CANCELLABLE: 'Plan đang giao hoặc đã kết thúc, không huỷ được.',
+  PLAN_NOT_ACTIVE: 'Plan đã kết thúc hoặc đã bị huỷ.',
+  INVALID_STOP_TRANSITION: 'Điểm giao đã được báo kết quả, không đổi được.',
+  FAILURE_REASON_REQUIRED: 'Vui lòng nhập lý do không giao được.',
+  RATE_LIMITED: 'Bạn thao tác quá nhiều lần. Thử lại sau {Retry-After}.',
+  CONFLICT: 'Dữ liệu vừa thay đổi, vui lòng thử lại.',
+  GEOCODING_BUSY: 'Dịch vụ tìm địa chỉ đang bận, thử lại sau ít phút.',
+  GEOCODING_PROVIDER_ERROR: 'Dịch vụ bản đồ đang gặp sự cố, thử lại sau.',
+  ROUTING_PROVIDER_ERROR: 'Dịch vụ bản đồ đang gặp sự cố, thử lại sau.',
+  SERVICE_UNAVAILABLE: 'Hệ thống tạm thời gián đoạn, thử lại sau.',
+  INTERNAL_ERROR: 'Đã có lỗi xảy ra. Mã tra cứu: {X-Request-Id}.',
+};
+
+/** Mã lỗi riêng của job (`Job.errorCode`), UX_BRIEF §6.1. */
+export const jobErrorMessages: Record<string, string> = {
+  NO_SOLUTION: 'Không tìm được lộ trình, ca làm hoặc quãng đường tối đa có thể quá chặt',
+  INTERRUPTED: 'Hệ thống bị gián đoạn, chạy lại',
+  JOB_QUEUE_FULL: 'Hệ thống bị gián đoạn, chạy lại',
+};

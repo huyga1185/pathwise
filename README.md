@@ -46,6 +46,15 @@ Kế hoạch, kiến trúc và quy tắc của web và app tài xế: `docs/clie
 - `brand/design-system/tokens.json`: token giao diện. `python3 scripts/build_tokens.py` sinh theme cho web và mobile; `--check` kiểm file sinh còn khớp.
 - Test của các script: `python3 -m unittest discover -s scripts/tests`.
 
+Web dispatcher (`web/`, Node 24+, pnpm theo `packageManager`):
+
+```bash
+cd web && pnpm install
+pnpm dev          # http://localhost:5173/app/, proxy /api tới backend ở :8080
+pnpm test         # Vitest + MSW, không cần backend
+pnpm lint && pnpm typecheck && pnpm build
+```
+
 ## Xem email (OTP, lời mời)
 
 Mọi email khi dev được gửi tới Mailpit: mở http://localhost:8025.

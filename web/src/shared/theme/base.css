@@ -1,0 +1,39 @@
+/* Page basics on top of the generated tokens (tokens.css). */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+html,
+body,
+#root {
+  min-height: 100%;
+}
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 20px;
+  background: var(--surface);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+}
+a {
+  color: var(--route);
+}
+a:hover {
+  color: var(--ink);
+}
+a:focus-visible,
+button:focus-visible {
+  outline: 2px solid var(--route);
+  outline-offset: 2px;
+}
+.pw-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}

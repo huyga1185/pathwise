@@ -136,6 +136,7 @@ Nút bấm cho mọi hành động; mỗi màn hình chỉ một nút `primary`,
 - `error`: câu lỗi lấy từ bảng thông điệp theo mã lỗi API (`docs/ux/UX_BRIEF.md` §6); nói chuyện gì sai và sửa thế nào. Ô lỗi có viền `danger` 2px, câu lỗi `small` màu `danger` ngay dưới ô, liên kết qua `aria-describedby`.
 - Với lỗi validation từ API (`fields`), gắn từng câu vào đúng ô theo tên field.
 - `multiline` cho ghi chú stop.
+- Web (W01) thêm `startIcon` (icon trong ô, ví dụ thư, ổ khoá ở màn tài khoản), `endAction` (nút trong ô, ví dụ hiện mật khẩu, có `aria-label` và `aria-pressed`) và `size="lg"` (48px, chữ 16px cho màn tài khoản).
 - Trong app tài xế, form hiếm khi xuất hiện (chỉ lý do không giao được); khi có, dùng cỡ chữ `body-touch` qua CSS của client.
 
 ### StatusPill

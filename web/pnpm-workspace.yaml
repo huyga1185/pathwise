@@ -1,0 +1,4 @@
+allowBuilds:
+  unrs-resolver: true
+# docs/client/README.md §2: only dependency versions released at least two weeks ago (minutes).
+minimumReleaseAge: 20160

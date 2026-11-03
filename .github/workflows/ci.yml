@@ -19,6 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       code: ${{ steps.detect.outputs.code }}
+      web: ${{ steps.detect.outputs.web }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -93,3 +94,38 @@ jobs:
             be/target/openapi.json
             be/target/ux-samples/
           if-no-files-found: ignore
+
+  # Web dispatcher (docs/client/PLAN.md W01). Runs when the web client or its inputs change.
+  web:
+    needs: changes
+    if: ${{ always() && (needs.changes.result != 'success' || needs.changes.outputs.web == 'true') }}
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: web/package.json
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: web/.nvmrc
+          cache: pnpm
+          cache-dependency-path: web/pnpm-lock.yaml
+      - name: Install
+        run: pnpm install --frozen-lockfile
+      # Generated files must match their sources (P-41, P-42).
+      - name: Check generated theme and API types
+        run: |
+          python3 -B ../scripts/build_tokens.py --check --only web
+          pnpm gen:api
+          git diff --exit-code -- src/data/schema.d.ts
+      - name: Lint
+        run: pnpm lint
+      - name: Typecheck
+        run: pnpm typecheck
+      - name: Test
+        run: pnpm test
+      - name: Build
+        run: pnpm build

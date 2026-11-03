@@ -12,6 +12,7 @@
 | Workflow | Chạy khi | Nội dung | Bắt buộc để merge |
 |---|---|---|---|
 | `ci` | PR vào `develop`/`main`; push lên `develop`/`main` | Test của `scripts/` (`python3 -m unittest`), `./mvnw -B verify` (test bằng Testcontainers + JaCoCo), rồi kiểm `api/openapi.json` khớp OpenAPI backend sinh ra (`scripts/openapi_snapshot.py check`; lệch thì chạy `scripts/sync_openapi.sh` và commit). Artifact `test-reports` và `coverage-report`; bảng coverage trong job summary. | **Có** (check `ci`) |
+| `web` (workflow `ci`) | PR và push như `ci`, khi đổi `web/`, `api/`, `brand/`, `scripts/build_tokens.py` hoặc `.github/` | `pnpm install --frozen-lockfile`, kiểm `tokens.css` và `schema.d.ts` khớp nguồn, `pnpm lint`, `typecheck`, `test`, `build` | Không (nên giữ xanh) |
 | `quality` | Mọi PR | `dependency-review` (chặn dependency mới có lỗ hổng high trở lên), `gitleaks` (quét secret trong các commit của PR). | Khuyến nghị |
 | `image` | Push lên `develop`; tag `v*` | Build image, Trivy (chặn CRITICAL có bản sửa), push `ghcr.io/huyga1185/pathwise`: `develop`, `develop-<sha>` hoặc `x.y.z`, `x.y`, `latest`. Xem `docs/DEPLOYMENT.md`. | — (chạy sau merge) |
 | Dependabot | Hằng tuần | Cập nhật `maven` (`be/`), `github-actions`, `docker` (`be/Dockerfile`); PR vào `develop`. Maven minor/patch gộp một PR, GitHub Actions gộp một PR; không đề xuất đổi Java của Docker image. | — |

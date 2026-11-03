@@ -25,6 +25,8 @@
 | `/plans/:id` (PUBLISHED trở đi) | Theo dõi tiến độ | Theo dõi tiến độ | O, D | `GET /plans/{id}` (30 s) | W06 |
 | `*` | Không tìm thấy / không có quyền / tài xế dùng web | (không có artboard) | — | — | W01 |
 
+Từ W01, route của màn chưa làm hiện trang "Sắp có" (ghi task phụ trách) để menu và link đã chạy được; task của màn đó thay trang này.
+
 `/plans/:id` là **một route**: màn hiển thị chọn theo `status`, `optimizedAt`, `processingStatus` của plan (DRAFT chưa tối ưu → tìm toạ độ; DRAFT đã tối ưu → kết quả; PUBLISHED/IN_PROGRESS/COMPLETED/CANCELLED → theo dõi). Không làm route riêng cho từng trạng thái để link chia sẻ luôn đúng.
 
 ### 1.1 Hành vi bắt buộc theo màn (ngoài layout trong prototype)

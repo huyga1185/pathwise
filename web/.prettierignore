@@ -1,0 +1,5 @@
+dist
+node_modules
+src/data/schema.d.ts
+src/shared/theme/tokens.css
+pnpm-lock.yaml
