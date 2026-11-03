@@ -4,6 +4,8 @@
 >
 > **Cảnh báo về thời gian:** Tổng ước lượng cho các task **Must** là khoảng **28 ngày công** cho 1 developer, chưa tính review. So với bản đầu đã tăng khoảng 2 ngày do geocode chạy nền (D-18, D-19) và khoảng 2 ngày do đưa CI/CD và container vào M0 (D-30). Mốc 1 tháng chỉ khả thi khi chạy song song nhiều agent theo các track dưới đây, và các task **Should** rất có thể bị trượt. Thứ tự cắt khi chậm tiến độ: T33 → T28 → T32 → T41 (phần không bảo mật).
 >
+> **Client (web, app tài xế):** kế hoạch riêng ở `docs/client/PLAN.md` (W00–W08, M00–M03), quy tắc ở `docs/client/README.md`, mở rộng D-09 theo P-40. Plan này vẫn chỉ gồm task backend; thiếu API cho client thì thêm task T46 trở đi ở đây.
+>
 > Mọi quyết định đã được duyệt ngày 2026-10-22. Nguyên tắc chung: làm đơn giản trước nhưng giữ sẵn điểm mở rộng. Reviewer phải kiểm tra điều này ở mọi PR.
 
 ## 0. Quy tắc thực hiện

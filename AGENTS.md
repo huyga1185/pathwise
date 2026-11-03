@@ -1,6 +1,8 @@
 # AGENTS.md — Quy tắc cho coding agent
 
-PathWise là backend Spring Boot 4.1 / Java 21 (`be/`) cho SaaS lập tuyến giao hàng đa tenant (store, OWNER/DISPATCHER/DRIVER).
+PathWise là SaaS lập tuyến giao hàng đa tenant (store, OWNER/DISPATCHER/DRIVER) gồm backend Spring Boot 4.1 / Java 21 (`be/`) và client: web dispatcher (`web/`, React) và app tài xế (`mobile/`, Flutter) (P-40).
+
+> **Làm client (`web/`, `mobile/`, `api/`, `brand/design-system/`): đọc `docs/client/README.md` trước.** Các mục "Đọc trước khi làm", "Quy tắc cứng", "Build và test", "Checklist", "Quy ước code" dưới đây là của backend; mục "Commit" áp dụng cho cả repo. Task client không sửa backend.
 
 ## Đọc trước khi làm
 
