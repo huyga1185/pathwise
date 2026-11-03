@@ -1,4 +1,4 @@
-import { useId, type InputHTMLAttributes, type ReactNode } from 'react';
+import { useId, type InputHTMLAttributes, type ReactNode, type TextareaHTMLAttributes } from 'react';
 import { cx } from './cx';
 
 export interface TextFieldProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'size'> {
@@ -12,6 +12,8 @@ export interface TextFieldProps extends Omit<InputHTMLAttributes<HTMLInputElemen
   endAction?: ReactNode;
   /** Web addition: lg is 48px tall with 16px text (account screens). */
   size?: 'md' | 'lg';
+  /** A textarea instead of a one-line input (design system prop). */
+  multiline?: boolean;
 }
 
 /** Design system TextField: label always above, hint and error below, linked by aria-describedby. */
@@ -22,6 +24,7 @@ export function TextField({
   startIcon,
   endAction,
   size = 'md',
+  multiline,
   id,
   className,
   required,
@@ -48,14 +51,26 @@ export function TextField({
             {startIcon}
           </span>
         ) : null}
-        <input
-          {...rest}
-          id={inputId}
-          required={required}
-          className="pw-field-input"
-          aria-invalid={error ? 'true' : undefined}
-          aria-describedby={describedBy}
-        />
+        {multiline ? (
+          <textarea
+            {...(rest as TextareaHTMLAttributes<HTMLTextAreaElement>)}
+            id={inputId}
+            rows={3}
+            required={required}
+            className="pw-field-input"
+            aria-invalid={error ? 'true' : undefined}
+            aria-describedby={describedBy}
+          />
+        ) : (
+          <input
+            {...rest}
+            id={inputId}
+            required={required}
+            className="pw-field-input"
+            aria-invalid={error ? 'true' : undefined}
+            aria-describedby={describedBy}
+          />
+        )}
         {endAction ? <span className="pw-field-end">{endAction}</span> : null}
       </div>
       {error ? (

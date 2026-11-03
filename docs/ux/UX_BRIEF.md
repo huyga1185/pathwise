@@ -110,7 +110,7 @@ Một người có `canDrive` dùng cả hai: web để điều phối, mobile �
 | `INVALID_SORT_FIELD` | (bug client) | danh sách |
 | `FORBIDDEN` | Bạn không có quyền thực hiện thao tác này. | mọi màn |
 | `NOT_FOUND` | Không tìm thấy (có thể đã bị xoá). | mọi màn |
-| `INVITATION_INVALID` | Lời mời không còn hiệu lực. | nhận lời mời |
+| `INVITATION_INVALID` | Lời mời không còn hiệu lực. (Màn Nhận lời mời nói thêm lý do và cách làm: "Lời mời không còn hiệu lực: mã sai, đã dùng, đã bị thu hồi hoặc đã hết hạn. Nhờ chủ cửa hàng mời lại.") | nhận lời mời |
 | `INVITATION_NOT_PENDING` | Lời mời này đã được dùng hoặc đã huỷ. | lời mời |
 | `CANNOT_MODIFY_OWNER` | Không thể thay đổi chủ cửa hàng. | thành viên |
 | `VEHICLE_NAME_EXISTED` | Tên xe đã tồn tại. | xe |

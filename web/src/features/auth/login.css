@@ -167,6 +167,166 @@
   font-weight: 600;
 }
 
+/* "Đăng ký cửa hàng": text block then the three steps, 24px apart. */
+.pw-auth-pitch-steps {
+  gap: 24px;
+}
+.pw-auth-pitch-text {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Compact brand panel of "Xác thực email", "Quên mật khẩu", "Nhận lời mời" (prototype). */
+.pw-auth-brand-compact {
+  flex: 1 1 420px;
+  min-height: 240px;
+  gap: 24px;
+}
+.pw-auth-main-compact {
+  flex: 1 1 520px;
+  overflow: visible;
+}
+a.pw-auth-logo {
+  color: #ffffff;
+  text-decoration: none;
+}
+a.pw-auth-logo:focus-visible {
+  outline: 2px solid #ffffff;
+  outline-offset: 4px;
+}
+.pw-auth-note {
+  position: relative;
+  max-width: 420px;
+  margin: 0;
+  font-size: 16px;
+  line-height: 24px;
+}
+.pw-auth-card-md {
+  max-width: 440px;
+}
+.pw-auth-card-lg {
+  max-width: 460px;
+}
+.pw-auth-card a:not(.pw-btn) {
+  color: var(--route);
+  font-weight: 600;
+}
+.pw-auth-card a:not(.pw-btn):hover {
+  color: var(--ink);
+}
+.pw-auth-steps-inline {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px 24px;
+}
+.pw-auth-steps-inline li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.pw-auth-steps-inline svg {
+  width: 24px;
+  height: 24px;
+  flex: none;
+  color: #9ff0d3;
+  stroke-width: 1.8;
+}
+.pw-auth-center {
+  margin: 0;
+  text-align: center;
+  color: var(--ink-muted);
+}
+.pw-auth-strong {
+  color: var(--ink);
+}
+.pw-auth-otp {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.pw-auth-otp .pw-field-msg {
+  margin: 0;
+}
+.pw-auth-resend {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  text-align: center;
+  color: var(--ink-muted);
+}
+.pw-auth-done {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px;
+  background: var(--surface);
+  border: 1px solid var(--success);
+  border-radius: var(--radius-md);
+}
+.pw-auth-done strong {
+  font-weight: 600;
+}
+.pw-auth-notice {
+  padding: 8px 16px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+}
+.pw-auth-muted {
+  margin: 0;
+  color: var(--ink-muted);
+}
+.pw-auth-steps {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  gap: 8px;
+}
+.pw-auth-steps li {
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--ink-muted);
+}
+.pw-auth-steps li span {
+  height: 4px;
+  border-radius: var(--radius-full);
+  background: var(--line);
+}
+.pw-auth-steps li.is-on {
+  color: var(--ink);
+  font-weight: 600;
+}
+.pw-auth-steps li.is-on span {
+  background: var(--route);
+}
+.pw-auth-facts {
+  margin: 0;
+  padding: 16px;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 8px 16px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+}
+.pw-auth-facts dt {
+  color: var(--ink-muted);
+}
+.pw-auth-facts dd {
+  margin: 0;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
 @container (max-width: 500px) {
   .pw-auth-features {
     grid-template-columns: 1fr;

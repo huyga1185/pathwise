@@ -2,7 +2,8 @@ import { render, screen } from '@testing-library/react';
 import axe from 'axe-core';
 import { describe, expect, it } from 'vitest';
 import { renderApp } from '@/test/renderApp';
-import { anonymousHandlers, server } from '@/test/server';
+import { http } from 'msw';
+import { anonymousHandlers, API, ok, server, signedInHandlers } from '@/test/server';
 import {
   Button,
   DataTable,
@@ -77,6 +78,28 @@ describe('accessibility', () => {
     server.use(...anonymousHandlers());
     const { container } = renderApp('/login');
     await screen.findByRole('heading', { name: 'Đăng nhập' });
+    expect(await violations(container)).toEqual([]);
+  });
+
+  it.each([
+    ['/register', 'Đăng ký cửa hàng'],
+    ['/verify-email?email=lan%40example.com', 'Xác thực email'],
+    ['/forgot-password', 'Quên mật khẩu'],
+    ['/invite', 'Nhận lời mời'],
+  ])('màn %s không có lỗi axe', async (path, heading) => {
+    server.use(...anonymousHandlers());
+    const { container } = renderApp(path);
+    await screen.findByRole('heading', { name: heading });
+    expect(await violations(container)).toEqual([]);
+  });
+
+  it('màn hồ sơ không có lỗi axe', async () => {
+    server.use(
+      http.get(`${API}/auth/sessions`, () => ok([])),
+      ...signedInHandlers(),
+    );
+    const { container } = renderApp('/profile');
+    await screen.findByLabelText('Họ tên');
     expect(await violations(container)).toEqual([]);
   });
 });

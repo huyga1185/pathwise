@@ -1,5 +1,6 @@
 import { createBrowserRouter, Navigate, type RouteObject } from 'react-router';
-import { LoginPage } from '@/features/auth';
+import { ProfilePage } from '@/features/account';
+import { AcceptInvitePage, ForgotPasswordPage, LoginPage, RegisterPage, VerifyEmailPage } from '@/features/auth';
 import { vi } from '@/shared/i18n/vi';
 import { AppLayout } from './AppLayout';
 import { RedirectIfSignedIn, RequireAuth, RequireDispatcher } from './guards';
@@ -15,10 +16,10 @@ export const routes: RouteObject[] = [
       </RedirectIfSignedIn>
     ),
   },
-  { path: '/register', element: <ComingSoonStandalone title="Đăng ký cửa hàng" /> },
-  { path: '/verify-email', element: <ComingSoonStandalone title="Xác thực email" /> },
-  { path: '/forgot-password', element: <ComingSoonStandalone title="Quên mật khẩu" /> },
-  { path: '/invite', element: <ComingSoonStandalone title="Nhận lời mời" /> },
+  { path: '/register', element: <RegisterPage /> },
+  { path: '/verify-email', element: <VerifyEmailPage /> },
+  { path: '/forgot-password', element: <ForgotPasswordPage /> },
+  { path: '/invite', element: <AcceptInvitePage /> },
   {
     path: '/driver',
     element: (
@@ -42,19 +43,11 @@ export const routes: RouteObject[] = [
       { path: '/vehicles', element: <ComingSoonPage title={vi.nav.vehicles} task="W03" /> },
       { path: '/members', element: <ComingSoonPage title={vi.nav.members} task="W03" /> },
       { path: '/store', element: <ComingSoonPage title={vi.nav.store} task="W04" /> },
-      { path: '/profile', element: <ComingSoonPage title="Hồ sơ và bảo mật" task="W02" /> },
+      { path: '/profile', element: <ProfilePage /> },
     ],
   },
   { path: '*', element: <NotFoundPage /> },
 ];
-
-function ComingSoonStandalone({ title }: { title: string }) {
-  return (
-    <main className="pw-standalone">
-      <ComingSoonPage title={title} task="W02" />
-    </main>
-  );
-}
 
 export function createAppRouter() {
   return createBrowserRouter(routes, { basename: import.meta.env.BASE_URL.replace(/\/$/, '') });
