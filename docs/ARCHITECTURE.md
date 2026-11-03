@@ -366,4 +366,4 @@ Cách dùng:
 | Staging | image `develop` trên VPS | `staging` |
 | Prod | image `x.y.z` trên VPS | `prod` |
 
-OpenAPI/Swagger chỉ bật ở `dev` và `staging`.
+OpenAPI/Swagger chỉ bật ở `dev` và `staging`. Quy ước null (P-48, T46): component của record `*Response` luôn có mặt và không `null`, trừ khi đánh `org.jspecify.annotations.Nullable` (record `@JsonInclude(NON_NULL)` thì bỏ field đó khỏi JSON); field `@Nullable` của class merge patch nghĩa là gửi `null` để xoá. `core.web.NullabilityModelConverter` đọc quy ước này để sinh `required`/kiểu kèm `null`; thêm field response có thể `null` thì phải đánh `@Nullable`, không thì `OpenApiNullabilityIntegrationTest` báo lỗi khi mẫu có `null`.

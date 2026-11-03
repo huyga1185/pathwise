@@ -404,6 +404,25 @@ T42 cũ (Docker, compose, README) đã được gộp vào T05 và T07 trong M0 
   - `GET /driver/routes/{routeId}` có `planName` bằng tên plan.
   - Chỉ thêm field: test hiện có không phải sửa assertion cũ; `./mvnw test` xanh.
 
+### T46. OpenAPI mô tả đúng response, mã thành công và PATCH (phát sinh 2026-11-04)
+- **Tầng:** Must (client đang sinh kiểu từ `api/openapi.json`) · **Ước lượng:** 0,5 ngày · **Quyết định:** P-41, P-48 · **Lỗi:** F-49, F-50
+- **Nguồn:** làm W01, W02 thấy kiểu TypeScript sinh từ OpenAPI coi mọi field response là tuỳ chọn, `AuthUserResponse.role` là chuỗi, mã thành công luôn là 200 và request PATCH không cho gửi `null`; client phải kiểm thừa (`session.tsx` `toUser`) và ép kiểu (màn Hồ sơ).
+- **Phạm vi:**
+  1. Quy ước P-48: component của record response (`*Response` và record lồng trong nó) luôn có mặt và không `null`, trừ khi đánh `@Nullable` (JSpecify, đã có qua Spring); record `@JsonInclude(NON_NULL)` thì field `@Nullable` vắng mặt thay vì `null`. Đánh `@Nullable` cho mọi field response có thể `null` (đối chiếu entity, mapper và `docs/ux/samples`).
+  2. `core.web`: model converter của springdoc theo quy ước trên: `required` cho field luôn có mặt, kiểu kèm `null` cho field `@Nullable`; field `@Nullable` của class merge patch (`PATCH`, API_SPEC §1) là kiểu kèm `null` (gửi `null` để xoá).
+  3. `AuthUserResponse.role` dùng enum `UserRole` (JSON không đổi).
+  4. Mã thành công đúng API_SPEC trong OpenAPI: `@ResponseStatus` 201 (`/auth/register`, `POST /vehicles`, `POST /plans`, `POST /store/invitations`), 202 (`/plans/{id}/geocode`, `/optimize`), 204 (endpoint không có body).
+  5. `scripts/sync_openapi.sh` → `api/openapi.json`; web sinh lại `schema.d.ts`, bỏ phần kiểm thừa trong `session.tsx`.
+- **Ngoài phạm vi:** không đổi JSON trả về hay hành vi API; không mô tả response lỗi trong OpenAPI; không đổi request POST/PUT.
+- **Acceptance criteria:**
+  - OpenAPI: `GetUserResponse.required` gồm mọi field, `fullName`/`phoneNumber`/`storeId` có kiểu kèm `null`; `AuthUserResponse.fullName`, `storeId` không `required`; `AuthUserResponse.role` là enum; `UpdateProfileRequest.fullName` có kiểu kèm `null`; `POST /auth/register` 201, `POST /auth/email/verify` 204, `POST /plans/{id}/optimize` 202.
+  - Mỗi field `@Nullable` đều có thể `null` thật (có test hoặc mẫu chứng minh hoặc entity cho phép); field không đánh dấu không bao giờ `null` trong các test hiện có (kiểm bằng test quét response của `MvpScenarioIntegrationTest` hoặc tương đương).
+  - Response thật không đổi: test hiện có không phải sửa assertion; `./mvnw test` xanh; `pnpm lint && pnpm typecheck && pnpm test` của web xanh sau khi sinh lại kiểu.
+- **Phát sinh khi làm (2026-11-04):**
+  - W02 (PR #63) đã vào `develop` trước khi tạo branch, nên T46 bỏ luôn ép kiểu của màn Hồ sơ và các giá trị dự phòng thừa (`resetToken`, `role`, `sessionId`, `lastUsedAt`).
+  - springdoc trả về `$ref` cho model dùng làm property; converter sửa định nghĩa trong `ModelConverterContext.getDefinedModels()`.
+  - Field `@Nullable` đã đối chiếu: `null` thật trong `docs/ux/samples` (stop, route, job, member, vehicle, user) hoặc cột/entity cho phép (`SessionResponse.userAgent`/`ipAddress`, `DriverRouteSummary.plannedStart`, `PlanRouteResponse.Driver.fullName`, `GetUserResponse.storeId` của ADMIN). Field không đánh dấu (ví dụ `PlanRoute.vehicle`, `start`/`end`, `TimeWindow.start`/`end`, `PlanDetail.depot`) là cột `NOT NULL` hoặc bắt buộc ở request.
+
 ## 8. Should (làm nếu kịp, theo thứ tự)
 
 ### T32. Vị trí tài xế bằng polling

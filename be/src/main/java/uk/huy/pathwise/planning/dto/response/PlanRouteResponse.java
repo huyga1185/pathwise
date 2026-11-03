@@ -1,6 +1,7 @@
 package uk.huy.pathwise.planning.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import org.jspecify.annotations.Nullable;
 import uk.huy.pathwise.fleet.model.CapacityUnit;
 import uk.huy.pathwise.planning.model.RouteStatus;
 import uk.huy.pathwise.shared.identity.UserRole;
@@ -21,19 +22,19 @@ public record PlanRouteResponse(long id,
                                 RouteStatus status,
                                 @JsonFormat(pattern = "HH:mm") LocalTime shiftStart,
                                 @JsonFormat(pattern = "HH:mm") LocalTime shiftEnd,
-                                Integer maxDistanceMeters,
+                                @Nullable Integer maxDistanceMeters,
                                 LocationResponse start,
                                 LocationResponse end,
-                                Integer plannedDistanceMeters,
-                                Integer plannedDurationSeconds,
-                                Instant plannedStart,
-                                Instant plannedEnd,
-                                Integer load,
+                                @Nullable Integer plannedDistanceMeters,
+                                @Nullable Integer plannedDurationSeconds,
+                                @Nullable Instant plannedStart,
+                                @Nullable Instant plannedEnd,
+                                @Nullable Integer load,
                                 List<PlanStopResponse> stops) {
     /**
      * Current name and role of the member, even if disabled since the assignment.
      */
-    public record Driver(long id, String fullName, UserRole role) {}
+    public record Driver(long id, @Nullable String fullName, UserRole role) {}
 
     /**
      * Current name of the vehicle; {@code capacity} and {@code capacityUnit} are the snapshot of the assignment.

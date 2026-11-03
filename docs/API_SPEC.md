@@ -5,12 +5,12 @@
 > Cột "Hiện trạng" ở mọi bảng: ✅ khớp spec và có test · 🟡 có nhưng còn lệch (ghi rõ lệch gì) · ❌ chưa có. Lịch sử triển khai theo task nằm ở `CURRENT_STATE.md` §5, không ghi ở đây.
 > Lần rà soát contract gần nhất: T44 (2026-10-29, P-32).
 
-## 0. Lệch hiện tại so với spec (cập nhật 2026-11-03, sau T45)
+## 0. Lệch hiện tại so với spec (cập nhật 2026-11-04, sau T46)
 
 - `GET /admin/users` chưa trả `storeId`, `status`.
 - §7: chưa có `driver-locations` (T32), `routes` (T28).
 - §8: chưa có `POST /driver/location` (T32), `directions` (T33).
-- Tài liệu OpenAPI sinh tự động (`/v3/api-docs` ở dev/staging; CI xuất artifact `api-contract` gồm `openapi.json` và dữ liệu mẫu) dùng để sinh code client; endpoint (method + path) được kiểm tự động khớp spec (`ApiSpecContractIntegrationTest`). Spec này vẫn là hợp đồng; hướng dẫn cho client ở `docs/ux/UX_BRIEF.md`.
+- Tài liệu OpenAPI sinh tự động (`/v3/api-docs` ở dev/staging; CI xuất artifact `api-contract` gồm `openapi.json` và dữ liệu mẫu) dùng để sinh code client; endpoint (method + path) được kiểm tự động khớp spec (`ApiSpecContractIntegrationTest`). Từ T46 (P-48): mã thành công đúng như spec (201, 202, 204); field response luôn có mặt là `required`, field có thể `null` có kiểu kèm `null`; field của request PATCH gửi `null` để xoá có kiểu kèm `null`. Response thật được kiểm khớp schema đó (`OpenApiNullabilityIntegrationTest`, trên `docs/ux/samples` và các response tài khoản). OpenAPI chưa mô tả response lỗi (dùng §1 và §9). Spec này vẫn là hợp đồng; hướng dẫn cho client ở `docs/ux/UX_BRIEF.md`.
 - Endpoint vận hành ngoài `/api/v1`, giữ có chủ đích: `GET /actuator/health` (kèm `/liveness`, `/readiness`), Public, chỉ trả `status` và tên các `groups` (T05, `ARCHITECTURE.md` §12.1). Mọi endpoint actuator khác tắt.
 
 ## 1. Quy ước chung

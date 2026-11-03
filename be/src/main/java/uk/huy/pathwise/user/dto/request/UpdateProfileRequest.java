@@ -2,6 +2,7 @@ package uk.huy.pathwise.user.dto.request;
 
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
+import org.jspecify.annotations.Nullable;
 import uk.huy.pathwise.core.phonenumber.ValidPhoneNumber;
 import uk.huy.pathwise.core.validation.FieldErrors;
 import uk.huy.pathwise.core.validation.MergePatch;
@@ -13,10 +14,10 @@ import uk.huy.pathwise.core.validation.MergePatch;
 @Getter
 public class UpdateProfileRequest extends MergePatch {
     @Size(max = 100, message = "INVALID_FULL_NAME_LENGTH")
-    private String fullName;
+    private @Nullable String fullName;
 
     @ValidPhoneNumber
-    private String phoneNumber;
+    private @Nullable String phoneNumber;
 
     @Override
     public void validate(FieldErrors errors) {

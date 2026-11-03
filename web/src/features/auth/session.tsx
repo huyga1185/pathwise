@@ -2,7 +2,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useApiContext } from '@/data/ApiContext';
 import { unwrap, unwrapEmpty } from '@/data/http';
-import type { UserRole } from '@/data/types';
+import type { AuthUser, UserRole } from '@/data/types';
 
 export interface SessionUser {
   id: number;
@@ -27,18 +27,20 @@ interface SessionValue {
 
 const SessionContext = createContext<SessionValue | null>(null);
 
+/** The user of `LoginResponse.user` or `GET /users/me` (API_SPEC §2, §3); a missing name or store is `undefined`. */
 function toUser(
-  raw:
-    { id?: number; email?: string; fullName?: string; role?: string; storeId?: number; canDrive?: boolean } | undefined,
+  raw: Pick<AuthUser, 'id' | 'email' | 'role' | 'canDrive'> & {
+    fullName?: string | null;
+    storeId?: number | null;
+  },
 ): SessionUser {
-  if (!raw || raw.id === undefined || !raw.email || !raw.role) throw new Error('Incomplete user in the API response');
   return {
     id: raw.id,
     email: raw.email,
-    fullName: raw.fullName,
-    role: raw.role as UserRole,
-    storeId: raw.storeId,
-    canDrive: raw.canDrive === true,
+    fullName: raw.fullName ?? undefined,
+    role: raw.role,
+    storeId: raw.storeId ?? undefined,
+    canDrive: raw.canDrive,
   };
 }
 
@@ -81,7 +83,9 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const logIn = useCallback(
     async (email: string, password: string) => {
       const tokens = await unwrap(api.client.POST('/api/v1/auth/log-in', { body: { email, password } }));
-      tokenStore.set(tokens.accessToken ?? null);
+      // `user` is left out only by /refresh (TokenResponse); log-in always has it.
+      if (!tokens.user) throw new Error('Log-in response without user');
+      tokenStore.set(tokens.accessToken);
       const user = toUser(tokens.user);
       setSession({ status: 'authenticated', user });
       return user;

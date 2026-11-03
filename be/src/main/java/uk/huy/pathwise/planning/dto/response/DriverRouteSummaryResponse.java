@@ -1,5 +1,6 @@
 package uk.huy.pathwise.planning.dto.response;
 
+import org.jspecify.annotations.Nullable;
 import uk.huy.pathwise.planning.model.RouteStatus;
 
 import java.time.Instant;
@@ -18,4 +19,4 @@ public record DriverRouteSummaryResponse(long routeId,
                                          RouteStatus status,
                                          int stopCount,
                                          int completedCount,
-                                         Instant plannedStart) {}
+                                         @Nullable Instant plannedStart) {}

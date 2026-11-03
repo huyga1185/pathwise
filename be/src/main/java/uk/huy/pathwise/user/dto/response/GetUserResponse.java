@@ -1,5 +1,6 @@
 package uk.huy.pathwise.user.dto.response;
 
+import org.jspecify.annotations.Nullable;
 import uk.huy.pathwise.shared.identity.UserRole;
 import uk.huy.pathwise.shared.identity.UserStatus;
 
@@ -8,9 +9,9 @@ import uk.huy.pathwise.shared.identity.UserStatus;
  */
 public record GetUserResponse(long id,
                               String email,
-                              String fullName,
-                              String phoneNumber,
+                              @Nullable String fullName,
+                              @Nullable String phoneNumber,
                               UserRole role,
-                              Long storeId,
+                              @Nullable Long storeId,
                               UserStatus status,
                               boolean canDrive) {}

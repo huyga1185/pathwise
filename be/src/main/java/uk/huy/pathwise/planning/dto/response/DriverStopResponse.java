@@ -1,5 +1,6 @@
 package uk.huy.pathwise.planning.dto.response;
 
+import org.jspecify.annotations.Nullable;
 import uk.huy.pathwise.planning.model.StopStatus;
 
 import java.time.Instant;
@@ -13,13 +14,13 @@ import java.time.Instant;
 public record DriverStopResponse(long id,
                                  int sequence,
                                  String label,
-                                 String recipientName,
-                                 String recipientPhone,
-                                 String address,
+                                 @Nullable String recipientName,
+                                 @Nullable String recipientPhone,
+                                 @Nullable String address,
                                  double lat,
                                  double lon,
-                                 Instant plannedArrival,
-                                 TimeWindowResponse timeWindow,
-                                 String note,
+                                 @Nullable Instant plannedArrival,
+                                 @Nullable TimeWindowResponse timeWindow,
+                                 @Nullable String note,
                                  StopStatus status,
-                                 String failureReason) {}
+                                 @Nullable String failureReason) {}

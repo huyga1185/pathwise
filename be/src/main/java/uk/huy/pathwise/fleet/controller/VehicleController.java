@@ -33,6 +33,7 @@ public class VehicleController {
         return ResponseEntity.ok(new ApiResponse<>(vehicleService.listVehicles(actor.identity(), active)));
     }
 
+    @ResponseStatus(HttpStatus.CREATED)
     @PostMapping
     public ResponseEntity<ApiResponse<VehicleResponse>> createVehicle(@AuthenticationPrincipal AuthenticatedUser actor,
                                                                       @Valid @RequestBody CreateVehicleRequest request) {

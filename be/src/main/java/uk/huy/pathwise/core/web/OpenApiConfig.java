@@ -1,5 +1,6 @@
 package uk.huy.pathwise.core.web;
 
+import io.swagger.v3.core.converter.ModelConverter;
 import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Info;
@@ -25,5 +26,11 @@ public class OpenApiConfig {
                 .components(new Components().addSecuritySchemes(BEARER,
                         new SecurityScheme().type(SecurityScheme.Type.HTTP).scheme("bearer").bearerFormat("JWT")))
                 .addSecurityItem(new SecurityRequirement().addList(BEARER));
+    }
+
+    /** Required and nullable fields from the null convention of the API (P-48); springdoc picks the bean up. */
+    @Bean
+    public ModelConverter nullabilityModelConverter() {
+        return new NullabilityModelConverter();
     }
 }

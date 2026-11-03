@@ -3,6 +3,7 @@ package uk.huy.pathwise.store.controller;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.CacheControl;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import uk.huy.pathwise.core.apiresponse.ApiResponse;
@@ -26,6 +27,7 @@ public class InvitationController {
                 .body(new ApiResponse<>(invitationService.previewInvitation(code)));
     }
 
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     @PostMapping("/accept")
     public ResponseEntity<Void> acceptInvitation(@Valid @RequestBody AcceptInvitationRequest request) {
         invitationService.acceptInvitation(request);

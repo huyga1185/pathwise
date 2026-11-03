@@ -26,6 +26,7 @@ import java.util.List;
 public class StoreInvitationController {
     private final InvitationService invitationService;
 
+    @ResponseStatus(HttpStatus.CREATED)
     @PostMapping
     public ResponseEntity<ApiResponse<InvitationResponse>> createInvitation(@AuthenticationPrincipal AuthenticatedUser actor,
                                                                             @Valid @RequestBody CreateInvitationRequest request) {
@@ -42,6 +43,7 @@ public class StoreInvitationController {
     /**
      * Revokes a PENDING invitation; it stays listed with status REVOKED.
      */
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     @PostMapping("/{id}/revoke")
     public ResponseEntity<Void> revokeInvitation(@AuthenticationPrincipal AuthenticatedUser actor,
                                                  @PathVariable("id") long invitationId) {
