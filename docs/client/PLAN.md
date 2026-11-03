@@ -65,8 +65,15 @@ File nóng của client (không hai task song song cùng sửa): `web/package.js
   - Màn Đăng nhập theo prototype (thẻ `radius-lg` + `shadow-raised`, panel `brand-gradient`), khôi phục phiên khi tải trang, đăng xuất; trang 404, không có quyền, "Dùng app tài xế".
   - CI: job `web` (install frozen, lint, typecheck, test, build) chạy khi đổi `web/**`, `api/**`, `brand/**`.
 - **Từ W00:** chạy `python3 scripts/build_tokens.py --only web` rồi commit `tokens.css`; job `web` thêm `python3 scripts/build_tokens.py --check --only web`.
-- **Acceptance:** đăng nhập/đăng xuất/khôi phục phiên chạy với MSW và với backend thật qua proxy; hai request 401 cùng lúc chỉ gọi refresh một lần (test); mỗi lỗi đăng nhập của SCREENS §1.1 có test; `statusInfo` và `formatPhone` có test bám bảng của DESIGN_SYSTEM; theme tối không có chữ dưới 4,5:1 trên component (test axe trên trang component).
-
+- **Phát sinh khi làm (2026-11-03):**
+  - Phiên bản do pnpm chọn với `minimumReleaseAge` 2 tuần (`web/pnpm-workspace.yaml`): React 19.3, React Router **8.5** (P-43 không ghi số phiên bản), TanStack Query 5, Vite 8, Vitest 5, MSW 3, ESLint 10. **TypeScript ghim `~6.0.3`**: TS 7 (bản viết bằng Go) không có API JavaScript mà typescript-eslint cần (hỗ trợ < 6.1). `allowBuilds: unrs-resolver` (resolver import của ESLint).
+  - Path trong OpenAPI đã gồm `/api/v1`, nên cấu hình là **origin** `VITE_API_ORIGIN` (rỗng = cùng origin), không phải base path; test đặt `http://localhost` vì `Request` của Node cần URL tuyệt đối.
+  - `TextField` thêm prop tuỳ chọn `startIcon`, `endAction`, `size` (icon và nút hiện mật khẩu của màn Đăng nhập), ghi vào `brand/design-system/components.d.ts`; artifact design system chưa đồng bộ phần này.
+  - Sau khi đăng nhập, `RedirectIfSignedIn` chuyển sang `?next=` (chỉ path trong app, chống open redirect) hoặc trang chính; màn Đăng nhập không tự điều hướng (tránh hai lần redirect giành nhau, test bắt được).
+  - Tương phản theme tối: jsdom không tính được màu nên axe chạy với `color-contrast` tắt (kiểm cấu trúc: nhãn, role, thứ tự tiêu đề) trên trang component ở theme tối và màn Đăng nhập; tương phản kiểm bằng `shared/theme/contrast.test.ts` trên giá trị token (18 cặp chữ/nền × 2 theme = 36 lần kiểm, đều ≥ 4,5:1).
+  - Màn của task sau (đăng ký, xe, plan…) là trang "Sắp có" để menu và link chạy được từ W01.
+  - Luồng phiên với backend thật kiểm bằng `curl` qua proxy Vite (không có trình duyệt trong môi trường agent). Backend `dev` cần ghi đè mail sang Mailpit (`--spring.mail.host=localhost --spring.mail.port=1025 …`) vì `application-dev.yaml` trên máy chủ dự án dùng SMTP thật.
+  - Phát hiện F-49 (response OpenAPI không có `required`).
 ### W02. Màn tài khoản
 - **Ước lượng:** 1,5 ngày · **Màn:** Đăng ký, Xác thực email, Quên mật khẩu, Nhận lời mời, Hồ sơ
 - **Phạm vi:** 5 màn theo SCREENS và prototype; `OtpInput` (tự nhảy ô, dán, Backspace, autofill `one-time-code`); đếm ngược gửi lại 60 s; 429 đếm ngược `Retry-After`; danh sách phiên (đăng xuất từng phiên / mọi phiên khác; đăng xuất phiên hiện tại = đăng xuất).

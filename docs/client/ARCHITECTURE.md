@@ -167,7 +167,7 @@ Theo API_SPEC §2 và UX_BRIEF §3.
 | Component/widget | Vitest + Testing Library + MSW (fixture từ `docs/ux/samples`) | widget test + fake repository | W01 / M00 |
 | Luồng chính có API giả | Testing Library + MSW (đăng nhập, tạo plan, giao việc…) | widget test nhiều màn | từng task |
 | E2E với backend thật | Playwright trên stack compose (`be` profile app) | `integration_test` (sau MVP) | W07 |
-| Accessibility | `@axe-core` trong test component các màn chính | semantics test cho nút chính | W07 / M03 |
+| Accessibility | `axe-core` trong test (tắt `color-contrast` vì jsdom không vẽ) + test tương phản trên giá trị token | semantics test cho nút chính | W01 / M03 |
 
 - Không test nào gọi MapTiler hay dịch vụ ngoài thật; bản đồ trong test dùng `Basemap` giả (tile trống).
 - Fixture lấy từ `docs/ux/samples/*.json` (dữ liệu thật từ test E2E backend); thêm fixture mới thì sinh từ backend, không viết tay JSON lệch hợp đồng.
@@ -176,8 +176,8 @@ Theo API_SPEC §2 và UX_BRIEF §3.
 
 - Web: pnpm (P-43), Node LTS ghi trong `web/.nvmrc` và `packageManager` của `package.json`; lệnh: `pnpm install --frozen-lockfile`, `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build`.
 - Mobile: Flutter stable ghi trong `mobile/.fvmrc` hoặc README; `flutter analyze`, `flutter test`.
-- CI (`.github/workflows/ci.yml`, file nóng): thêm job `web` và `mobile`, chạy khi đổi file trong thư mục tương ứng (`detect-code-changes`). Job backend thêm bước kiểm drift `api/openapi.json`.
-- Biến môi trường: `web/.env.example` (`VITE_API_BASE=/api/v1`, `VITE_BASEMAP`, `VITE_MAPTILER_KEY`), mobile `--dart-define` (`API_BASE`, `BASEMAP`, `MAPTILER_KEY`). Không commit `.env`.
+- CI (`.github/workflows/ci.yml`, file nóng): job `web` (W01) chạy khi output `web` của `detect-code-changes` là true (đổi `web/`, `api/`, `brand/`, `scripts/build_tokens.py`, `.github/`): install frozen, kiểm `tokens.css` và `schema.d.ts` khớp nguồn, lint, typecheck, test, build. Job `mobile` thêm ở M00 theo cùng cách. Job backend kiểm drift `api/openapi.json`.
+- Biến môi trường: `web/.env.example` (`VITE_API_ORIGIN`: origin của API, rỗng = cùng origin, vì path OpenAPI đã gồm `/api/v1`; `VITE_BASEMAP`, `VITE_MAPTILER_KEY`), mobile `--dart-define` (`API_BASE`, `BASEMAP`, `MAPTILER_KEY`). Không commit `.env`.
 - Phiên bản thư viện: chọn bản ổn định đã phát hành ít nhất 2 tuần lúc làm W01/M00, ghi lockfile; Dependabot thêm ecosystem `npm` (web) và `pub` (mobile).
 
 ## 12. Bảo mật phía client

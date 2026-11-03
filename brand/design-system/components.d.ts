@@ -22,6 +22,12 @@ export interface TextFieldProps extends React.InputHTMLAttributes<HTMLInputEleme
   error?: React.ReactNode;
   /** Renders a textarea. */
   multiline?: boolean;
+  /** Web client (W01): icon inside the field, before the text. */
+  startIcon?: React.ReactNode;
+  /** Web client (W01): control inside the field, after the text (show password). */
+  endAction?: React.ReactNode;
+  /** Web client (W01): lg is 48px tall with 16px text (account screens). */
+  size?: 'md' | 'lg';
 }
 export declare function TextField(props: TextFieldProps): React.ReactElement;
 
