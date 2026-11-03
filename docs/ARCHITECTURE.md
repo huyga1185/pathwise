@@ -184,7 +184,7 @@ ADMIN không có `storeId` và **không** truy cập API của store trong MVP.
 
 - Header `X-Client-Platform: mobile` → refresh token đi trong body request/response, không set cookie.
 - Không có header → refresh token chỉ trong cookie `refreshToken`: `HttpOnly; Secure; SameSite=<auth.cookie.same-site, mặc định Strict>; Path=/api/v1/auth; Max-Age=<còn lại>`. Web và API cùng site dưới `huy-vu.uk` (D-22).
-- CORS: whitelist origin web cấu hình qua env, `allowCredentials=true`. Mobile không bị CORS.
+- CORS: whitelist origin web chính xác qua `cors.allowed-origins` (env `CORS_ALLOWED_ORIGINS`), `allowCredentials=true`, áp cho `/api/**` (T41, P-38). Mobile không bị CORS.
 - CSRF tắt. An toàn dựa vào `SameSite=Strict` cộng access token ở header. Nếu sau này web và API khác site thì phải thêm cơ chế chống CSRF cho `/refresh` và `/log-out` trước khi đổi `SameSite=None`.
 
 ## 7. Persistence, transaction, concurrency
@@ -290,8 +290,9 @@ Chọn implementation bằng property (`routing.geocoding.provider=nominatim`), 
 
 - Secret chỉ qua biến môi trường (`SPRING_DATASOURCE_PASSWORD`, `SPRING_MAIL_PASSWORD`, `TOKEN_JWT_ACCESS_TOKEN_SECRET`...). `application-dev.yaml` gitignored; cung cấp `application-dev.example.yaml` không có secret (T05).
 - JWT secret ≥ 256 bit, Base64.
-- `ClientDetailFilter` chỉ tin `X-Forwarded-For` khi bật `server.forward-headers-strategy` sau reverse proxy tin cậy (T41).
-- Log: SLF4J, không `System.out`; MDC `requestId`, `userId`, `storeId`. **Cấm log** mật khẩu, OTP, token, ticket, refresh token, secret.
+- `ClientDetailFilter` chỉ đọc `request.getRemoteAddr()`. Profile `staging`/`prod` bật `server.forward-headers-strategy=native`: Tomcat áp `X-Forwarded-For`/`-Proto` chỉ khi request tới từ proxy ở dải IP nội bộ (`server.tomcat.remoteip.internal-proxies`), nên client không giả được IP (T41, P-38).
+- Log: SLF4J, không `System.out`; MDC `requestId` (`core.web.LogContextFilter`, chạy trước security chain, UUID tự sinh, trả trong header `X-Request-Id`), `userId`, `storeId` (`JwtAuthFilter` sau khi xác thực); pattern ở `logging.pattern.level`. Job nền chạy ở thread khác nên không có MDC của request. **Cấm log** mật khẩu, OTP, token, ticket, refresh token, secret.
+- Security headers: mặc định của Spring Security cộng `Referrer-Policy: no-referrer` (P-38).
 
 ## 11. Chiến lược kiểm thử
 

@@ -5,7 +5,7 @@
 > Cột "Hiện trạng" ở mọi bảng: ✅ khớp spec và có test · 🟡 có nhưng còn lệch (ghi rõ lệch gì) · ❌ chưa có. Lịch sử triển khai theo task nằm ở `CURRENT_STATE.md` §5, không ghi ở đây.
 > Lần rà soát contract gần nhất: T44 (2026-10-29, P-32).
 
-## 0. Lệch hiện tại so với spec (cập nhật 2026-11-03, sau T40)
+## 0. Lệch hiện tại so với spec (cập nhật 2026-11-03, sau T41)
 
 - `GET /admin/users` chưa trả `storeId`, `status`.
 - §7: chưa có `driver-locations` (T32), `routes` (T28).
@@ -26,6 +26,11 @@
 - Header `X-Client-Platform: mobile` → refresh token đi qua body; không có → cookie `refreshToken` (web).
 - Ký hiệu quyền: **P** Public · **A** mọi user đã đăng nhập · **O** OWNER · **D** DISPATCHER · **R** người được gán route, tức `role=DRIVER` hoặc `canDrive=true` (D-21) · **AD** ADMIN. Sai role → 403 `FORBIDDEN`; thiếu hoặc sai access token → 401 `UNAUTHORIZED`.
 - Dữ liệu của store luôn là store trong access token (BR-01). Tài nguyên của store khác trả 404 như không tồn tại.
+
+**Header chung** (T41, P-38)
+- Mọi response có `X-Request-Id` (UUID do server sinh, không nhận từ client); khi báo lỗi, client gửi kèm giá trị này để đối chiếu log.
+- Security headers: `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Cache-Control: no-store`, `Referrer-Policy: no-referrer`, `Strict-Transport-Security` khi qua HTTPS.
+- CORS: chỉ các origin trong `cors.allowed-origins` (danh sách chính xác, kèm credentials); preflight hoặc request từ origin khác → 403 (body không theo format lỗi, do trình duyệt chặn trước). Header client đọc được: `Retry-After`, `X-Request-Id`. App mobile không gửi `Origin` nên không bị ảnh hưởng.
 
 **Thành công**
 - `{ "data": ..., "message"?: "..." }`.

@@ -1,4 +1,10 @@
 # Staging (image develop / develop-<sha>, ARCHITECTURE.md §12.4). All secrets come from environment variables.
+# Behind the reverse proxy (docs/DEPLOYMENT.md): Tomcat applies X-Forwarded-For/-Proto only for requests coming from
+# an internal proxy address (server.tomcat.remoteip.internal-proxies, private ranges by default), so the client IP and
+# HTTPS are right and a client cannot forge them (F-21). Override with SERVER_FORWARD_HEADERS_STRATEGY.
+server:
+  forward-headers-strategy: native
+
 logging:
   level:
     root: info

@@ -379,6 +379,7 @@ T42 cũ (Docker, compose, README) đã được gộp vào T05 và T07 trong M0 
 - **Tầng:** Must (CORS, XFF) / Should (phần còn lại) · **Ước lượng:** 0,5 ngày
 - **Phạm vi:** CORS whitelist từ env; `forward-headers-strategy` để chỉ tin XFF sau proxy (F-21); security headers; log MDC requestId/userId/storeId (NFR-06); kiểm tra không log secret.
 - **Acceptance criteria:** preflight từ origin lạ bị từ chối; origin hợp lệ nhận đúng header; test XFF bị bỏ qua khi tắt forward headers.
+- **Phát sinh khi làm (2026-11-03):** P-38 (chủ dự án chọn): `native` ở staging/prod; danh sách origin chính xác; thêm `Referrer-Policy`, không CSP; requestId luôn tự sinh. `RateLimitIntegrationTest` (T40) đổi từ giả `X-Forwarded-For` sang đặt remote address, vì header không còn được đọc. Thêm `ForwardedHeadersIntegrationTest` chạy server thật (`RANDOM_PORT`) để chứng minh `native` áp XFF từ proxy tin cậy (MockMvc không chạy valve của Tomcat). Rà soát log: không log mật khẩu, OTP, token, secret; ghi F-46 (message lỗi ràng buộc DB có thể chứa email).
 
 ### T43. Kiểm thử nghiệm thu MVP
 - **Tầng:** Must · **Ước lượng:** 1 ngày · **REQ:** §6
