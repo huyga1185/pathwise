@@ -84,6 +84,8 @@ management:
       enabled: false
 
 springdoc:
+  # Every endpoint answers JSON; without this the generated document says */* (F-47).
+  default-produces-media-type: application/json
   api-docs:
     enabled: false
   swagger-ui:

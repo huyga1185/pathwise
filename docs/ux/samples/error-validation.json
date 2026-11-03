@@ -1,0 +1,17 @@
+{
+  "code": "VALIDATION_ERROR",
+  "details": [
+    {
+      "field": "capacityUnit",
+      "code": "CAPACITY_UNIT_REQUIRED"
+    },
+    {
+      "field": "capacity",
+      "code": "INVALID_CAPACITY"
+    },
+    {
+      "field": "name",
+      "code": "VEHICLE_NAME_REQUIRED"
+    }
+  ]
+}

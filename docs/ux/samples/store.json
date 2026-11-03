@@ -1,0 +1,12 @@
+{
+  "data": {
+    "id": 182,
+    "name": "Tiệm E2E",
+    "depot": {
+      "address": "Kho 45 Lê Lợi, Hải Châu, Đà Nẵng",
+      "lat": 16.05,
+      "lon": 108.2
+    },
+    "timezone": "Asia/Ho_Chi_Minh"
+  }
+}

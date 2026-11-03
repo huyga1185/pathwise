@@ -1,0 +1,20 @@
+{
+  "data": [
+    {
+      "id": 74,
+      "name": "Xe 1",
+      "plateNumber": null,
+      "capacity": 30,
+      "capacityUnit": "BOX",
+      "active": true
+    },
+    {
+      "id": 75,
+      "name": "Xe 2",
+      "plateNumber": null,
+      "capacity": 30,
+      "capacityUnit": "BOX",
+      "active": true
+    }
+  ]
+}

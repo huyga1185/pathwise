@@ -1,0 +1,25 @@
+{
+  "data": [
+    {
+      "id": 13,
+      "email": "driver-b-f79b02ce-4b0d-4329-8282-9c46908da560@pathwise.test",
+      "role": "DRIVER",
+      "status": "ACCEPTED",
+      "expiresAt": "2026-11-10T09:17:25.019047Z"
+    },
+    {
+      "id": 12,
+      "email": "driver-a-f79b02ce-4b0d-4329-8282-9c46908da560@pathwise.test",
+      "role": "DRIVER",
+      "status": "ACCEPTED",
+      "expiresAt": "2026-11-10T09:17:24.754939Z"
+    },
+    {
+      "id": 11,
+      "email": "dispatcher-f79b02ce-4b0d-4329-8282-9c46908da560@pathwise.test",
+      "role": "DISPATCHER",
+      "status": "ACCEPTED",
+      "expiresAt": "2026-11-10T09:17:24.476961Z"
+    }
+  ]
+}

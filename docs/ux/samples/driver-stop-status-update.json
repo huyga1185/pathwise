@@ -1,0 +1,21 @@
+{
+  "data": {
+    "stop": {
+      "id": 123,
+      "sequence": 1,
+      "label": "ĐH-1016",
+      "recipientName": "Chị Thảo",
+      "recipientPhone": "+84905123015",
+      "address": "894 Phan Châu Trinh, Hải Châu, Đà Nẵng",
+      "lat": 16.052,
+      "lon": 108.202,
+      "plannedArrival": "2026-12-01T03:51:07Z",
+      "timeWindow": null,
+      "note": null,
+      "status": "DELIVERED",
+      "failureReason": null
+    },
+    "routeStatus": "IN_PROGRESS",
+    "planStatus": "IN_PROGRESS"
+  }
+}

@@ -74,3 +74,14 @@ jobs:
           name: coverage-report
           path: be/target/site/jacoco/
           if-no-files-found: ignore
+      # For client code generation and design (docs/ux/UX_BRIEF.md): the generated OpenAPI document and realistic
+      # responses captured by the acceptance tests.
+      - name: Upload API contract
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-contract
+          path: |
+            be/target/openapi.json
+            be/target/ux-samples/
+          if-no-files-found: ignore

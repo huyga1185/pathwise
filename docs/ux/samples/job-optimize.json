@@ -1,0 +1,12 @@
+{
+  "data": {
+    "id": 68,
+    "type": "OPTIMIZE_PLAN",
+    "status": "SUCCEEDED",
+    "planId": 83,
+    "errorCode": null,
+    "createdAt": "2026-11-03T09:17:25.557363Z",
+    "startedAt": "2026-11-03T09:17:25.564311Z",
+    "finishedAt": "2026-11-03T09:17:26.623555Z"
+  }
+}

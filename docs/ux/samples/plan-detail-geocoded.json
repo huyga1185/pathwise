@@ -1,0 +1,688 @@
+{
+  "data": {
+    "id": 83,
+    "name": "Giao sáng 01/12",
+    "planDate": "2026-12-01",
+    "status": "DRAFT",
+    "version": 1,
+    "processingStatus": "IDLE",
+    "activeJob": null,
+    "geocodingSummary": {
+      "total": 24,
+      "resolved": 19,
+      "provided": 4,
+      "pending": 0,
+      "failed": 1
+    },
+    "depot": {
+      "address": "Kho 45 Lê Lợi, Hải Châu, Đà Nẵng",
+      "lat": 16.05,
+      "lon": 108.2
+    },
+    "timezone": "Asia/Ho_Chi_Minh",
+    "optimizedAt": null,
+    "totalDistanceMeters": null,
+    "totalDurationSeconds": null,
+    "routes": [
+      {
+        "id": 63,
+        "driver": {
+          "id": 451,
+          "fullName": "Tài xế A",
+          "role": "DRIVER"
+        },
+        "vehicle": {
+          "id": 74,
+          "name": "Xe 1",
+          "capacity": 30,
+          "capacityUnit": "BOX"
+        },
+        "shiftStart": "08:00",
+        "shiftEnd": "17:00",
+        "maxDistanceMeters": null,
+        "start": {
+          "address": "Kho 45 Lê Lợi, Hải Châu, Đà Nẵng",
+          "lat": 16.05,
+          "lon": 108.2
+        },
+        "end": {
+          "address": "Kho 45 Lê Lợi, Hải Châu, Đà Nẵng",
+          "lat": 16.05,
+          "lon": 108.2
+        },
+        "plannedDistanceMeters": null,
+        "plannedDurationSeconds": null,
+        "plannedStart": null,
+        "plannedEnd": null,
+        "load": null,
+        "stops": []
+      },
+      {
+        "id": 64,
+        "driver": {
+          "id": 452,
+          "fullName": "Tài xế B",
+          "role": "DRIVER"
+        },
+        "vehicle": {
+          "id": 75,
+          "name": "Xe 2",
+          "capacity": 30,
+          "capacityUnit": "BOX"
+        },
+        "shiftStart": "08:00",
+        "shiftEnd": "17:00",
+        "maxDistanceMeters": null,
+        "start": {
+          "address": "Kho 45 Lê Lợi, Hải Châu, Đà Nẵng",
+          "lat": 16.05,
+          "lon": 108.2
+        },
+        "end": {
+          "address": "Kho 45 Lê Lợi, Hải Châu, Đà Nẵng",
+          "lat": 16.05,
+          "lon": 108.2
+        },
+        "plannedDistanceMeters": null,
+        "plannedDurationSeconds": null,
+        "plannedStart": null,
+        "plannedEnd": null,
+        "load": null,
+        "stops": []
+      }
+    ],
+    "unassignedStops": [
+      {
+        "id": 108,
+        "sequence": null,
+        "label": "ĐH-1001",
+        "recipientName": "Chị Lan",
+        "recipientPhone": "+84905123000",
+        "address": "879 Hùng Vương, Hải Châu, Đà Nẵng",
+        "lat": 16.04,
+        "lon": 108.19,
+        "geocodeStatus": "RESOLVED",
+        "geocodeError": null,
+        "geocodedDisplayName": "879 Hùng Vương, Hải Châu, Đà Nẵng, Việt Nam",
+        "demands": {
+          "BOX": 2
+        },
+        "serviceTimeSeconds": 120,
+        "timeWindow": {
+          "start": "09:00",
+          "end": "11:00"
+        },
+        "note": null,
+        "plannedArrival": null,
+        "status": "PENDING",
+        "failureReason": null,
+        "dropReason": "NOT_OPTIMIZED"
+      },
+      {
+        "id": 109,
+        "sequence": null,
+        "label": "ĐH-1002",
+        "recipientName": "Anh Minh",
+        "recipientPhone": "+84905123001",
+        "address": "880 Trần Phú, Hải Châu, Đà Nẵng",
+        "lat": 16.044,
+        "lon": 108.19,
+        "geocodeStatus": "RESOLVED",
+        "geocodeError": null,
+        "geocodedDisplayName": "880 Trần Phú, Hải Châu, Đà Nẵng, Việt Nam",
+        "demands": {
+          "BOX": 2
+        },
+        "serviceTimeSeconds": 120,
+        "timeWindow": {
+          "start": "13:00",
+          "end": "16:00"
+        },
+        "note": null,
+        "plannedArrival": null,
+        "status": "PENDING",
+        "failureReason": null,
+        "dropReason": "NOT_OPTIMIZED"
+      },
+      {
+        "id": 110,
+        "sequence": null,
+        "label": "ĐH-1003",
+        "recipientName": "Cô Hạnh",
+        "recipientPhone": "+84905123002",
+        "address": "881 Bạch Đằng, Hải Châu, Đà Nẵng",
+        "lat": 16.048,
+        "lon": 108.19,
+        "geocodeStatus": "RESOLVED",
+        "geocodeError": null,
+        "geocodedDisplayName": "881 Bạch Đằng, Hải Châu, Đà Nẵng, Việt Nam",
+        "demands": {
+          "BOX": 2
+        },
+        "serviceTimeSeconds": 120,
+        "timeWindow": null,
+        "note": "Gọi trước 10 phút",
+        "plannedArrival": null,
+        "status": "PENDING",
+        "failureReason": null,
+        "dropReason": "NOT_OPTIMIZED"
+      },
+      {
+        "id": 111,
+        "sequence": null,
+        "label": "ĐH-1004",
+        "recipientName": "Anh Tuấn",
+        "recipientPhone": "+84905123003",
+        "address": "882 Nguyễn Văn Linh, Thanh Khê, Đà Nẵng",
+        "lat": 16.052,
+        "lon": 108.19,
+        "geocodeStatus": "RESOLVED",
+        "geocodeError": null,
+        "geocodedDisplayName": "882 Nguyễn Văn Linh, Thanh Khê, Đà Nẵng, Việt Nam",
+        "demands": {
+          "BOX": 2
+        },
+        "serviceTimeSeconds": 120,
+        "timeWindow": null,
+        "note": null,
+        "plannedArrival": null,
+        "status": "PENDING",
+        "failureReason": null,
+        "dropReason": "NOT_OPTIMIZED"
+      },
+      {
+        "id": 112,
+        "sequence": null,
+        "label": "ĐH-1005",
+        "recipientName": "Chị Mai",
+        "recipientPhone": "+84905123004",
+        "address": "883 Lê Duẩn, Hải Châu, Đà Nẵng",
+        "lat": 16.055999999999997,
+        "lon": 108.19,
+        "geocodeStatus": "RESOLVED",
+        "geocodeError": null,
+        "geocodedDisplayName": "883 Lê Duẩn, Hải Châu, Đà Nẵng, Việt Nam",
+        "demands": {
+          "BOX": 2
+        },
+        "serviceTimeSeconds": 120,
+        "timeWindow": {
+          "start": "09:00",
+          "end": "11:00"
+        },
+        "note": null,
+        "plannedArrival": null,
+        "status": "PENDING",
+        "failureReason": null,
+        "dropReason": "NOT_OPTIMIZED"
+      },
+      {
+        "id": 113,
+        "sequence": null,
+        "label": "ĐH-1006",
+        "recipientName": "Bác Sơn",
+        "recipientPhone": "+84905123005",
+        "address": "884 Phan Châu Trinh, Hải Châu, Đà Nẵng",
+        "lat": 16.06,
+        "lon": 108.19,
+        "geocodeStatus": "RESOLVED",
+        "geocodeError": null,
+        "geocodedDisplayName": "884 Phan Châu Trinh, Hải Châu, Đà Nẵng, Việt Nam",
+        "demands": {
+          "BOX": 2
+        },
+        "serviceTimeSeconds": 120,
+        "timeWindow": {
+          "start": "13:00",
+          "end": "16:00"
+        },
+        "note": null,
+        "plannedArrival": null,
+        "status": "PENDING",
+        "failureReason": null,
+        "dropReason": "NOT_OPTIMIZED"
+      },
+      {
+        "id": 114,
+        "sequence": null,
+        "label": "ĐH-1007",
+        "recipientName": "Anh Khoa",
+        "recipientPhone": "+84905123006",
+        "address": "885 Ông Ích Khiêm, Thanh Khê, Đà Nẵng",
+        "lat": 16.04,
+        "lon": 108.196,
+        "geocodeStatus": "RESOLVED",
+        "geocodeError": null,
+        "geocodedDisplayName": "885 Ông Ích Khiêm, Thanh Khê, Đà Nẵng, Việt Nam",
+        "demands": {
+          "BOX": 2
+        },
+        "serviceTimeSeconds": 120,
+        "timeWindow": null,
+        "note": null,
+        "plannedArrival": null,
+        "status": "PENDING",
+        "failureReason": null,
+        "dropReason": "NOT_OPTIMIZED"
+      },
+      {
+        "id": 115,
+        "sequence": null,
+        "label": "ĐH-1008",
+        "recipientName": "Chị Thảo",
+        "recipientPhone": "+84905123007",
+        "address": "886 Điện Biên Phủ, Thanh Khê, Đà Nẵng",
+        "lat": null,
+        "lon": null,
+        "geocodeStatus": "FAILED",
+        "geocodeError": "NOT_FOUND",
+        "geocodedDisplayName": null,
+        "demands": {
+          "BOX": 2
+        },
+        "serviceTimeSeconds": 120,
+        "timeWindow": null,
+        "note": "Gọi trước 10 phút",
+        "plannedArrival": null,
+        "status": "PENDING",
+        "failureReason": null,
+        "dropReason": "NOT_OPTIMIZED"
+      },
+      {
+        "id": 116,
+        "sequence": null,
+        "label": "ĐH-1009",
+        "recipientName": "Chị Lan",
+        "recipientPhone": "+84905123008",
+        "address": "887 Nguyễn Tri Phương, Thanh Khê, Đà Nẵng",
+        "lat": 16.048,
+        "lon": 108.196,
+        "geocodeStatus": "RESOLVED",
+        "geocodeError": null,
+        "geocodedDisplayName": "887 Nguyễn Tri Phương, Thanh Khê, Đà Nẵng, Việt Nam",
+        "demands": {
+          "BOX": 2
+        },
+        "serviceTimeSeconds": 120,
+        "timeWindow": {
+          "start": "09:00",
+          "end": "11:00"
+        },
+        "note": null,
+        "plannedArrival": null,
+        "status": "PENDING",
+        "failureReason": null,
+        "dropReason": "NOT_OPTIMIZED"
+      },
+      {
+        "id": 117,
+        "sequence": null,
+        "label": "ĐH-1010",
+        "recipientName": "Anh Minh",
+        "recipientPhone": "+84905123009",
+        "address": "888 Hoàng Diệu, Hải Châu, Đà Nẵng",
+        "lat": 16.052,
+        "lon": 108.196,
+        "geocodeStatus": "RESOLVED",
+        "geocodeError": null,
+        "geocodedDisplayName": "888 Hoàng Diệu, Hải Châu, Đà Nẵng, Việt Nam",
+        "demands": {
+          "BOX": 2
+        },
+        "serviceTimeSeconds": 120,
+        "timeWindow": {
+          "start": "13:00",
+          "end": "16:00"
+        },
+        "note": null,
+        "plannedArrival": null,
+        "status": "PENDING",
+        "failureReason": null,
+        "dropReason": "NOT_OPTIMIZED"
+      },
+      {
+        "id": 118,
+        "sequence": null,
+        "label": "ĐH-1011",
+        "recipientName": "Cô Hạnh",
+        "recipientPhone": "+84905123010",
+        "address": "889 Hùng Vương, Hải Châu, Đà Nẵng",
+        "lat": 16.055999999999997,
+        "lon": 108.196,
+        "geocodeStatus": "RESOLVED",
+        "geocodeError": null,
+        "geocodedDisplayName": "889 Hùng Vương, Hải Châu, Đà Nẵng, Việt Nam",
+        "demands": {
+          "BOX": 2
+        },
+        "serviceTimeSeconds": 120,
+        "timeWindow": null,
+        "note": null,
+        "plannedArrival": null,
+        "status": "PENDING",
+        "failureReason": null,
+        "dropReason": "NOT_OPTIMIZED"
+      },
+      {
+        "id": 119,
+        "sequence": null,
+        "label": "ĐH-1012",
+        "recipientName": "Anh Tuấn",
+        "recipientPhone": "+84905123011",
+        "address": "890 Trần Phú, Hải Châu, Đà Nẵng",
+        "lat": 16.06,
+        "lon": 108.196,
+        "geocodeStatus": "RESOLVED",
+        "geocodeError": null,
+        "geocodedDisplayName": "890 Trần Phú, Hải Châu, Đà Nẵng, Việt Nam",
+        "demands": {
+          "BOX": 2
+        },
+        "serviceTimeSeconds": 120,
+        "timeWindow": null,
+        "note": null,
+        "plannedArrival": null,
+        "status": "PENDING",
+        "failureReason": null,
+        "dropReason": "NOT_OPTIMIZED"
+      },
+      {
+        "id": 120,
+        "sequence": null,
+        "label": "ĐH-1013",
+        "recipientName": "Chị Mai",
+        "recipientPhone": "+84905123012",
+        "address": "891 Bạch Đằng, Hải Châu, Đà Nẵng",
+        "lat": 16.04,
+        "lon": 108.202,
+        "geocodeStatus": "RESOLVED",
+        "geocodeError": null,
+        "geocodedDisplayName": "891 Bạch Đằng, Hải Châu, Đà Nẵng, Việt Nam",
+        "demands": {
+          "BOX": 2
+        },
+        "serviceTimeSeconds": 120,
+        "timeWindow": {
+          "start": "09:00",
+          "end": "11:00"
+        },
+        "note": "Gọi trước 10 phút",
+        "plannedArrival": null,
+        "status": "PENDING",
+        "failureReason": null,
+        "dropReason": "NOT_OPTIMIZED"
+      },
+      {
+        "id": 121,
+        "sequence": null,
+        "label": "ĐH-1014",
+        "recipientName": "Bác Sơn",
+        "recipientPhone": "+84905123013",
+        "address": "892 Nguyễn Văn Linh, Thanh Khê, Đà Nẵng",
+        "lat": 16.044,
+        "lon": 108.202,
+        "geocodeStatus": "RESOLVED",
+        "geocodeError": null,
+        "geocodedDisplayName": "892 Nguyễn Văn Linh, Thanh Khê, Đà Nẵng, Việt Nam",
+        "demands": {
+          "BOX": 2
+        },
+        "serviceTimeSeconds": 120,
+        "timeWindow": {
+          "start": "13:00",
+          "end": "16:00"
+        },
+        "note": null,
+        "plannedArrival": null,
+        "status": "PENDING",
+        "failureReason": null,
+        "dropReason": "NOT_OPTIMIZED"
+      },
+      {
+        "id": 122,
+        "sequence": null,
+        "label": "ĐH-1015",
+        "recipientName": "Anh Khoa",
+        "recipientPhone": "+84905123014",
+        "address": "893 Lê Duẩn, Hải Châu, Đà Nẵng",
+        "lat": 16.048,
+        "lon": 108.202,
+        "geocodeStatus": "RESOLVED",
+        "geocodeError": null,
+        "geocodedDisplayName": "893 Lê Duẩn, Hải Châu, Đà Nẵng, Việt Nam",
+        "demands": {
+          "BOX": 2
+        },
+        "serviceTimeSeconds": 120,
+        "timeWindow": null,
+        "note": null,
+        "plannedArrival": null,
+        "status": "PENDING",
+        "failureReason": null,
+        "dropReason": "NOT_OPTIMIZED"
+      },
+      {
+        "id": 123,
+        "sequence": null,
+        "label": "ĐH-1016",
+        "recipientName": "Chị Thảo",
+        "recipientPhone": "+84905123015",
+        "address": "894 Phan Châu Trinh, Hải Châu, Đà Nẵng",
+        "lat": 16.052,
+        "lon": 108.202,
+        "geocodeStatus": "RESOLVED",
+        "geocodeError": null,
+        "geocodedDisplayName": "894 Phan Châu Trinh, Hải Châu, Đà Nẵng, Việt Nam",
+        "demands": {
+          "BOX": 2
+        },
+        "serviceTimeSeconds": 120,
+        "timeWindow": null,
+        "note": null,
+        "plannedArrival": null,
+        "status": "PENDING",
+        "failureReason": null,
+        "dropReason": "NOT_OPTIMIZED"
+      },
+      {
+        "id": 124,
+        "sequence": null,
+        "label": "ĐH-1017",
+        "recipientName": "Chị Lan",
+        "recipientPhone": "+84905123016",
+        "address": "895 Ông Ích Khiêm, Thanh Khê, Đà Nẵng",
+        "lat": 16.055999999999997,
+        "lon": 108.202,
+        "geocodeStatus": "RESOLVED",
+        "geocodeError": null,
+        "geocodedDisplayName": "895 Ông Ích Khiêm, Thanh Khê, Đà Nẵng, Việt Nam",
+        "demands": {
+          "BOX": 2
+        },
+        "serviceTimeSeconds": 120,
+        "timeWindow": {
+          "start": "09:00",
+          "end": "11:00"
+        },
+        "note": null,
+        "plannedArrival": null,
+        "status": "PENDING",
+        "failureReason": null,
+        "dropReason": "NOT_OPTIMIZED"
+      },
+      {
+        "id": 125,
+        "sequence": null,
+        "label": "ĐH-1018",
+        "recipientName": "Anh Minh",
+        "recipientPhone": "+84905123017",
+        "address": "896 Điện Biên Phủ, Thanh Khê, Đà Nẵng",
+        "lat": 16.06,
+        "lon": 108.202,
+        "geocodeStatus": "RESOLVED",
+        "geocodeError": null,
+        "geocodedDisplayName": "896 Điện Biên Phủ, Thanh Khê, Đà Nẵng, Việt Nam",
+        "demands": {
+          "BOX": 2
+        },
+        "serviceTimeSeconds": 120,
+        "timeWindow": {
+          "start": "13:00",
+          "end": "16:00"
+        },
+        "note": "Gọi trước 10 phút",
+        "plannedArrival": null,
+        "status": "PENDING",
+        "failureReason": null,
+        "dropReason": "NOT_OPTIMIZED"
+      },
+      {
+        "id": 126,
+        "sequence": null,
+        "label": "ĐH-1019",
+        "recipientName": "Cô Hạnh",
+        "recipientPhone": "+84905123018",
+        "address": "897 Nguyễn Tri Phương, Thanh Khê, Đà Nẵng",
+        "lat": 16.04,
+        "lon": 108.208,
+        "geocodeStatus": "RESOLVED",
+        "geocodeError": null,
+        "geocodedDisplayName": "897 Nguyễn Tri Phương, Thanh Khê, Đà Nẵng, Việt Nam",
+        "demands": {
+          "BOX": 2
+        },
+        "serviceTimeSeconds": 120,
+        "timeWindow": null,
+        "note": null,
+        "plannedArrival": null,
+        "status": "PENDING",
+        "failureReason": null,
+        "dropReason": "NOT_OPTIMIZED"
+      },
+      {
+        "id": 127,
+        "sequence": null,
+        "label": "ĐH-1020",
+        "recipientName": "Anh Tuấn",
+        "recipientPhone": "+84905123019",
+        "address": "898 Hoàng Diệu, Hải Châu, Đà Nẵng",
+        "lat": 16.044,
+        "lon": 108.208,
+        "geocodeStatus": "RESOLVED",
+        "geocodeError": null,
+        "geocodedDisplayName": "898 Hoàng Diệu, Hải Châu, Đà Nẵng, Việt Nam",
+        "demands": {
+          "BOX": 2
+        },
+        "serviceTimeSeconds": 120,
+        "timeWindow": null,
+        "note": null,
+        "plannedArrival": null,
+        "status": "PENDING",
+        "failureReason": null,
+        "dropReason": "NOT_OPTIMIZED"
+      },
+      {
+        "id": 128,
+        "sequence": null,
+        "label": "ĐH-1021",
+        "recipientName": "Chị Mai",
+        "recipientPhone": "+84905123020",
+        "address": null,
+        "lat": 16.048,
+        "lon": 108.208,
+        "geocodeStatus": "PROVIDED",
+        "geocodeError": null,
+        "geocodedDisplayName": null,
+        "demands": {
+          "BOX": 2
+        },
+        "serviceTimeSeconds": 120,
+        "timeWindow": {
+          "start": "09:00",
+          "end": "11:00"
+        },
+        "note": null,
+        "plannedArrival": null,
+        "status": "PENDING",
+        "failureReason": null,
+        "dropReason": "NOT_OPTIMIZED"
+      },
+      {
+        "id": 129,
+        "sequence": null,
+        "label": "ĐH-1022",
+        "recipientName": "Bác Sơn",
+        "recipientPhone": "+84905123021",
+        "address": null,
+        "lat": 16.052,
+        "lon": 108.208,
+        "geocodeStatus": "PROVIDED",
+        "geocodeError": null,
+        "geocodedDisplayName": null,
+        "demands": {
+          "BOX": 2
+        },
+        "serviceTimeSeconds": 120,
+        "timeWindow": {
+          "start": "13:00",
+          "end": "16:00"
+        },
+        "note": null,
+        "plannedArrival": null,
+        "status": "PENDING",
+        "failureReason": null,
+        "dropReason": "NOT_OPTIMIZED"
+      },
+      {
+        "id": 130,
+        "sequence": null,
+        "label": "ĐH-1023",
+        "recipientName": "Anh Khoa",
+        "recipientPhone": "+84905123022",
+        "address": null,
+        "lat": 16.055999999999997,
+        "lon": 108.208,
+        "geocodeStatus": "PROVIDED",
+        "geocodeError": null,
+        "geocodedDisplayName": null,
+        "demands": {
+          "BOX": 2
+        },
+        "serviceTimeSeconds": 120,
+        "timeWindow": null,
+        "note": "Gọi trước 10 phút",
+        "plannedArrival": null,
+        "status": "PENDING",
+        "failureReason": null,
+        "dropReason": "NOT_OPTIMIZED"
+      },
+      {
+        "id": 131,
+        "sequence": null,
+        "label": "ĐH-1024",
+        "recipientName": "Chị Thảo",
+        "recipientPhone": "+84905123023",
+        "address": null,
+        "lat": 16.06,
+        "lon": 108.208,
+        "geocodeStatus": "PROVIDED",
+        "geocodeError": null,
+        "geocodedDisplayName": null,
+        "demands": {
+          "BOX": 2
+        },
+        "serviceTimeSeconds": 120,
+        "timeWindow": {
+          "start": "20:00",
+          "end": "21:00"
+        },
+        "note": null,
+        "plannedArrival": null,
+        "status": "PENDING",
+        "failureReason": null,
+        "dropReason": "NOT_OPTIMIZED"
+      }
+    ]
+  }
+}
