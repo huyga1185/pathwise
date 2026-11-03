@@ -1,0 +1,64 @@
+# SCREENS — Danh sách màn hình, route, API và trạng thái
+
+> Prototype: `https://claude.ai/artifact/JPW7uzXLFrpqfgFmQVjs5N` (tên artboard ở cột "Artboard"; các trạng thái đặc biệt nằm trong nút Tweaks của artboard). Endpoint và thông điệp lỗi chi tiết: `docs/ux/UX_BRIEF.md` §4–§6, `docs/API_SPEC.md`. Quy tắc giao diện: `docs/client/DESIGN_SYSTEM.md`.
+>
+> Prototype là **tham chiếu bố cục và hành vi**, không phải dữ liệu thật: toạ độ mẫu là lưới giả, kết quả tìm địa chỉ và danh sách thiết bị là minh hoạ. Khi prototype và docs (API_SPEC, UX_BRIEF, DESIGN_SYSTEM) khác nhau thì docs đúng.
+
+## 1. Web dispatcher (`web/`, base path `/app/`)
+
+| Route | Màn hình | Artboard | Vai trò | API chính | Task |
+|---|---|---|---|---|---|
+| `/login` | Đăng nhập | Đăng nhập | công khai | `POST /auth/log-in`, `POST /auth/refresh` | W01 |
+| `/register` | Đăng ký cửa hàng | Đăng ký cửa hàng | công khai | `POST /auth/register` | W02 |
+| `/verify-email?email=` | Xác thực email (6 ô OTP) | Xác thực email | công khai | `POST /auth/email/verify`, `/email/verify/resend` | W02 |
+| `/forgot-password` | Quên mật khẩu (3 bước) | Quên mật khẩu | công khai | `/password/forgot` → `/password/reset/verify` → `/password/reset` | W02 |
+| `/invite` | Nhận lời mời | Nhận lời mời | công khai | `GET /invitations/{code}`, `POST /invitations/accept` | W02 |
+| `/profile` | Hồ sơ, đổi mật khẩu, thiết bị | Hồ sơ và bảo mật | O, D | `GET/PATCH /users/me`, `/password/change/otp`, `PUT /password`, `/auth/sessions*` | W02 |
+| `/vehicles` | Xe | Xe | O, D | `GET/POST /vehicles`, `PUT /vehicles/{id}` | W03 |
+| `/members` | Thành viên và lời mời (2 tab) | Thành viên và lời mời | O sửa, D xem | `/store/members*`, `/store/invitations*` | W03 |
+| `/store` | Cửa hàng, kho xuất phát | Cửa hàng | O sửa, D xem | `GET/PUT /store`, `GET /geocoding/search` | W04 |
+| `/plans` | Danh sách kế hoạch | Danh sách kế hoạch | O, D | `GET /plans?date=&status=&page=` | W05 |
+| `/plans/new`, `/plans/:id/edit` | Tạo/sửa kế hoạch | Tạo kế hoạch | O, D | `POST /plans`, `PUT /plans/{id}`, `GET /store/members?assignable=true`, `GET /vehicles?active=true` | W05 |
+| `/plans/:id` (DRAFT, chưa tối ưu) | Tìm toạ độ, sửa điểm lỗi | Soạn plan — tìm toạ độ | O, D | `GET /plans/{id}` (polling), `PATCH /plans/{id}/stops/{stopId}`, `POST /plans/{id}/geocode`, `GET /geocoding/search` | W05 |
+| `/plans/:id` (DRAFT, đã tối ưu) | Kết quả tối ưu, bản đồ | Soạn plan — sau khi tối ưu | O, D | `POST /plans/{id}/optimize`, `GET /plans/{id}` | W06 |
+| (hộp thoại trên `/plans/:id`) | Xác nhận giao việc, trùng ca, huỷ | Xác nhận giao việc | O, D | `POST /plans/{id}/publish`, `POST /plans/{id}/cancel` | W06 |
+| `/plans/:id` (PUBLISHED trở đi) | Theo dõi tiến độ | Theo dõi tiến độ | O, D | `GET /plans/{id}` (30 s) | W06 |
+| `*` | Không tìm thấy / không có quyền / tài xế dùng web | (không có artboard) | — | — | W01 |
+
+`/plans/:id` là **một route**: màn hiển thị chọn theo `status`, `optimizedAt`, `processingStatus` của plan (DRAFT chưa tối ưu → tìm toạ độ; DRAFT đã tối ưu → kết quả; PUBLISHED/IN_PROGRESS/COMPLETED/CANCELLED → theo dõi). Không làm route riêng cho từng trạng thái để link chia sẻ luôn đúng.
+
+### 1.1 Hành vi bắt buộc theo màn (ngoài layout trong prototype)
+
+- **Mọi màn đã đăng nhập:** header (logo → `/plans`, menu Kế hoạch/Xe/Thành viên/Cửa hàng, tên cửa hàng, tên người dùng → `/profile`); `aria-current` cho mục đang mở; theme sáng/tối theo hệ thống.
+- **Đăng nhập:** lỗi `INVALID_EMAIL_OR_PASSWORD` (hộp lỗi đầu form), `EMAIL_NOT_VERIFIED` (link sang `/verify-email`), `ACCOUNT_DISABLED`, `RATE_LIMITED` (khoá nút, đếm ngược `Retry-After`). DRIVER không có `canDrive` đăng nhập web → trang "Dùng app tài xế".
+- **Xác thực email:** 6 ô, tự nhảy ô, Backspace lùi, dán/tự điền mã 6 số vào ô bất kỳ; nút gửi lại khoá 60 s; sai 3 lần phải xin mã mới.
+- **Quên mật khẩu:** bước 1 luôn báo "nếu email có tài khoản, mã đã được gửi"; bước 3 trong 10 phút; xong thì mọi thiết bị bị đăng xuất.
+- **Nhận lời mời:** ô dán mã 43 ký tự; `INVITATION_INVALID` dưới ô; sau khi nhận: DRIVER → hướng dẫn mở app, khác → đăng nhập web.
+- **Hồ sơ:** đổi mật khẩu 2 bước (mật khẩu hiện tại → OTP + mật khẩu mới); danh sách phiên có "Thiết bị này", đăng xuất từng phiên, "Đăng xuất mọi thiết bị khác".
+- **Xe:** không xoá, chỉ tắt; lỗi theo field (`VEHICLE_NAME_REQUIRED`, `INVALID_CAPACITY`, `CAPACITY_UNIT_REQUIRED`, `VEHICLE_NAME_EXISTED`).
+- **Thành viên:** OWNER không đổi vai trò/trạng thái được của chính mình (chỉ "Đi giao"); vô hiệu hoá có hộp xác nhận nêu "bị đăng xuất ngay"; lời mời PENDING có "Thu hồi"; DISPATCHER xem chỉ đọc, không có tab lời mời.
+- **Cửa hàng:** kho đặt bằng ghim (bắt buộc toạ độ), địa chỉ tuỳ chọn; chưa có kho → cảnh báo vì không tạo được plan.
+- **Danh sách kế hoạch:** lọc ngày + trạng thái trên URL; trạng thái trống có nút "Tạo kế hoạch".
+- **Tạo/sửa kế hoạch:** tối đa 100 điểm, 20 phân công; tài xế chọn từ `assignable=true`, xe từ `active=true`; lỗi theo field map vào đúng ô của dòng (`stops[i].…`, `assignments[i].…`); `STORE_DEPOT_REQUIRED` → link sang `/store`; gửi `version` khi sửa.
+- **Tìm toạ độ:** polling khi `GEOCODING`; điểm `FAILED` nổi bật kèm lý do (`geocodeError`), sửa bằng địa chỉ mới hoặc ghim (hộp thoại bản đồ toàn màn hình có tìm địa chỉ, + / −); "Tối ưu lộ trình" khoá tới khi mọi điểm có toạ độ.
+- **Kết quả tối ưu:** mỗi tuyến một màu (`map-route-n`), bảng điểm theo `sequence`, chọn dòng ↔ marker; `unassignedStops` có `dropReason = INFEASIBLE` là cảnh báo, vẫn giao việc được; "Tối ưu lại" (polling `OPTIMIZING`, khoảng 10 s); bản đồ có zoom và nút mở rộng khung; chú giải có kho và tên tài xế.
+- **Giao việc:** hộp xác nhận nêu số tài xế, điểm chưa có tài xế, hậu quả; `SHIFT_OVERLAP` liệt kê phân công trùng và link `conflictPlanId`; thành công → toast "Đã giao việc cho N tài xế." + chuyển sang theo dõi.
+- **Huỷ:** được ở DRAFT và PUBLISHED; hộp xác nhận `danger`.
+- **Theo dõi:** trạng thái plan, đếm theo kết quả, mỗi tuyến dùng `routes[].status` của server (T45) và thanh tiến độ chia theo kết quả; lý do `FAILED`; marker theo kết quả; tự tải lại 30 s.
+
+## 2. App tài xế (`mobile/`)
+
+| Màn hình | Artboard | API | Task |
+|---|---|---|---|
+| Đăng nhập | Tài xế — đăng nhập | `POST /auth/log-in` (`X-Client-Platform: mobile`), `POST /auth/refresh` | M00 |
+| Tuyến hôm nay (đổi ngày) | Tài xế — tuyến hôm nay | `GET /driver/routes?date=` | M01 |
+| Chi tiết tuyến | Tài xế — chi tiết tuyến | `GET /driver/routes/{routeId}` | M01 |
+| Báo kết quả điểm giao | Tài xế — báo kết quả | `PATCH /driver/routes/{routeId}/stops/{stopId}/status` | M02 |
+| Quên mật khẩu, nhận lời mời | (dùng màn web tương ứng) | như web | M03 |
+
+Hành vi bắt buộc:
+- Chữ `body-touch` 16px, vùng chạm ≥ 48px, nút kết quả 56px xếp dọc ở nửa dưới (DESIGN_SYSTEM).
+- **Tuyến hôm nay:** mặc định hôm nay theo timezone store (server tự xử khi không gửi `date`); thẻ tuyến có `status` của route, `completedCount/stopCount`, giờ xuất phát; kéo xuống tải lại; ngày không có tuyến → trạng thái trống.
+- **Chi tiết tuyến:** tiêu đề `planName` (T45); điểm tiếp theo nổi bật (`StopCard current`) với "Chỉ đường" (Google Maps trên Android, Apple Maps trên iOS, dựng từ `lat/lon`, D-07) và "Báo kết quả"; các điểm còn lại; nhóm đã xong (thu gọn được) có lý do thất bại.
+- **Báo kết quả:** Đã giao / Không giao được (bắt buộc lý do ≤ 255, gợi ý nhanh) / Bỏ qua, mỗi nút có xác nhận vì không hoàn tác (P-34); xong → điểm tiếp theo; `routeStatus = COMPLETED` → "Bạn đã xong tuyến này"; mất mạng → giữ trong hàng đợi và gửi lại cùng nội dung (idempotent, P-36); `PLAN_NOT_ACTIVE` → báo plan đã huỷ/kết thúc, khoá nút.
+- Quên mật khẩu và nhận lời mời trên mobile: MVP mở trình duyệt tới màn web tương ứng (M03 quyết định có làm native không).
