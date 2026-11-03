@@ -5,12 +5,12 @@
 > Cột "Hiện trạng" ở mọi bảng: ✅ khớp spec và có test · 🟡 có nhưng còn lệch (ghi rõ lệch gì) · ❌ chưa có. Lịch sử triển khai theo task nằm ở `CURRENT_STATE.md` §5, không ghi ở đây.
 > Lần rà soát contract gần nhất: T44 (2026-10-29, P-32).
 
-## 0. Lệch hiện tại so với spec (cập nhật 2026-10-29, sau T30)
+## 0. Lệch hiện tại so với spec (cập nhật 2026-11-02, sau T31)
 
 - Chưa có 429 `RATE_LIMITED` cho `/register`, `/email/verify/resend`, `/log-in`, `/password/forgot`, `POST /store/invitations` (T40).
 - `GET /admin/users` chưa trả `storeId`, `status`.
 - §7: chưa có `driver-locations` (T32), `routes` (T28).
-- §8: chưa có `PATCH …/stops/{stopId}/status` (T31), `POST /driver/location` (T32), `directions` (T33).
+- §8: chưa có `POST /driver/location` (T32), `directions` (T33).
 - Endpoint vận hành ngoài `/api/v1`, giữ có chủ đích: `GET /actuator/health` (kèm `/liveness`, `/readiness`), Public, chỉ trả `status` và tên các `groups` (T05, `ARCHITECTURE.md` §12.1). Mọi endpoint actuator khác tắt.
 
 ## 1. Quy ước chung
@@ -308,7 +308,7 @@ Người gọi phải có `role=DRIVER` hoặc `canDrive=true` (D-21); người 
 |---|---|---|---|---|---|
 | `GET /driver/routes` | R | `date?` (`YYYY-MM-DD`, mặc định hôm nay theo timezone store) | `[{routeId, planId, planName, planDate, status, stopCount, completedCount, plannedStart}]`, theo `plannedStart` | 400 `MALFORMED_REQUEST` (ngày sai dạng) | ✅ |
 | `GET /driver/routes/{routeId}` | R | — | `DriverRouteDetail` | 404 | ✅ |
-| `PATCH /driver/routes/{routeId}/stops/{stopId}/status` | R | `{status: DELIVERED\|FAILED\|SKIPPED, failureReason?}` | 200 `{stop: DriverStop, routeStatus, planStatus}` | 404 · 422 `INVALID_STOP_TRANSITION` · 422 `FAILURE_REASON_REQUIRED` · 422 `PLAN_NOT_ACTIVE` | ❌ T31 |
+| `PATCH /driver/routes/{routeId}/stops/{stopId}/status` | R | `{status: DELIVERED\|FAILED\|SKIPPED, failureReason?}` | 200 `{stop: DriverStop, routeStatus, planStatus}` | 400 · 404 · 422 `INVALID_STOP_TRANSITION` · 422 `FAILURE_REASON_REQUIRED` · 422 `PLAN_NOT_ACTIVE` | ✅ |
 | `POST /driver/location` | R | `{points:[{lat, lon, accuracyMeters?, headingDegrees?, speedMps?, recordedAt}]}`, 1–100 điểm theo thứ tự thời gian (D-26) | 204 (Should). MVP chỉ giữ điểm có `recordedAt` mới nhất. | 400 | ❌ T32 |
 | `GET /driver/routes/{routeId}/directions` | R | — | `DirectionsResponse` (Should) | 404 · 502 | ❌ T33 |
 
@@ -332,6 +332,11 @@ Người gọi phải có `role=DRIVER` hoặc `canDrive=true` (D-21); người 
 
 - Dẫn đường (D-07): client tự dựng deep link Google Maps hoặc Apple Maps theo nền tảng từ `lat`/`lon` của stop; server không trả URL (P-32).
 - `PATCH …/status` của tài xế trả `routeStatus` (cùng nghĩa với `status` của route ở trên) và `planStatus` để app biết route/plan đã chuyển `IN_PROGRESS` hay `COMPLETED` (BR-11). Cập nhật trạng thái stop không tăng `version` của plan (§1). Chỉ đi từ `PENDING`; stop đã kết thúc không đổi được nữa (P-34).
+  - Route tìm được như `GET`, trừ một điểm (P-36): route của plan **đã publish rồi bị huỷ** trả 422 `PLAN_NOT_ACTIVE` thay vì 404, để app biết plan đã huỷ. Route của plan chưa từng publish, của tài xế khác hay store khác, và stop không thuộc route đó → 404 `NOT_FOUND`.
+  - Thứ tự kiểm tra: 404 → `INVALID_STOP_TRANSITION` (gửi `PENDING`) → **idempotent**: stop đã ở đúng trạng thái gửi lên → 200, không đổi gì (kể cả `failureReason`), kể cả khi plan đã `COMPLETED`, để app gửi lại được khi mất response → `PLAN_NOT_ACTIVE` (plan `COMPLETED`, `CANCELLED`) → `INVALID_STOP_TRANSITION` (stop đã kết thúc với trạng thái khác) → `FAILURE_REASON_REQUIRED` (`FAILED` mà `failureReason` trống hoặc toàn khoảng trắng).
+  - `failureReason` được cắt khoảng trắng hai đầu, chỉ lưu với `FAILED`; gửi kèm `DELIVERED`/`SKIPPED` thì bị bỏ qua.
+  - Plan chuyển `IN_PROGRESS` khi stop đầu tiên rời `PENDING`, `COMPLETED` (ghi `completedAt`) khi mọi stop đã gán route đều kết thúc; stop trong `unassignedStops` không tính. Hai tài xế cập nhật cùng lúc được xử lý tuần tự theo plan (khoá dòng plan), nên stop cuối luôn đưa plan sang `COMPLETED`.
+  - Mã validation: `STOP_STATUS_REQUIRED` (`status`), `INVALID_FAILURE_REASON_LENGTH` (`failureReason` ≤ 255). `status` không phải trạng thái stop → 400 `MALFORMED_REQUEST`.
 
 ## 9. Mã lỗi (`ErrorCode`)
 

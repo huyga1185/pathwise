@@ -1,5 +1,6 @@
 package uk.huy.pathwise.planning.controller;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
@@ -7,8 +8,10 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import uk.huy.pathwise.core.apiresponse.ApiResponse;
+import uk.huy.pathwise.planning.dto.request.UpdateStopStatusRequest;
 import uk.huy.pathwise.planning.dto.response.DriverRouteDetailResponse;
 import uk.huy.pathwise.planning.dto.response.DriverRouteSummaryResponse;
+import uk.huy.pathwise.planning.dto.response.DriverStopUpdateResponse;
 import uk.huy.pathwise.planning.service.DriverRouteService;
 import uk.huy.pathwise.shared.identity.AuthenticatedUser;
 
@@ -36,5 +39,13 @@ public class DriverRouteController {
     public ResponseEntity<ApiResponse<DriverRouteDetailResponse>> getRoute(@AuthenticationPrincipal AuthenticatedUser actor,
                                                                            @PathVariable("routeId") long routeId) {
         return ResponseEntity.ok(new ApiResponse<>(driverRouteService.getRoute(actor.identity(), routeId)));
+    }
+
+    @PatchMapping("/{routeId}/stops/{stopId}/status")
+    public ResponseEntity<ApiResponse<DriverStopUpdateResponse>> updateStopStatus(@AuthenticationPrincipal AuthenticatedUser actor,
+                                                                                  @PathVariable long routeId,
+                                                                                  @PathVariable long stopId,
+                                                                                @Valid @RequestBody UpdateStopStatusRequest request) {
+        return ResponseEntity.ok(new ApiResponse<>(driverRouteService.updateStopStatus(actor.identity(), routeId, stopId, request)));
     }
 }

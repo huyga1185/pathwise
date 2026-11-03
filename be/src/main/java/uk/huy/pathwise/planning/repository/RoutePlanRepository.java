@@ -5,12 +5,14 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import uk.huy.pathwise.planning.model.PlanStatus;
 import uk.huy.pathwise.planning.model.RoutePlan;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Collection;
 import java.util.List;
@@ -42,6 +44,17 @@ public interface RoutePlanRepository extends JpaRepository<RoutePlan, Long> {
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT p FROM RoutePlan p WHERE p.storeId = :storeId AND p.planDate = :planDate ORDER BY p.id")
     List<RoutePlan> findAllOfDayForUpdate(@Param("storeId") long storeId, @Param("planDate") LocalDate planDate);
+
+    /**
+     * Moves a running plan along as its stops finish (BR-11) without touching {@code version}: a bulk update is outside
+     * the optimistic lock, so the dispatcher can still cancel with the version they read (P-32). Pending changes are
+     * flushed first; the plan already loaded keeps its old status.
+     *
+     * @param completedAt set with COMPLETED, null otherwise
+     */
+    @Modifying(flushAutomatically = true)
+    @Query("UPDATE RoutePlan p SET p.status = :status, p.completedAt = :completedAt WHERE p.id = :id")
+    void updateStatus(@Param("id") long id, @Param("status") PlanStatus status, @Param("completedAt") Instant completedAt);
 
     /**
      * @param planDate only this day, if set

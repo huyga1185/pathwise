@@ -30,4 +30,13 @@ public interface PlanRouteRepository extends JpaRepository<PlanRoute, Long> {
                                         @Param("storeId") long storeId,
                                         @Param("driverId") long driverId,
                                         @Param("statuses") Collection<PlanStatus> statuses);
+
+    /**
+     * Only the plan id, without loading anything: the plan is then locked as the first read of the updating
+     * transaction (F-44).
+     */
+    @Query("SELECT r.plan.id FROM PlanRoute r WHERE r.id = :id AND r.storeId = :storeId AND r.driverId = :driverId")
+    Optional<Long> findDriverRoutePlanId(@Param("id") long id,
+                                         @Param("storeId") long storeId,
+                                         @Param("driverId") long driverId);
 }
