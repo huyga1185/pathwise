@@ -7,6 +7,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NonNull;
+import org.slf4j.MDC;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -14,6 +15,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import uk.huy.pathwise.auth.token.jwt.dto.AccessTokenVerification;
 import uk.huy.pathwise.auth.token.jwt.infrastructure.dto.JwtRejectReason;
 import uk.huy.pathwise.auth.token.jwt.manager.AccessTokenManager;
+import uk.huy.pathwise.core.web.LogContextFilter;
 import uk.huy.pathwise.shared.identity.AuthenticatedUser;
 
 import java.io.IOException;
@@ -53,5 +55,8 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     private static void authenticate(AuthenticatedUser user) {
         List<SimpleGrantedAuthority> authorities = List.of(new SimpleGrantedAuthority("ROLE_" + user.identity().role().name()));
         SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(user, null, authorities));
+        // Cleared with the rest of the log context when the request ends (LogContextFilter).
+        MDC.put(LogContextFilter.USER_ID, String.valueOf(user.identity().id()));
+        if (user.identity().storeId() != null) MDC.put(LogContextFilter.STORE_ID, String.valueOf(user.identity().storeId()));
     }
 }

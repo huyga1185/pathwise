@@ -30,7 +30,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 /**
  * T40 acceptance: rate limits of the auth endpoints and invitations (P-16, API_SPEC §2, §4). Requests under test come
- * from their own IP through {@code X-Forwarded-For}; the helpers that create accounts use the default IP, whose limits
+ * from their own remote address; the helpers that create accounts use the default IP, whose limits
  * stay above what they need.
  */
 @AutoConfigureMockMvc
@@ -201,7 +201,10 @@ class RateLimitIntegrationTest extends AbstractIntegrationTest {
 
     private ResultActions postFrom(String ip, String path, String body) throws Exception {
         return mockMvc.perform(post(path)
-                .header("X-Forwarded-For", ip)
+                .with(request -> {
+                    request.setRemoteAddr(ip);
+                    return request;
+                })
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(body));
     }

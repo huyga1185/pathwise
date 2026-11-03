@@ -17,6 +17,7 @@
    - `SPRING_PROFILES_ACTIVE`: `prod` hoặc `staging`.
    - Thay **mọi** giá trị `change-me`. JWT secret: `openssl rand -base64 32`. Mật khẩu DB: `openssl rand -base64 24`.
    - SMTP thật (ví dụ Brevo) và các `SERVICE_IDENTITY_*`.
+   - `CORS_ALLOWED_ORIGINS`: origin của web app gọi API từ trình duyệt (đúng scheme và domain, ví dụ `https://app.example.com`, nhiều origin cách nhau dấu phẩy). Để trống thì không origin nào khác gọi được; app mobile không bị ảnh hưởng.
    - `chmod 600 .env`. Không commit file này ở bất kỳ đâu.
 4. Đăng nhập GHCR (cần nếu package đang private): tạo Personal Access Token (classic) chỉ với quyền `read:packages` tại GitHub → Settings → Developer settings → Personal access tokens, rồi:
    ```bash
@@ -28,6 +29,7 @@
        reverse_proxy 127.0.0.1:8080
    }
    ```
+   Profile `staging`/`prod` bật `server.forward-headers-strategy=native`: app lấy IP client và HTTPS từ `X-Forwarded-For`/`X-Forwarded-Proto` của proxy, chỉ khi request tới từ địa chỉ nội bộ (Caddy trên host đi vào container qua docker bridge `172.x`). Proxy phải tự đặt hai header này (Caddy làm mặc định); IP này dùng cho danh sách session và rate limit (F-21).
 
 ## 2. Lần deploy đầu
 
