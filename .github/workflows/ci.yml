@@ -43,9 +43,17 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
           cache: maven
+      # Client contract and theme generators (docs/client/ARCHITECTURE.md §3, §8); fast, so before the build.
+      - name: Script tests
+        working-directory: .
+        run: python3 -B -m unittest discover -s scripts/tests
       # Integration tests start MariaDB 11.8 and Redis via Testcontainers (Docker is available on ubuntu-latest).
       - name: Build and test
         run: ./mvnw -B -ntp verify
+      # ApiSpecContractIntegrationTest wrote target/openapi.json; clients generate code from api/openapi.json (P-41).
+      - name: Check API contract snapshot
+        working-directory: .
+        run: python3 -B scripts/openapi_snapshot.py check
       - name: Coverage summary
         if: always() && hashFiles('be/target/site/jacoco/jacoco.csv') != ''
         run: |

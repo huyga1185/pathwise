@@ -44,6 +44,12 @@ File nóng của client (không hai task song song cùng sửa): `web/package.js
   - README gốc: mục "Client" trỏ tới `docs/client/`.
 - **Ngoài phạm vi:** tạo project web/mobile.
 - **Acceptance:** chạy `sync_openapi.sh` hai lần liên tiếp không tạo diff; CI fail khi sửa tay `api/openapi.json`; `build_tokens.py` sinh CSS có đủ biến của mọi token màu (hai theme), khoảng cách, bo góc, bóng, gradient; test của script chạy bằng `python3 -m unittest`.
+- **Phát sinh khi làm (2026-11-03):**
+  - Chuẩn hoá và so sánh snapshot tách thành `scripts/openapi_snapshot.py` (`write`/`check`), dùng chung cho `sync_openapi.sh` và CI. Dạng chuẩn bỏ `servers` (springdoc ghi `http://localhost`, phụ thuộc môi trường) và sắp xếp key: hai lần chạy cho file giống hệt (đã kiểm), snapshot đầu tiên 38 path, 77 schema, có field của T45.
+  - CI (`ci.yml`, job `ci`): bước "Script tests" trước build, "Check API contract snapshot" sau `./mvnw verify`. `.gitignore` thêm `__pycache__/`.
+  - `build_tokens.py` có thêm `--only web|mobile`, `--tokens`, `--web-out`, `--mobile-out`; CSS có `color-scheme` theo theme và class `.pw-type-<style>`; Dart dùng tên `PwColorTokens`, `PwSpacing`, `PwRadius`, `PwGradients`, `PwTypeStyles`.
+  - Flutter trên máy dev hỏng (`Wrong full snapshot version`, công cụ Flutter lệch Dart SDK 3.13.7), nên file Dart sinh ra được kiểm bằng `dart analyze` với stub các kiểu của `package:flutter/painting.dart` (không lỗi). M00 cần cài lại Flutter trước (xem M00).
+  - Chưa commit file sinh (`tokens.css`, `tokens.g.dart`) và chưa thêm `--check` vào CI: việc của W01 (`--only web`) và M00 (`--only mobile`).
 
 ## 2. Web dispatcher
 
@@ -58,6 +64,7 @@ File nóng của client (không hai task song song cùng sửa): `web/package.js
   - `shared/errors` (bảng UX_BRIEF §6, `fieldErrors`), `shared/format` (km, thời lượng, giờ theo timezone, điện thoại), `shared/i18n/vi.ts`.
   - Màn Đăng nhập theo prototype (thẻ `radius-lg` + `shadow-raised`, panel `brand-gradient`), khôi phục phiên khi tải trang, đăng xuất; trang 404, không có quyền, "Dùng app tài xế".
   - CI: job `web` (install frozen, lint, typecheck, test, build) chạy khi đổi `web/**`, `api/**`, `brand/**`.
+- **Từ W00:** chạy `python3 scripts/build_tokens.py --only web` rồi commit `tokens.css`; job `web` thêm `python3 scripts/build_tokens.py --check --only web`.
 - **Acceptance:** đăng nhập/đăng xuất/khôi phục phiên chạy với MSW và với backend thật qua proxy; hai request 401 cùng lúc chỉ gọi refresh một lần (test); mỗi lỗi đăng nhập của SCREENS §1.1 có test; `statusInfo` và `formatPhone` có test bám bảng của DESIGN_SYSTEM; theme tối không có chữ dưới 4,5:1 trên component (test axe trên trang component).
 
 ### W02. Màn tài khoản
@@ -99,6 +106,7 @@ File nóng của client (không hai task song song cùng sửa): `web/package.js
 ### M00. Khung Flutter, theme, đăng nhập
 - **Ước lượng:** 1,5 ngày · **Quyết định:** P-44, P-46 · **Màn:** Tài xế — đăng nhập
 - **Phạm vi:** project `mobile/` (Android + iOS), `flutter_lints` nghiêm; cấu trúc ARCHITECTURE §2; client sinh `dart-dio` từ `api/openapi.json` vào `mobile/packages/pathwise_api`; dio interceptor (`X-Client-Platform: mobile`, single-flight refresh, refresh token trong `flutter_secure_storage`); theme từ `tokens.g.dart` (sáng/tối), font bundle; widget `PwButton`, `TextField`, `StatusPill`, `StopCard`, `ProgressBar`, `PwDialog`; go_router với redirect theo phiên; màn đăng nhập; app icon/splash từ `brand/logo`; CI job `mobile` (analyze, test).
+- **Từ W00:** Flutter trên máy dev đang hỏng (`flutter create` báo `Wrong full snapshot version`; Dart SDK 3.13.7 chạy được): chủ dự án cài lại Flutter stable (khuyến nghị dùng FVM, ghi phiên bản vào `mobile/.fvmrc`) trước khi làm. Chạy `python3 scripts/build_tokens.py --only mobile` rồi commit `tokens.g.dart`; job `mobile` thêm `--check --only mobile`.
 - **Acceptance:** đăng nhập, khôi phục phiên sau khi tắt mở app, refresh khi access hết hạn (test interceptor với server giả); người không phải tài xế → màn không có quyền.
 
 ### M01. Tuyến và chi tiết tuyến

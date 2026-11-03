@@ -18,6 +18,7 @@ pathwise/
 │   └── design-system/      # tokens.json + component tham chiếu (P-42)
 ├── scripts/
 │   ├── sync_openapi.sh     # chạy test backend sinh openapi.json rồi chép vào api/
+│   ├── openapi_snapshot.py # chuẩn hoá snapshot (write) và kiểm drift (check), dùng chung cho script và CI
 │   └── build_tokens.py     # tokens.json → web CSS variables + mobile Dart theme
 └── docs/client/            # kiến trúc, kế hoạch, màn hình, design system của client
 ```
@@ -73,8 +74,8 @@ Mỗi port là một `interface` (TS) hoặc `abstract interface class` (Dart). 
 
 ## 3. Hợp đồng API (P-41)
 
-- `api/openapi.json` là snapshot sinh từ backend (`ApiSpecContractIntegrationTest` / test OpenAPI ghi `be/target/openapi.json`; `scripts/sync_openapi.sh` chạy và chép sang). Commit cùng PR đổi API của backend.
-- CI kiểm **drift**: job backend so `be/target/openapi.json` với `api/openapi.json`; khác nhau thì fail kèm hướng dẫn chạy `sync_openapi.sh`.
+- `api/openapi.json` là snapshot sinh từ backend (`ApiSpecContractIntegrationTest` ghi `be/target/openapi.json`; `scripts/sync_openapi.sh` chạy test đó rồi gọi `openapi_snapshot.py write`). Dạng chuẩn: bỏ `servers` (phụ thuộc môi trường), sắp xếp key, thụt 2 dấu cách, nên chạy lại không tạo diff. Commit cùng PR đổi API của backend.
+- CI kiểm **drift**: job `ci` chạy `openapi_snapshot.py check` sau `./mvnw verify`; khác nhau thì fail, in diff và lệnh `sync_openapi.sh`.
 - Web sinh kiểu bằng `openapi-typescript` → `web/src/data/schema.d.ts` (commit, không sửa tay); gọi qua `openapi-fetch`. Mobile sinh bằng `openapi-generator` (generator `dart-dio`) → package `mobile/packages/pathwise_api` (commit, không sửa tay).
 - `API_SPEC.md` vẫn là hợp đồng nghiệp vụ; OpenAPI là bản máy đọc của nó. Client thấy hai bên lệch thì báo, không sửa client cho khớp chỗ sai.
 - **Client không đổi API.** Thiếu field hay endpoint → ghi vào báo cáo task, chủ dự án tạo task backend (mẫu T45).
@@ -144,8 +145,9 @@ Theo API_SPEC §2 và UX_BRIEF §3.
 ## 8. Giao diện và theme (P-42)
 
 - `scripts/build_tokens.py` sinh từ `brand/design-system/tokens.json`:
-  - web: `web/src/shared/theme/tokens.css` (`:root,[data-theme=light]` và `[data-theme=dark]`, giống `tokens.css` của canvas);
-  - mobile: `mobile/lib/shared/theme/tokens.g.dart` (`PwColors.light/dark`, `PwSpacing`, `PwRadius`, `PwTextStyles`).
+  - web: `web/src/shared/theme/tokens.css`: `:root,[data-theme="light"]` và `[data-theme="dark"]` (màu, bóng, `color-scheme`), `:root` (khoảng cách, bo góc, gradient, `--font-sans`), class `.pw-type-<style>` cho mỗi kiểu chữ;
+  - mobile: `mobile/lib/shared/theme/tokens.g.dart`: `PwColorTokens.light/dark` (màu + bóng, tên camelCase: `surfaceRaised`, `mapRoute1`), `PwSpacing`, `PwRadius`, `PwGradients`, `PwTypeStyles` (letter-spacing em đổi ra logical px).
+  Script đọc giá trị chặt: màu tên (`red`), `var()`, bóng `inset` hay đơn vị lạ làm build dừng thay vì sinh theme sai. `--only web|mobile` để mỗi client sinh/kiểm phần của mình.
   File sinh có dòng đầu "generated, do not edit"; CI kiểm file sinh khớp tokens.json.
 - Component: web port 9 component tham chiếu sang TSX trong `shared/ui/` giữ **đúng tên và props** của `components.d.ts`; mobile làm widget cùng tên (`PwButton`, `StatusPill`, `StopCard`…) cùng ý nghĩa props.
 - Theme: mặc định theo hệ điều hành, người dùng đổi được, nhớ trên máy (`localStorage` web / `shared_preferences` mobile). Bản đồ luôn theme sáng.

@@ -1,6 +1,6 @@
 # PathWise
 
-Backend Spring Boot 4.1 / Java 21 (`be/`) cho SaaS lập tuyến giao hàng đa tenant. Tài liệu thiết kế nằm trong `docs/`, quy tắc cho coding agent ở `AGENTS.md`.
+SaaS lập tuyến giao hàng đa tenant: backend Spring Boot 4.1 / Java 21 (`be/`), web dispatcher (`web/`) và app tài xế (`mobile/`) (client đang dựng, xem mục Client). Tài liệu thiết kế nằm trong `docs/`, quy tắc cho coding agent ở `AGENTS.md`.
 
 ## Yêu cầu môi trường
 
@@ -37,6 +37,14 @@ cd be && ./mvnw test
 ```
 
 Chỉ cần Docker: test tích hợp tự bật MariaDB và Redis bằng Testcontainers, không dùng stack ở trên.
+
+## Client
+
+Kế hoạch, kiến trúc và quy tắc của web và app tài xế: `docs/client/` (bắt đầu từ `docs/client/README.md`). Hai client dùng chung:
+
+- `api/openapi.json`: hợp đồng API máy đọc, sinh từ backend. Đổi API thì chạy `scripts/sync_openapi.sh` (cần Docker) và commit file này cùng PR; CI fail khi file lệch backend.
+- `brand/design-system/tokens.json`: token giao diện. `python3 scripts/build_tokens.py` sinh theme cho web và mobile; `--check` kiểm file sinh còn khớp.
+- Test của các script: `python3 -m unittest discover -s scripts/tests`.
 
 ## Xem email (OTP, lời mời)
 
