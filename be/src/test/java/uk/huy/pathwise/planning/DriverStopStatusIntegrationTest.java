@@ -87,6 +87,7 @@ class DriverStopStatusIntegrationTest extends AbstractIntegrationTest {
         dispatcherView(store, planId)
                 .andExpect(jsonPath("$.data.status").value("IN_PROGRESS"))
                 .andExpect(jsonPath("$.data.version").value(versionBefore))
+                .andExpect(jsonPath("$.data.routes[0].status").value("IN_PROGRESS"))
                 .andExpect(jsonPath("$.data.routes[0].stops[0].status").value("DELIVERED"));
     }
 
@@ -135,6 +136,33 @@ class DriverStopStatusIntegrationTest extends AbstractIntegrationTest {
         updateStatus(store.driver(), routeId, stopsOf(routeId)[0], DELIVERED)
                 .andExpect(jsonPath("$.data.routeStatus").value("COMPLETED"))
                 .andExpect(jsonPath("$.data.planStatus").value("IN_PROGRESS"));
+    }
+
+    @Test
+    void getPlan_whenOneOfTwoRoutesCompleted_eachRouteShowsTheStatusItsDriverSees() throws Exception {
+        TestStore store = storeWithDepot();
+        TestUser colleague = users.addMember(store.id(), UserRole.DRIVER, false);
+        long planId = publishedPlan(store, oneBoxStops(), assignment(store.driver().id(), vehicle(store, "Xe 1", 1))
+                + "," + assignment(colleague.id(), vehicle(store, "Xe 2", 1)));
+        long routeId = routeOf(planId, store.driver());
+        long colleagueRouteId = routeOf(planId, colleague);
+
+        updateStatus(store.driver(), routeId, stopsOf(routeId)[0], DELIVERED).andExpect(status().isOk());
+
+        String plan = dispatcherView(store, planId)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.status").value("IN_PROGRESS"))
+                .andReturn().getResponse().getContentAsString();
+        assertThat(routeStatusIn(plan, routeId)).isEqualTo("COMPLETED");
+        assertThat(routeStatusIn(plan, colleagueRouteId)).isEqualTo("PENDING");
+        getRoute(store.driver(), routeId).andExpect(jsonPath("$.data.status").value("COMPLETED"));
+        getRoute(colleague, colleagueRouteId).andExpect(jsonPath("$.data.status").value("PENDING"));
+    }
+
+    private static String routeStatusIn(String planDetail, long routeId) {
+        List<String> statuses = JsonPath.read(planDetail, "$.data.routes[?(@.id == " + routeId + ")].status");
+        assertThat(statuses).hasSize(1);
+        return statuses.getFirst();
     }
 
     @Test

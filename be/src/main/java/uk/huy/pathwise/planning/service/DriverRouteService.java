@@ -79,6 +79,7 @@ public class DriverRouteService {
         if (stops.isEmpty()) throw new AppException(ErrorCode.NOT_FOUND);
         return new DriverRouteDetailResponse(route.getId(),
                 route.getPlan().getId(),
+                route.getPlan().getName(),
                 route.getPlan().getPlanDate(),
                 PlanLifecycle.routeStatus(statuses(stops)),
                 planMapper.toStart(route),

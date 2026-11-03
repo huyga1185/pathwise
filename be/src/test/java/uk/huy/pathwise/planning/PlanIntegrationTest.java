@@ -89,6 +89,7 @@ class PlanIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.data.routes[0].start.lon").value(108.2))
                 .andExpect(jsonPath("$.data.routes[0].end.address").value("Kho Hải Châu"))
                 .andExpect(jsonPath("$.data.routes[0].load").value(nullValue()))
+                .andExpect(jsonPath("$.data.routes[0].status").value("PENDING"))
                 .andExpect(jsonPath("$.data.routes[0].stops", hasSize(0)))
                 .andExpect(jsonPath("$.data.unassignedStops[*].label", contains("ĐH-1", "ĐH-2")))
                 .andExpect(jsonPath("$.data.unassignedStops[0].address").value("12 Lê Duẩn, Đà Nẵng"))

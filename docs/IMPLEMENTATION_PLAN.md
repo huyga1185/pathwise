@@ -69,6 +69,7 @@ Bảng dependency (→ nghĩa là "phải xong trước"):
 | T40 | T16 | T30, T31 |
 | T41 | T10 | T30, T31 |
 | T43 | toàn bộ Must | — |
+| T45 | T31, T43 | T32, T33, T28 |
 | T28 (Should) | T26 | T30+ |
 | T32 (Should) | T30 | T31 |
 | T33 (Should) | T30, T22 | T31 |
@@ -386,6 +387,20 @@ T42 cũ (Docker, compose, README) đã được gộp vào T05 và T07 trong M0 
 - **Phạm vi:** integration test kịch bản E2E trong `REQUIREMENTS.md` §6.2 (Testcontainers, matrix giả); checklist demo thủ công với Nominatim/OSRM thật; đối chiếu OpenAPI với `API_SPEC.md`; cập nhật `CURRENT_STATE.md`.
 - **Acceptance criteria:** toàn bộ tiêu chí MVP trong `REQUIREMENTS.md` §6 được đánh dấu kèm bằng chứng.
 - **Phát sinh khi làm (2026-11-03), chủ dự án chọn:** bằng chứng và checklist ở file mới `docs/ACCEPTANCE.md`; đối chiếu OpenAPI bằng test tự động (method + path, `ApiSpecContractIntegrationTest`, đọc `docs/API_SPEC.md`) cộng một lần so field thủ công; agent chạy demo local, chủ dự án làm phần VPS. Thêm `scripts/acceptance_demo.py` (thư viện chuẩn Python) chạy kịch bản trên stack thật. Máy chạy demo không vào được Nominatim nên geocode thành công với Nominatim thật còn chờ chủ dự án (ACCEPTANCE §2.2). Phát hiện F-47 (tài liệu OpenAPI), F-48 (log geocode thiếu nguyên nhân).
+
+### T45. Bổ sung field cho client (phát sinh 2026-11-03)
+- **Tầng:** Must (trước khi dựng `web/` và `mobile/`) · **Ước lượng:** 0,25 ngày · **Quyết định:** P-39, P-35 · **FR:** P07, D01
+- **Nguồn:** thiết kế màn hình client (Claude Design, sau bước chuẩn bị client) cho thấy hai chỗ client phải tự bù dữ liệu mà server đã có.
+- **Phạm vi:**
+  1. `PlanDetail.routes[].status` (`RouteStatus`: `PENDING`, `IN_PROGRESS`, `COMPLETED`), tính bằng `PlanLifecycle.routeStatus` từ các stop của route, cùng nghĩa với `status` của route phía tài xế (P-35) và `routeStatus` của T31. Màn theo dõi của dispatcher hiện phải tự đếm stop để hiện trạng thái từng tuyến, tức là lặp lại quy tắc của server ở client.
+  2. `DriverRouteDetail.planName`: tên plan, như `GET /driver/routes` đã có. Hiện app phải mang tên từ màn danh sách sang, nên mở thẳng chi tiết tuyến (thông báo, khởi động lại app, deep link) thì không có tên để hiện.
+  3. Docs: `API_SPEC` §7, §8 (ví dụ JSON); `docs/ux/samples` sinh lại từ `MvpScenarioIntegrationTest`; `UX_BRIEF` nếu có chỗ nói client tự tính.
+- **Ngoài phạm vi:** không đổi schema, không lưu trạng thái route vào DB (P-35 giữ nguyên: tính lúc đọc); không thêm field nào khác; không đổi `DriverRouteSummary` hay response cập nhật stop.
+- **Acceptance criteria:**
+  - `GET /plans/{id}` của plan DRAFT (kể cả sau optimize) có `routes[].status = PENDING`; route không có stop cũng `PENDING`.
+  - Tài xế giao một stop → `GET /plans/{id}` của dispatcher có route đó `IN_PROGRESS`; xong mọi stop của route → `COMPLETED`, route của tài xế khác vẫn theo stop của riêng nó; giá trị luôn bằng `status` mà tài xế thấy ở `GET /driver/routes/{routeId}`.
+  - `GET /driver/routes/{routeId}` có `planName` bằng tên plan.
+  - Chỉ thêm field: test hiện có không phải sửa assertion cũ; `./mvnw test` xanh.
 
 ## 8. Should (làm nếu kịp, theo thứ tự)
 

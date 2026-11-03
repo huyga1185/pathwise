@@ -5,7 +5,7 @@
 > Cột "Hiện trạng" ở mọi bảng: ✅ khớp spec và có test · 🟡 có nhưng còn lệch (ghi rõ lệch gì) · ❌ chưa có. Lịch sử triển khai theo task nằm ở `CURRENT_STATE.md` §5, không ghi ở đây.
 > Lần rà soát contract gần nhất: T44 (2026-10-29, P-32).
 
-## 0. Lệch hiện tại so với spec (cập nhật 2026-11-03, sau T41)
+## 0. Lệch hiện tại so với spec (cập nhật 2026-11-03, sau T45)
 
 - `GET /admin/users` chưa trả `storeId`, `status`.
 - §7: chưa có `driver-locations` (T32), `routes` (T28).
@@ -237,6 +237,7 @@ Ghi chú:
   "optimizedAt": "…|null", "totalDistanceMeters": 52340, "totalDurationSeconds": 9800,
   "routes": [
     { "id": 11, "driver": { "id": 21, "fullName": "Tùng", "role": "DRIVER" }, "vehicle": { "id": 5, "name": "Xe 1", "capacity": 40, "capacityUnit": "BOX" },
+      "status": "PENDING|IN_PROGRESS|COMPLETED",            // của route, như §8 (P-35, P-39); plan DRAFT luôn PENDING
       "shiftStart": "08:00", "shiftEnd": "17:00", "maxDistanceMeters": 80000,
       "start": { "address": "…", "lat": 16.05, "lon": 108.2 }, "end": { "address": "…", "lat": 16.05, "lon": 108.2 },
       "plannedDistanceMeters": 30100, "plannedDurationSeconds": 5400,
@@ -312,7 +313,7 @@ Ghi chú:
 
 Người gọi phải có `role=DRIVER` hoặc `canDrive=true` (D-21); người khác → 403. Tài xế chỉ thấy route có `driverId = mình`, **có ít nhất một stop** (P-34), thuộc plan PUBLISHED, IN_PROGRESS hoặc COMPLETED của store mình. Route khác (của tài xế khác, store khác, không có stop, plan DRAFT hoặc CANCELLED) không có trong danh sách và trả 404.
 
-`status` của route (P-35) là trạng thái **riêng của route**, tính từ các stop của nó, không phải trạng thái plan: `PENDING` (chưa stop nào rời PENDING), `IN_PROGRESS`, `COMPLETED` (mọi stop đã kết thúc). Tài xế đã giao xong thấy `COMPLETED` dù route khác của plan vẫn đang chạy. `completedCount` đếm stop đã kết thúc (DELIVERED, FAILED, SKIPPED).
+`status` của route (P-35) là trạng thái **riêng của route**, tính từ các stop của nó, không phải trạng thái plan: `PENDING` (chưa stop nào rời PENDING), `IN_PROGRESS`, `COMPLETED` (mọi stop đã kết thúc). Tài xế đã giao xong thấy `COMPLETED` dù route khác của plan vẫn đang chạy. Dispatcher thấy cùng giá trị ở `PlanDetail.routes[].status` (§7, P-39). `completedCount` đếm stop đã kết thúc (DELIVERED, FAILED, SKIPPED).
 
 | Method & path | Quyền | Request | Response | Lỗi chính | Hiện trạng |
 |---|---|---|---|---|---|
@@ -325,7 +326,7 @@ Người gọi phải có `role=DRIVER` hoặc `canDrive=true` (D-21); người 
 ```jsonc
 // DriverRouteDetail
 {
-  "routeId": 11, "planId": 7, "planDate": "2026-10-22", "status": "PENDING|IN_PROGRESS|COMPLETED",   // của route
+  "routeId": 11, "planId": 7, "planName": "Giao sáng 22/10", "planDate": "2026-10-22", "status": "PENDING|IN_PROGRESS|COMPLETED",   // status: của route
   "start": { "address": "…", "lat": 16.05, "lon": 108.2 }, "end": { "address": "…", "lat": 16.05, "lon": 108.2 },  // D-20
   "stops": [ DriverStop, … ]   // theo sequence
 }

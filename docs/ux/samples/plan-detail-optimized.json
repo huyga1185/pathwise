@@ -37,6 +37,7 @@
           "capacity": 30,
           "capacityUnit": "BOX"
         },
+        "status": "PENDING",
         "shiftStart": "08:00",
         "shiftEnd": "17:00",
         "maxDistanceMeters": null,
@@ -342,6 +343,7 @@
           "capacity": 30,
           "capacityUnit": "BOX"
         },
+        "status": "PENDING",
         "shiftStart": "08:00",
         "shiftEnd": "17:00",
         "maxDistanceMeters": null,
