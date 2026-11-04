@@ -37,6 +37,7 @@ const ALL: Record<StatusKind, string[]> = {
   processing: ['GEOCODING', 'OPTIMIZING'],
   invitation: ['PENDING', 'ACCEPTED', 'REVOKED', 'EXPIRED'],
   member: ['PENDING_VERIFICATION', 'ACTIVE', 'DISABLED'],
+  vehicle: ['ACTIVE', 'INACTIVE'],
   job: ['QUEUED', 'RUNNING', 'SUCCEEDED', 'FAILED'],
 };
 

@@ -172,7 +172,8 @@ Theo API_SPEC §2 và UX_BRIEF §3.
 | Accessibility | `axe-core` trong test (tắt `color-contrast` vì jsdom không vẽ) + test tương phản trên giá trị token | semantics test cho nút chính | W01 / M03 |
 
 - Không test nào gọi MapTiler hay dịch vụ ngoài thật; bản đồ trong test dùng `Basemap` giả (tile trống).
-- Fixture lấy từ `docs/ux/samples/*.json` (dữ liệu thật từ test E2E backend); thêm fixture mới thì sinh từ backend, không viết tay JSON lệch hợp đồng.
+- Fixture lấy từ `docs/ux/samples/*.json` (dữ liệu thật từ test E2E backend); thêm fixture mới thì sinh từ backend, không viết tay JSON lệch hợp đồng. Web đọc bằng `sample(name)` của `src/test/samples.ts` (W03).
+- Web (W03): query dùng chung nhiều feature đặt ở `data/` (`data/storeQuery.ts` cho header, hồ sơ, thành viên); rule kiểm form dùng chung ở `shared/forms/rules.ts` (`requiredRule`, `emailRules`, `passwordRules`).
 
 ## 11. Build, CI, môi trường
 

@@ -1,5 +1,7 @@
 export { Button, buttonClass, type ButtonProps } from './Button';
 export { TextField, type TextFieldProps } from './TextField';
+export { SelectField, type SelectFieldProps, type SelectOption } from './SelectField';
+export { Checkbox, type CheckboxProps } from './Checkbox';
 export { StatusPill, type StatusPillProps } from './StatusPill';
 export { ProgressBar, type ProgressBarProps } from './ProgressBar';
 export { DataTable, type DataTableColumn, type DataTableProps } from './DataTable';

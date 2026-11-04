@@ -1,8 +1,5 @@
-import { useQuery } from '@tanstack/react-query';
 import { Outlet } from 'react-router';
-import { useApi } from '@/data/ApiContext';
-import { unwrap } from '@/data/http';
-import { queryKeys } from '@/data/queryKeys';
+import { useStoreQuery } from '@/data/storeQuery';
 import { useSession } from '@/features/auth';
 import { vi } from '@/shared/i18n/vi';
 import { useTheme } from '@/shared/theme/ThemeProvider';
@@ -17,10 +14,9 @@ const NAV = [
 
 /** Layout of every dispatcher page: header with menu, store, user, theme switch and sign out. */
 export function AppLayout() {
-  const api = useApi();
   const { session, logOut } = useSession();
   const { theme, setPreference } = useTheme();
-  const store = useQuery({ queryKey: queryKeys.store, queryFn: () => unwrap(api.GET('/api/v1/store')) });
+  const store = useStoreQuery();
   const user = session.status === 'authenticated' ? session.user : null;
   return (
     <div className="pw-app">

@@ -1,5 +1,7 @@
 import { createBrowserRouter, Navigate, type RouteObject } from 'react-router';
 import { ProfilePage } from '@/features/account';
+import { VehiclesPage } from '@/features/fleet';
+import { MembersPage } from '@/features/members';
 import { AcceptInvitePage, ForgotPasswordPage, LoginPage, RegisterPage, VerifyEmailPage } from '@/features/auth';
 import { vi } from '@/shared/i18n/vi';
 import { AppLayout } from './AppLayout';
@@ -40,8 +42,8 @@ export const routes: RouteObject[] = [
     children: [
       { path: '/', element: <Navigate to="/plans" replace /> },
       { path: '/plans', element: <ComingSoonPage title={vi.nav.plans} task="W05" /> },
-      { path: '/vehicles', element: <ComingSoonPage title={vi.nav.vehicles} task="W03" /> },
-      { path: '/members', element: <ComingSoonPage title={vi.nav.members} task="W03" /> },
+      { path: '/vehicles', element: <VehiclesPage /> },
+      { path: '/members', element: <MembersPage /> },
       { path: '/store', element: <ComingSoonPage title={vi.nav.store} task="W04" /> },
       { path: '/profile', element: <ProfilePage /> },
     ],

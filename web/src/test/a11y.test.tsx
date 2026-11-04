@@ -102,4 +102,46 @@ describe('accessibility', () => {
     await screen.findByLabelText('Họ tên');
     expect(await violations(container)).toEqual([]);
   });
+
+  it.each([
+    ['/vehicles', 'Xe'],
+    ['/members', 'Thành viên'],
+    ['/members?tab=invitations', 'Thành viên'],
+  ])('màn %s không có lỗi axe', async (path, heading) => {
+    server.use(
+      http.get(`${API}/vehicles`, () =>
+        ok([{ id: 1, name: 'Xe 1', plateNumber: null, capacity: 30, capacityUnit: 'BOX', active: true }]),
+      ),
+      http.get(`${API}/store/members`, () =>
+        ok([
+          {
+            id: 449,
+            email: 'chu.cuahang@example.com',
+            fullName: null,
+            phoneNumber: null,
+            role: 'OWNER',
+            status: 'ACTIVE',
+            canDrive: false,
+          },
+          {
+            id: 451,
+            email: 'taixe@example.com',
+            fullName: 'Tài xế A',
+            phoneNumber: null,
+            role: 'DRIVER',
+            status: 'ACTIVE',
+            canDrive: true,
+          },
+        ]),
+      ),
+      http.get(`${API}/store/invitations`, () =>
+        ok([{ id: 1, email: 'moi@example.com', role: 'DRIVER', status: 'PENDING', expiresAt: '2026-11-10T03:00:00Z' }]),
+      ),
+      ...signedInHandlers(),
+    );
+    const { container } = renderApp(path);
+    await screen.findByRole('heading', { name: heading, level: 1 });
+    await screen.findAllByRole('row');
+    expect(await violations(container)).toEqual([]);
+  });
 });

@@ -69,6 +69,10 @@
       ACTIVE: ['ĐANG HOẠT ĐỘNG', 'success'],
       DISABLED: ['ĐÃ VÔ HIỆU HOÁ', 'danger']
     },
+    vehicle: {
+      ACTIVE: ['ĐANG DÙNG', 'success'],
+      INACTIVE: ['ĐÃ TẮT', 'muted']
+    },
     job: {
       QUEUED: ['ĐANG CHỜ', 'muted'],
       RUNNING: ['ĐANG CHẠY', 'info'],
