@@ -14,12 +14,6 @@ export function useMe() {
   return useQuery({ queryKey: queryKeys.me, queryFn: () => unwrap(api.GET('/api/v1/users/me')) });
 }
 
-/** The store, for its timezone (`GET /store`, shared with the header). */
-export function useStore() {
-  const api = useApi();
-  return useQuery({ queryKey: queryKeys.store, queryFn: () => unwrap(api.GET('/api/v1/store')) });
-}
-
 /** Signed-in devices of the user (`GET /auth/sessions`). */
 export function useDeviceSessions() {
   const api = useApi();

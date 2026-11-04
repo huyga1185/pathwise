@@ -93,6 +93,14 @@ File nóng của client (không hai task song song cùng sửa): `web/package.js
 - **Phạm vi:** danh sách + form thêm/sửa xe (đơn vị KG/thùng/kiện/đơn, tắt xe); thành viên (đổi vai trò, bật "Đi giao", vô hiệu hoá/kích hoạt lại có xác nhận), lời mời (gửi, danh sách, thu hồi); chế độ chỉ xem cho DISPATCHER.
 - **Acceptance:** OWNER không có control đổi vai trò/trạng thái của chính mình; DISPATCHER không thấy control sửa và tab lời mời; lỗi từ `docs/ux/samples/error-validation.json` hiện đúng 3 ô; `EMAIL_EXISTED` khi mời hiện dưới ô email.
 
+- **Phát sinh khi làm (2026-11-04):**
+  - Thêm `SelectField`, `Checkbox`, `.pw-card` ở `shared/ui` (design system chưa có ô chọn và checkbox; theo class của prototype); trạng thái xe qua `statusInfo('vehicle', ACTIVE|INACTIVE)` (thêm vào `brand/design-system` và DESIGN_SYSTEM).
+  - Query cửa hàng chuyển sang `data/storeQuery.ts` (header, hồ sơ, thành viên dùng chung); rule form chung chuyển sang `shared/forms/rules.ts`; `src/test/samples.ts` đọc fixture từ `docs/ux/samples`.
+  - Màn Xe bỏ nút "+ Thêm xe" ở đầu trang của prototype (chủ dự án yêu cầu, trùng với form "Thêm xe" luôn hiện bên phải; đang sửa thì "Huỷ" quay về thêm mới).
+  - Bộ lọc xe và tab thành viên nằm trên URL (`?active=true`, `?tab=invitations`).
+  - Câu "Vui lòng chọn …" cho ô chọn (`CAPACITY_UNIT_REQUIRED`, `ROLE_REQUIRED`), ghi vào UX_BRIEF §6.2.
+  - Kiểm giao diện bằng Chrome headless điều khiển qua DevTools protocol (Node, đăng nhập bằng tài khoản test trên backend dev, chỉ đọc): màn Xe, Thành viên, Lời mời khớp bố cục prototype; sửa ô "Sức chứa" lệch với "Đơn vị" (lưới `align-items: start`). Cửa hàng test chưa có xe và chỉ có chủ cửa hàng, nên dòng dữ liệu chỉ kiểm bằng test.
+
 ### W04. Nền tảng bản đồ và màn cửa hàng
 - **Ước lượng:** 1,5 ngày · **Quyết định:** P-45 · **Màn:** Cửa hàng
 - **Phạm vi:** `platform/map`: contract `Basemap` + factory `maptiler(key, style)`, `osm()` (chỉ dev), chọn theo env; `RouteMap` (marker theo `routeIndex`/tone, kho, đường nối, chọn điểm, + / −, mở rộng khung, chú giải), `PinPicker` (ghim, tìm địa chỉ qua `/geocoding/search` có debounce, hộp thoại `Dialog size="full"`), attribution bắt buộc; react-leaflet chỉ được import trong `platform/map`. Màn Cửa hàng (tên, timezone, kho).

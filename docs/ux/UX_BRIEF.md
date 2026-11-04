@@ -142,7 +142,7 @@ Job thất bại có `errorCode` riêng: `NO_SOLUTION` ("Không tìm được l�
 
 `details[].field` là đường dẫn tới field của form (`stops[3].timeWindow.end`, `assignments[0].driverId`): hiện lỗi ngay dưới ô đó. Nhóm mã:
 
-- **Bắt buộc** (`*_REQUIRED`): "Vui lòng nhập {tên trường}." Ví dụ `EMAIL_REQUIRED`, `PLAN_NAME_REQUIRED`, `STOP_LABEL_REQUIRED`, `DRIVER_REQUIRED`, `SHIFT_START_REQUIRED`, `VERSION_REQUIRED` (bug client).
+- **Bắt buộc** (`*_REQUIRED`): "Vui lòng nhập {tên trường}."; ô chọn thì "Vui lòng chọn {tên trường}." (`CAPACITY_UNIT_REQUIRED` → "Vui lòng chọn đơn vị.", `ROLE_REQUIRED` → "Vui lòng chọn vai trò."). Ví dụ `EMAIL_REQUIRED`, `PLAN_NAME_REQUIRED`, `STOP_LABEL_REQUIRED`, `DRIVER_REQUIRED`, `SHIFT_START_REQUIRED`, `VERSION_REQUIRED` (bug client).
 - **Độ dài** (`INVALID_*_LENGTH`): "{Tên trường} quá dài/ngắn." Giới hạn ở API_SPEC (mật khẩu 8–72, tên plan ≤ 150, địa chỉ ≤ 500, ghi chú ≤ 500…).
 - **Định dạng và miền giá trị:** `INVALID_EMAIL_FORMAT`, `INVALID_LATITUDE`, `INVALID_LONGITUDE`, `INVALID_CAPACITY` (> 0), `INVALID_DEMAND` (≥ 0), `INVALID_SERVICE_TIME`, `INVALID_MAX_DISTANCE`, `INVALID_LIMIT`.
 - **Số điện thoại:** `PHONE_NUMBER_INVALID`, `PHONE_NUMBER_WRONG_REGION` ("Chỉ nhận số Việt Nam"), `PHONE_NUMBER_TOO_SHORT`, `PHONE_NUMBER_TOO_LONG`, `PHONE_NUMBER_TYPE_NOT_ALLOWED`.

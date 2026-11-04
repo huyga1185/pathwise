@@ -49,6 +49,9 @@ const FIELD_SENTENCES: Record<string, string> = {
   COORDINATES_INCOMPLETE: 'Cần đủ cả vĩ độ và kinh độ.',
   ADDRESS_OR_COORDINATES_REQUIRED: 'Nhập địa chỉ hoặc đặt ghim trên bản đồ.',
   INVALID_CAPACITY: 'Sức chứa phải lớn hơn 0.',
+  // Choices (select): "chọn" rather than "nhập" (prototype "Xe").
+  CAPACITY_UNIT_REQUIRED: 'Vui lòng chọn đơn vị.',
+  ROLE_REQUIRED: 'Vui lòng chọn vai trò.',
   INVALID_DEMAND: 'Số lượng không được âm.',
 };
 

@@ -4,7 +4,7 @@
  */
 export type Tone = 'muted' | 'info' | 'signal' | 'danger' | 'success' | 'route';
 export type StatusKind =
-  'plan' | 'route' | 'stop' | 'dropReason' | 'geocode' | 'processing' | 'invitation' | 'member' | 'job';
+  'plan' | 'route' | 'stop' | 'dropReason' | 'geocode' | 'processing' | 'invitation' | 'member' | 'vehicle' | 'job';
 
 const STATUS: Record<StatusKind, Record<string, [string, Tone]>> = {
   plan: {
@@ -35,6 +35,7 @@ const STATUS: Record<StatusKind, Record<string, [string, Tone]>> = {
     ACTIVE: ['ĐANG HOẠT ĐỘNG', 'success'],
     DISABLED: ['ĐÃ VÔ HIỆU HOÁ', 'danger'],
   },
+  vehicle: { ACTIVE: ['ĐANG DÙNG', 'success'], INACTIVE: ['ĐÃ TẮT', 'muted'] },
   job: {
     QUEUED: ['ĐANG CHỜ', 'muted'],
     RUNNING: ['ĐANG CHẠY', 'info'],

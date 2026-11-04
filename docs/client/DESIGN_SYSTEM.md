@@ -60,6 +60,7 @@ Mỗi trạng thái hiện bằng **pill**: nhãn `label` viết hoa, chữ `on-
 | Địa chỉ `geocodeStatus` `FAILED` | KHÔNG TÌM THẤY | `danger` |
 | Lời mời `PENDING` / `ACCEPTED` / `REVOKED` / `EXPIRED` | CHỜ NHẬN / ĐÃ NHẬN / ĐÃ THU HỒI / HẾT HẠN | `info` / `success` / `ink-muted` / `ink-muted` |
 | Thành viên `PENDING_VERIFICATION` / `ACTIVE` / `DISABLED` | CHƯA XÁC THỰC / ĐANG HOẠT ĐỘNG / ĐÃ VÔ HIỆU HOÁ | `ink-muted` / `success` / `danger` |
+| Xe `active` `true` / `false` (client gọi `statusInfo('vehicle', active ? 'ACTIVE' : 'INACTIVE')`, W03) | ĐANG DÙNG / ĐÃ TẮT | `success` / `ink-muted` |
 | Job `QUEUED` / `RUNNING` / `SUCCEEDED` / `FAILED` | ĐANG CHỜ / ĐANG CHẠY / XONG / LỖI | `ink-muted` / `info` / `success` / `danger` |
 
 `geocodeStatus` `PROVIDED` / `RESOLVED` và `processingStatus` `IDLE` không hiện pill. Component `StatusPill` giữ đúng bảng này (`kind` + `status` của API); client không tự viết nhãn.
@@ -140,12 +141,18 @@ Nút bấm cho mọi hành động; mỗi màn hình chỉ một nút `primary`,
 - Web (W01) thêm `startIcon` (icon trong ô, ví dụ thư, ổ khoá ở màn tài khoản), `endAction` (nút trong ô, ví dụ hiện mật khẩu, có `aria-label` và `aria-pressed`) và `size="lg"` (48px, chữ 16px cho màn tài khoản).
 - Trong app tài xế, form hiếm khi xuất hiện (chỉ lý do không giao được); khi có, dùng cỡ chữ `body-touch` qua CSS của client.
 
+### SelectField, Checkbox, card (web, W03)
+
+- `SelectField`: ô chọn (native `select`) cùng nhãn, hint, câu lỗi, `aria-describedby` như `TextField`; `placeholder` là lựa chọn rỗng đầu tiên ("Chọn đơn vị") cho ô bắt buộc chưa có giá trị. Dùng cho đơn vị của xe, vai trò. Ô chọn vai trò trong bảng thành viên dùng `select.pw-field-input` có `aria-label` theo dòng.
+- `Checkbox`: ô 18px màu `route` kèm chữ (prototype `.check`), cao tối thiểu 36px; trong bảng có `aria-label` theo dòng ("Đi giao: Tài xế A").
+- `.pw-card`: khung của form cạnh danh sách (`surface-raised`, viền `line`, `radius-md`, padding 16px, tiêu đề 20/28). Hộp "đã lưu" `.pw-status-ok` (viền `success`).
+
 ### StatusPill
 
 Nhãn trạng thái viết hoa trên nền màu trạng thái; truyền thẳng giá trị enum của API qua `kind` + `status`.
 
 - Ánh xạ nhãn và màu nằm trong component (`statusInfo`), khớp bảng trạng thái ở README: client không tự viết nhãn.
-- `kind`: `plan` (PlanStatus), `route` (RouteStatus), `stop` (StopStatus), `dropReason` (lý do stop nằm trong `unassignedStops`: `NOT_OPTIMIZED` → CHƯA XẾP TUYẾN, `INFEASIBLE` → KHÔNG XẾP ĐƯỢC), `geocode` (GeocodeStatus), `processing` (ProcessingStatus của plan), `invitation` (InvitationStatus), `member` (UserStatus của thành viên), `job` (JobStatus).
+- `kind`: `plan` (PlanStatus), `route` (RouteStatus), `stop` (StopStatus), `dropReason` (lý do stop nằm trong `unassignedStops`: `NOT_OPTIMIZED` → CHƯA XẾP TUYẾN, `INFEASIBLE` → KHÔNG XẾP ĐƯỢC), `geocode` (GeocodeStatus), `processing` (ProcessingStatus của plan), `invitation` (InvitationStatus), `member` (UserStatus của thành viên), `vehicle` (`ACTIVE`/`INACTIVE` từ `Vehicle.active`), `job` (JobStatus).
 - Trạng thái không cần pill thì không hiện gì: geocode `PROVIDED`/`RESOLVED`, processing `IDLE`.
 - Màu không bao giờ đứng một mình: pill luôn có chữ. Stop `FAILED` đi kèm lý do ngay dưới, chữ `small`.
 - Chữ pill dùng `on-accent` (trắng ở theme sáng, gần đen ở theme tối).

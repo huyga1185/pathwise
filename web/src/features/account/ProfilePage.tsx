@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { useForm } from 'react-hook-form';
 import { ApiError } from '@/data/apiError';
+import { useStoreQuery } from '@/data/storeQuery';
 import { MAX_OTP_TRIES, useSession } from '@/features/auth';
 import { errorMessages, fieldErrors, fieldMessage, formatWait, messageFor } from '@/shared/errors';
 import { applyServerErrors, errorCode } from '@/shared/forms/serverErrors';
@@ -9,7 +10,7 @@ import { useCountdown } from '@/shared/hooks/useCountdown';
 import { vi } from '@/shared/i18n/vi';
 import { Button, ErrorBanner, StatusPill, TextField } from '@/shared/ui';
 import { deviceName } from './device';
-import { useDeviceSessions, useMe, useProfileApi, useStore, type DeviceSession, type Me } from './profileApi';
+import { useDeviceSessions, useMe, useProfileApi, type DeviceSession, type Me } from './profileApi';
 import './profile.css';
 
 const DEVICE_TIME_ZONE = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -17,7 +18,7 @@ const DEVICE_TIME_ZONE = Intl.DateTimeFormat().resolvedOptions().timeZone;
 /** Prototype "Hồ sơ và bảo mật" (SCREENS §1.1): profile, two-step password change, signed-in devices. */
 export function ProfilePage() {
   const me = useMe();
-  const store = useStore();
+  const store = useStoreQuery();
   const { logOut } = useSession();
   const timeZone = store.data?.timezone ?? DEVICE_TIME_ZONE;
 
