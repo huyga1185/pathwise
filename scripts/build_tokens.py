@@ -216,7 +216,7 @@ def build_dart(tokens: dict) -> str:
     colors = tokens["color"]["tokens"]
     shadows = tokens.get("shadow", {}).get("tokens", [])
     fields = [camel(t["name"]) for t in colors] + [camel(t["name"]) for t in shadows]
-    out = [f"// {HEADER}.", "// ignore_for_file: lines_longer_than_80_chars", "",
+    out = [f"// {HEADER}.", "// ignore_for_file: lines_longer_than_80_chars", "// dart format off", "",
            "import 'package:flutter/painting.dart';", "",
            "/// Colours and shadows of one theme. Use [PwColorTokens.light] or [PwColorTokens.dark].",
            "class PwColorTokens {", "  const PwColorTokens({"]

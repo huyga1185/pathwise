@@ -169,6 +169,16 @@ File nóng của client (không hai task song song cùng sửa): `web/package.js
 - **Từ W00:** Flutter trên máy dev đang hỏng (`flutter create` báo `Wrong full snapshot version`; Dart SDK 3.13.7 chạy được): chủ dự án cài lại Flutter stable (khuyến nghị dùng FVM, ghi phiên bản vào `mobile/.fvmrc`) trước khi làm. Chạy `python3 scripts/build_tokens.py --only mobile` rồi commit `tokens.g.dart`; job `mobile` thêm `--check --only mobile`.
 - **Acceptance:** đăng nhập, khôi phục phiên sau khi tắt mở app, refresh khi access hết hạn (test interceptor với server giả); người không phải tài xế → màn không có quyền.
 
+- **Phát sinh khi làm (2026-11-05):**
+  - Flutter hệ thống (`/usr/bin/flutter`) vẫn hỏng nên cài Flutter 3.47.9 stable vào `~/development/flutter` (chủ dự án chọn), ghi trong `mobile/.fvmrc` và `environment.flutter` của `pubspec.yaml` (CI đọc từ đây). Bản này mới phát hành 7 ngày; quy tắc 2 tuần (P-43) áp cho thư viện, SDK theo bản stable mới nhất.
+  - Dependency (bản đã phát hành ≥ 2 tuần): `dio` 5.11, `flutter_riverpod` 3.4, `go_router` 18.1.1, `flutter_secure_storage` 11.2, `shared_preferences` 2.5, `intl` 0.20, `url_launcher` 6.3 (dùng ở M01); dev: `flutter_lints` 6, `mocktail` 1.0.
+  - Client sinh bằng openapi-generator 7.14.0 (generator `dart-dio`, `serializationLibrary=json_serializable`) chạy qua Docker trong `scripts/gen_dart_api.sh`; script bỏ file thừa (`doc`, `test`, `.travis.yml`, `git_push.sh`) và sửa ràng buộc SDK của package thành `^3.13.7` vì code json_serializable sinh ra dùng null-aware element (SDK cũ `>=3.5.0` không build được). CI sinh lại rồi `git diff --exit-code`.
+  - `scripts/build_mobile_brand.sh` (cần `rsvg-convert`) sinh logo trắng cho màn đăng nhập, launcher icon Android (kèm adaptive icon) và bộ AppIcon iOS từ `brand/logo/`. Icon iOS còn kênh alpha: App Store không nhận, cần làm phẳng trước khi nộp (M03).
+  - `PwButton` không giãn theo chiều cao của cha và có hành động tap trong semantics (test `isSemantics`); vùng chạm 48/56 px có test.
+  - Link "Quên mật khẩu" và "Nhập mã mời" ở màn đăng nhập chưa làm gì cho tới M03. Màn "Tuyến hôm nay" là chỗ giữ chỗ cho M01.
+  - Câu lỗi của app sinh từ `web/src/shared/errors/messages.ts` (một nguồn với web), test đối chiếu bảng UX_BRIEF §6.1.
+  - Dependabot chưa có ecosystem `npm` (W01 chưa thêm) và `pub`: để task riêng khi chủ dự án muốn, vì `.github/dependabot.yml` là file nóng.
+
 ### M01. Tuyến và chi tiết tuyến
 - **Ước lượng:** 1,5 ngày · **Màn:** Tài xế — tuyến hôm nay, Tài xế — chi tiết tuyến
 - **Phạm vi:** danh sách theo ngày (đổi ngày, kéo tải lại, trạng thái trống); chi tiết (tiêu đề `planName`, điểm tiếp theo, các điểm còn lại, nhóm đã xong); "Gọi" (`tel:`), "Chỉ đường" (Google/Apple Maps theo nền tảng, `url_launcher`).
