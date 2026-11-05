@@ -423,6 +423,19 @@ T42 cũ (Docker, compose, README) đã được gộp vào T05 và T07 trong M0 
   - springdoc trả về `$ref` cho model dùng làm property; converter sửa định nghĩa trong `ModelConverterContext.getDefinedModels()`.
   - Field `@Nullable` đã đối chiếu: `null` thật trong `docs/ux/samples` (stop, route, job, member, vehicle, user) hoặc cột/entity cho phép (`SessionResponse.userAgent`/`ipAddress`, `DriverRouteSummary.plannedStart`, `PlanRouteResponse.Driver.fullName`, `GetUserResponse.storeId` của ADMIN). Field không đánh dấu (ví dụ `PlanRoute.vehicle`, `start`/`end`, `TimeWindow.start`/`end`, `PlanDetail.depot`) là cột `NOT NULL` hoặc bắt buộc ở request.
 
+### T47. Timezone cho màn của tài xế (phát sinh 2026-11-05)
+- **Tầng:** Must (trước M01) · **Ước lượng:** 0,25 ngày · **Quyết định:** P-14, P-50 · **FR:** D01
+- **Nguồn:** M01 phải hiện giờ xuất phát và giờ đến dự kiến theo timezone của cửa hàng (UX_BRIEF, client ARCHITECTURE §6), nhưng tài xế không đọc được timezone: `GET /store` chỉ cho OWNER/DISPATCHER, response của `/driver/*` và `/users/me` không có. Chủ dự án chọn làm task backend trước M01.
+- **Phạm vi:**
+  1. `timezone` (IANA, bản chụp của plan như `PlanDetail.timezone`, P-14) trong `DriverRouteSummary` (`GET /driver/routes`) và `DriverRouteDetail` (`GET /driver/routes/{routeId}`), ngay sau `planDate`.
+  2. `scripts/sync_openapi.sh` → `api/openapi.json`; sinh lại `web/src/data/schema.d.ts` và `mobile/packages/pathwise_api`.
+  3. Docs: `API_SPEC` §8; `docs/ux/samples/driver-route-list.json`, `driver-route-detail.json` thêm field (sửa đúng field, không thay cả bộ mẫu vì id trong mẫu sinh lại sẽ đổi và test web đang dùng).
+- **Ngoài phạm vi:** không đổi schema; không đổi cách chọn "hôm nay" khi không gửi `date` (vẫn theo timezone hiện tại của cửa hàng); không thêm timezone vào `/users/me` hay response cập nhật stop.
+- **Acceptance criteria:**
+  - `GET /driver/routes` và `GET /driver/routes/{routeId}` có `timezone` bằng timezone của plan; cửa hàng đổi timezone sau khi lưu plan thì tài xế vẫn thấy timezone của plan (giống dispatcher).
+  - OpenAPI có `timezone` là `string` bắt buộc ở hai schema; `OpenApiNullabilityIntegrationTest` xanh với mẫu đã sửa.
+  - Chỉ thêm field: test hiện có không phải sửa assertion cũ; `./mvnw test` xanh.
+
 ## 8. Should (làm nếu kịp, theo thứ tự)
 
 ### T32. Vị trí tài xế bằng polling

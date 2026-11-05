@@ -802,6 +802,7 @@ export interface components {
             /** @enum {string} */
             status: "PENDING" | "IN_PROGRESS" | "COMPLETED";
             stops: components["schemas"]["DriverStopResponse"][];
+            timezone: string;
         };
         DriverRouteSummaryResponse: {
             /** Format: int32 */
@@ -819,6 +820,7 @@ export interface components {
             status: "PENDING" | "IN_PROGRESS" | "COMPLETED";
             /** Format: int32 */
             stopCount: number;
+            timezone: string;
         };
         DriverStopResponse: {
             address: string | null;

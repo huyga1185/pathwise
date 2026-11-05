@@ -71,6 +71,7 @@ class DriverRouteIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.data[0].planId").value(planId))
                 .andExpect(jsonPath("$.data[0].planName").value("Giao sáng"))
                 .andExpect(jsonPath("$.data[0].planDate").value(DAY))
+                .andExpect(jsonPath("$.data[0].timezone").value("Asia/Ho_Chi_Minh"))
                 .andExpect(jsonPath("$.data[0].status").value("PENDING"))
                 .andExpect(jsonPath("$.data[0].stopCount").value(2))
                 .andExpect(jsonPath("$.data[0].completedCount").value(0))
@@ -82,6 +83,7 @@ class DriverRouteIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.routeId").value(routeId))
                 .andExpect(jsonPath("$.data.planName").value("Giao sáng"))
+                .andExpect(jsonPath("$.data.timezone").value("Asia/Ho_Chi_Minh"))
                 .andExpect(jsonPath("$.data.status").value("PENDING"))
                 .andExpect(jsonPath("$.data.start.address").value("Kho"))
                 .andExpect(jsonPath("$.data.end.lat").value(16.05))
@@ -186,6 +188,24 @@ class DriverRouteIntegrationTest extends AbstractIntegrationTest {
         listRoutes(store.driver(), "?date=22-10-2026")
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("MALFORMED_REQUEST"));
+    }
+
+    @Test
+    void routes_whenStoreTimezoneChangesAfterSave_showPlanTimezone() throws Exception {
+        TestStore store = storeWithDepot();
+        publishedPlan(store, DAY, STOPS, assignment(store.driver().id(), vehicle(store, "Xe 1", 10)));
+        mockMvc.perform(put("/api/v1/store").header(HttpHeaders.AUTHORIZATION, store.owner().bearer())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"Shop\",\"depot\":{\"address\":\"Kho\",\"lat\":16.05,\"lon\":108.2},"
+                                + "\"timezone\":\"Asia/Bangkok\"}"))
+                .andExpect(status().isOk());
+
+        String list = listRoutes(store.driver(), "?date=" + DAY)
+                .andExpect(jsonPath("$.data[0].timezone").value("Asia/Ho_Chi_Minh"))
+                .andReturn().getResponse().getContentAsString();
+        long routeId = ((Number) JsonPath.read(list, "$.data[0].routeId")).longValue();
+        getRoute(store.driver(), routeId)
+                .andExpect(jsonPath("$.data.timezone").value("Asia/Ho_Chi_Minh"));
     }
 
     private TestStore storeWithDepot() throws Exception {

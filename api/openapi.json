@@ -670,6 +670,9 @@
               "$ref": "#/components/schemas/DriverStopResponse"
             },
             "type": "array"
+          },
+          "timezone": {
+            "type": "string"
           }
         },
         "required": [
@@ -680,7 +683,8 @@
           "routeId",
           "start",
           "status",
-          "stops"
+          "stops",
+          "timezone"
         ],
         "type": "object"
       },
@@ -723,6 +727,9 @@
           "stopCount": {
             "format": "int32",
             "type": "integer"
+          },
+          "timezone": {
+            "type": "string"
           }
         },
         "required": [
@@ -733,7 +740,8 @@
           "plannedStart",
           "routeId",
           "status",
-          "stopCount"
+          "stopCount",
+          "timezone"
         ],
         "type": "object"
       },

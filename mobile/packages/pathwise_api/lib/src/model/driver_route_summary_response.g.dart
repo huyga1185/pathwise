@@ -20,6 +20,7 @@ DriverRouteSummaryResponse _$DriverRouteSummaryResponseFromJson(
       'routeId',
       'status',
       'stopCount',
+      'timezone',
     ],
   );
   final val = DriverRouteSummaryResponse(
@@ -40,6 +41,7 @@ DriverRouteSummaryResponse _$DriverRouteSummaryResponseFromJson(
       (v) => $enumDecode(_$DriverRouteSummaryResponseStatusEnumEnumMap, v),
     ),
     stopCount: $checkedConvert('stopCount', (v) => (v as num).toInt()),
+    timezone: $checkedConvert('timezone', (v) => v as String),
   );
   return val;
 });
@@ -55,6 +57,7 @@ Map<String, dynamic> _$DriverRouteSummaryResponseToJson(
   'routeId': instance.routeId,
   'status': _$DriverRouteSummaryResponseStatusEnumEnumMap[instance.status]!,
   'stopCount': instance.stopCount,
+  'timezone': instance.timezone,
 };
 
 const _$DriverRouteSummaryResponseStatusEnumEnumMap = {

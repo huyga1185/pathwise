@@ -183,6 +183,7 @@ File nóng của client (không hai task song song cùng sửa): `web/package.js
 - **Ước lượng:** 1,5 ngày · **Màn:** Tài xế — tuyến hôm nay, Tài xế — chi tiết tuyến
 - **Phạm vi:** danh sách theo ngày (đổi ngày, kéo tải lại, trạng thái trống); chi tiết (tiêu đề `planName`, điểm tiếp theo, các điểm còn lại, nhóm đã xong); "Gọi" (`tel:`), "Chỉ đường" (Google/Apple Maps theo nền tảng, `url_launcher`).
 - **Acceptance:** widget test với `driver-route-list.json`, `driver-route-detail.json`; deep link chỉ đường đúng định dạng D-07 cho từng nền tảng.
+- **Phát sinh khi chuẩn bị (2026-11-05):** tài xế không đọc được timezone của cửa hàng nên giờ không hiện đúng được; chủ dự án chọn làm T47 trước (thêm `timezone` của plan vào `/driver/routes` và `/driver/routes/{id}`) và duyệt package `timezone` cho mobile (P-50). M01 bắt đầu sau khi T47 vào `develop`.
 
 ### M02. Báo kết quả điểm giao
 - **Ước lượng:** 1,5 ngày · **Màn:** Tài xế — báo kết quả
