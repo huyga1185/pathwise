@@ -123,6 +123,8 @@ Theo API_SPEC §2 và UX_BRIEF §3.
 - **Polling** (UX_BRIEF §5.1):
   - Plan có `processingStatus != IDLE`: tải lại `GET /plans/{id}` mỗi 2 s tới khi `IDLE`, khoá nút sửa; xong thì dùng `version` mới.
   - Màn theo dõi plan `PUBLISHED`/`IN_PROGRESS`: mỗi 30 s khi tab đang hiện; dừng khi plan `COMPLETED`/`CANCELLED`.
+  - Web (W06): một hàm `planRefetchInterval(plan)` (`features/plans/planApi.ts`) quyết định cả ba trường hợp; `refetchIntervalInBackground: false` để không tải khi tab ẩn.
+  - Job (optimize): plan về `IDLE` mà không nói job kết thúc thế nào, nên màn kết quả giữ `Job` của `POST /optimize` và đọc `GET /jobs/{id}` mỗi 2 s tới khi `SUCCEEDED`/`FAILED` (API_SPEC §6); `FAILED` → câu theo `errorCode`.
   - App tài xế: kéo xuống để tải lại; tự tải lại khi app trở lại foreground.
 - **Optimistic concurrency:** mọi request sửa plan gửi `version` đang có; 409 `PLAN_MODIFIED` → hộp thoại "Plan vừa được người khác thay đổi. Tải lại để xem bản mới." (không tự ghi đè).
 - **Báo kết quả stop (mobile):** idempotent ở server (P-36) nên khi mất mạng app giữ yêu cầu trong hàng đợi trên máy (persist), gửi lại đúng nội dung khi có mạng; không cho báo kết quả khác cho stop đang chờ gửi.

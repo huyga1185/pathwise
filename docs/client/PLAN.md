@@ -134,6 +134,14 @@ File nóng của client (không hai task song song cùng sửa): `web/package.js
 - **Phạm vi:** optimize + polling `OPTIMIZING`; màn kết quả (thẻ tổng quan, khối tuyến thu gọn được, bảng ↔ bản đồ, cảnh báo `INFEASIBLE`); giao việc (hộp xác nhận, `SHIFT_OVERLAP` với link plan trùng, toast); huỷ (DRAFT/PUBLISHED); theo dõi (đếm theo kết quả, `routes[].status`, thanh tiến độ, lý do, polling 30 s chỉ khi tab hiện, dừng khi kết thúc). Job lỗi (`NO_SOLUTION`, `ROUTING_PROVIDER_ERROR`…) hiện câu theo UX_BRIEF và giữ kết quả cũ.
 - **Acceptance:** mỗi trạng thái plan mở đúng màn trên cùng route; không còn chỗ nào tự tính trạng thái route; giao việc thất bại vì trùng ca không đổi trạng thái giao diện; test với `plan-detail-optimized.json` và `plan-detail-completed.json`.
 
+- **Phát sinh khi làm (2026-11-05):**
+  - Prototype giải thích lý do điểm không xếp được ("Khung giờ nhận 20:00–21:00 nằm ngoài ca…"); API chỉ trả `dropReason = INFEASIBLE`, nên màn dùng câu chung (ARCHITECTURE §2 quy tắc 5: không tự suy logic server). Muốn có lý do cụ thể thì cần task backend (solver trả lý do).
+  - Job optimize lỗi chỉ biết qua `GET /jobs/{id}` (plan về `IDLE` không kèm kết quả job): màn kết quả giữ job của `POST /optimize` và theo dõi tới khi xong (`useJob`).
+  - Plan CANCELLED dùng màn theo dõi kèm thông báo "Kế hoạch đã huỷ." (prototype đặt thông báo trên màn kết quả; một route cho mọi trạng thái nên plan đã huỷ có tuyến hay không đều xem được).
+  - "N tài xế · N xe" và "Giao việc cho N tài xế" đếm tuyến có điểm (route không có điểm không giao cho ai, P-34).
+  - Hộp trùng ca hỗ trợ cả `assignments[i].vehicleId` (trùng xe), prototype chỉ vẽ trùng tài xế; bỏ câu "Tài xế A không bị ảnh hưởng" của prototype.
+  - Chưa chụp màn với backend thật: cửa hàng test chưa có plan nào; không tạo dữ liệu trong DB dev của chủ dự án chỉ để chụp. Kiểm bằng test với `plan-detail-optimized.json`, `plan-detail-completed.json` và axe; kiểm tay ở W07 (E2E).
+
 ### W07. Hoàn thiện, accessibility, E2E
 - **Ước lượng:** 1,5 ngày
 - **Phạm vi:** rà responsive (≥ 360px, bảng cuộn ngang, bản đồ xuống dưới bảng < 1024px); axe trên mọi màn chính; bàn phím (Tab, Esc, Enter) ở bảng, hộp thoại, OTP; theme tối toàn bộ; Playwright E2E trên stack compose: đăng ký → xác thực (Mailpit) → kho → xe → mời → plan → tối ưu → giao việc → (gọi API tài xế báo kết quả) → theo dõi COMPLETED.

@@ -11,26 +11,29 @@ import { statusInfo } from '@/shared/status';
 import {
   Button,
   DataTable,
-  EmptyState,
   ErrorBanner,
   PinPickerDialog,
   ProgressBar,
   StatusPill,
   TextField,
+  Toast,
   type DataTableColumn,
 } from '@/shared/ui';
 import { allStops, usePlan, usePlanApi, type PlanDetail, type PlanStop } from './planApi';
+import { ResultView } from './ResultView';
+import { TrackView } from './TrackView';
 import './plans.css';
 
 const g = vi.geocode;
 
 /**
- * `/plans/:id` is one route (SCREENS §1): the view follows the plan's state. W05 draws a DRAFT not optimized yet
- * (finding coordinates); the optimized result and tracking come with W06.
+ * `/plans/:id` is one route (SCREENS §1): the view follows the plan's state, so a shared link is always right. DRAFT
+ * not optimized → finding coordinates; DRAFT optimized → result; PUBLISHED and later → tracking.
  */
 export function PlanDetailPage() {
   const id = Number(useParams().id);
   const plan = usePlan(id);
+  const [toast, setToast] = useState<string | null>(null);
   if (plan.isError) {
     return (
       <section className="pw-page-section">
@@ -40,12 +43,26 @@ export function PlanDetailPage() {
     );
   }
   if (!plan.data) return <p className="pw-muted">{vi.pages.loading}</p>;
-  if (plan.data.status === 'DRAFT' && !plan.data.optimizedAt) return <GeocodeView plan={plan.data} />;
+  const data = plan.data;
+  const view =
+    data.status === 'DRAFT' && !data.optimizedAt ? (
+      <GeocodeView plan={data} />
+    ) : data.status === 'DRAFT' ? (
+      <ResultView plan={data} onPublished={(drivers) => setToast(vi.publish.done(drivers))} />
+    ) : (
+      <TrackView plan={data} updatedAt={plan.dataUpdatedAt} />
+    );
   return (
-    <section className="pw-page-section">
-      <PlanHeader plan={plan.data} subtitle={formatDateLong(plan.data.planDate)} />
-      <EmptyState title={g.soonTitle}>{g.soonLead}</EmptyState>
-    </section>
+    <>
+      {view}
+      {toast ? (
+        <div className="pw-toast-dock">
+          <Toast tone="success" onClose={() => setToast(null)}>
+            {toast}
+          </Toast>
+        </div>
+      ) : null}
+    </>
   );
 }
 
