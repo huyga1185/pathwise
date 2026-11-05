@@ -68,6 +68,12 @@ export default tseslint.config(
     },
   },
   {
+    // The E2E map stub is a plain Node script run in a container (W07).
+    files: ['e2e/stub/**/*.mjs'],
+    languageOptions: { globals: { ...globals.node } },
+    rules: { 'no-console': 'off' },
+  },
+  {
     // The map platform is the one place allowed to use the map library.
     files: ['src/platform/map/**'],
     rules: {

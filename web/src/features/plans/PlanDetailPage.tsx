@@ -12,13 +12,13 @@ import {
   Button,
   DataTable,
   ErrorBanner,
-  PinPickerDialog,
   ProgressBar,
   StatusPill,
   TextField,
   Toast,
   type DataTableColumn,
 } from '@/shared/ui';
+import { PinPickerDialog } from '@/shared/ui/PinPicker';
 import { allStops, usePlan, usePlanApi, type PlanDetail, type PlanStop } from './planApi';
 import { ResultView } from './ResultView';
 import { TrackView } from './TrackView';

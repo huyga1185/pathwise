@@ -184,4 +184,19 @@ describe('accessibility', () => {
     await screen.findByRole('region', { name: region });
     expect(await violations(container)).toEqual([]);
   });
+
+  it.each([
+    ['/khong-co-trang-nay', 'Không tìm thấy trang', false],
+    ['/forbidden', 'Bạn không có quyền xem trang này', false],
+    ['/driver', 'Dùng app tài xế', true],
+  ])('trang %s không có lỗi axe', async (path, heading, driver) => {
+    server.use(
+      ...(driver
+        ? signedInHandlers({ id: 451, email: 'taixe@example.com', role: 'DRIVER', storeId: 182, canDrive: true })
+        : anonymousHandlers()),
+    );
+    const { container } = renderApp(path);
+    await screen.findByRole('heading', { name: heading });
+    expect(await violations(container)).toEqual([]);
+  });
 });

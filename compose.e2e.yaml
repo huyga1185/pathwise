@@ -1,0 +1,44 @@
+# E2E stack (W07, docs/client/PLAN.md): compose.yaml + this file, in a project of its own so it never touches the
+# dev database or the dev Mailpit:
+#   docker compose -p pathwise-e2e --env-file web/e2e/e2e.env -f compose.yaml -f compose.e2e.yaml --profile app up -d --build --wait
+# The backend's map clients point at a stub (web/e2e/stub/server.mjs): the run calls no real third-party service.
+# Mail goes to this project's Mailpit only.
+
+services:
+  map-stub:
+    image: node:22-alpine
+    command: ["node", "/stub/server.mjs"]
+    volumes:
+      - ./web/e2e/stub:/stub:ro
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8090/health"]
+      interval: 2s
+      timeout: 2s
+      retries: 20
+
+  app:
+    # Only the values below: a developer's .env must not leak in (it may point at a real SMTP server).
+    env_file: !reset []
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      TOKEN_JWT_ACCESS_TOKEN_SECRET: ${TOKEN_JWT_ACCESS_TOKEN_SECRET}
+      MAIL_OTP_SENDER_ADDRESS: no-reply@pathwise.local
+      MAIL_OTP_SENDER_NAME: PathWise
+      SERVICE_IDENTITY_APP_URL: http://localhost:4173
+      SERVICE_IDENTITY_APP_NAME: PathWise
+      SERVICE_IDENTITY_COMPANY_NAME: PathWise
+      SERVICE_IDENTITY_COMPANY_URL: http://localhost:4173
+      SERVICE_IDENTITY_COMPANY_ADDRESS: E2E
+      CORS_ALLOWED_ORIGINS: http://localhost:4173
+      SPRING_MAIL_USERNAME: ""
+      SPRING_MAIL_PASSWORD: ""
+      SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH: "false"
+      SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE: "false"
+      ROUTING_GEOCODING_NOMINATIM_BASEURL: http://map-stub:8090
+      ROUTING_GEOCODING_NOMINATIM_RATELIMIT_ENABLED: "false"
+      ROUTING_MATRIX_OSRM_BASEURL: http://map-stub:8090
+      # A short solver run keeps the E2E fast (the default is 10 s, NFR-02).
+      ROUTING_SOLVER_TIMELIMIT: 2s
+    depends_on:
+      map-stub:
+        condition: service_healthy

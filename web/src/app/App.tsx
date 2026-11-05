@@ -4,7 +4,9 @@ import { ApiProvider } from '@/data/ApiContext';
 import { createApi } from '@/data/http';
 import { SessionProvider } from '@/features/auth';
 import { readConfig } from '@/platform/config';
-import { BasemapProvider, basemapFor, type Basemap } from '@/platform/map';
+// Only the basemap choice here: the map components (and Leaflet) load with the screens that draw a map.
+import { basemapFor, type Basemap } from '@/platform/map/basemap';
+import { BasemapProvider } from '@/platform/map/BasemapContext';
 import { MemoryTokenStore } from '@/platform/tokenStore';
 import { ThemeProvider } from '@/shared/theme/ThemeProvider';
 

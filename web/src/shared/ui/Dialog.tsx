@@ -17,7 +17,26 @@ export interface DialogProps {
   onClose?: () => void;
 }
 
-/** Design system Dialog: focus on open, Esc closes, focus goes back to where it was. */
+const FOCUSABLE =
+  'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+/** Tab and Shift+Tab cycle inside the dialog (aria-modal): focus never reaches the page behind it. */
+function keepFocusInside(dialog: HTMLElement, event: KeyboardEvent) {
+  const items = Array.from(dialog.querySelectorAll<HTMLElement>(FOCUSABLE));
+  const first = items[0];
+  const last = items[items.length - 1];
+  if (!first || !last) return;
+  const active = document.activeElement;
+  if (event.shiftKey && (active === first || !dialog.contains(active))) {
+    event.preventDefault();
+    last.focus();
+  } else if (!event.shiftKey && (active === last || !dialog.contains(active))) {
+    event.preventDefault();
+    first.focus();
+  }
+}
+
+/** Design system Dialog: focus on open and kept inside, Esc closes, focus goes back to where it was. */
 export function Dialog({
   open,
   title,
@@ -44,6 +63,7 @@ export function Dialog({
     ref.current?.querySelector<HTMLElement>('button, [href], input, textarea, select')?.focus();
     const onKey = (event: KeyboardEvent) => {
       if (event.key === 'Escape') onCloseRef.current?.();
+      if (event.key === 'Tab' && ref.current) keepFocusInside(ref.current, event);
     };
     document.addEventListener('keydown', onKey);
     return () => {

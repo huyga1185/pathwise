@@ -147,6 +147,15 @@ File nóng của client (không hai task song song cùng sửa): `web/package.js
 - **Phạm vi:** rà responsive (≥ 360px, bảng cuộn ngang, bản đồ xuống dưới bảng < 1024px); axe trên mọi màn chính; bàn phím (Tab, Esc, Enter) ở bảng, hộp thoại, OTP; theme tối toàn bộ; Playwright E2E trên stack compose: đăng ký → xác thực (Mailpit) → kho → xe → mời → plan → tối ưu → giao việc → (gọi API tài xế báo kết quả) → theo dõi COMPLETED.
 - **Acceptance:** E2E xanh trong CI (job riêng, chạy khi đổi `web/**` hoặc `be/**`, có thể chỉ trên `develop`); không lỗi axe mức serious/critical.
 
+- **Phát sinh khi làm (2026-11-05):**
+  - Backend chỉ có provider Nominatim/OSRM thật nên E2E dùng server giả trong compose (P-49, chủ dự án chọn): `compose.e2e.yaml`, `web/e2e/stub/server.mjs`, `web/e2e/e2e.env` (cổng 3317/6390/1035/8035/8091, project `pathwise-e2e` để không đụng DB và Mailpit dev). Solver chạy 2 s trong E2E.
+  - Bước "tài xế báo kết quả" gọi API của app (app Flutter chưa có, M00–M03).
+  - Dependency `@playwright/test` 1.64.1 (P-43). Vitest chỉ nhận `src/**/*.test.*`; ESLint có cấu hình Node cho server giả.
+  - Tách chunk theo route (`lazy` của React Router; composition root chỉ import phần basemap; `PinPicker` import theo đường dẫn riêng): bundle chính 707 kB → 258 kB (gzip 213 → 79 kB), Leaflet nằm trong chunk của màn có bản đồ; hết cảnh báo chunk lớn của W04.
+  - `Dialog` giữ focus bên trong khi Tab/Shift+Tab (trước đây Tab ra được trang phía sau); có test bàn phím.
+  - Rà responsive ở 360px trên backend dev (Kế hoạch, Tạo kế hoạch, Xe, Thành viên, Cửa hàng, Hồ sơ): không cuộn ngang trang, bảng cuộn trong khung, bản đồ xuống dưới bảng khi hẹp; không cần sửa. Axe thêm trang 404, không có quyền, "Dùng app tài xế" (mọi màn của SCREENS đều có kiểm axe).
+  - Màn kết quả và theo dõi được kiểm với backend thật qua E2E (không chụp ảnh riêng).
+
 ### W08. Đóng gói và deploy web
 - **Ước lượng:** 0,5–1 ngày · **Điều kiện:** chủ dự án chốt reverse proxy và domain (đang để sau, xem P-47)
 - **Phạm vi:** build tĩnh phục vụ ở `/app/` cùng origin với `/api/`; cấu hình proxy (Caddy hoặc nginx); cache header cho asset có hash; `CORS_ALLOWED_ORIGINS` không cần khi cùng origin; cập nhật `docs/DEPLOYMENT.md`.

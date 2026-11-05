@@ -55,6 +55,15 @@ pnpm test         # Vitest + MSW, không cần backend
 pnpm lint && pnpm typecheck && pnpm build
 ```
 
+E2E (Playwright, cần Docker): stack riêng `pathwise-e2e` (cổng trong `web/e2e/e2e.env`, không đụng DB/Mailpit dev; server giả thay Nominatim và OSRM, P-49):
+
+```bash
+docker compose -p pathwise-e2e --env-file web/e2e/e2e.env -f compose.yaml -f compose.e2e.yaml --profile app up -d --build --wait
+cd web && pnpm exec playwright install chromium   # lần đầu
+pnpm e2e          # build web, vite preview :4173 proxy /api tới :8091, chạy web/e2e/
+docker compose -p pathwise-e2e --env-file web/e2e/e2e.env -f compose.yaml -f compose.e2e.yaml --profile app down -v
+```
+
 ## Xem email (OTP, lời mời)
 
 Mọi email khi dev được gửi tới Mailpit: mở http://localhost:8025.

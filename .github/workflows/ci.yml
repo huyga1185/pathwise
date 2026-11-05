@@ -20,6 +20,7 @@ jobs:
     outputs:
       code: ${{ steps.detect.outputs.code }}
       web: ${{ steps.detect.outputs.web }}
+      e2e: ${{ steps.detect.outputs.e2e }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -129,3 +130,49 @@ jobs:
         run: pnpm test
       - name: Build
         run: pnpm build
+
+  # End-to-end on the real backend (W07): compose stack with a map stub (compose.e2e.yaml), the production web build
+  # served by vite preview, Playwright through the MVP path. Mail stays in the stack's Mailpit; no third-party call.
+  e2e:
+    needs: changes
+    if: ${{ always() && (needs.changes.result != 'success' || needs.changes.outputs.e2e == 'true') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      COMPOSE: docker compose -p pathwise-e2e --env-file web/e2e/e2e.env -f compose.yaml -f compose.e2e.yaml --profile app
+    steps:
+      - uses: actions/checkout@v4
+      - name: Start the E2E stack
+        run: $COMPOSE up -d --build --wait --wait-timeout 600
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: web/package.json
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: web/.nvmrc
+          cache: pnpm
+          cache-dependency-path: web/pnpm-lock.yaml
+      - name: Install
+        working-directory: web
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm exec playwright install --with-deps chromium
+      - name: E2E
+        working-directory: web
+        run: pnpm e2e
+      - name: Stack logs
+        if: failure()
+        run: $COMPOSE logs --no-color > e2e-stack.log
+      - name: Upload E2E report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-report
+          path: |
+            web/playwright-report/
+            web/test-results/
+            e2e-stack.log
+          retention-days: 7
+      - name: Stop the E2E stack
+        if: always()
+        run: $COMPOSE down -v

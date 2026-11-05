@@ -1,13 +1,23 @@
 import { createBrowserRouter, Navigate, type RouteObject } from 'react-router';
-import { ProfilePage } from '@/features/account';
-import { VehiclesPage } from '@/features/fleet';
-import { MembersPage } from '@/features/members';
-import { PlanDetailPage, PlanFormPage, PlanListPage } from '@/features/plans';
-import { StorePage } from '@/features/store';
 import { AcceptInvitePage, ForgotPasswordPage, LoginPage, RegisterPage, VerifyEmailPage } from '@/features/auth';
 import { AppLayout } from './AppLayout';
 import { RedirectIfSignedIn, RequireAuth, RequireDispatcher } from './guards';
 import { DriverUseAppPage, ForbiddenPage, NotFoundPage } from './pages';
+
+/**
+ * Screens behind the sign-in load on demand (W07): each feature, and Leaflet with the screens that draw a map, is its
+ * own chunk. The account screens stay in the main chunk: the session and guards use that feature anyway.
+ */
+const lazyPage = (load: () => Promise<{ default: () => React.JSX.Element }>) => async () => ({
+  Component: (await load()).default,
+});
+const ProfilePage = lazyPage(() => import('@/features/account').then((m) => ({ default: m.ProfilePage })));
+const VehiclesPage = lazyPage(() => import('@/features/fleet').then((m) => ({ default: m.VehiclesPage })));
+const MembersPage = lazyPage(() => import('@/features/members').then((m) => ({ default: m.MembersPage })));
+const StorePage = lazyPage(() => import('@/features/store').then((m) => ({ default: m.StorePage })));
+const PlanListPage = lazyPage(() => import('@/features/plans').then((m) => ({ default: m.PlanListPage })));
+const PlanFormPage = lazyPage(() => import('@/features/plans').then((m) => ({ default: m.PlanFormPage })));
+const PlanDetailPage = lazyPage(() => import('@/features/plans').then((m) => ({ default: m.PlanDetailPage })));
 
 /** Routes of docs/client/SCREENS.md §1. */
 export const routes: RouteObject[] = [
@@ -42,14 +52,14 @@ export const routes: RouteObject[] = [
     ),
     children: [
       { path: '/', element: <Navigate to="/plans" replace /> },
-      { path: '/plans', element: <PlanListPage /> },
-      { path: '/plans/new', element: <PlanFormPage /> },
-      { path: '/plans/:id', element: <PlanDetailPage /> },
-      { path: '/plans/:id/edit', element: <PlanFormPage /> },
-      { path: '/vehicles', element: <VehiclesPage /> },
-      { path: '/members', element: <MembersPage /> },
-      { path: '/store', element: <StorePage /> },
-      { path: '/profile', element: <ProfilePage /> },
+      { path: '/plans', lazy: PlanListPage },
+      { path: '/plans/new', lazy: PlanFormPage },
+      { path: '/plans/:id', lazy: PlanDetailPage },
+      { path: '/plans/:id/edit', lazy: PlanFormPage },
+      { path: '/vehicles', lazy: VehiclesPage },
+      { path: '/members', lazy: MembersPage },
+      { path: '/store', lazy: StorePage },
+      { path: '/profile', lazy: ProfilePage },
     ],
   },
   { path: '*', element: <NotFoundPage /> },
