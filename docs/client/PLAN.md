@@ -150,6 +150,7 @@ File nóng của client (không hai task song song cùng sửa): `web/package.js
 - **Phát sinh khi làm (2026-11-05):**
   - Backend chỉ có provider Nominatim/OSRM thật nên E2E dùng server giả trong compose (P-49, chủ dự án chọn): `compose.e2e.yaml`, `web/e2e/stub/server.mjs`, `web/e2e/e2e.env` (cổng 3317/6390/1035/8035/8091, project `pathwise-e2e` để không đụng DB và Mailpit dev). Solver chạy 2 s trong E2E.
   - Bước "tài xế báo kết quả" gọi API của app (app Flutter chưa có, M00–M03).
+  - Khoá JWT của stack E2E không nằm trong repo: sinh mỗi lần chạy (`E2E_JWT_SECRET=$(openssl rand -base64 32)`, CI sinh và che trong log); `compose.e2e.yaml` báo lỗi nếu thiếu. Commit đầu của PR #69 (`b024c64`) có một khoá test bịa trong `web/e2e/e2e.env` (gitleaks bắt được), chưa từng dùng ở môi trường nào; commit sau gỡ nó và `.gitleaksignore` ghi đúng finding đó kèm lý do (không viết lại lịch sử nhánh).
   - Dependency `@playwright/test` 1.64.1 (P-43). Vitest chỉ nhận `src/**/*.test.*`; ESLint có cấu hình Node cho server giả.
   - Tách chunk theo route (`lazy` của React Router; composition root chỉ import phần basemap; `PinPicker` import theo đường dẫn riêng): bundle chính 707 kB → 258 kB (gzip 213 → 79 kB), Leaflet nằm trong chunk của màn có bản đồ; hết cảnh báo chunk lớn của W04.
   - `Dialog` giữ focus bên trong khi Tab/Shift+Tab (trước đây Tab ra được trang phía sau); có test bàn phím.

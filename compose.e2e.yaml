@@ -1,5 +1,6 @@
 # E2E stack (W07, docs/client/PLAN.md): compose.yaml + this file, in a project of its own so it never touches the
 # dev database or the dev Mailpit:
+#   export E2E_JWT_SECRET="$(openssl rand -base64 32)"
 #   docker compose -p pathwise-e2e --env-file web/e2e/e2e.env -f compose.yaml -f compose.e2e.yaml --profile app up -d --build --wait
 # The backend's map clients point at a stub (web/e2e/stub/server.mjs): the run calls no real third-party service.
 # Mail goes to this project's Mailpit only.
@@ -21,7 +22,8 @@ services:
     env_file: !reset []
     environment:
       SPRING_PROFILES_ACTIVE: dev
-      TOKEN_JWT_ACCESS_TOKEN_SECRET: ${TOKEN_JWT_ACCESS_TOKEN_SECRET}
+      # Generated per run, never committed: export E2E_JWT_SECRET="$(openssl rand -base64 32)"
+      TOKEN_JWT_ACCESS_TOKEN_SECRET: ${E2E_JWT_SECRET:?export E2E_JWT_SECRET=$(openssl rand -base64 32) before starting the E2E stack}
       MAIL_OTP_SENDER_ADDRESS: no-reply@pathwise.local
       MAIL_OTP_SENDER_NAME: PathWise
       SERVICE_IDENTITY_APP_URL: http://localhost:4173
