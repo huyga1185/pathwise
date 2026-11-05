@@ -12,12 +12,15 @@ export default defineConfig({
   },
   server: {
     port: 5173,
-    proxy: { '/api': { target: 'http://localhost:8080', changeOrigin: false } },
+    // `vite preview` uses the same proxy; E2E points it at its own stack (PATHWISE_API_PROXY, web/e2e).
+    proxy: { '/api': { target: process.env.PATHWISE_API_PROXY ?? 'http://localhost:8080', changeOrigin: false } },
     // Logos and favicons come from brand/logo (docs/client/ARCHITECTURE.md §8).
     fs: { allow: ['..'] },
   },
   test: {
     environment: 'jsdom',
+    // Playwright owns e2e/ (W07).
+    include: ['src/**/*.test.{ts,tsx}'],
     setupFiles: ['./src/test/setup.ts'],
     css: false,
     restoreMocks: true,

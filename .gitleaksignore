@@ -1,0 +1,6 @@
+# Findings gitleaks may skip. Each line is a fingerprint (commit:file:rule:line) with the reason above it.
+# Never add a real secret here: rotate it and remove it instead.
+
+# W07, PR #69: a made-up JWT key for the E2E compose stack only, committed by mistake and removed in the next commit
+# (the stack now gets a key generated per run, E2E_JWT_SECRET). Never used by dev, staging or production.
+b024c64fe2e58d28dbd1666eba17157b345a9493:web/e2e/e2e.env:generic-api-key:9

@@ -8,7 +8,8 @@ import { errorMessages, fieldErrors, messageFor } from '@/shared/errors';
 import { requiredRule } from '@/shared/forms/rules';
 import { applyServerErrors, errorCode } from '@/shared/forms/serverErrors';
 import { vi } from '@/shared/i18n/vi';
-import { Button, ErrorBanner, PinPicker, SelectField, TextField } from '@/shared/ui';
+import { Button, ErrorBanner, SelectField, TextField } from '@/shared/ui';
+import { PinPicker } from '@/shared/ui/PinPicker';
 import { useStoreApi, type Store } from './storeApi';
 import './store.css';
 
