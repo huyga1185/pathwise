@@ -16,6 +16,9 @@ export type ActiveVehicle = Schemas['VehicleResponse'];
 
 /** While the server works on a plan (geocode, optimize) it is read again this often (UX_BRIEF §5.1: 2–3 s). */
 export const POLL_INTERVAL_MS = 2000;
+/** A plan being delivered (PUBLISHED, IN_PROGRESS) is read again this often while the tab is visible (§5). */
+export const TRACK_INTERVAL_MS = 30_000;
+export type Job = Schemas['JobResponse'];
 export const PAGE_SIZE = 20;
 
 export interface PlanFilter {
@@ -39,9 +42,18 @@ export function usePlans(filter: PlanFilter) {
   });
 }
 
+/** How often a plan is read again (ARCHITECTURE §5): never once it has ended. */
+export function planRefetchInterval(plan: PlanDetail | undefined): number | false {
+  if (!plan) return false;
+  if (plan.processingStatus !== 'IDLE') return POLL_INTERVAL_MS;
+  if (plan.status === 'PUBLISHED' || plan.status === 'IN_PROGRESS') return TRACK_INTERVAL_MS;
+  return false;
+}
+
 /**
- * `GET /plans/{id}`, read again every 2 s while `processingStatus` is not `IDLE` and stopped once it is
- * (ARCHITECTURE §5); the `version` of the last read is the one to send.
+ * `GET /plans/{id}`, read again every 2 s while `processingStatus` is not `IDLE`, every 30 s while delivered (only
+ * while the tab is visible: TanStack Query pauses intervals in the background), not at all once ended. The `version`
+ * of the last read is the one to send.
  */
 export function usePlan(id: number, enabled = true) {
   const api = useApi();
@@ -49,9 +61,29 @@ export function usePlan(id: number, enabled = true) {
     queryKey: queryKeys.plan(id),
     queryFn: () => unwrap(api.GET('/api/v1/plans/{id}', { params: { path: { id } } })),
     enabled,
-    refetchInterval: (query) =>
-      query.state.data && query.state.data.processingStatus !== 'IDLE' ? POLL_INTERVAL_MS : false,
+    refetchInterval: (query) => planRefetchInterval(query.state.data),
+    refetchIntervalInBackground: false,
   });
+}
+
+/**
+ * `GET /jobs/{id}` until it ends (API_SPEC §6): the plan goes back to IDLE without saying how its job ended, so a
+ * failed optimize is only known from the job. `job` is the one the POST returned (already ended in inline mode).
+ */
+export function useJob(job: Job | null) {
+  const api = useApi();
+  const id = job?.id ?? 0;
+  return useQuery({
+    queryKey: ['job', id],
+    queryFn: () => unwrap(api.GET('/api/v1/jobs/{id}', { params: { path: { id } } })),
+    enabled: job !== null && !isFinished(job),
+    initialData: job ?? undefined,
+    refetchInterval: (query) => (query.state.data && !isFinished(query.state.data) ? POLL_INTERVAL_MS : false),
+  });
+}
+
+export function isFinished(job: Job): boolean {
+  return job.status === 'SUCCEEDED' || job.status === 'FAILED';
 }
 
 /** People who can be given a route (`assignable=true`: DRIVER or `canDrive`, ACTIVE). */
@@ -99,10 +131,18 @@ export function usePlanApi() {
         await unwrap(api.POST('/api/v1/plans/{id}/geocode', { params: { path: { id } }, body: { version } }));
         await reload(id);
       },
+      /** Starts the optimize job and returns it (it may have ended already, inline mode). */
       optimize: async (id: number, version: number) => {
-        await unwrap(api.POST('/api/v1/plans/{id}/optimize', { params: { path: { id } }, body: { version } }));
+        const job = await unwrap(
+          api.POST('/api/v1/plans/{id}/optimize', { params: { path: { id } }, body: { version } }),
+        );
         await reload(id);
+        return job;
       },
+      publish: async (id: number, version: number) =>
+        store(await unwrap(api.POST('/api/v1/plans/{id}/publish', { params: { path: { id } }, body: { version } }))),
+      cancel: async (id: number, version: number) =>
+        store(await unwrap(api.POST('/api/v1/plans/{id}/cancel', { params: { path: { id } }, body: { version } }))),
       reload,
     };
   }, [api, queryClient]);

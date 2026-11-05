@@ -171,4 +171,17 @@ describe('accessibility', () => {
     await screen.findAllByRole('row');
     expect(await violations(container)).toEqual([]);
   });
+
+  it.each([
+    ['kết quả tối ưu', 'plan-detail-optimized', 'Tổng quan'],
+    ['theo dõi tiến độ', 'plan-detail-completed', 'Kết quả'],
+  ])('màn %s không có lỗi axe', async (_name, file, region) => {
+    server.use(
+      http.get(`${API}/plans/83`, () => ok(sample(file).data)),
+      ...signedInHandlers(),
+    );
+    const { container } = renderApp('/plans/83');
+    await screen.findByRole('region', { name: region });
+    expect(await violations(container)).toEqual([]);
+  });
 });

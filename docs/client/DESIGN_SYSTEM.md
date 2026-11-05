@@ -223,6 +223,13 @@ Hộp xác nhận cho hành động không hoàn tác được: giao việc, hu�
 
 - Bảng điểm giao và phân công trong form kế hoạch (prototype "Tạo kế hoạch"): mỗi ô là một `pw-field-input` không nhãn riêng, có `aria-label` theo dòng ("Mã đơn dòng 4"); ô lỗi viền `danger` 2px, câu lỗi `small` màu `danger` ngay dưới ô; nút xoá dòng là icon thùng rác `ink-muted`, đỏ khi hover; trên bảng có hộp lỗi "Còn N ô cần sửa trong biểu mẫu." (`role="alert"`).
 
+### Kết quả và theo dõi (web, W06)
+
+- Thẻ tổng quan: nhãn chữ hoa nhỏ `ink-muted`, giá trị 20/28 đậm, số tabular; hình nét `route` mờ 14% ở góc dưới phải (ghim, đường, đồng hồ, xe).
+- Khối tuyến: huy hiệu tròn màu `map-route-n` có hình xe trắng, tên tài xế 20/28, xe và sức chứa `ink-muted`, nút "Thu gọn"/"Mở danh sách" (`aria-expanded`); dòng tóm tắt số tabular; giờ dự kiến đậm.
+- Thanh tiến độ của tuyến khi theo dõi: cao 8px, các đoạn `success` / `danger` / `signal` / `line` (chờ) theo số điểm, cách nhau 2px, có `aria-label` nêu số từng loại.
+- Cảnh báo điểm không xếp được: viền `signal`, pill `dropReason`, nút chữ "Xem trên bản đồ". Toast giao việc ở góc dưới trái.
+
 ### Toast
 
 Thông báo ngắn sau một hành động, ở góc dưới màn hình; không thay cho lỗi gắn với ô nhập.
