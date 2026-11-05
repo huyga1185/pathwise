@@ -1,0 +1,153 @@
+/*
+ * Maps (prototype "Cửa hàng", "Soạn plan"): always light, + / − in the top-right corner (".map-ctl"), attribution
+ * bottom-right. Fixed colours here are the map's own (tiles are light in both themes, DESIGN_SYSTEM).
+ */
+.pw-map {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  min-height: 240px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: #f2efe9;
+  isolation: isolate;
+}
+.pw-map-canvas {
+  position: absolute;
+  inset: 0;
+  background: #f2efe9;
+  font-family: var(--font-sans);
+}
+.pw-map-pick .pw-map-canvas {
+  cursor: crosshair;
+}
+.pw-map-zoom {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.pw-map-actions {
+  position: absolute;
+  left: 8px;
+  top: 8px;
+  z-index: 1000;
+}
+.pw-map-ctl {
+  box-sizing: border-box;
+  min-width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  font: inherit;
+  font-size: 20px;
+  line-height: 1;
+  font-weight: 600;
+  color: #18231f;
+  background: #ffffff;
+  border: 1px solid #56635e;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.pw-map-ctl-text {
+  padding: 0 12px;
+  font-size: 14px;
+  line-height: 20px;
+}
+.pw-map-ctl:hover {
+  background: #dcebe6;
+}
+.pw-map-ctl:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.pw-map-ctl:focus-visible {
+  outline: 2px solid #0b6a5c;
+  outline-offset: 2px;
+}
+.pw-map .leaflet-control-attribution {
+  margin: 0 8px 8px 0;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.85);
+  font-size: 12px;
+  line-height: 16px;
+  color: #18231f;
+}
+.pw-map .leaflet-control-attribution a {
+  color: #0b6a5c;
+}
+.pw-depot-marker,
+.pw-stop-marker {
+  background: none;
+  border: 0;
+}
+.pw-depot-svg {
+  overflow: visible;
+  filter: drop-shadow(0 1px 1.5px rgba(0, 0, 0, 0.45));
+}
+.pw-stop-marker .pw-marker {
+  width: 100%;
+  height: 100%;
+}
+.pw-route-line {
+  fill: none;
+}
+.pw-route-r1 {
+  stroke: var(--map-route-1);
+}
+.pw-route-r2 {
+  stroke: var(--map-route-2);
+}
+.pw-route-r3 {
+  stroke: var(--map-route-3);
+}
+.pw-route-r4 {
+  stroke: var(--map-route-4);
+}
+.pw-route-r5 {
+  stroke: var(--map-route-5);
+}
+.pw-route-r6 {
+  stroke: var(--map-route-6);
+}
+.pw-route-r7 {
+  stroke: var(--map-route-7);
+}
+.pw-route-map {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.pw-route-map.is-expanded .pw-map {
+  aspect-ratio: auto;
+  height: min(80vh, 900px);
+}
+.pw-map-legend {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 24px;
+  color: var(--ink);
+}
+.pw-map-legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.pw-legend-swatch {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid #ffffff;
+  border-radius: var(--radius-full);
+  box-shadow: 0 0 0 1px var(--line);
+}

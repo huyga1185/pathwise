@@ -212,6 +212,13 @@ Hộp xác nhận cho hành động không hoàn tác được: giao việc, hu�
 - `size`: `md` (mặc định, xác nhận), `lg` (form ngắn), `full` (gần toàn màn hình, dùng cho chọn vị trí trên bản đồ: ô tìm địa chỉ + bản đồ lớn + ghim kéo được). `confirmDisabled` khoá nút xác nhận tới khi nội dung hợp lệ.
 - `busy` trong lúc request chạy; lỗi API hiện trong thân hộp, không đóng hộp.
 
+### Bản đồ (web, W04)
+
+- Khung bản đồ luôn theme sáng, tỉ lệ 16:9 (tối thiểu 240px), viền `line`, bo `radius-sm`; nút + / − ở góc trên phải (trắng, viền `#56635e`, 36px, như prototype), nút chữ ("Đặt ghim ở giữa bản đồ", "Mở rộng bản đồ") ở góc trên trái; attribution góc dưới phải trên nền trắng 85%.
+- Đường tuyến là đường thẳng màu `map-route-n` dày 4px qua kho → các điểm → kho. Marker điểm giao dùng class của `MapMarker`; marker tập trung được bằng Tab, Enter/Space chọn điểm.
+- Chú giải dưới bản đồ: icon kho "Kho xuất phát" rồi chấm màu + tên tài xế từng tuyến.
+- `PinPicker`: ô "Tìm địa chỉ" (gợi ý "Tìm trong Việt Nam, từ 3 ký tự."), danh sách kết quả (dòng đậm là phần đầu địa chỉ, dòng nhỏ `ink-muted` là phần còn lại), bản đồ một ghim (icon kho), chú giải và một dòng hướng dẫn.
+
 ### Toast
 
 Thông báo ngắn sau một hành động, ở góc dưới màn hình; không thay cho lỗi gắn với ô nhập.

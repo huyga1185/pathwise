@@ -63,7 +63,7 @@ Quy tắc cứng:
 | Port (contract) | Web | Mobile | Đổi khi nào |
 |---|---|---|---|
 | `Basemap` (tile bản đồ) | `platform/map/basemap.ts` | `platform/map/basemap.dart` | Đổi nhà cung cấp tile (MapTiler → khác): thêm một factory, đổi biến cấu hình (P-45) |
-| `MapView` component (`RouteMap`, `PinPicker`, `MapMarker`) | Leaflet bên trong `platform/map/*` | flutter_map bên trong `platform/map/*` | Đổi thư viện bản đồ (Leaflet → MapLibre): chỉ viết lại component trong `platform/map` |
+| `MapView` component (`RouteMap`, `PinMap`, icon kho; `PinPicker` ghép ở `shared/ui`) | Leaflet bên trong `platform/map/*` | flutter_map bên trong `platform/map/*` | Đổi thư viện bản đồ (Leaflet → MapLibre): chỉ viết lại component trong `platform/map` |
 | `TokenStore` (giữ token) | bộ nhớ (access) + cookie HttpOnly (refresh, do server đặt) | `flutter_secure_storage` (refresh) + bộ nhớ (access) | Đổi cách lưu (P-46) |
 | `ApiClient` | bọc `openapi-fetch` | bọc client `dart-dio` sinh từ OpenAPI | Đổi thư viện HTTP: chỉ sửa `data/http` |
 | `AppConfig` | `import.meta.env.VITE_*` | `--dart-define` | Thêm môi trường |
@@ -140,7 +140,8 @@ Theo API_SPEC §2 và UX_BRIEF §3.
 
 - Nhà cung cấp tile: **MapTiler** qua contract `Basemap { id, tileUrl, attribution, maxZoom, tileSize }`; chọn bằng `VITE_BASEMAP` / `--dart-define=BASEMAP`, key `VITE_MAPTILER_KEY` / `MAPTILER_KEY`. Có sẵn factory `osm()` cho dev khi không có key (chỉ dev, theo chính sách của OSM).
 - Key nằm phía client (bắt buộc với tile); giới hạn key theo domain/bundle id trong trang quản lý MapTiler. Không commit key; `.env.example` có tên biến.
-- Màn hình chỉ dùng component trong `platform/map`: `RouteMap` (tuyến, marker theo `routeIndex`, kho, chọn điểm, zoom, mở rộng khung), `PinPicker` (đặt ghim, tìm địa chỉ qua `GET /geocoding/search`, hộp thoại toàn màn hình), `DepotMarker`.
+- Màn hình chỉ dùng component bản đồ đã bọc: `platform/map` có `RouteMap` (tuyến, marker theo màu tuyến/kết quả, kho, đường nối, chọn điểm bằng chuột hoặc Enter/Space, + / −, mở rộng khung, chú giải), `PinMap` (một ghim: bấm bản đồ, kéo ghim, nút "Đặt ghim ở giữa bản đồ" cho bàn phím), `DepotIcon`; `shared/ui/PinPicker` ghép ô tìm địa chỉ (debounce 400 ms, từ 3 ký tự) + kết quả + `PinMap` + chú giải, `PinPickerDialog` đặt nó trong `Dialog size="full"`. Lý do tách (W04): `platform` là lớp dưới cùng, không được import `shared/ui` (`TextField`, `Dialog`) theo §2; Leaflet vẫn chỉ nằm trong `platform/map`. `PinPicker` nhận hàm `search` từ feature (`data/geocoding.ts` → `GET /geocoding/search`), không tự gọi HTTP.
+- Basemap chọn ở composition root (`basemapFor(config, import.meta.env.DEV)`, `BasemapProvider`); thiếu `VITE_MAPTILER_KEY` thì dev dùng `osm()`, production không có tile. Test luôn dùng `blankBasemap()` (không tải tile). Attribution của basemap luôn hiện, kể cả khi không có tile.
 - Quy tắc hiển thị (màu tuyến, marker, icon kho, attribution, đường nối thẳng vì API chưa có hình học đường): DESIGN_SYSTEM "Màu route trên bản đồ".
 - Tìm địa chỉ luôn qua backend (`GeocodingProvider` phía server), client không gọi API geocoding của bên thứ ba.
 
