@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { renderApp } from '@/test/renderApp';
 import { http } from 'msw';
 import { anonymousHandlers, API, ok, server, signedInHandlers } from '@/test/server';
+import { sample } from '@/test/samples';
 import {
   Button,
   DataTable,
@@ -149,6 +150,25 @@ describe('accessibility', () => {
     server.use(...signedInHandlers());
     const { container } = renderApp('/store');
     await screen.findByLabelText(/^Tên cửa hàng/);
+    expect(await violations(container)).toEqual([]);
+  });
+
+  it.each([
+    ['/plans', 'Kế hoạch giao hàng'],
+    ['/plans/new', 'Tạo kế hoạch'],
+    ['/plans/83', 'Giao sáng 01/12'],
+  ])('màn %s không có lỗi axe', async (path, heading) => {
+    server.use(
+      http.get(`${API}/plans`, () => ok(sample('plan-list').data)),
+      http.get(`${API}/plans/83`, () => ok(sample('plan-detail-geocoded').data)),
+      http.get(`${API}/store/members`, () => ok(sample('member-list').data)),
+      http.get(`${API}/vehicles`, () => ok(sample('vehicle-list').data)),
+      http.get(`${API}/store`, () => ok(sample('store').data)),
+      ...signedInHandlers(),
+    );
+    const { container } = renderApp(path);
+    await screen.findByRole('heading', { name: heading, level: 1 });
+    await screen.findAllByRole('row');
     expect(await violations(container)).toEqual([]);
   });
 });

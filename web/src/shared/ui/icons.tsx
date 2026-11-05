@@ -151,3 +151,8 @@ export const UserPlusIcon = () => (
     <path d="M17 8v6M14 11h6" />
   </Icon>
 );
+export const TrashIcon = () => (
+  <Icon>
+    <path d="M5 7h14M10 7V4h4v3M7 7l1 13h8l1-13" />
+  </Icon>
+);

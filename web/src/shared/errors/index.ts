@@ -52,7 +52,11 @@ const FIELD_SENTENCES: Record<string, string> = {
   // Choices (select): "chọn" rather than "nhập" (prototype "Xe").
   CAPACITY_UNIT_REQUIRED: 'Vui lòng chọn đơn vị.',
   ROLE_REQUIRED: 'Vui lòng chọn vai trò.',
-  INVALID_DEMAND: 'Số lượng không được âm.',
+  DRIVER_REQUIRED: 'Vui lòng chọn tài xế.',
+  VEHICLE_REQUIRED: 'Vui lòng chọn xe.',
+  INVALID_DEMAND: 'Số lượng phải là số nguyên, không âm.',
+  INVALID_MAX_DISTANCE: 'Quãng đường tối đa phải lớn hơn 0.',
+  INVALID_SERVICE_TIME: 'Thời gian phục vụ từ 0 đến 24 giờ.',
 };
 
 /**

@@ -219,6 +219,10 @@ Hộp xác nhận cho hành động không hoàn tác được: giao việc, hu�
 - Chú giải dưới bản đồ: icon kho "Kho xuất phát" rồi chấm màu + tên tài xế từng tuyến.
 - `PinPicker`: ô "Tìm địa chỉ" (gợi ý "Tìm trong Việt Nam, từ 3 ký tự."), danh sách kết quả (dòng đậm là phần đầu địa chỉ, dòng nhỏ `ink-muted` là phần còn lại), bản đồ một ghim (icon kho), chú giải và một dòng hướng dẫn.
 
+### Bảng nhập (web, W05)
+
+- Bảng điểm giao và phân công trong form kế hoạch (prototype "Tạo kế hoạch"): mỗi ô là một `pw-field-input` không nhãn riêng, có `aria-label` theo dòng ("Mã đơn dòng 4"); ô lỗi viền `danger` 2px, câu lỗi `small` màu `danger` ngay dưới ô; nút xoá dòng là icon thùng rác `ink-muted`, đỏ khi hover; trên bảng có hộp lỗi "Còn N ô cần sửa trong biểu mẫu." (`role="alert"`).
+
 ### Toast
 
 Thông báo ngắn sau một hành động, ở góc dưới màn hình; không thay cho lỗi gắn với ô nhập.
