@@ -106,6 +106,16 @@ File nóng của client (không hai task song song cùng sửa): `web/package.js
 - **Phạm vi:** `platform/map`: contract `Basemap` + factory `maptiler(key, style)`, `osm()` (chỉ dev), chọn theo env; `RouteMap` (marker theo `routeIndex`/tone, kho, đường nối, chọn điểm, + / −, mở rộng khung, chú giải), `PinPicker` (ghim, tìm địa chỉ qua `/geocoding/search` có debounce, hộp thoại `Dialog size="full"`), attribution bắt buộc; react-leaflet chỉ được import trong `platform/map`. Màn Cửa hàng (tên, timezone, kho).
 - **Acceptance:** đổi `VITE_BASEMAP` không đổi code màn nào (test render với `Basemap` giả); lint chặn import `leaflet`/`react-leaflet` ngoài `platform/map`; đặt kho bằng ghim gửi đúng `depot {lat, lon, address?}`; không có kho → cảnh báo.
 
+- **Phát sinh khi làm (2026-11-04):**
+  - Dependency: `leaflet` 1.9.4, `react-leaflet` 5.0.0, `@types/leaflet` (P-43).
+  - `PinPicker` không nằm trong `platform/map` như ARCHITECTURE §7 viết lúc đầu: nó cần `TextField`/`Dialog` của `shared/ui`, mà `platform` không được import lớp trên (§2). Tách: `platform/map` có `PinMap`, `RouteMap`, `DepotIcon`, `Basemap`; `shared/ui/PinPicker` + `PinPickerDialog` ghép phần form. ARCHITECTURE §2.1, §7 đã sửa.
+  - Thêm so với prototype: nút "Đặt ghim ở giữa bản đồ" (đặt ghim bằng bàn phím, WCAG 2.1.1) và chọn marker bằng Enter/Space (Leaflet chỉ dùng Enter để mở popup).
+  - react-leaflet chỉ đọc `className` của đường lúc tạo (`pathOptions` chỉ restyle): truyền `className` làm prop, không thì đường mang màu xanh mặc định của Leaflet (test bắt được).
+  - Chưa có MapTiler key: dev chạy `osm()` (máy chủ dự án đang bị OSM chặn tile, nên bản đồ dev có thể không có nền tới khi đặt `VITE_MAPTILER_KEY` trong `web/.env.local`). Production thiếu key thì không có tile (marker vẫn hiện).
+  - Test: thời gian chờ mặc định của Testing Library nâng lên 3 s (`src/test/setup.ts`), vì bộ test chạy song song với bản đồ có lúc vượt 1 s (trước khi nâng: 2/6 lần chạy cả bộ có một test đỏ, ở màn Xe hoặc Thành viên; sau khi nâng: 5/5 lần xanh). Setup bỏ qua phần DOM khi test chạy môi trường node (test ESLint) và thêm `createSVGRect` cho jsdom để Leaflet vẽ đường bằng SVG như trình duyệt.
+  - Bundle lớn hơn 500 kB sau khi thêm Leaflet (Vite cảnh báo): tách chunk theo route ở W07.
+  - Chưa chụp được màn Cửa hàng với backend thật: backend dev đang chạy trên máy chủ dự án (IntelliJ) có `POST /auth/login` thay vì `/auth/log-in` của `develop`, nên web không đăng nhập được qua nó.
+
 ### W05. Kế hoạch: danh sách, tạo/sửa, tìm toạ độ
 - **Ước lượng:** 2 ngày · **Màn:** Danh sách kế hoạch, Tạo kế hoạch, Soạn plan — tìm toạ độ
 - **Phạm vi:** danh sách (lọc trên URL, phân trang, trạng thái trống); form plan (thông tin, phân công, bảng điểm giao nhập được — react-hook-form field array; thêm/xoá dòng; giới hạn 100/20); lưu → `/plans/:id`; polling khi `GEOCODING`; sửa điểm lỗi bằng địa chỉ (PATCH stop) hoặc `PinPicker`; "Tìm lại toạ độ"; khoá thao tác khi đang xử lý; 409 `PLAN_MODIFIED`.

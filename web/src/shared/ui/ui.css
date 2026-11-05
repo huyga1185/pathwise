@@ -821,3 +821,65 @@ select.pw-field-input {
   border: 1px solid var(--success);
   border-radius: var(--radius-md);
 }
+
+/* PinPicker (prototype "Cửa hàng"): search, results, map, legend. */
+.pw-pin-picker {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+.pw-pin-search {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.pw-pin-results {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+.pw-pin-result {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  padding: var(--space-2) var(--space-4);
+  font: inherit;
+  text-align: left;
+  color: var(--ink);
+  background: none;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  cursor: pointer;
+}
+.pw-pin-results li:last-child .pw-pin-result {
+  border-bottom: 0;
+}
+.pw-pin-result:hover {
+  background: var(--surface-tint);
+}
+.pw-pin-result:focus-visible {
+  outline: 2px solid var(--route);
+  outline-offset: -2px;
+}
+.pw-pin-result span {
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--ink-muted);
+}
+.pw-pin-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-6);
+  color: var(--ink);
+}
+.pw-pin-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}

@@ -11,5 +11,6 @@ export { Dialog, type DialogProps } from './Dialog';
 export { Toast, type ToastProps } from './Toast';
 export { ErrorBanner, FieldError, EmptyState } from './Feedback';
 export { OtpInput, type OtpInputProps } from './OtpInput';
+export { PinPicker, PinPickerDialog, type PinPickerProps, type Place } from './PinPicker';
 export { AppHeader, type AppHeaderProps, type NavItem } from './AppHeader';
 export * from './icons';

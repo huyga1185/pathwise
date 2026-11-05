@@ -1,0 +1,47 @@
+/* Prototype "Cửa hàng": information card beside the map card (2:1), banners above. */
+.pw-store {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.pw-store-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+}
+.pw-store-intro {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.pw-store-warning,
+.pw-store-saved {
+  padding: 16px;
+  background: var(--surface-raised);
+  border: 1px solid var(--signal);
+  border-radius: var(--radius-md);
+  font-weight: 600;
+}
+.pw-store-saved {
+  border-color: var(--success);
+  font-weight: 400;
+}
+.pw-store-layout {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 24px;
+}
+.pw-store-info {
+  flex: 1 1 360px;
+  min-width: 0;
+}
+.pw-store-map {
+  flex: 2 1 560px;
+  min-width: 0;
+}
+.pw-store-coords {
+  font-variant-numeric: tabular-nums;
+}

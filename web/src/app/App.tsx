@@ -4,6 +4,7 @@ import { ApiProvider } from '@/data/ApiContext';
 import { createApi } from '@/data/http';
 import { SessionProvider } from '@/features/auth';
 import { readConfig } from '@/platform/config';
+import { BasemapProvider, basemapFor, type Basemap } from '@/platform/map';
 import { MemoryTokenStore } from '@/platform/tokenStore';
 import { ThemeProvider } from '@/shared/theme/ThemeProvider';
 
@@ -19,10 +20,13 @@ export function AppProviders({
   children,
   fetchImpl,
   queryClient,
+  basemap,
 }: {
   children: ReactNode;
   fetchImpl?: typeof fetch;
   queryClient?: QueryClient;
+  /** Tests pass a blank one; otherwise chosen from VITE_BASEMAP / VITE_MAPTILER_KEY (P-45). */
+  basemap?: Basemap;
 }) {
   const [deps] = useState(() => {
     const config = readConfig();
@@ -34,13 +38,19 @@ export function AppProviders({
       onSessionExpired: () => sessionEvents.dispatchEvent(new Event('expired')),
       fetch: fetchImpl ?? ((input, init) => globalThis.fetch(input, init)),
     });
-    return { client: queryClient ?? createQueryClient(), api: { api, tokenStore, sessionEvents } };
+    return {
+      client: queryClient ?? createQueryClient(),
+      api: { api, tokenStore, sessionEvents },
+      basemap: basemap ?? basemapFor(config, import.meta.env.DEV),
+    };
   });
   return (
     <ThemeProvider>
       <QueryClientProvider client={deps.client}>
         <ApiProvider value={deps.api}>
-          <SessionProvider>{children}</SessionProvider>
+          <BasemapProvider basemap={deps.basemap}>
+            <SessionProvider>{children}</SessionProvider>
+          </BasemapProvider>
         </ApiProvider>
       </QueryClientProvider>
     </ThemeProvider>

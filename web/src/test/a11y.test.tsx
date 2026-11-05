@@ -144,4 +144,11 @@ describe('accessibility', () => {
     await screen.findAllByRole('row');
     expect(await violations(container)).toEqual([]);
   });
+
+  it('màn cửa hàng (bản đồ, ô tìm, ghim) không có lỗi axe', async () => {
+    server.use(...signedInHandlers());
+    const { container } = renderApp('/store');
+    await screen.findByLabelText(/^Tên cửa hàng/);
+    expect(await violations(container)).toEqual([]);
+  });
 });
