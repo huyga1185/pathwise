@@ -31,7 +31,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       # Blocks new dependencies with known vulnerabilities of severity high or above.
-      - uses: actions/dependency-review-action@v4
+      - uses: actions/dependency-review-action@v5
         with:
           fail-on-severity: high
 
