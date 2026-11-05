@@ -21,6 +21,7 @@ jobs:
       code: ${{ steps.detect.outputs.code }}
       web: ${{ steps.detect.outputs.web }}
       e2e: ${{ steps.detect.outputs.e2e }}
+      mobile: ${{ steps.detect.outputs.mobile }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -130,6 +131,33 @@ jobs:
         run: pnpm test
       - name: Build
         run: pnpm build
+
+  # Driver app (M00): the Flutter version of mobile/pubspec.yaml; generated files must match their sources.
+  mobile:
+    needs: changes
+    if: ${{ always() && (needs.changes.result != 'success' || needs.changes.outputs.mobile == 'true') }}
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version-file: mobile/pubspec.yaml
+          cache: true
+      - name: Install
+        run: flutter pub get
+      - name: Check generated theme and API client
+        run: |
+          python3 -B ../scripts/build_tokens.py --check --only mobile
+          ../scripts/gen_dart_api.sh
+          git add --intent-to-add packages/pathwise_api
+          git diff --exit-code -- packages/pathwise_api
+      - name: Analyze
+        run: flutter analyze
+      - name: Test
+        run: flutter test
 
   # End-to-end on the real backend (W07): compose stack with a map stub (compose.e2e.yaml), the production web build
   # served by vite preview, Playwright through the MVP path. Mail stays in the stack's Mailpit; no third-party call.

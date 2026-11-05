@@ -55,6 +55,16 @@ pnpm test         # Vitest + MSW, không cần backend
 pnpm lint && pnpm typecheck && pnpm build
 ```
 
+App tài xế (`mobile/`, Flutter theo `mobile/.fvmrc`):
+
+```bash
+cd mobile && flutter pub get
+flutter run --dart-define=API_BASE=http://10.0.2.2:8080   # emulator Android tới backend trên máy
+flutter analyze && flutter test
+../scripts/gen_dart_api.sh        # sinh lại client sau khi đổi api/openapi.json (cần Docker)
+../scripts/build_mobile_brand.sh  # sinh lại icon/logo từ brand/logo (cần rsvg-convert)
+```
+
 E2E (Playwright, cần Docker): stack riêng `pathwise-e2e` (cổng trong `web/e2e/e2e.env`, không đụng DB/Mailpit dev; server giả thay Nominatim và OSRM, P-49):
 
 ```bash
