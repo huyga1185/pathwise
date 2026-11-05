@@ -157,7 +157,7 @@ Theo API_SPEC §2 và UX_BRIEF §3.
 - Component: web port 9 component tham chiếu sang TSX trong `shared/ui/` giữ **đúng tên và props** của `components.d.ts`; mobile làm widget cùng tên (`PwButton`, `StatusPill`, `StopCard`…) cùng ý nghĩa props.
 - Theme: mặc định theo hệ điều hành, người dùng đổi được, nhớ trên máy (`localStorage` web / `shared_preferences` mobile). Bản đồ luôn theme sáng.
 - Font: Be Vietnam Pro (Google Fonts trên web với subset `vietnamese`; bundle file font trong app mobile, không tải mạng lúc chạy).
-- Logo/favicon/app icon chép từ `brand/logo/` bằng script hoặc bước build, không sửa trực tiếp trong `web/`/`mobile/`.
+- Logo/favicon/app icon chép từ `brand/logo/` bằng script hoặc bước build, không sửa trực tiếp trong `web/`/`mobile/`. Web: `brand/logo` là `publicDir` của Vite (phục vụ ở `/app/favicon.svg`… khi dev, chép vào `dist/` khi build).
 
 ## 9. Điều hướng
 

@@ -7,6 +7,8 @@ import { defineConfig } from 'vite';
 export default defineConfig({
   base: '/app/',
   plugins: [react()],
+  // Favicons and logos come straight from brand/logo (docs/client/ARCHITECTURE.md §8): served under /app/ in dev, copied into dist.
+  publicDir: '../brand/logo',
   resolve: {
     alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },
   },
@@ -14,8 +16,6 @@ export default defineConfig({
     port: 5173,
     // `vite preview` uses the same proxy; E2E points it at its own stack (PATHWISE_API_PROXY, web/e2e).
     proxy: { '/api': { target: process.env.PATHWISE_API_PROXY ?? 'http://localhost:8080', changeOrigin: false } },
-    // Logos and favicons come from brand/logo (docs/client/ARCHITECTURE.md §8).
-    fs: { allow: ['..'] },
   },
   test: {
     environment: 'jsdom',
