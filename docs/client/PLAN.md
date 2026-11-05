@@ -121,6 +121,14 @@ File nóng của client (không hai task song song cùng sửa): `web/package.js
 - **Phạm vi:** danh sách (lọc trên URL, phân trang, trạng thái trống); form plan (thông tin, phân công, bảng điểm giao nhập được — react-hook-form field array; thêm/xoá dòng; giới hạn 100/20); lưu → `/plans/:id`; polling khi `GEOCODING`; sửa điểm lỗi bằng địa chỉ (PATCH stop) hoặc `PinPicker`; "Tìm lại toạ độ"; khoá thao tác khi đang xử lý; 409 `PLAN_MODIFIED`.
 - **Acceptance:** lỗi `stops[3].timeWindow.end` hiện ở đúng ô dòng 4; `STORE_DEPOT_REQUIRED` dẫn sang `/store`; polling dừng khi `IDLE` và dùng `version` mới (test với MSW đổi dần `processingStatus`); "Tối ưu lộ trình" khoá khi còn điểm chưa có toạ độ.
 
+- **Phát sinh khi làm (2026-11-05):**
+  - Màn `/plans/:id` ở W05 vẽ plan DRAFT chưa tối ưu (tìm toạ độ); plan đã tối ưu hoặc đã giao việc tạm hiện "đang xây dựng (W06)". Nút "Tối ưu lộ trình" đã gọi `POST /optimize` và theo dõi bằng polling chung; màn kết quả là việc của W06.
+  - Prototype ghi "Để trống địa chỉ và đặt ghim sau khi lưu", nhưng API trả 400 `ADDRESS_OR_COORDINATES_REQUIRED` khi điểm giao không có cả địa chỉ lẫn toạ độ (API_SPEC §7): câu gợi ý đổi thành "Ghi địa chỉ gần đúng, sau khi lưu đặt ghim đúng chỗ" (docs đúng hơn prototype).
+  - Cột số lượng của bảng điểm giao theo đơn vị của các xe đã chọn (prototype chỉ có "Thùng" vì xe mẫu tính thùng); `ORDER` không có cột (D-36).
+  - Form chờ danh sách tài xế/xe/cửa hàng tải xong mới dựng (ô chọn nhận giá trị lúc mount); khi sửa, tài xế/xe trong plan mà đã bị vô hiệu hoá/tắt vẫn có trong ô chọn để không mất giá trị (server sẽ báo `INVALID_ASSIGNMENT` nếu cần).
+  - Thêm `todayIn(timeZone)` (`shared/format`), `TrashIcon`, `data/queryKeys` cho plan; câu lỗi `INVALID_DEMAND`, `INVALID_MAX_DISTANCE`, `INVALID_SERVICE_TIME`, `DRIVER_REQUIRED`, `VEHICLE_REQUIRED` ghi vào UX_BRIEF §6.2.
+  - Phát hiện F-51 (OpenAPI ghi `PlanDraftRequest.version` bắt buộc cho cả `POST`; client không gửi `version` khi tạo).
+
 ### W06. Tối ưu, kết quả, giao việc, theo dõi
 - **Ước lượng:** 2 ngày · **Màn:** Soạn plan — sau khi tối ưu, Xác nhận giao việc, Theo dõi tiến độ
 - **Phạm vi:** optimize + polling `OPTIMIZING`; màn kết quả (thẻ tổng quan, khối tuyến thu gọn được, bảng ↔ bản đồ, cảnh báo `INFEASIBLE`); giao việc (hộp xác nhận, `SHIFT_OVERLAP` với link plan trùng, toast); huỷ (DRAFT/PUBLISHED); theo dõi (đếm theo kết quả, `routes[].status`, thanh tiến độ, lý do, polling 30 s chỉ khi tab hiện, dừng khi kết thúc). Job lỗi (`NO_SOLUTION`, `ROUTING_PROVIDER_ERROR`…) hiện câu theo UX_BRIEF và giữ kết quả cũ.

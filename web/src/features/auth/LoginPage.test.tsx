@@ -18,7 +18,7 @@ describe('Phiên đăng nhập', () => {
     server.use(...signedInHandlers());
     renderApp('/plans');
 
-    expect(await screen.findByRole('heading', { name: 'Kế hoạch' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Kế hoạch giao hàng' })).toBeInTheDocument();
     expect(await screen.findByText('Tiệm bánh Cô Lan')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Kế hoạch' })).toHaveAttribute('aria-current', 'page');
   });

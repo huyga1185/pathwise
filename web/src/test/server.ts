@@ -32,6 +32,7 @@ export function signedInHandlers(user = owner) {
     http.get(`${API}/users/me`, () => ok(user)),
     http.get(`${API}/store`, () => ok({ id: 182, name: 'Tiệm bánh Cô Lan', timezone: 'Asia/Ho_Chi_Minh' })),
     http.post(`${API}/auth/log-out`, () => new HttpResponse(null, { status: 204 })),
+    http.get(`${API}/plans`, () => ok({ items: [], page: 0, size: 20, totalPages: 0, totalElements: 0 })),
   ];
 }
 

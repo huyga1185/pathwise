@@ -1,0 +1,339 @@
+/* Prototypes "Danh sách kế hoạch", "Tạo kế hoạch", "Soạn plan — tìm toạ độ". */
+.pw-plans-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+}
+.pw-plans-intro {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+.pw-back-link {
+  font-weight: 600;
+  text-decoration: none;
+}
+.pw-plan-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+}
+.pw-tabular {
+  font-variant-numeric: tabular-nums;
+}
+.pw-plans-filter {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 16px;
+  padding: 16px;
+  background: var(--surface-raised);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+}
+.pw-plans-filter-date {
+  flex: 0 1 200px;
+}
+.pw-plans-filter-status {
+  flex: 0 1 220px;
+}
+.pw-plans-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.pw-plans-table table {
+  min-width: 900px;
+}
+.pw-plans-link {
+  font-weight: 600;
+}
+.pw-plans-pager {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--ink-muted);
+}
+.pw-plans-pager-buttons {
+  display: flex;
+  gap: 8px;
+}
+.pw-plans-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 48px 24px;
+  text-align: center;
+  background: var(--surface-raised);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+}
+.pw-plans-empty h2 {
+  margin: 0;
+  font-size: 20px;
+  line-height: 28px;
+  font-weight: 600;
+}
+.pw-plans-empty p {
+  max-width: 480px;
+}
+.pw-plans-empty-art {
+  max-width: 100%;
+}
+.pw-art-tint {
+  fill: var(--surface-tint);
+}
+.pw-art-street {
+  stroke: var(--surface-raised);
+}
+.pw-art-route {
+  stroke: var(--route);
+}
+.pw-art-route-fill {
+  fill: var(--route);
+}
+.pw-art-ink {
+  fill: var(--ink);
+}
+.pw-art-raised {
+  fill: var(--surface-raised);
+}
+
+/* Plan form */
+.pw-plan-form {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.pw-plan-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+}
+.pw-plan-footer {
+  display: flex;
+  justify-content: flex-end;
+}
+.pw-plans-alert {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 24px;
+  padding: 16px;
+  background: var(--surface-raised);
+  border: 1px solid var(--danger);
+  border-radius: var(--radius-md);
+  font-weight: 600;
+}
+.pw-plans-alert > span {
+  flex: 1 1 360px;
+}
+.pw-card-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+.pw-card-head h2 {
+  margin: 0;
+  font-size: 20px;
+  line-height: 28px;
+  font-weight: 600;
+}
+.pw-plan-info {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+  gap: 16px;
+}
+.pw-plan-depot {
+  min-height: 36px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.pw-plan-depot a {
+  font-weight: 600;
+}
+.pw-edit-table td,
+.pw-edit-table th {
+  padding: 8px;
+  vertical-align: top;
+}
+.pw-edit-table .pw-field-input {
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+.pw-assign-table {
+  min-width: 820px;
+}
+.pw-stops-table {
+  min-width: 1180px;
+}
+.pw-col-label {
+  width: 120px;
+}
+.pw-col-phone {
+  width: 140px;
+}
+.pw-col-address {
+  width: 300px;
+}
+.pw-col-window {
+  width: 210px;
+}
+.pw-col-demand {
+  width: 80px;
+}
+.pw-cell-error .pw-field-input {
+  border: 2px solid var(--danger);
+  padding: 7px;
+}
+.pw-cell-msg {
+  margin: 4px 0 0;
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--danger);
+}
+.pw-window {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.pw-row-remove:hover {
+  color: var(--danger);
+}
+.pw-plan-add {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Geocode view */
+.pw-plan-header-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  max-width: 100%;
+}
+.pw-plans-why {
+  text-align: right;
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--ink-muted);
+}
+.pw-plans-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px;
+  background: var(--surface-raised);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+}
+.pw-plans-missing {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 24px;
+  padding: 16px;
+  background: var(--surface-raised);
+  border: 1px solid var(--danger);
+  border-radius: var(--radius-md);
+}
+.pw-plans-missing-text {
+  flex: 1 1 420px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.pw-plans-missing h2 {
+  margin: 0;
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 600;
+}
+.pw-geocode-layout {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 24px;
+}
+.pw-geocode-list {
+  flex: 999 1 560px;
+  min-width: 0;
+}
+.pw-geocode-table table {
+  min-width: 720px;
+}
+.pw-plans-found {
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--ink-muted);
+}
+.pw-stop-pick {
+  padding: 0;
+  font: inherit;
+  font-weight: 600;
+  text-align: left;
+  color: var(--ink);
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+.pw-stop-pick:focus-visible {
+  outline: 2px solid var(--route);
+  outline-offset: 2px;
+}
+.pw-geocode-fix {
+  flex: 1 1 400px;
+  min-width: 0;
+}
+.pw-geocode-fix-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.pw-geocode-fix-head h2 {
+  flex: 1 1 auto;
+}
+.pw-or {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--ink-muted);
+}
+.pw-or span {
+  flex: 1 1 auto;
+  height: 1px;
+  background: var(--line);
+}
+.pw-geocode-map {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+.pw-map-4x3 {
+  aspect-ratio: 4 / 3;
+}
+.pw-geocode-fix-actions {
+  justify-content: flex-end;
+}
