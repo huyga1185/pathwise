@@ -4,6 +4,7 @@
     "planId": 83,
     "planName": "Giao sáng 01/12",
     "planDate": "2026-12-01",
+    "timezone": "Asia/Ho_Chi_Minh",
     "status": "PENDING",
     "start": {
       "address": "Kho 45 Lê Lợi, Hải Châu, Đà Nẵng",

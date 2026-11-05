@@ -20,6 +20,7 @@ DriverRouteDetailResponse _$DriverRouteDetailResponseFromJson(
       'start',
       'status',
       'stops',
+      'timezone',
     ],
   );
   final val = DriverRouteDetailResponse(
@@ -45,6 +46,7 @@ DriverRouteDetailResponse _$DriverRouteDetailResponseFromJson(
           .map((e) => DriverStopResponse.fromJson(e as Map<String, dynamic>))
           .toList(),
     ),
+    timezone: $checkedConvert('timezone', (v) => v as String),
   );
   return val;
 });
@@ -60,6 +62,7 @@ Map<String, dynamic> _$DriverRouteDetailResponseToJson(
   'start': instance.start.toJson(),
   'status': _$DriverRouteDetailResponseStatusEnumEnumMap[instance.status]!,
   'stops': instance.stops.map((e) => e.toJson()).toList(),
+  'timezone': instance.timezone,
 };
 
 const _$DriverRouteDetailResponseStatusEnumEnumMap = {

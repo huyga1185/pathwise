@@ -5,7 +5,7 @@
 > Cột "Hiện trạng" ở mọi bảng: ✅ khớp spec và có test · 🟡 có nhưng còn lệch (ghi rõ lệch gì) · ❌ chưa có. Lịch sử triển khai theo task nằm ở `CURRENT_STATE.md` §5, không ghi ở đây.
 > Lần rà soát contract gần nhất: T44 (2026-10-29, P-32).
 
-## 0. Lệch hiện tại so với spec (cập nhật 2026-11-04, sau T46)
+## 0. Lệch hiện tại so với spec (cập nhật 2026-11-05, sau T47)
 
 - `GET /admin/users` chưa trả `storeId`, `status`.
 - §7: chưa có `driver-locations` (T32), `routes` (T28).
@@ -317,7 +317,7 @@ Người gọi phải có `role=DRIVER` hoặc `canDrive=true` (D-21); người 
 
 | Method & path | Quyền | Request | Response | Lỗi chính | Hiện trạng |
 |---|---|---|---|---|---|
-| `GET /driver/routes` | R | `date?` (`YYYY-MM-DD`, mặc định hôm nay theo timezone store) | `[{routeId, planId, planName, planDate, status, stopCount, completedCount, plannedStart}]`, theo `plannedStart` | 400 `MALFORMED_REQUEST` (ngày sai dạng) | ✅ |
+| `GET /driver/routes` | R | `date?` (`YYYY-MM-DD`, mặc định hôm nay theo timezone store) | `[{routeId, planId, planName, planDate, timezone, status, stopCount, completedCount, plannedStart}]`, theo `plannedStart`; `timezone` là timezone của plan (T47) | 400 `MALFORMED_REQUEST` (ngày sai dạng) | ✅ |
 | `GET /driver/routes/{routeId}` | R | — | `DriverRouteDetail` | 404 | ✅ |
 | `PATCH /driver/routes/{routeId}/stops/{stopId}/status` | R | `{status: DELIVERED\|FAILED\|SKIPPED, failureReason?}` | 200 `{stop: DriverStop, routeStatus, planStatus}` | 400 · 404 · 422 `INVALID_STOP_TRANSITION` · 422 `FAILURE_REASON_REQUIRED` · 422 `PLAN_NOT_ACTIVE` | ✅ |
 | `POST /driver/location` | R | `{points:[{lat, lon, accuracyMeters?, headingDegrees?, speedMps?, recordedAt}]}`, 1–100 điểm theo thứ tự thời gian (D-26) | 204 (Should). MVP chỉ giữ điểm có `recordedAt` mới nhất. | 400 | ❌ T32 |
@@ -326,7 +326,8 @@ Người gọi phải có `role=DRIVER` hoặc `canDrive=true` (D-21); người 
 ```jsonc
 // DriverRouteDetail
 {
-  "routeId": 11, "planId": 7, "planName": "Giao sáng 22/10", "planDate": "2026-10-22", "status": "PENDING|IN_PROGRESS|COMPLETED",   // status: của route
+  "routeId": 11, "planId": 7, "planName": "Giao sáng 22/10", "planDate": "2026-10-22", "timezone": "Asia/Ho_Chi_Minh",   // timezone: của plan (P-14, T47)
+  "status": "PENDING|IN_PROGRESS|COMPLETED",   // status: của route
   "start": { "address": "…", "lat": 16.05, "lon": 108.2 }, "end": { "address": "…", "lat": 16.05, "lon": 108.2 },  // D-20
   "stops": [ DriverStop, … ]   // theo sequence
 }
@@ -341,6 +342,7 @@ Người gọi phải có `role=DRIVER` hoặc `canDrive=true` (D-21); người 
                            "distanceMeters": 400, "durationSeconds": 60, "location": [108.21, 16.055] } ] } ] }
 ```
 
+- `timezone` (T47) là bản chụp timezone của cửa hàng lúc lưu plan, như `PlanDetail.timezone`: app hiện `plannedStart`, `plannedArrival` theo timezone này, không theo máy. Tài xế không đọc được `GET /store`.
 - Dẫn đường (D-07): client tự dựng deep link Google Maps hoặc Apple Maps theo nền tảng từ `lat`/`lon` của stop; server không trả URL (P-32).
 - `PATCH …/status` của tài xế trả `routeStatus` (cùng nghĩa với `status` của route ở trên) và `planStatus` để app biết route/plan đã chuyển `IN_PROGRESS` hay `COMPLETED` (BR-11). Cập nhật trạng thái stop không tăng `version` của plan (§1). Chỉ đi từ `PENDING`; stop đã kết thúc không đổi được nữa (P-34).
   - Route tìm được như `GET`, trừ một điểm (P-36): route của plan **đã publish rồi bị huỷ** trả 422 `PLAN_NOT_ACTIVE` thay vì 404, để app biết plan đã huỷ. Route của plan chưa từng publish, của tài xế khác hay store khác, và stop không thuộc route đó → 404 `NOT_FOUND`.

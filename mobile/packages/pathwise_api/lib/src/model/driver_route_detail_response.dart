@@ -35,6 +35,8 @@ class DriverRouteDetailResponse {
     required  this.status,
 
     required  this.stops,
+
+    required  this.timezone,
   });
 
   @JsonKey(
@@ -133,6 +135,18 @@ class DriverRouteDetailResponse {
 
 
 
+  @JsonKey(
+    
+    name: r'timezone',
+    required: true,
+    includeIfNull: false,
+  )
+
+
+  final String timezone;
+
+
+
 
 
     @override
@@ -144,7 +158,8 @@ class DriverRouteDetailResponse {
       other.routeId == routeId &&
       other.start == start &&
       other.status == status &&
-      other.stops == stops;
+      other.stops == stops &&
+      other.timezone == timezone;
 
     @override
     int get hashCode =>
@@ -155,7 +170,8 @@ class DriverRouteDetailResponse {
         routeId.hashCode +
         start.hashCode +
         status.hashCode +
-        stops.hashCode;
+        stops.hashCode +
+        timezone.hashCode;
 
   factory DriverRouteDetailResponse.fromJson(Map<String, dynamic> json) => _$DriverRouteDetailResponseFromJson(json);
 
