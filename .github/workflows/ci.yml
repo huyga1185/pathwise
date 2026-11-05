@@ -72,14 +72,14 @@ jobs:
             }' target/site/jacoco/jacoco.csv >> "$GITHUB_STEP_SUMMARY"
       - name: Upload test reports
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: test-reports
           path: be/target/surefire-reports/
           if-no-files-found: ignore
       - name: Upload coverage report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: coverage-report
           path: be/target/site/jacoco/
@@ -88,7 +88,7 @@ jobs:
       # responses captured by the acceptance tests.
       - name: Upload API contract
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: api-contract
           path: |
@@ -171,7 +171,7 @@ jobs:
         run: $COMPOSE logs --no-color > e2e-stack.log
       - name: Upload E2E report
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: e2e-report
           path: |
