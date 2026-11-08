@@ -51,7 +51,14 @@ class PwButton extends StatelessWidget {
         : Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(label, style: PwTypeStyles.heading.copyWith(color: foreground)),
+              // Large system text wraps the label onto more lines and the button grows; it is never cut (M03).
+              Flexible(
+                child: Text(
+                  label,
+                  textAlign: TextAlign.center,
+                  style: PwTypeStyles.heading.copyWith(color: foreground),
+                ),
+              ),
               if (icon != null) ...[const SizedBox(width: PwSpacing.space2), Icon(icon, size: 20, color: foreground)],
             ],
           );

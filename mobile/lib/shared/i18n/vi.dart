@@ -24,7 +24,11 @@ abstract final class Vi {
   static const retry = 'Thử lại';
   static const logoutTitle = 'Đăng xuất khỏi app?';
   static const logoutBody = 'Bạn cần đăng nhập lại để xem tuyến của mình.';
-  static String accountMenu(String name) => '$name — đăng xuất';
+  static String accountMenu(String name) => '$name — tài khoản và giao diện';
+  static const appearance = 'Giao diện';
+  static const themeSystem = 'Theo máy';
+  static const themeLight = 'Sáng';
+  static const themeDark = 'Tối';
 
   // Tuyến hôm nay (M01)
   static const myRoutes = 'Tuyến của tôi';
@@ -97,6 +101,7 @@ abstract final class Vi {
   static const planNotActiveDetail = 'Không báo kết quả được nữa. Liên hệ điều phối viên nếu cần.';
   static const reportFailed = 'Không gửi được kết quả.';
   static const routeGone = 'Tuyến này không còn.';
-  static const routeGoneDetail = 'Kế hoạch có thể đã bị huỷ. Dừng giao và liên hệ điều phối viên.';
+  static const routeGoneDetail = 'Liên hệ điều phối viên nếu cần.';
+  static const stopDelivering = 'Dừng giao và liên hệ điều phối viên.';
   static const stopNotFound = 'Không tìm thấy điểm giao này trong tuyến.';
 }

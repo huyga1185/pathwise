@@ -1,7 +1,9 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pathwise_driver/app/theme_mode.dart';
 import 'package:pathwise_driver/features/driver_routes/route_list_screen.dart';
+import 'package:pathwise_driver/platform/preferences.dart';
 
 import '../support/app.dart';
 import '../support/fake_api.dart';
@@ -124,7 +126,7 @@ void main() {
     expect(server.requests.last.path, '/api/v1/driver/routes/64');
   });
 
-  testWidgets('chạm chữ viết tắt tên rồi xác nhận thì đăng xuất', (tester) async {
+  testWidgets('chữ viết tắt tên mở menu tài khoản; "Đăng xuất" hỏi lại rồi đăng xuất', (tester) async {
     final server = driverServer((request) async {
       if (request.path == '/api/v1/auth/log-out') return const FakeReply(204);
       return FakeReply.ok(<Object>[]);
@@ -133,11 +135,58 @@ void main() {
 
     await tester.tap(find.text('TA'));
     await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(Center, 'Đăng xuất').last);
+    expect(find.text('Tài xế A'), findsOneWidget);
+    expect(find.text('taixe.a@example.com'), findsOneWidget);
+    await tester.tap(find.text('Đăng xuất'));
+    await tester.pumpAndSettle();
+    expect(find.text('Đăng xuất khỏi app?'), findsOneWidget);
+    await tester.tap(find.descendant(of: find.byType(AlertDialog), matching: find.text('Đăng xuất')));
     await tester.pumpAndSettle();
 
     expect(find.text('Đăng nhập'), findsWidgets);
     expect(store.refreshToken, isNull);
+  });
+
+  testWidgets('chọn giao diện Tối thì đổi ngay và nhớ trên máy; Theo máy thì xoá lựa chọn', (tester) async {
+    final preferences = MemoryPreferences();
+    await pumpApp(
+      tester,
+      driverServer((request) async => FakeReply.ok(<Object>[])),
+      refreshToken: 'refresh-1',
+      preferences: preferences,
+    );
+    ThemeMode mode() => tester.widget<MaterialApp>(find.byType(MaterialApp)).themeMode!;
+    expect(mode(), ThemeMode.system);
+
+    await tester.tap(find.text('TA'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Tối'));
+    await tester.pumpAndSettle();
+    expect(mode(), ThemeMode.dark);
+    expect(preferences.values, {'pw-theme': 'dark'});
+    expect(
+      tester.getSemantics(find.bySemanticsLabel('Tối')),
+      matchesSemantics(
+        label: 'Tối',
+        isButton: true,
+        hasCheckedState: true,
+        isChecked: true,
+        isInMutuallyExclusiveGroup: true,
+        hasTapAction: true,
+      ),
+    );
+
+    await tester.tap(find.text('Theo máy'));
+    await tester.pumpAndSettle();
+    expect(mode(), ThemeMode.system);
+    expect(preferences.values, isEmpty);
+  });
+
+  test('giao diện đã lưu được đọc lúc mở app; giá trị lạ thì theo máy', () async {
+    expect(await savedThemeMode(MemoryPreferences({'pw-theme': 'light'})), ThemeMode.light);
+    expect(await savedThemeMode(MemoryPreferences({'pw-theme': 'dark'})), ThemeMode.dark);
+    expect(await savedThemeMode(MemoryPreferences({'pw-theme': 'x'})), ThemeMode.system);
+    expect(await savedThemeMode(MemoryPreferences()), ThemeMode.system);
   });
 
   test('chữ viết tắt lấy chữ đầu của từ đầu và từ cuối', () {

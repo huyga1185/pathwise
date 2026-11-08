@@ -27,8 +27,8 @@ class RouteServer {
   /// Answers result requests instead of recording them.
   FakeReply? refuse;
 
-  /// True: the route answers 404, as once its plan is cancelled (API_SPEC §8).
-  bool gone = false;
+  /// True: the plan was cancelled after publishing; the route answers 422 PLAN_NOT_ACTIVE (T48, API_SPEC §8).
+  bool cancelled = false;
 
   /// False: reading the route fails with no answer.
   bool routeOnline = true;
@@ -63,7 +63,7 @@ class RouteServer {
     }
     if (request.path == '/api/v1/driver/routes/64') {
       if (!routeOnline) throw DioException(requestOptions: request, type: DioExceptionType.connectionError);
-      if (gone) return FakeReply.fail(404, 'NOT_FOUND');
+      if (cancelled) return FakeReply.fail(422, 'PLAN_NOT_ACTIVE');
       return FakeReply.ok(jsonDecode(jsonEncode(route)));
     }
     return FakeReply.ok(<Object>[]);
@@ -252,18 +252,21 @@ void main() {
     expect(server.patches, hasLength(1));
   });
 
-  testWidgets('mở màn báo kết quả thì đọc lại tuyến; plan vừa bị huỷ (404) thì bảo dừng giao', (tester) async {
+  testWidgets('mở màn báo kết quả thì đọc lại tuyến; plan vừa bị huỷ (PLAN_NOT_ACTIVE) thì bảo dừng giao', (
+    tester,
+  ) async {
     final server = RouteServer(sampleRoute());
     await pumpApp(tester, server.server, refreshToken: 'refresh-1');
     await goTo(tester, '/routes/64');
     final reads = server.routeReads;
 
-    server.gone = true;
+    server.cancelled = true;
     await tester.tap(find.text('Báo kết quả'));
     await tester.pumpAndSettle();
 
     expect(server.routeReads, reads + 1);
-    expect(find.textContaining('Tuyến này không còn.', findRichText: true), findsOneWidget);
+    expect(find.textContaining('Plan đã kết thúc hoặc đã bị huỷ.', findRichText: true), findsOneWidget);
+    expect(find.textContaining('Dừng giao và liên hệ điều phối viên.', findRichText: true), findsOneWidget);
     expect(find.text('Đã giao'), findsNothing);
 
     await tester.tap(find.text('Về danh sách tuyến'));
@@ -279,12 +282,13 @@ void main() {
 
     await tester.pump(const Duration(seconds: 29));
     expect(server.routeReads, reads);
-    server.gone = true;
+    server.cancelled = true;
     await tester.pump(const Duration(seconds: 1));
     await tester.pumpAndSettle();
 
     expect(server.routeReads, reads + 1);
-    expect(find.textContaining('Tuyến này không còn.', findRichText: true), findsOneWidget);
+    expect(find.textContaining('Plan đã kết thúc hoặc đã bị huỷ.', findRichText: true), findsOneWidget);
+    expect(find.textContaining('Dừng giao và liên hệ điều phối viên.', findRichText: true), findsOneWidget);
   });
 
   testWidgets('tải lại không tới được server (sóng yếu) thì giữ nguyên tuyến đang hiện', (tester) async {

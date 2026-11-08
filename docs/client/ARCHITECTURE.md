@@ -68,7 +68,8 @@ Quy tắc cứng:
 | `ApiClient` | bọc `openapi-fetch` | bọc client `dart-dio` sinh từ OpenAPI | Đổi thư viện HTTP: chỉ sửa `data/http` |
 | `AppConfig` | `import.meta.env.VITE_*` | `--dart-define` | Thêm môi trường |
 | `Clock` / định dạng giờ | `Intl` + timezone của store | `platform/clock.dart` (`Clock`, `SystemClock`; test dùng đồng hồ cố định) + `shared/format.dart` đổi giờ bằng package `timezone` theo `timezone` của plan (T47, P-50) | Hỗ trợ nhiều timezone |
-| `Launcher` (rời app: gọi điện, bản đồ) | — (link thường) | `platform/launcher.dart` (`url_launcher`, `LaunchMode.externalApplication`); test dùng launcher giả ghi lại link | Đổi cách mở app ngoài, thêm dẫn đường trong app (T33) |
+| `Launcher` (rời app: gọi điện, bản đồ, trình duyệt) | — (link thường) | `platform/launcher.dart` (`url_launcher`, `LaunchMode.externalApplication`); test dùng launcher giả ghi lại link. M03: "Quên mật khẩu", "Nhập mã mời" mở `AppConfig.webPage(...)` | Đổi cách mở app ngoài, thêm dẫn đường trong app (T33) |
+| `Preferences` (cài đặt nhỏ trên máy) | `PreferenceStore` (`localStorage`) | `platform/preferences.dart` (`shared_preferences`; theme, khoá `pw-theme` như web; không chứa token); test dùng `MemoryPreferences` | Đổi nơi lưu |
 | `Messages` (chuỗi giao diện) | `shared/i18n/vi.ts` | `shared/i18n/vi.dart` | Thêm ngôn ngữ: thêm file, không sửa màn hình |
 
 Mỗi port là một `interface` (TS) hoặc `abstract interface class` (Dart). Code ngoài `platform/` chỉ phụ thuộc vào interface, implementation được chọn ở `app/` (composition root) theo cấu hình. Test thay implementation bằng fake.
@@ -156,7 +157,7 @@ Theo API_SPEC §2 và UX_BRIEF §3.
   Script đọc giá trị chặt: màu tên (`red`), `var()`, bóng `inset` hay đơn vị lạ làm build dừng thay vì sinh theme sai. `--only web|mobile` để mỗi client sinh/kiểm phần của mình.
   File sinh có dòng đầu "generated, do not edit"; CI kiểm file sinh khớp tokens.json.
 - Component: web port 9 component tham chiếu sang TSX trong `shared/ui/` giữ **đúng tên và props** của `components.d.ts`; mobile làm widget cùng tên (`PwButton`, `StatusPill`, `StopCard`…) cùng ý nghĩa props.
-- Theme: mặc định theo hệ điều hành, người dùng đổi được, nhớ trên máy (`localStorage` web / `shared_preferences` mobile). Bản đồ luôn theme sáng.
+- Theme: mặc định theo hệ điều hành, người dùng đổi được, nhớ trên máy (`localStorage` web / `shared_preferences` mobile). Bản đồ luôn theme sáng. Mobile (M03): `app/theme_mode.dart` (`themeModeProvider`); `main.dart` đọc lựa chọn đã lưu trước frame đầu (không nháy theme); tài xế chọn Theo máy / Sáng / Tối trong menu tài khoản (chạm chữ viết tắt tên).
 - Font: Be Vietnam Pro (Google Fonts trên web với subset `vietnamese`; bundle file font trong app mobile, không tải mạng lúc chạy).
 - Logo/favicon/app icon chép từ `brand/logo/` bằng script hoặc bước build, không sửa trực tiếp trong `web/`/`mobile/`. Web: `brand/logo` là `publicDir` của Vite (phục vụ ở `/app/favicon.svg`… khi dev, chép vào `dist/` khi build).
 
@@ -173,7 +174,7 @@ Theo API_SPEC §2 và UX_BRIEF §3.
 | Component/widget | Vitest + Testing Library + MSW (fixture từ `docs/ux/samples`) | widget test + fake repository | W01 / M00 |
 | Luồng chính có API giả | Testing Library + MSW (đăng nhập, tạo plan, giao việc…) | widget test nhiều màn | từng task |
 | E2E với backend thật | Playwright trên stack compose (`be` profile app + `compose.e2e.yaml`, P-49) | `integration_test` (sau MVP) | W07 |
-| Accessibility | `axe-core` trong test (tắt `color-contrast` vì jsdom không vẽ) + test tương phản trên giá trị token | semantics test cho nút chính | W01 / M03 |
+| Accessibility | `axe-core` trong test (tắt `color-contrast` vì jsdom không vẽ) + test tương phản trên giá trị token | `test/accessibility_test.dart`: mỗi màn ở 360×640, chữ hệ thống 130 %, hai theme, kiểm `labeledTapTargetGuideline`, `androidTapTargetGuideline`, `iOSTapTargetGuideline`, `textContrastGuideline`; tràn bố cục làm test lỗi. Nhãn nút xuống dòng thay vì tràn (`PwButton`) | W01 / M03 |
 
 - Không test nào gọi MapTiler hay dịch vụ ngoài thật; bản đồ trong test dùng `Basemap` giả (tile trống).
 - E2E web (W07, `web/e2e/`): Playwright chạy bản build production qua `vite preview` (proxy `/api` tới stack E2E, biến `PATHWISE_API_PROXY`), stack `pathwise-e2e` có server giả Nominatim/OSRM (P-49); đọc OTP và mã mời từ Mailpit của stack (`PATHWISE_MAILPIT`); tài xế báo kết quả qua API của app (`X-Client-Platform: mobile`) vì app Flutter làm ở M00–M03; chặn mọi request ra ngoài `localhost` (font); build không có key MapTiler nên không tải tile. Vitest chỉ chạy `src/**/*.test.{ts,tsx}`.
@@ -185,7 +186,7 @@ Theo API_SPEC §2 và UX_BRIEF §3.
 - Web: pnpm (P-43), Node LTS ghi trong `web/.nvmrc` và `packageManager` của `package.json`; lệnh: `pnpm install --frozen-lockfile`, `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build`.
 - Mobile: Flutter stable ghi trong `mobile/.fvmrc` và `environment.flutter` của `mobile/pubspec.yaml` (3.47.9); `flutter analyze`, `flutter test`. Icon và logo app sinh bằng `scripts/build_mobile_brand.sh`.
 - CI (`.github/workflows/ci.yml`, file nóng): job `web` (W01) chạy khi output `web` của `detect-code-changes` là true (đổi `web/`, `api/`, `brand/`, `scripts/build_tokens.py`, `.github/`): install frozen, kiểm `tokens.css` và `schema.d.ts` khớp nguồn, lint, typecheck, test, build. Job `e2e` (W07) chạy khi đổi `web/`, `be/`, `api/`, `compose*.yaml` hoặc `.github/`: dựng stack E2E, cài Chromium, `pnpm e2e`; lỗi thì tải report, trace và log của stack. Job `mobile` (M00) chạy khi output `mobile` là true (đổi `mobile/`, `api/`, `brand/`, `scripts/build_tokens.py`, `scripts/gen_dart_api.sh`, `scripts/build_mobile_brand.sh` hoặc `.github/`): `flutter pub get`, kiểm `tokens.g.dart`, sinh lại `pathwise_api` và so diff, `flutter analyze`, `flutter test`. Job backend kiểm drift `api/openapi.json`.
-- Biến môi trường: `web/.env.example` (`VITE_API_ORIGIN`: origin của API, rỗng = cùng origin, vì path OpenAPI đã gồm `/api/v1`; `VITE_BASEMAP`, `VITE_MAPTILER_KEY`), mobile `--dart-define` (`API_BASE`, `BASEMAP`, `MAPTILER_KEY`). Không commit `.env`.
+- Biến môi trường: `web/.env.example` (`VITE_API_ORIGIN`: origin của API, rỗng = cùng origin, vì path OpenAPI đã gồm `/api/v1`; `VITE_BASEMAP`, `VITE_MAPTILER_KEY`), mobile `--dart-define` (`API_BASE`, `WEB_BASE` mặc định `API_BASE` + `/app` theo P-47, `BASEMAP`, `MAPTILER_KEY`; bảng ở `mobile/README.md`). Không commit `.env`. Build release Android (M03): `flutter build apk --release`; mặc định ký key debug (APK cài trực tiếp, không lên Google Play); ai có key thì ký bằng `android/key.properties` (gitignore); bản release chỉ gọi API `https://` (cleartext chỉ bật ở debug).
 - Phiên bản thư viện: chọn bản ổn định đã phát hành ít nhất 2 tuần lúc làm W01/M00, ghi lockfile; Dependabot thêm ecosystem `npm` (web) và `pub` (mobile).
 
 ## 12. Bảo mật phía client

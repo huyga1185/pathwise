@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../app/providers.dart';
 import '../../data/api_error.dart';
 import '../../shared/errors/errors.dart';
 import '../../shared/i18n/vi.dart';
@@ -73,6 +74,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     });
   }
 
+  /// Forgot password and accepting an invitation run on the web app, in the browser (M03, chủ dự án chọn).
+  Future<void> _openWeb(String page) async {
+    final opened = await ref.read(launcherProvider).open(ref.read(appConfigProvider).webPage(page));
+    if (!opened && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text(Vi.cannotOpen)));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final t = context.pw;
@@ -132,7 +141,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     ),
                     Align(
                       alignment: Alignment.centerRight,
-                      child: PwButton(label: Vi.forgot, variant: PwButtonVariant.quiet, onPressed: () {}),
+                      child: PwButton(
+                        label: Vi.forgot,
+                        variant: PwButtonVariant.quiet,
+                        onPressed: () => unawaited(_openWeb('forgot-password')),
+                      ),
                     ),
                     PwButton(
                       label: _lockedSeconds > 0 ? Vi.retryIn(formatWait(_lockedSeconds)) : Vi.submit,
@@ -147,7 +160,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
                         Text(Vi.invited, style: PwTypeStyles.bodyTouch.copyWith(color: t.inkMuted)),
-                        PwButton(label: Vi.enterInvite, variant: PwButtonVariant.quiet, onPressed: () {}),
+                        PwButton(
+                          label: Vi.enterInvite,
+                          variant: PwButtonVariant.quiet,
+                          onPressed: () => unawaited(_openWeb('invite')),
+                        ),
                       ],
                     ),
                   ],

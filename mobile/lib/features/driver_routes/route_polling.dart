@@ -8,8 +8,8 @@ import '../../data/api_error.dart';
 import 'routes_data.dart';
 
 /// Keeps a route fresh while its screen is open (M02): reads it again every 30 s while the app is in front and when
-/// the app comes back, so a driver learns early that the plan was cancelled (the route then answers 404, T48 would
-/// make that explicit).
+/// the app comes back, so a driver learns early that the plan was cancelled (the route then answers `PLAN_NOT_ACTIVE`,
+/// T48).
 mixin RoutePolling<T extends ConsumerStatefulWidget> on ConsumerState<T> {
   static const interval = Duration(seconds: 30);
 
@@ -44,7 +44,7 @@ mixin RoutePolling<T extends ConsumerStatefulWidget> on ConsumerState<T> {
 }
 
 /// The route to show: a reload that could not reach the server keeps what was shown (weak signal must not blank the
-/// screen); an answer of the server (404 once the plan is cancelled…) replaces it with the error.
+/// screen); an answer of the server (`PLAN_NOT_ACTIVE` once the plan is cancelled, 404…) replaces it with the error.
 DriverRouteDetailResponse? shownRoute(AsyncValue<DriverRouteDetailResponse> route) {
   final error = route.error;
   if (error != null && !(error is ApiError && sendFailed(error))) return null;

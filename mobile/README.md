@@ -1,17 +1,61 @@
-# pathwise_driver
+# PathWise — app tài xế (Flutter)
 
-PathWise — app tài xế
+Quy tắc và kiến trúc: `docs/client/README.md`, `docs/client/ARCHITECTURE.md`. Màn hình: `docs/client/SCREENS.md` §2.
 
-## Getting Started
+## Chuẩn bị
 
-This project is a starting point for a Flutter application.
+- Flutter 3.47.9 (ghi trong `.fvmrc`). Trên máy dev dùng bản ở `~/development/flutter/bin` (bản `/usr/bin/flutter` hỏng):
+  `export PATH="$HOME/development/flutter/bin:$PATH"`.
+- Android SDK (đã có ở `/opt/android-sdk`). Thiết bị: điện thoại Android cắm USB (bật "Gỡ lỗi USB") hoặc emulator.
+- Backend chạy ở máy: `docker compose --profile app up -d --build` (API ở `http://localhost:8080`).
 
-A few resources to get you started if this is your first Flutter project:
+## Chạy
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+```bash
+cd mobile
+# Emulator: 10.0.2.2 là localhost của máy tính (mặc định của API_BASE).
+flutter run
+# Điện thoại thật qua USB: chuyển cổng 8080 của điện thoại về máy tính.
+adb reverse tcp:8080 tcp:8080
+flutter run --dart-define=API_BASE=http://localhost:8080
+```
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+Khi đang chạy: `r` nạp lại code, `R` khởi động lại, `q` thoát.
+
+Biến `--dart-define` (`lib/platform/config.dart`):
+
+| Biến | Mặc định | Ý nghĩa |
+|---|---|---|
+| `API_BASE` | `http://10.0.2.2:8080` | Origin của API (đường dẫn đã có `/api/v1`). Bản release chỉ gọi được `https://`. |
+| `WEB_BASE` | `API_BASE` + `/app` | Web dispatcher, nơi app mở "Quên mật khẩu" và "Nhập mã mời". Khi dev web chạy Vite riêng: `http://10.0.2.2:5173/app`. |
+| `BASEMAP`, `MAPTILER_KEY` | `maptiler`, rỗng | Bản đồ (chưa dùng trong app). |
+
+Tài khoản tài xế: OWNER mời tài xế trên web (`/members`), tài xế nhận lời mời bằng mã trong email (Mailpit `http://localhost:8025` khi dev), rồi dispatcher giao việc một plan có tuyến cho tài xế đó.
+
+## Kiểm tra
+
+```bash
+flutter analyze
+flutter test        # gồm test accessibility: 360×640, chữ 130 %, hai theme
+```
+
+## Build release Android
+
+```bash
+flutter build apk --release --dart-define=API_BASE=https://<domain>
+```
+
+Mặc định bản release ký bằng key debug: cài trực tiếp APK lên máy tài xế được (app không đưa lên Google Play). Ai cần ký bằng key riêng thì tạo upload key rồi ghi `android/key.properties` (đã nằm trong `.gitignore`, không commit):
+
+```bash
+keytool -genkeypair -v -keystore ~/pathwise-upload.jks -keyalg RSA -keysize 2048 -validity 10000 -alias upload
+```
+
+```properties
+storeFile=/home/<user>/pathwise-upload.jks
+storePassword=…
+keyAlias=upload
+keyPassword=…
+```
+
+File ra ở `build/app/outputs/flutter-apk/app-release.apk`; cài bằng `adb install` hoặc gửi file cho tài xế (máy phải cho phép cài app ngoài Play Store).
