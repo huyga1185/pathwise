@@ -34,12 +34,16 @@ import java.util.Set;
 /**
  * Routes of the calling driver (FR-D01, API_SPEC §8): a DRIVER, or an OWNER/DISPATCHER with {@code canDrive} (D-21).
  * Only the caller's own routes that have stops (P-34), in plans that were published: PUBLISHED, IN_PROGRESS or
- * COMPLETED. Anything else is reported as not found, like another store's data (BR-01).
+ * COMPLETED. Anything else is reported as not found, like another store's data (BR-01), except one of the caller's
+ * routes whose plan was cancelled after being published: that answers {@code PLAN_NOT_ACTIVE} (P-36, T48).
  */
 @Service
 @RequiredArgsConstructor
 public class DriverRouteService {
     static final Set<PlanStatus> VISIBLE = EnumSet.of(PlanStatus.PUBLISHED, PlanStatus.IN_PROGRESS, PlanStatus.COMPLETED);
+    /** Read by id: also CANCELLED, so a driver who saw the route learns that its plan was cancelled (T48, P-52). */
+    private static final Set<PlanStatus> READABLE = EnumSet.of(PlanStatus.PUBLISHED, PlanStatus.IN_PROGRESS,
+            PlanStatus.COMPLETED, PlanStatus.CANCELLED);
 
     private final PlanRouteRepository routeRepository;
     private final RoutePlanRepository planRepository;
@@ -68,15 +72,21 @@ public class DriverRouteService {
     }
 
     /**
-     * @throws AppException {@code NOT_FOUND} for a route that is not the caller's, has no stop, or is in a plan that
-     *                      is not published (DRAFT, CANCELLED)
+     * @throws AppException {@code NOT_FOUND} for a route that is not the caller's, has no stop, or is in a plan never
+     *                      published (DRAFT, or cancelled as a draft); {@code PLAN_NOT_ACTIVE} for the caller's route
+     *                      in a plan cancelled after it was published, as the stop update answers (P-36, T48)
      */
     @Transactional(readOnly = true)
     public DriverRouteDetailResponse getRoute(UserIdentity actor, long routeId) {
-        PlanRoute route = routeRepository.findDriverRoute(routeId, storeIdOf(actor), actor.id(), VISIBLE)
+        PlanRoute route = routeRepository.findDriverRoute(routeId, storeIdOf(actor), actor.id(), READABLE)
                 .orElseThrow(() -> new AppException(ErrorCode.NOT_FOUND));
         List<PlanStop> stops = stopsOf(route);
         if (stops.isEmpty()) throw new AppException(ErrorCode.NOT_FOUND);
+        if (route.getPlan().getStatus() == PlanStatus.CANCELLED) {
+            // Never shown to the driver if cancelled as a draft: answering 422 would reveal it.
+            if (route.getPlan().getPublishedAt() == null) throw new AppException(ErrorCode.NOT_FOUND);
+            throw new AppException(ErrorCode.PLAN_NOT_ACTIVE);
+        }
         return new DriverRouteDetailResponse(route.getId(),
                 route.getPlan().getId(),
                 route.getPlan().getName(),

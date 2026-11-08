@@ -129,22 +129,38 @@ class DriverRouteIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void routes_whenPlanDraftOrCancelled_hidden() throws Exception {
+    void routes_whenPlanDraftOrCancelledAsDraft_hidden() throws Exception {
         TestStore store = storeWithDepot();
-        long vehicle = vehicle(store, "Xe 1", 10);
-        long draft = optimizedPlan(store, DAY, STOPS, assignment(store.driver().id(), vehicle));
-        long draftRoute = jdbcTemplate.queryForObject("SELECT id FROM route_plan_routes WHERE plan_id = ?", Long.class, draft);
+        long draft = optimizedPlan(store, DAY, STOPS, assignment(store.driver().id(), vehicle(store, "Xe 1", 10)));
+        long draftRoute = routeOf(draft);
 
         listRoutes(store.driver(), "?date=" + DAY).andExpect(jsonPath("$.data", hasSize(0)));
         getRoute(store.driver(), draftRoute).andExpect(status().isNotFound());
 
-        publish(store, draft);
+        // Cancelled before it was published: the driver never saw it, so it stays not found (P-36).
+        cancel(store, draft);
+        listRoutes(store.driver(), "?date=" + DAY).andExpect(jsonPath("$.data", hasSize(0)));
+        getRoute(store.driver(), draftRoute).andExpect(status().isNotFound()).andExpect(jsonPath("$.code").value("NOT_FOUND"));
+    }
+
+    @Test
+    void getRoute_whenPublishedPlanCancelled_planNotActiveForItsDriverOnly() throws Exception {
+        TestStore store = storeWithDepot();
+        TestStore otherStore = storeWithDepot();
+        TestUser colleague = users.addMember(store.id(), UserRole.DRIVER, false);
+        long planId = publishedPlan(store, DAY, STOPS, assignment(store.driver().id(), vehicle(store, "Xe 1", 10)));
+        long routeId = routeOf(planId);
         listRoutes(store.driver(), "?date=" + DAY).andExpect(jsonPath("$.data", hasSize(1)));
-        mockMvc.perform(post("/api/v1/plans/" + draft + "/cancel").header(HttpHeaders.AUTHORIZATION, store.owner().bearer())
-                        .contentType(MediaType.APPLICATION_JSON).content("{\"version\":" + version(draft) + "}"))
-                .andExpect(status().isOk());
+
+        cancel(store, planId);
+
+        // The driver who had the route learns why it is gone (T48); the list no longer has it.
+        getRoute(store.driver(), routeId).andExpect(status().isUnprocessableContent())
+                .andExpect(jsonPath("$.code").value("PLAN_NOT_ACTIVE"));
         listRoutes(store.driver(), "?date=" + DAY).andExpect(jsonPath("$.data", hasSize(0)));
-        getRoute(store.driver(), draftRoute).andExpect(status().isNotFound());
+        // Anyone else still sees nothing (BR-01).
+        getRoute(colleague, routeId).andExpect(status().isNotFound()).andExpect(jsonPath("$.code").value("NOT_FOUND"));
+        getRoute(otherStore.driver(), routeId).andExpect(status().isNotFound());
     }
 
     @Test
@@ -250,6 +266,16 @@ class DriverRouteIntegrationTest extends AbstractIntegrationTest {
         mockMvc.perform(post("/api/v1/plans/" + planId + "/publish").header(HttpHeaders.AUTHORIZATION, store.owner().bearer())
                         .contentType(MediaType.APPLICATION_JSON).content("{\"version\":" + version(planId) + "}"))
                 .andExpect(status().isOk());
+    }
+
+    private void cancel(TestStore store, long planId) throws Exception {
+        mockMvc.perform(post("/api/v1/plans/" + planId + "/cancel").header(HttpHeaders.AUTHORIZATION, store.owner().bearer())
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"version\":" + version(planId) + "}"))
+                .andExpect(status().isOk());
+    }
+
+    private long routeOf(long planId) {
+        return jdbcTemplate.queryForObject("SELECT id FROM route_plan_routes WHERE plan_id = ?", Long.class, planId);
     }
 
     private static String assignment(long driverId, long vehicleId) {
