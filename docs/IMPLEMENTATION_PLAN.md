@@ -4,6 +4,8 @@
 >
 > **Cảnh báo về thời gian:** Tổng ước lượng cho các task **Must** là khoảng **28 ngày công** cho 1 developer, chưa tính review. So với bản đầu đã tăng khoảng 2 ngày do geocode chạy nền (D-18, D-19) và khoảng 2 ngày do đưa CI/CD và container vào M0 (D-30). Mốc 1 tháng chỉ khả thi khi chạy song song nhiều agent theo các track dưới đây, và các task **Should** rất có thể bị trượt. Thứ tự cắt khi chậm tiến độ: T33 → T28 → T32 → T41 (phần không bảo mật).
 >
+> **Client (web, app tài xế):** kế hoạch riêng ở `docs/client/PLAN.md` (W00–W08, M00–M03), quy tắc ở `docs/client/README.md`, mở rộng D-09 theo P-40. Plan này vẫn chỉ gồm task backend; thiếu API cho client thì thêm task T46 trở đi ở đây.
+>
 > Mọi quyết định đã được duyệt ngày 2026-10-22. Nguyên tắc chung: làm đơn giản trước nhưng giữ sẵn điểm mở rộng. Reviewer phải kiểm tra điều này ở mọi PR.
 
 ## 0. Quy tắc thực hiện
@@ -60,7 +62,8 @@ Bảng dependency (→ nghĩa là "phải xong trước"):
 | T20 | T17 | T14–T16 |
 | T24 | T20, T13 | T14–T16 |
 | T29 | T24, T21 | — |
-| T25 | T29, T22, T23 | — |
+| T44 | T29 | — |
+| T25 | T29, T22, T23, T44 | — |
 | T26 | T25 | — |
 | T27 | T25 | T26 |
 | T30 | T26 | T40 |
@@ -68,6 +71,7 @@ Bảng dependency (→ nghĩa là "phải xong trước"):
 | T40 | T16 | T30, T31 |
 | T41 | T10 | T30, T31 |
 | T43 | toàn bộ Must | — |
+| T45 | T31, T43 | T32, T33, T28 |
 | T28 (Should) | T26 | T30+ |
 | T32 (Should) | T30 | T31 |
 | T33 (Should) | T30, T22 | T31 |
@@ -190,13 +194,15 @@ Bảng dependency (→ nghĩa là "phải xong trước"):
 - **Acceptance criteria (integration test):** token hết hạn → 401; web log-in có `Set-Cookie` với path và SameSite đúng, body không có `refreshToken`; mobile có `refreshToken` trong body và không có `Set-Cookie`; log-out web chỉ dùng cookie (không cần access token) → family bị revoke; reuse token đã USED sau grace → revoke family.
 
 ### T11. Quản lý session
-- **Tầng:** Must · **Ước lượng:** 0,5 ngày · **Quyết định:** P-07 · **FR:** A06
+- **Tầng:** Must · **Ước lượng:** 0,75 ngày · **Quyết định:** P-07, P-24 · **FR:** A06
 - **Phạm vi:**
   - Access token thêm claim `sid`.
   - `GET /sessions` trả mỗi family một dòng, chỉ family có token ACTIVE chưa hết hạn, kèm `current`.
   - Thêm `DELETE /sessions/{sessionId}` và `POST /sessions/revoke-others`.
   - Thêm `RefreshTokenManager.revokeAllForUser(userId, exceptFamilyId?)`, sẽ dùng lại ở T14, T15, T16.
-- **Acceptance criteria:** đăng nhập 2 lần thì thấy 2 session; xoá session kia thì refresh bằng token của nó → 401; không xoá được session của user khác (→ 404); token hết hạn không xuất hiện trong danh sách.
+  - F-37 (P-24): `rotateToken` trả `RotationResult` (`Rotated`/`Rejected(RejectReason)`) thay cho `Optional`; `AuthService` log lý do và ném `INVALID_TOKEN`. `verifyJwt`/`verifyAccessToken` trả kiểu kết quả kèm lý do; `JOSEException` thành lỗi 500 thay vì "token không hợp lệ".
+  - F-38: `auth.cookie.same-site` chuyển sang `@ConfigurationProperties`.
+- **Acceptance criteria:** đăng nhập 2 lần thì thấy 2 session; xoá session kia thì refresh bằng token của nó → 401; không xoá được session của user khác (→ 404); token hết hạn không xuất hiện trong danh sách; unit test `RefreshTokenManager` assert đúng `RejectReason` cho từng nhánh (thiếu token, không tìm thấy, hết hạn, revoked, dùng lại sau grace).
 
 ### T12. Gộp OTP và tách module notification
 - **Tầng:** Must · **Ước lượng:** 1 ngày · **Quyết định:** D-13, ARCHITECTURE §2, §6.1
@@ -218,25 +224,26 @@ Bảng dependency (→ nghĩa là "phải xong trước"):
   - `UserRole` mới; `UserStatus`; chuẩn hoá email.
   - Register tạo OWNER và store trong một transaction, sau commit mới gửi OTP `VERIFY_EMAIL`.
   - Thêm `POST /email/verify` và `/email/verify/resend`.
-  - Log-in từ chối `PENDING_VERIFICATION`/`DISABLED`; refresh từ chối user không ACTIVE.
+  - Log-in từ chối `PENDING_VERIFICATION`/`DISABLED`; refresh từ chối user không ACTIVE. `findUserByCredentials` thay bằng `authenticate` trả `AuthenticationResult` (`Authenticated`/`InvalidCredentials`/`EmailNotVerified`/`Disabled`) theo P-24 (F-37).
   - `/users/me` thêm `fullName`, `role`, `storeId`, `status`.
+  - `UserIdentity` thêm `storeId`, JWT có thêm claim `storeId` (P-09). Phần này chuyển từ T17 sang (chủ dự án chọn 2026-10-26), vì `GET/PUT /store` phải lấy `storeId` từ token. T17 vẫn lo `canDrive` và phân quyền theo role.
   - Interface công khai `StoreMemberQuery` (ví dụ `findActiveMember(storeId, userId, role)`) để `planning` kiểm tra tài xế mà không đụng repository của `user`.
 - **Acceptance criteria:** register → user PENDING kèm store, FakeEmailSender nhận OTP; log-in trước khi verify → 403 `EMAIL_NOT_VERIFIED`; verify xong log-in được; register trùng email (khác hoa thường) → 409; Flyway chạy V1→V2 trên DB trống thành công; Hibernate validate pass.
 
 ### T17. Authorization và tenant isolation
 - **Tầng:** Must · **Ước lượng:** 1 ngày · **Quyết định:** D-03, P-08, P-09
 - **Phạm vi:**
-  - `UserIdentity` thêm `storeId`, `sessionId`, `canDrive`; JWT có thêm `storeId`, `canDrive` (P-09).
+  - `UserIdentity` thêm `canDrive`; JWT có thêm claim `canDrive` (P-09). (`storeId` đã chuyển sang T13; `sessionId` nằm trong principal `AuthenticatedUser` từ T11, P-25.)
   - Quy tắc "người được gán route" (`role=DRIVER` hoặc `canDrive`) dùng chung, có sẵn để T24 và T30 sử dụng (ví dụ bean `@authz.canDrive(principal)`).
   - `@PreAuthorize` theo ma trận `ARCHITECTURE.md` §6.3 cho các endpoint hiện có (`/store`, `/admin/users`, ...).
-  - Thêm helper test `TestUsers` (tạo store, OWNER, DISPATCHER, DRIVER và access token) cùng mẫu test tenant isolation để các task sau dùng lại.
+  - Thêm helper test `TestUsers` (tạo store, OWNER, DISPATCHER, DRIVER và access token) cùng mẫu test tenant isolation để các task sau dùng lại. T13 đã có `support/TestAccounts` (đăng ký và verify OWNER qua API), có thể mở rộng từ đó.
   - ADMIN không truy cập được `/store`.
 - **Acceptance criteria:** ma trận quyền của endpoint hiện có được test (một test cho mỗi ô ✓/— quan trọng); OWNER store A gọi `/store` chỉ thấy store A.
 
 ### T14. Quên mật khẩu
 - **Tầng:** Must · **Ước lượng:** 0,5 ngày · **Quyết định:** P-06 · **FR:** A07
-- **Phạm vi:** 3 endpoint `/password/forgot`, `/password/reset/verify`, `/password/reset`; reset token bind userId (dùng lại `OtpTokenManager` của T00); reset thành công thì revoke mọi session.
-- **Acceptance criteria:** email không tồn tại → vẫn 204 và không gửi email; luồng đúng thì đổi được mật khẩu và mọi refresh token cũ → 401; dùng lại reset token → 400; reset token hết hạn → 400.
+- **Phạm vi:** 3 endpoint `/password/forgot`, `/password/reset/verify`, `/password/reset`; reset token bind userId (dùng lại `OtpTokenManager` của T00); reset thành công thì revoke mọi session. `verifyOtpToken` đổi từ `Optional<Long>` sang kiểu kết quả; giá trị Redis hỏng là lỗi kỹ thuật, không coi là token sai (P-24, F-37).
+- **Acceptance criteria:** email không tồn tại → vẫn 204 và không gửi email; luồng đúng thì đổi được mật khẩu và mọi refresh token cũ → 401; dùng lại reset token → 400; reset token hết hạn → 400 (mã `INVALID_RESET_TOKEN`, P-26).
 
 ### T15. Đổi mật khẩu bằng mật khẩu cũ + OTP
 - **Tầng:** Must · **Ước lượng:** 0,5 ngày · **Quyết định:** D-17, P-05 · **FR:** A08
@@ -301,10 +308,11 @@ T42 cũ (Docker, compose, README) đã được gộp vào T05 và T07 trong M0 
   - Migration V5 gồm cả `background_jobs` (entity và repository nằm ở `core.job`, chưa có executor, executor làm ở T29).
   - Stop nhận địa chỉ và/hoặc toạ độ, set `geocode_status` (`PROVIDED`/`PENDING`). Route lưu start/end = depot (D-20).
   - Người được gán phải là DRIVER hoặc `canDrive` (BR-07).
-  - Snapshot depot, timezone, capacity; optimistic lock bằng `version`; `processing_status` khác IDLE thì trả 409 `PLAN_BUSY`.
+  - Snapshot depot, timezone, capacity và `capacityUnit` của xe; stop nhận `demands` theo loại, lưu ở `route_plan_stop_demands` (D-36); optimistic lock bằng `version`; `processing_status` khác IDLE thì trả 409 `PLAN_BUSY`.
   - `PUT` thay toàn bộ draft, xoá kết quả tối ưu, giữ kết quả geocode của stop có `id` cũ không đổi địa chỉ/toạ độ. Thêm `PATCH /plans/{id}/stops/{stopId}`.
   - Kiểm tra giới hạn kích thước (D-19).
   - Task này **chưa** kích hoạt geocode (T29 làm). Stop `PENDING` cứ nằm đó.
+  - Phát sinh khi làm (2026-10-28): chuyển tiện ích số điện thoại sang `core.phonenumber` (P-29) để lưu `recipientPhone` E.164; thêm `StoreQuery.findStore` (depot, timezone), `StoreMemberQuery.findMembers` và `VehicleQuery.findAll` (gồm cả thành viên bị vô hiệu hoá, xe đã tắt, để hiển thị `PlanDetail`); `DetailedAppException` để trả `INVALID_STOP_ID` trong `details`. Hợp đồng `PlanSummary`, ngữ nghĩa merge patch của `PATCH` stop và `INVALID_STOP_ID` do chủ dự án chọn (API_SPEC §7).
 - **Acceptance criteria:** tạo plan với driver hoặc vehicle của store khác → 422 `INVALID_ASSIGNMENT`; `version` cũ → 409; time window `start >= end` → 400; store chưa có depot và request không truyền depot → 422 `STORE_DEPOT_REQUIRED`; stop không có cả địa chỉ lẫn toạ độ → 400; OWNER có `canDrive` gán được, DISPATCHER không có `canDrive` → 422 `INVALID_ASSIGNMENT`; PUT giữ geocode của stop không đổi; test tenant isolation.
 
 ### T29. Job framework và geocode chạy nền
@@ -321,16 +329,27 @@ T42 cũ (Docker, compose, README) đã được gộp vào T05 và T07 trong M0 
   - Đổi cấu hình `jobs.geocode-plan.mode=inline` thì cùng test vẫn xanh (chứng minh chuyển chế độ không đổi hành vi).
   - Tenant isolation cho `GET /jobs/{id}`.
 - **Rủi ro:** quản lý transaction trong thread nền (handler phải tự mở transaction ngắn); test async cần chờ có điều kiện (Awaitility; dependency test được phép thêm).
+- **Phát sinh khi làm (2026-10-29):** 4 quyết định của chủ dự án ghi ở P-30 (job `QUEUED` cũng INTERRUPTED lúc khởi động; hàng đợi đầy → `JOB_QUEUE_FULL`; job xong tăng `version` 1; `POST /geocode` không có gì để geocode → 422 `NOTHING_TO_GEOCODE`). Mọi transaction phía job dùng `REQUIRES_NEW` (job inline chạy trong `afterCommit`). Job framework tách từ `core.job` thành module cấp 1 `job` (P-31, chủ dự án chọn), thêm mũi tên `planning → job`. Test: `FakeGeocodingProvider` `@Primary` cho mọi integration test (trước đó test plan có thể gọi Nominatim thật khi job chạy); profile test đặt `jobs.geocode-plan.mode=inline`, bộ test acceptance chạy lại ở async bằng subclass. Test T24 đọc `version` hiện tại thay vì hardcode, vì job inline đã tăng version.
+
+### T44. Làm sạch API contract (phát sinh 2026-10-29)
+- **Tầng:** Must · **Ước lượng:** 0,5–1 ngày · **Quyết định:** P-32 · **Phạm vi do chủ dự án duyệt sau khi rà soát `API_SPEC.md`**
+- **Phạm vi (code):** `details[].field` của kiểm tra chéo là field thật (`core.validation`: `@SelfValidated`/`SelfValidating` thay `@AssertTrue`); `MergePatch` làm lớp cơ sở cho mọi PATCH (`NOT_NULLABLE`); response trả số điện thoại E.164; `PATCH /users/me` (merge patch, thêm `fullName`, trả 200 `User`) thay `PUT`; `PATCH /store/members/{userId}` theo merge patch; `/store` dùng `depot: {address, lat, lon} | null`; 404 tài nguyên trên path là `NOT_FOUND`; bỏ `JobStatus.CANCELLED`; `POST /store/invitations/{id}/revoke` thay `DELETE`.
+- **Phạm vi (chỉ contract, task sau làm):** trạng thái stop không tăng `version` của plan; response của các endpoint trạng thái stop; format `details` của `SHIFT_OVERLAP`; `DriverRouteDetail.start/end`; bỏ `navigationUrl`. Ghi chú nằm ở T26, T30, T31.
+- **Acceptance criteria:** các test hiện có cập nhật theo contract mới và xanh; test mới cho merge patch của `/users/me` và member, E.164 trong response, `depot` của store, tên field của lỗi kiểm tra chéo.
 
 ### T25. Optimize plan
 - **Tầng:** Must · **Ước lượng:** 1,5 ngày · **Quyết định:** D-19, D-20, P-13 · **FR:** P04
 - **Phạm vi:** `POST /plans/{id}/optimize` tạo job `OPTIMIZE_PLAN` qua framework T29 (mặc định `inline`), trả 202 `Job`. Handler theo mẫu 3 bước (tx đọc → matrix + solver ngoài transaction → tx ghi kèm kiểm tra version), như `ARCHITECTURE.md` §8.3. Dựng node start/end riêng từng route. Tính `plannedArrival` theo timezone. Stop bị drop có `dropReason = INFEASIBLE`.
 - **Acceptance criteria (integration test với `MatrixProvider` giả):** response 202 với job SUCCEEDED, `GET /plans/{id}` có kết quả khớp; còn stop chưa có toạ độ → 422 `STOPS_NOT_GEOCODED`; plan bị sửa trong lúc optimize → job FAILED và plan giữ nguyên; plan không ở DRAFT → 422; provider lỗi → job FAILED `ROUTING_PROVIDER_ERROR`, plan IDLE, kết quả cũ giữ nguyên; đặt `jobs.optimize-plan.mode=async` thì test (có chờ) vẫn xanh.
+- **Phát sinh khi làm (2026-10-29):** P-33 (chủ dự án chọn): plan không có stop hoặc phân công → 422 `PLAN_INCOMPLETE`; solver `NO_SOLUTION` → job `FAILED/NO_SOLUTION`, giữ kết quả cũ. BR-07 kiểm lại lúc optimize → 422 `INVALID_ASSIGNMENT` kèm `details` từng phân công. `JobFailedException` ở module `job` để handler fail job với mã riêng. `PlanVersionRequest` dùng chung cho `geocode`/`optimize` (thay `GeocodePlanRequest`), sẽ dùng cho `publish`/`cancel`. `PlanProcessingService.release` dùng chung cho mọi job của plan. Test: `FakeMatrixProvider` `@Primary`, `routing.solver.time-limit: 1s` ở profile test; bộ test chạy lại ở async bằng subclass; nhánh `NO_SOLUTION` kiểm bằng unit test handler (qua API khó tái hiện vì start = end = depot).
+- **Ghi chú từ T29 (2026-10-29):** pool job hiện dùng chung cho mọi loại job (`jobs.executor.pool-size` 2, `queue-capacity` 50). Hai giá trị này hợp với `GEOCODE_PLAN`: nút thắt là rate limit Nominatim 1 req/s toàn hệ thống; pool lớn hơn `max-wait × per-second` (2) sẽ tự gây `GEOCODING_BUSY`; chúng được suy ra, chưa đo. Nếu chạy `OPTIMIZE_PLAN` ở `async` (kể cả chỉ trong test ở trên), optimize dùng chung pool đó: job geocode giữ luồng trong lúc chờ rate limit, nên hai plan lớn đang geocode có thể chiếm cả 2 luồng và optimize (khoảng 10 s CPU mỗi lần) phải xếp hàng. Trước khi đổi mặc định của optimize sang `async`, tách pool theo loại job (`pool-size`/`queue-capacity` riêng cho từng loại); đó là quyết định cần chủ dự án duyệt. Giữ `inline` như hiện tại thì không bị ảnh hưởng.
 
 ### T26. Publish, cancel và vòng đời trạng thái
 - **Tầng:** Must · **Ước lượng:** 1 ngày · **Quyết định:** D-23 · **FR:** P05, P06, BR-06, BR-10, BR-11, BR-12
-- **Phạm vi:** `publish` có kiểm tra trùng ca cho người được gán và xe (D-23, BR-12, khoá theo `ARCHITECTURE.md` §8.1); `cancel`; `PATCH /plans/{id}/stops/{stopId}/status` (dispatcher reset về PENDING); service chuyển trạng thái plan dùng chung cho T31.
-- **Acceptance criteria:** publish khi chưa optimize → 422; tài xế có ca 08:00–12:00 ở plan A đã publish, plan B cùng ngày ca 11:00–15:00 → 422 `SHIFT_OVERLAP`, còn ca 12:00–16:00 thì publish được; xe trùng ca tương tự; sửa plan sau khi publish → 422; cancel từ IN_PROGRESS → 422; unit test bảng chuyển trạng thái.
+- **Phạm vi:** `publish` có kiểm tra trùng ca cho người được gán và xe (D-23, BR-12, khoá theo `ARCHITECTURE.md` §8.1); `cancel`; service chuyển trạng thái plan dùng chung cho T31 (`PlanLifecycle`). Endpoint đặt lại stop về PENDING **bị bỏ** (P-34: không có đảo ngược trạng thái).
+- **Phát sinh khi làm (2026-10-29):** P-34 (chủ dự án chọn): không đảo ngược trạng thái; route không có stop không tính trùng ca. Publish khoá mọi plan của store trong ngày (`ORDER BY id`) thay cho khoá route theo driver/vehicle, vì plan kia còn DRAFT lúc kiểm tra. Phát hiện F-44 (MariaDB snapshot isolation: câu khoá phải là lệnh đọc đầu tiên của transaction) khi viết test publish đồng thời, sửa ngay. BR-07 kiểm lại lúc publish cho route có stop. `DetailedAppException` nhận detail có thêm field (`ShiftOverlapDetail`).
+- **Ghi chú từ T44 (P-32):** cập nhật trạng thái stop không tăng `version` của plan (chỉ `version` của stop); `SHIFT_OVERLAP` trả mỗi xung đột là một phần tử `details` `{field: "assignments[i].driverId|vehicleId", code, conflictPlanId}`, nên cần một kiểu detail có thêm field (`FieldErrorDetail` hiện chỉ có `field`, `code`).
+- **Acceptance criteria:** publish khi chưa optimize → 422; tài xế có ca 08:00–12:00 ở plan A đã publish, plan B cùng ngày ca 11:00–15:00 → 422 `SHIFT_OVERLAP`, còn ca 12:00–16:00 thì publish được; xe trùng ca tương tự; sửa plan sau khi publish → 422; cancel từ IN_PROGRESS → 422; unit test bảng chuyển trạng thái; hai publish đồng thời trùng ca → đúng một thành công.
 
 ### T27. Xoá API route optimizer cũ
 - **Tầng:** Must · **Ước lượng:** 0,25 ngày · **Gap:** Replace
@@ -341,28 +360,95 @@ T42 cũ (Docker, compose, README) đã được gộp vào T05 và T07 trong M0 
 
 ### T30. API tài xế: xem route
 - **Tầng:** Must · **Ước lượng:** 1 ngày · **Quyết định:** D-06, D-07 · **FR:** D01, D02
-- **Phạm vi:** `GET /driver/routes`, `GET /driver/routes/{routeId}` với `navigationUrl`; chỉ trả route của chính người gọi trong plan PUBLISHED, IN_PROGRESS hoặc COMPLETED; mở cho `role=DRIVER` hoặc `canDrive` (D-21).
-- **Acceptance criteria:** DRIVER không thấy route của driver khác (→ 404); OWNER có `canDrive` và được gán route thì thấy route của mình; DISPATCHER không có `canDrive` → 403; plan DRAFT không hiển thị; `navigationUrl` đúng định dạng.
+- **Phạm vi:** `GET /driver/routes`, `GET /driver/routes/{routeId}` (có `start`/`end` riêng của route, không có `navigationUrl`; P-32); chỉ trả route của chính người gọi trong plan PUBLISHED, IN_PROGRESS hoặc COMPLETED; mở cho `role=DRIVER` hoặc `canDrive` (D-21).
+- **Acceptance criteria:** DRIVER không thấy route của driver khác (→ 404); OWNER có `canDrive` và được gán route thì thấy route của mình; DISPATCHER không có `canDrive` → 403; plan DRAFT không hiển thị; `start`/`end` lấy từ route (D-20); route không có stop không hiển thị cho tài xế (P-34).
+- **Phát sinh khi làm (2026-10-29):** P-35 (chủ dự án chọn): `status` là trạng thái riêng của route (`RouteStatus`, tính từ stop, `PlanLifecycle.routeStatus`). Plan CANCELLED cũng ẩn. Không có ngày thì dùng hôm nay theo timezone hiện tại của store (`StoreQuery`). `PlanRouteRepository` cho truy vấn theo tài xế.
 
 ### T31. Tài xế cập nhật trạng thái stop
 - **Tầng:** Must · **Ước lượng:** 1 ngày · **FR:** D03, BR-10, BR-11
 - **Phạm vi:** `PATCH /driver/routes/{routeId}/stops/{stopId}/status`; chuyển plan tự động PUBLISHED → IN_PROGRESS → COMPLETED; xử lý idempotent; concurrency theo `ARCHITECTURE.md` §7.
-- **Acceptance criteria:** FAILED không có lý do → 422; cập nhật lặp lại cùng trạng thái → 200 và không đổi gì; stop cuối cùng xong → plan COMPLETED; plan CANCELLED → 422 `PLAN_NOT_ACTIVE`.
+- **Ghi chú từ T44 (P-32):** response là `{stop, routeStatus, planStatus}`; cập nhật không tăng `version` của plan, để dispatcher vẫn `cancel {version}` được trong lúc tài xế đang giao.
+- **Ghi chú từ T26:** dùng `PlanLifecycle.canMove(StopStatus, StopStatus)` và `PlanLifecycle.progress(...)`; một chiều, không đảo ngược (P-34), nên stop đã kết thúc mà gửi trạng thái khác → 422 `INVALID_STOP_TRANSITION`, gửi lại đúng trạng thái đang có → 200 idempotent. Tự chuyển `status` của plan (IN_PROGRESS, COMPLETED) không được tăng `version`: hoặc loại `status`/`completed_at` khỏi optimistic lock, hoặc cập nhật bằng câu `UPDATE` riêng; cần test. Nếu dùng `SELECT … FOR UPDATE`, đặt nó là lệnh đọc đầu tiên của transaction (F-44).
+- **Acceptance criteria:** FAILED không có lý do → 422; cập nhật lặp lại cùng trạng thái → 200 và không đổi gì; `version` của plan không đổi; stop cuối cùng xong → plan COMPLETED; plan CANCELLED → 422 `PLAN_NOT_ACTIVE`.
+- **Phát sinh khi làm (2026-11-02):** P-36 (chủ dự án duyệt): route của plan chưa từng publish → 404, đã publish rồi huỷ → `PLAN_NOT_ACTIVE`; kiểm idempotent trước `PLAN_NOT_ACTIVE` để gửi lại lần cập nhật cuối (plan đã COMPLETED) vẫn 200. Concurrency: đọc `plan_id` của route trong transaction riêng, transaction cập nhật bắt đầu bằng khoá dòng plan (F-44), nên hai tài xế xong stop cuối cùng lúc vẫn đưa plan sang COMPLETED (test đồng thời; bỏ khoá thì test fail). Trạng thái plan đổi bằng câu `UPDATE` JPQL riêng (`RoutePlanRepository.updateStatus`), không qua entity, nên `version` không tăng. Thêm `ErrorCode` `PLAN_NOT_ACTIVE`, `INVALID_STOP_TRANSITION`, `FAILURE_REASON_REQUIRED` (đã có trong API_SPEC §9). Ghi chú của T44 "để dispatcher vẫn `cancel` được trong lúc tài xế đang giao" không xảy ra: plan IN_PROGRESS không huỷ được (T26); `version` không đổi chỉ giúp dispatcher không phải tải lại plan.
 
 ### T40. Rate limiting
 - **Tầng:** Must · **Ước lượng:** 0,5 ngày · **Quyết định:** P-16 · **NFR:** 01
 - **Phạm vi:** `RateLimiter` trong `core` (Redis fixed window) áp dụng cho log-in, register, resend verify, forgot, change/otp, invitations (POST); ngưỡng cấu hình được.
 - **Acceptance criteria:** vượt ngưỡng → 429 `RATE_LIMITED`; Redis lỗi → fail-closed (503) cho endpoint auth.
+- **Phát sinh khi làm (2026-11-03):** P-37 (chủ dự án chọn): ngưỡng mặc định; `change/otp` đếm theo user, invitations theo store; 503 là mã mới `SERVICE_UNAVAILABLE`; IP chung với `ClientDetail` (F-21, T41 sửa). Thêm `RATE_LIMITED(429)` vào `ErrorCode` (API_SPEC §9 đã có nhưng enum chưa có). Contract `RateLimiter` (`core.ratelimit`) trả `RateLimitDecision` (`Allowed`/`Limited(retryAfter)`, P-24), implementation `RedisRateLimiter` chạy Lua `FixedWindowRateLimit.lua` (tăng và đặt TTL một bước), Redis lỗi thì ném `StateStoreException` như mọi Redis store. `AuthRateLimitPolicy` (`auth.infrastructure.ratelimit`) gom tên rule và trả decision; service tự đổi `Limited` thành `RateLimitedException` (429, mang thời gian còn lại cho `Retry-After`) và `StateStoreException` thành `SERVICE_UNAVAILABLE`, vì `AppException` chỉ ném từ service. `register`, `resendVerification`, `forgotPassword` nhận thêm `ClientDetail`. Profile test nâng mọi ngưỡng lên 1.000.000 để test khác không chạm giới hạn; `RateLimitIntegrationTest` tự đặt ngưỡng thấp. Redis lỗi → 503 kiểm bằng unit test (`RedisRateLimiterTest`, `AuthServiceTest`) và slice test (không tắt được Redis dùng chung của Testcontainers).
 
 ### T41. Hardening cấu hình
 - **Tầng:** Must (CORS, XFF) / Should (phần còn lại) · **Ước lượng:** 0,5 ngày
 - **Phạm vi:** CORS whitelist từ env; `forward-headers-strategy` để chỉ tin XFF sau proxy (F-21); security headers; log MDC requestId/userId/storeId (NFR-06); kiểm tra không log secret.
 - **Acceptance criteria:** preflight từ origin lạ bị từ chối; origin hợp lệ nhận đúng header; test XFF bị bỏ qua khi tắt forward headers.
+- **Phát sinh khi làm (2026-11-03):** P-38 (chủ dự án chọn): `native` ở staging/prod; danh sách origin chính xác; thêm `Referrer-Policy`, không CSP; requestId luôn tự sinh. `RateLimitIntegrationTest` (T40) đổi từ giả `X-Forwarded-For` sang đặt remote address, vì header không còn được đọc. Thêm `ForwardedHeadersIntegrationTest` chạy server thật (`RANDOM_PORT`) để chứng minh `native` áp XFF từ proxy tin cậy (MockMvc không chạy valve của Tomcat). Rà soát log: không log mật khẩu, OTP, token, secret; ghi F-46 (message lỗi ràng buộc DB có thể chứa email).
 
 ### T43. Kiểm thử nghiệm thu MVP
 - **Tầng:** Must · **Ước lượng:** 1 ngày · **REQ:** §6
 - **Phạm vi:** integration test kịch bản E2E trong `REQUIREMENTS.md` §6.2 (Testcontainers, matrix giả); checklist demo thủ công với Nominatim/OSRM thật; đối chiếu OpenAPI với `API_SPEC.md`; cập nhật `CURRENT_STATE.md`.
 - **Acceptance criteria:** toàn bộ tiêu chí MVP trong `REQUIREMENTS.md` §6 được đánh dấu kèm bằng chứng.
+- **Phát sinh khi làm (2026-11-03), chủ dự án chọn:** bằng chứng và checklist ở file mới `docs/ACCEPTANCE.md`; đối chiếu OpenAPI bằng test tự động (method + path, `ApiSpecContractIntegrationTest`, đọc `docs/API_SPEC.md`) cộng một lần so field thủ công; agent chạy demo local, chủ dự án làm phần VPS. Thêm `scripts/acceptance_demo.py` (thư viện chuẩn Python) chạy kịch bản trên stack thật. Máy chạy demo không vào được Nominatim nên geocode thành công với Nominatim thật còn chờ chủ dự án (ACCEPTANCE §2.2). Phát hiện F-47 (tài liệu OpenAPI), F-48 (log geocode thiếu nguyên nhân).
+
+### T45. Bổ sung field cho client (phát sinh 2026-11-03)
+- **Tầng:** Must (trước khi dựng `web/` và `mobile/`) · **Ước lượng:** 0,25 ngày · **Quyết định:** P-39, P-35 · **FR:** P07, D01
+- **Nguồn:** thiết kế màn hình client (Claude Design, sau bước chuẩn bị client) cho thấy hai chỗ client phải tự bù dữ liệu mà server đã có.
+- **Phạm vi:**
+  1. `PlanDetail.routes[].status` (`RouteStatus`: `PENDING`, `IN_PROGRESS`, `COMPLETED`), tính bằng `PlanLifecycle.routeStatus` từ các stop của route, cùng nghĩa với `status` của route phía tài xế (P-35) và `routeStatus` của T31. Màn theo dõi của dispatcher hiện phải tự đếm stop để hiện trạng thái từng tuyến, tức là lặp lại quy tắc của server ở client.
+  2. `DriverRouteDetail.planName`: tên plan, như `GET /driver/routes` đã có. Hiện app phải mang tên từ màn danh sách sang, nên mở thẳng chi tiết tuyến (thông báo, khởi động lại app, deep link) thì không có tên để hiện.
+  3. Docs: `API_SPEC` §7, §8 (ví dụ JSON); `docs/ux/samples` sinh lại từ `MvpScenarioIntegrationTest`; `UX_BRIEF` nếu có chỗ nói client tự tính.
+- **Ngoài phạm vi:** không đổi schema, không lưu trạng thái route vào DB (P-35 giữ nguyên: tính lúc đọc); không thêm field nào khác; không đổi `DriverRouteSummary` hay response cập nhật stop.
+- **Acceptance criteria:**
+  - `GET /plans/{id}` của plan DRAFT (kể cả sau optimize) có `routes[].status = PENDING`; route không có stop cũng `PENDING`.
+  - Tài xế giao một stop → `GET /plans/{id}` của dispatcher có route đó `IN_PROGRESS`; xong mọi stop của route → `COMPLETED`, route của tài xế khác vẫn theo stop của riêng nó; giá trị luôn bằng `status` mà tài xế thấy ở `GET /driver/routes/{routeId}`.
+  - `GET /driver/routes/{routeId}` có `planName` bằng tên plan.
+  - Chỉ thêm field: test hiện có không phải sửa assertion cũ; `./mvnw test` xanh.
+
+### T46. OpenAPI mô tả đúng response, mã thành công và PATCH (phát sinh 2026-11-04)
+- **Tầng:** Must (client đang sinh kiểu từ `api/openapi.json`) · **Ước lượng:** 0,5 ngày · **Quyết định:** P-41, P-48 · **Lỗi:** F-49, F-50
+- **Nguồn:** làm W01, W02 thấy kiểu TypeScript sinh từ OpenAPI coi mọi field response là tuỳ chọn, `AuthUserResponse.role` là chuỗi, mã thành công luôn là 200 và request PATCH không cho gửi `null`; client phải kiểm thừa (`session.tsx` `toUser`) và ép kiểu (màn Hồ sơ).
+- **Phạm vi:**
+  1. Quy ước P-48: component của record response (`*Response` và record lồng trong nó) luôn có mặt và không `null`, trừ khi đánh `@Nullable` (JSpecify, đã có qua Spring); record `@JsonInclude(NON_NULL)` thì field `@Nullable` vắng mặt thay vì `null`. Đánh `@Nullable` cho mọi field response có thể `null` (đối chiếu entity, mapper và `docs/ux/samples`).
+  2. `core.web`: model converter của springdoc theo quy ước trên: `required` cho field luôn có mặt, kiểu kèm `null` cho field `@Nullable`; field `@Nullable` của class merge patch (`PATCH`, API_SPEC §1) là kiểu kèm `null` (gửi `null` để xoá).
+  3. `AuthUserResponse.role` dùng enum `UserRole` (JSON không đổi).
+  4. Mã thành công đúng API_SPEC trong OpenAPI: `@ResponseStatus` 201 (`/auth/register`, `POST /vehicles`, `POST /plans`, `POST /store/invitations`), 202 (`/plans/{id}/geocode`, `/optimize`), 204 (endpoint không có body).
+  5. `scripts/sync_openapi.sh` → `api/openapi.json`; web sinh lại `schema.d.ts`, bỏ phần kiểm thừa trong `session.tsx`.
+- **Ngoài phạm vi:** không đổi JSON trả về hay hành vi API; không mô tả response lỗi trong OpenAPI; không đổi request POST/PUT.
+- **Acceptance criteria:**
+  - OpenAPI: `GetUserResponse.required` gồm mọi field, `fullName`/`phoneNumber`/`storeId` có kiểu kèm `null`; `AuthUserResponse.fullName`, `storeId` không `required`; `AuthUserResponse.role` là enum; `UpdateProfileRequest.fullName` có kiểu kèm `null`; `POST /auth/register` 201, `POST /auth/email/verify` 204, `POST /plans/{id}/optimize` 202.
+  - Mỗi field `@Nullable` đều có thể `null` thật (có test hoặc mẫu chứng minh hoặc entity cho phép); field không đánh dấu không bao giờ `null` trong các test hiện có (kiểm bằng test quét response của `MvpScenarioIntegrationTest` hoặc tương đương).
+  - Response thật không đổi: test hiện có không phải sửa assertion; `./mvnw test` xanh; `pnpm lint && pnpm typecheck && pnpm test` của web xanh sau khi sinh lại kiểu.
+- **Phát sinh khi làm (2026-11-04):**
+  - W02 (PR #63) đã vào `develop` trước khi tạo branch, nên T46 bỏ luôn ép kiểu của màn Hồ sơ và các giá trị dự phòng thừa (`resetToken`, `role`, `sessionId`, `lastUsedAt`).
+  - springdoc trả về `$ref` cho model dùng làm property; converter sửa định nghĩa trong `ModelConverterContext.getDefinedModels()`.
+  - Field `@Nullable` đã đối chiếu: `null` thật trong `docs/ux/samples` (stop, route, job, member, vehicle, user) hoặc cột/entity cho phép (`SessionResponse.userAgent`/`ipAddress`, `DriverRouteSummary.plannedStart`, `PlanRouteResponse.Driver.fullName`, `GetUserResponse.storeId` của ADMIN). Field không đánh dấu (ví dụ `PlanRoute.vehicle`, `start`/`end`, `TimeWindow.start`/`end`, `PlanDetail.depot`) là cột `NOT NULL` hoặc bắt buộc ở request.
+
+### T47. Timezone cho màn của tài xế (phát sinh 2026-11-05)
+- **Tầng:** Must (trước M01) · **Ước lượng:** 0,25 ngày · **Quyết định:** P-14, P-50 · **FR:** D01
+- **Nguồn:** M01 phải hiện giờ xuất phát và giờ đến dự kiến theo timezone của cửa hàng (UX_BRIEF, client ARCHITECTURE §6), nhưng tài xế không đọc được timezone: `GET /store` chỉ cho OWNER/DISPATCHER, response của `/driver/*` và `/users/me` không có. Chủ dự án chọn làm task backend trước M01.
+- **Phạm vi:**
+  1. `timezone` (IANA, bản chụp của plan như `PlanDetail.timezone`, P-14) trong `DriverRouteSummary` (`GET /driver/routes`) và `DriverRouteDetail` (`GET /driver/routes/{routeId}`), ngay sau `planDate`.
+  2. `scripts/sync_openapi.sh` → `api/openapi.json`; sinh lại `web/src/data/schema.d.ts` và `mobile/packages/pathwise_api`.
+  3. Docs: `API_SPEC` §8; `docs/ux/samples/driver-route-list.json`, `driver-route-detail.json` thêm field (sửa đúng field, không thay cả bộ mẫu vì id trong mẫu sinh lại sẽ đổi và test web đang dùng).
+- **Ngoài phạm vi:** không đổi schema; không đổi cách chọn "hôm nay" khi không gửi `date` (vẫn theo timezone hiện tại của cửa hàng); không thêm timezone vào `/users/me` hay response cập nhật stop.
+- **Acceptance criteria:**
+  - `GET /driver/routes` và `GET /driver/routes/{routeId}` có `timezone` bằng timezone của plan; cửa hàng đổi timezone sau khi lưu plan thì tài xế vẫn thấy timezone của plan (giống dispatcher).
+  - OpenAPI có `timezone` là `string` bắt buộc ở hai schema; `OpenApiNullabilityIntegrationTest` xanh với mẫu đã sửa.
+  - Chỉ thêm field: test hiện có không phải sửa assertion cũ; `./mvnw test` xanh.
+
+### T48. Tài xế đọc tuyến của plan đã huỷ nhận PLAN_NOT_ACTIVE (phát sinh 2026-11-08)
+- **Tầng:** Must (trước M03) · **Ước lượng:** 0,25 ngày · **Quyết định:** P-36, P-51, P-52 · **FR:** D01 · **Lỗi:** F-53
+- **Nguồn:** M02 (P-51) bắt tài xế chờ server và tự tải lại tuyến mỗi 30 giây để biết sớm plan đã bị huỷ. Nhưng `GET /driver/routes/{routeId}` của plan đã publish rồi bị huỷ trả 404 `NOT_FOUND`, giống tuyến của người khác, nên app chỉ nói được "Kế hoạch có thể đã bị huỷ". `PATCH …/status` đã trả 422 `PLAN_NOT_ACTIVE` cho đúng trường hợp này (P-36).
+- **Phạm vi:**
+  1. `GET /driver/routes/{routeId}`: route của tài xế (cùng store, cùng `driverId`), có ít nhất một stop, thuộc plan đã publish rồi bị huỷ → 422 `PLAN_NOT_ACTIVE`, cùng cách nhận biết "đã publish" với `PATCH` (P-36). Các trường hợp khác giữ 404 như cũ (plan chưa từng publish, tài xế khác, store khác, route không có stop).
+  2. Test: route của plan đã huỷ sau publish → 422 `PLAN_NOT_ACTIVE`; plan DRAFT bị huỷ → 404; tài xế khác/store khác → 404 (tenant isolation giữ nguyên).
+  3. OpenAPI (`scripts/sync_openapi.sh`) nếu mô tả lỗi thay đổi; sinh lại client web/mobile nếu snapshot đổi.
+  4. Docs: `API_SPEC` §8 (dòng `GET /driver/routes/{routeId}` thêm 422 `PLAN_NOT_ACTIVE`, đoạn P-36 nói rõ áp dụng cho cả `GET`); F-53 trong `CURRENT_STATE`.
+- **Ngoài phạm vi:** `GET /driver/routes` (danh sách) vẫn không có route của plan đã huỷ; không thêm thông báo đẩy; app đổi câu báo lỗi là việc của client (sau T48).
+- **Acceptance criteria:**
+  - Tài xế mở route của plan đã publish rồi bị huỷ → 422 `{code: PLAN_NOT_ACTIVE}`; route của plan chưa từng publish hay của người khác vẫn 404.
+  - Test tenant isolation hiện có không phải sửa; `./mvnw test` xanh.
+- **Phát sinh khi làm (2026-11-08):** P-36 (Approved) ghi "`GET` vẫn ẩn plan CANCELLED"; T48 thay phần đó nên ghi thành P-52. Test `routes_whenPlanDraftOrCancelled_hidden` kiểm đúng hành vi cũ (plan publish rồi huỷ → 404) nên được tách: phần plan huỷ khi còn nháp giữ 404, phần plan publish rồi huỷ thành test mới trả 422. Không đổi OpenAPI vì controller của tài xế không khai báo mã lỗi.
 
 ## 8. Should (làm nếu kịp, theo thứ tự)
 
@@ -375,11 +461,13 @@ T42 cũ (Docker, compose, README) đã được gộp vào T05 và T07 trong M0 
 - **Ước lượng:** 1,5 ngày · **Quyết định:** D-07 · **FR:** D05
 - **Phạm vi:** `DirectionsProvider` dùng OSRM route (`steps=true`, `polyline6`); `GET /driver/routes/{routeId}/directions`; cache theo `routeId` và version của plan.
 - **Acceptance criteria:** parse response mẫu; route có n stop → n+1 leg (về depot); provider lỗi → 502 (app fallback sang deep link).
+- **Ghi chú từ T44:** `DirectionsResponse` ở API_SPEC §8 đang theo OSRM (`geometry` polyline6, `maneuver`/`modifier` theo từ vựng OSRM). Trước khi làm, chốt một dạng trung tính với provider (ghi rõ độ chính xác polyline, enum maneuver riêng), để đổi provider sau này không phải đổi contract; đây là quyết định cần chủ dự án duyệt.
 
 ### T28. Chỉnh tay route sau optimize
 - **Ước lượng:** 1,5 ngày · **FR:** P08 · **Quyết định:** D-24
 - **Phạm vi:** `PUT /plans/{id}/routes`; tính lại ETA và quãng đường bằng matrix (không giải lại); trả `violations` (vượt capacity, trễ time window, quá ca).
 - **Acceptance criteria:** chuyển stop gây vượt capacity → lưu được nhưng có violation `CAPACITY_EXCEEDED`; stopIds không thuộc plan → 422.
+- **Ghi chú từ T44:** hình dạng `violations[]` chưa có trong API_SPEC, chốt khi làm task này (đề xuất mỗi phần tử có `code`, `routeId`, `stopId?` và dữ liệu đo được như vượt bao nhiêu). `PUT /plans/{id}` tạo lại route nên `routeId` đổi sau mỗi lần sửa draft; request của task này dùng `routeId` lấy từ `PlanDetail` mới nhất.
 
 ## 9. Sau MVP (Could, chưa lên lịch)
 

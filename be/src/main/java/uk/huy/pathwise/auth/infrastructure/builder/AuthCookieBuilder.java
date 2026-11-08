@@ -1,13 +1,23 @@
 package uk.huy.pathwise.auth.infrastructure.builder;
 
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.http.ResponseCookie;
 import org.springframework.stereotype.Component;
+import uk.huy.pathwise.auth.infrastructure.config.AuthCookieProperties;
 
 import java.time.Duration;
 import java.time.Instant;
 
 @Component
+// Declared here (not on the application class) so slices that @Import this builder also bind the properties.
+@EnableConfigurationProperties(AuthCookieProperties.class)
 public class AuthCookieBuilder {
+    private final String sameSite;
+
+    public AuthCookieBuilder(AuthCookieProperties properties) {
+        this.sameSite = properties.sameSite();
+    }
+
     private void validateArgs(String name, String value, boolean canValueBeNullOrEmpty) {
         if (name == null) throw new NullPointerException("Name could not be null");
         if (name.isEmpty()) throw new IllegalArgumentException("Name could not be empty");
@@ -21,6 +31,7 @@ public class AuthCookieBuilder {
                 .httpOnly(true)
                 .secure(true)
                 .path(path)
+                .sameSite(sameSite)
                 .maxAge(Duration.between(Instant.now(), maxAge))
                 .build();
     }
@@ -31,6 +42,7 @@ public class AuthCookieBuilder {
                 .httpOnly(true)
                 .secure(true)
                 .path(path)
+                .sameSite(sameSite)
                 .maxAge(0)
                 .build();
     }

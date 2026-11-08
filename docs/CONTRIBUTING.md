@@ -11,13 +11,20 @@
 
 | Workflow | Chạy khi | Nội dung | Bắt buộc để merge |
 |---|---|---|---|
-| `ci` | PR vào `develop`/`main`; push lên `develop`/`main` | `./mvnw -B verify` (test bằng Testcontainers + JaCoCo). Artifact `test-reports` và `coverage-report`; bảng coverage trong job summary. | **Có** (check `ci`) |
+| `ci` | PR vào `develop`/`main`; push lên `develop`/`main` | Test của `scripts/` (`python3 -m unittest`), `./mvnw -B verify` (test bằng Testcontainers + JaCoCo), rồi kiểm `api/openapi.json` khớp OpenAPI backend sinh ra (`scripts/openapi_snapshot.py check`; lệch thì chạy `scripts/sync_openapi.sh` và commit). Artifact `test-reports` và `coverage-report`; bảng coverage trong job summary. | **Có** (check `ci`) |
+| `web` (workflow `ci`) | PR và push như `ci`, khi đổi `web/`, `api/`, `brand/`, `scripts/build_tokens.py` hoặc `.github/` | `pnpm install --frozen-lockfile`, kiểm `tokens.css` và `schema.d.ts` khớp nguồn, `pnpm lint`, `typecheck`, `test`, `build` | Không (nên giữ xanh) |
+| `e2e` (workflow `ci`) | PR và push như `ci`, khi đổi `web/`, `be/`, `api/`, `compose*.yaml` hoặc `.github/` | Dựng stack `compose.yaml` + `compose.e2e.yaml` (project `pathwise-e2e`, server giả thay Nominatim/OSRM, P-49), `pnpm e2e` (Playwright: luồng MVP từ đăng ký tới kế hoạch hoàn thành). Lỗi thì artifact `e2e-report` (report, trace, log của stack). Khoảng 6–8 phút (build image backend) | Không (nên giữ xanh) |
+| `mobile` (workflow `ci`) | PR và push như `ci`, khi đổi `mobile/`, `api/`, `brand/`, `scripts/build_tokens.py`, `scripts/gen_dart_api.sh`, `scripts/build_mobile_brand.sh` hoặc `.github/` | Flutter theo `mobile/pubspec.yaml`, `flutter pub get`, kiểm `tokens.g.dart`, sinh lại `mobile/packages/pathwise_api` và so diff (Docker), `flutter analyze`, `flutter test` | Không (nên giữ xanh) |
 | `quality` | Mọi PR | `dependency-review` (chặn dependency mới có lỗ hổng high trở lên), `gitleaks` (quét secret trong các commit của PR). | Khuyến nghị |
-| Dependabot | Hằng tuần | Cập nhật `maven` (`be/`), `github-actions`, `docker` (`be/Dockerfile`); PR vào `develop`. | — |
+| `image` | Push lên `develop`; tag `v*` | Build image, Trivy (chặn CRITICAL có bản sửa), push `ghcr.io/huyga1185/pathwise`: `develop`, `develop-<sha>` hoặc `x.y.z`, `x.y`, `latest`. Xem `docs/DEPLOYMENT.md`. | — (chạy sau merge) |
+| Dependabot | Hằng tuần | Cập nhật `maven` (`be/`), `github-actions`, `docker` (`be/Dockerfile`); PR vào `develop`. Maven minor/patch gộp một PR, GitHub Actions gộp một PR; không đề xuất đổi Java của Docker image. | — |
 
 - Run cũ của cùng một PR bị huỷ khi có commit mới (concurrency group).
+- PR hoặc push chỉ sửa docs (`docs/**`, `*.md`, `LICENSE`): job `ci` và `dependency-review` hiện **Skipped** (vẫn tính là đạt check `ci`), `image` không chạy; `gitleaks` vẫn chạy. Thêm thư mục docs mới thì sửa pattern trong `.github/actions/detect-code-changes/action.yml` và `paths-ignore` của `image.yml`.
 - Coverage hiện chỉ báo cáo, chưa có ngưỡng chặn.
-- GitHub chỉ đọc `.github/dependabot.yml` trên branch mặc định (`main`), nên Dependabot bắt đầu chạy sau lần merge `develop` vào `main` đầu tiên.
+- GitHub chỉ đọc `.github/dependabot.yml` trên branch mặc định (`main`): thay đổi cấu hình Dependabot chỉ có hiệu lực sau khi vào `main`.
+- PR Dependabot đụng action chỉ dùng trong `image.yml` (`docker/*`) không được kiểm tra trên PR; merge từng cái và xem run `image`.
+- Bản phát hành: PR `develop` → `main` (chọn *Create a merge commit*), rồi tag `vX.Y.Z` trên `main` (D-34). Chỉ làm khi quyết định release.
 
 ## 3. Khi `gitleaks` báo lỗi
 

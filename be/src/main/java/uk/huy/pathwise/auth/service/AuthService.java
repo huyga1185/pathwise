@@ -1,116 +1,159 @@
 package uk.huy.pathwise.auth.service;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import uk.huy.pathwise.auth.dto.request.LogInRequest;
-import uk.huy.pathwise.auth.dto.request.RegisterRequest;
-import uk.huy.pathwise.auth.dto.request.UpdateUserPasswordRequest;
-import uk.huy.pathwise.auth.dto.request.VerifyOtpRequest;
-import uk.huy.pathwise.auth.dto.response.GetListSessionResponse;
 import uk.huy.pathwise.auth.dto.response.LogInResponse;
 import uk.huy.pathwise.auth.dto.response.RefreshTokenResponse;
-import uk.huy.pathwise.auth.dto.response.VerifyOtpResponse;
-import uk.huy.pathwise.auth.email.infrastructure.exception.EmailSenderException;
-import uk.huy.pathwise.auth.email.manager.OtpEmailManager;
-import uk.huy.pathwise.auth.otp.dto.Otp;
-import uk.huy.pathwise.auth.otp.infrastructure.exception.OtpException;
-import uk.huy.pathwise.auth.otp.store.OtpStore;
+import uk.huy.pathwise.auth.dto.response.SessionResponse;
+import uk.huy.pathwise.auth.infrastructure.ratelimit.AuthRateLimitPolicy;
 import uk.huy.pathwise.auth.token.jwt.manager.AccessTokenManager;
-import uk.huy.pathwise.auth.token.opaque.otptoken.dto.OtpToken;
-import uk.huy.pathwise.auth.token.opaque.otptoken.manager.OtpTokenManager;
-import uk.huy.pathwise.auth.token.opaque.refreshtoken.dto.RefreshTokenRotationDetail;
+import uk.huy.pathwise.auth.token.opaque.refreshtoken.dto.RefreshTokenGenerationDetail;
+import uk.huy.pathwise.auth.token.opaque.refreshtoken.dto.RotationResult.Rejected;
+import uk.huy.pathwise.auth.token.opaque.refreshtoken.dto.RotationResult.Rotated;
 import uk.huy.pathwise.auth.token.opaque.refreshtoken.manager.RefreshTokenManager;
 import uk.huy.pathwise.auth.model.ClientDetail;
+import uk.huy.pathwise.auth.model.SessionRevocation;
 import uk.huy.pathwise.core.exception.AppException;
 import uk.huy.pathwise.core.exception.ErrorCode;
+import uk.huy.pathwise.core.ratelimit.RateLimitDecision;
+import uk.huy.pathwise.core.ratelimit.RateLimitedException;
+import uk.huy.pathwise.core.statestore.StateStoreException;
+import uk.huy.pathwise.shared.identity.AuthenticatedUser;
 import uk.huy.pathwise.shared.identity.UserIdentity;
+import uk.huy.pathwise.user.dto.AuthenticationResult.Authenticated;
+import uk.huy.pathwise.user.dto.AuthenticationResult.Disabled;
+import uk.huy.pathwise.user.dto.AuthenticationResult.EmailNotVerified;
+import uk.huy.pathwise.user.dto.AuthenticationResult.InvalidCredentials;
 import uk.huy.pathwise.user.service.UserAccountService;
 
-import java.util.Optional;
+import java.util.List;
+import java.util.function.Supplier;
 
 @Service
+@Slf4j
 public class AuthService {
     private final UserAccountService userService;
     private final AccessTokenManager accessTokenManager;
     private final RefreshTokenManager refreshTokenManager;
-    private final OtpStore otpManager;
-    private final OtpTokenManager otpTokenManager;
-    private final OtpEmailManager otpEmailManager;
-
-    private static final String UPDATE_USER_PASSWORD_PURPOSE = "updateUserPassword";
+    private final AuthRateLimitPolicy rateLimitPolicy;
 
     public AuthService(UserAccountService userService,
                        AccessTokenManager accessTokenManager,
                        RefreshTokenManager refreshTokenManager,
-                       OtpStore otpManager,
-                       OtpTokenManager otpTokenManager,
-                       OtpEmailManager otpEmailManager) {
+                       AuthRateLimitPolicy rateLimitPolicy) {
         this.userService = userService;
         this.accessTokenManager = accessTokenManager;
         this.refreshTokenManager = refreshTokenManager;
-        this.otpManager = otpManager;
-        this.otpTokenManager = otpTokenManager;
-        this.otpEmailManager = otpEmailManager;
+        this.rateLimitPolicy = rateLimitPolicy;
     }
 
-    public void register(RegisterRequest request) {
-        if (request == null) throw new NullPointerException("Register request could not be null");
-        userService.createUser(request.email(), request.password());
-    }
-
+    /**
+     * @throws AppException {@code INVALID_EMAIL_OR_PASSWORD} (401), or for a correct password on an account that
+     *                      cannot log in (BR-04) {@code EMAIL_NOT_VERIFIED} or {@code ACCOUNT_DISABLED} (403);
+     *                      {@code RATE_LIMITED} (429) by IP or email before the password is checked
+     */
     public LogInResponse logIn(ClientDetail clientDetail, LogInRequest request) {
         if (request == null) throw new NullPointerException("Log in request could not be null");
-        Optional<UserIdentity> identity = userService.findUserByCredentials(request.email(), request.password());
-        if (identity.isEmpty()) throw new AppException(ErrorCode.INVALID_EMAIL_OR_PASSWORD);
-        return new LogInResponse(accessTokenManager.generateAccessToken(identity.get()), refreshTokenManager.generateToken(identity.get().id(), clientDetail));
+        enforce(() -> rateLimitPolicy.logIn(clientDetail.ip(), request.email()));
+        Authenticated user = switch (userService.authenticate(request.email(), request.password())) {
+            case Authenticated authenticated -> authenticated;
+            case InvalidCredentials ignored -> throw new AppException(ErrorCode.INVALID_EMAIL_OR_PASSWORD);
+            case EmailNotVerified ignored -> throw new AppException(ErrorCode.EMAIL_NOT_VERIFIED);
+            case Disabled ignored -> throw new AppException(ErrorCode.ACCOUNT_DISABLED);
+        };
+        RefreshTokenGenerationDetail refreshToken = refreshTokenManager.generateToken(user.identity().id(), clientDetail);
+        return new LogInResponse(accessTokenManager.generateAccessToken(user.identity(), refreshToken.sessionId()),
+                refreshToken,
+                user);
     }
 
     public RefreshTokenResponse refreshToken(String refreshToken, ClientDetail clientDetail) {
-        Optional<RefreshTokenRotationDetail> response = refreshTokenManager.rotateToken(refreshToken, clientDetail);
-        if (response.isEmpty()) throw new AppException(ErrorCode.INVALID_TOKEN);
-        RefreshTokenRotationDetail refreshTokenRotationDetail = response.get();
-        Optional<UserIdentity> identity = userService.findUserById(refreshTokenRotationDetail.userId());
-        if (identity.isEmpty()) throw new AppException(ErrorCode.INVALID_TOKEN);
-        String accessToken = accessTokenManager.generateAccessToken(identity.get());
-        return new RefreshTokenResponse(accessToken, refreshTokenRotationDetail);
+        Rotated rotated = switch (refreshTokenManager.rotateToken(refreshToken, clientDetail)) {
+            case Rotated r -> r;
+            case Rejected r -> {
+                // Reuse is already logged as a warning with client details by the manager.
+                log.info("Refresh token rejected: {}", r.reason());
+                throw new AppException(ErrorCode.INVALID_TOKEN);
+            }
+        };
+        // A user deleted, disabled or not yet verified gets no new access token (BR-04).
+        UserIdentity identity = userService.findActiveUserById(rotated.userId())
+                .orElseThrow(() -> {
+                    log.info("Refresh rejected, user missing or not active. userId={}", rotated.userId());
+                    return new AppException(ErrorCode.INVALID_TOKEN);
+                });
+        return new RefreshTokenResponse(accessTokenManager.generateAccessToken(identity, rotated.sessionId()), rotated);
     }
 
     public void logOut(String rawToken) {
         refreshTokenManager.revokeToken(rawToken);
     }
 
-    public GetListSessionResponse getListSession(UserIdentity userIdentity) {
-        if (userIdentity == null) throw new NullPointerException("User identity could not be null");
-        return new GetListSessionResponse(refreshTokenManager.getListInfoByUserId(userIdentity.id()));
+    public List<SessionResponse> listSessions(AuthenticatedUser actor) {
+        if (actor == null) throw new NullPointerException("Actor could not be null");
+        return refreshTokenManager.listSessions(actor.identity().id()).stream()
+                .map(session -> new SessionResponse(session.sessionId(),
+                        session.userAgent(),
+                        session.ipAddress(),
+                        session.lastUsedAt(),
+                        session.expiresAt(),
+                        session.sessionId().equals(actor.sessionId())))
+                .toList();
     }
 
-    public void getUpdateUserPasswordToken(UserIdentity identity) {
-        if (identity == null) throw new AppException(ErrorCode.COULD_NOT_UPDATE_USER_PASSWORD);
-        Otp otp;
+    /**
+     * Revokes one session of the caller ({@code DELETE /sessions/{sessionId}}).
+     * <p>
+     * Two different sessions are involved:
+     * <ul>
+     *   <li>{@code actor}: who is calling. {@code actor.identity().id()} is the owner the target must belong to, and
+     *       {@code actor.sessionId()} is the session the caller is using right now.</li>
+     *   <li>{@code targetSessionId}: the session to revoke, taken from the URL; any active session of the caller.</li>
+     * </ul>
+     * If the target <b>is</b> the caller's current session, this is a log-out of this device, exactly like
+     * {@code /log-out} (the refresh token family is revoked the same way), and the result tells the controller to
+     * answer like {@code /log-out} (clear the web cookie). The client chose a session marked {@code current} in
+     * {@code GET /sessions}, so it must then drop its tokens, as after {@code /log-out}. An access token issued
+     * before T11 has no {@code sid}: no session is "current" and the target is treated as another session.
+     *
+     * @throws AppException {@code NOT_FOUND} if the caller has no such active session: unknown id, another
+     *                      user's session (404, not 403, so its existence is not revealed), already revoked or expired
+     */
+    public SessionRevocation revokeSession(AuthenticatedUser actor, String targetSessionId) {
+        if (actor == null) throw new NullPointerException("Actor could not be null");
+        if (!refreshTokenManager.revokeSession(actor.identity().id(), targetSessionId))
+            throw new AppException(ErrorCode.NOT_FOUND);
+        return targetSessionId.equals(actor.sessionId())
+                ? SessionRevocation.CURRENT_SESSION_LOGGED_OUT
+                : SessionRevocation.OTHER_SESSION_REVOKED;
+    }
+
+    /**
+     * Keeps only the caller's session.
+     */
+    public void revokeOtherSessions(AuthenticatedUser actor) {
+        if (actor == null) throw new NullPointerException("Actor could not be null");
+        refreshTokenManager.revokeAllForUser(actor.identity().id(), actor.sessionId());
+    }
+
+    /**
+     * Fails closed: a limit that cannot be checked refuses the request (NFR-01, P-37).
+     *
+     * @throws RateLimitedException if a limit of the endpoint is used up
+     * @throws AppException         {@code SERVICE_UNAVAILABLE} if the counters cannot be reached
+     */
+    private static void enforce(Supplier<RateLimitDecision> rateLimit) {
+        RateLimitDecision decision;
         try {
-            otp = otpManager.generateAndStoreOtp(UPDATE_USER_PASSWORD_PURPOSE, identity.email());
-        } catch (OtpException e) {
-            throw new AppException(ErrorCode.OTP_COOLDOWN);
+            decision = rateLimit.get();
+        } catch (StateStoreException e) {
+            log.error("Rate limit could not be checked, refusing the request", e);
+            throw new AppException(ErrorCode.SERVICE_UNAVAILABLE);
         }
-        try {
-            otpEmailManager.send(identity.email(), otp.otp());
-        } catch (EmailSenderException e) {
-            throw new AppException(ErrorCode.COULD_NOT_UPDATE_USER_PASSWORD);
+        switch (decision) {
+            case RateLimitDecision.Allowed allowed -> {}
+            case RateLimitDecision.Limited limited -> throw new RateLimitedException(limited.retryAfter());
         }
-    }
-
-    public VerifyOtpResponse verifyUpdateUserPasswordOtp(UserIdentity identity, VerifyOtpRequest request) {
-        if (!otpManager.verifyOtp(request.otp(), UPDATE_USER_PASSWORD_PURPOSE, String.valueOf(identity.email())))
-            throw new AppException(ErrorCode.INVALID_OTP);
-        OtpToken token = otpTokenManager.generateToken(UPDATE_USER_PASSWORD_PURPOSE, identity.id());
-        return new VerifyOtpResponse(token.token(), token.ticket(), token.expiresAfter());
-    }
-
-    public void updateUserPassword(UserIdentity identity, String ticket, String token, UpdateUserPasswordRequest request) {
-        if (ticket == null || ticket.isEmpty()) throw new AppException(ErrorCode.COULD_NOT_UPDATE_USER_PASSWORD);
-        if (token == null || token.isEmpty()) throw new AppException(ErrorCode.INVALID_TOKEN);
-        Optional<Long> tokenUserId = otpTokenManager.verifyOtpToken(ticket, token, UPDATE_USER_PASSWORD_PURPOSE);
-        if (tokenUserId.isEmpty() || tokenUserId.get() != identity.id())
-            throw new AppException(ErrorCode.INVALID_TOKEN);
-        userService.updateUserPassword(identity.id(), request.password());
     }
 }

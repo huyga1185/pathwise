@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<!--/* Shared layout of OTP emails. Parameters: title, intro. Variables: otp, validMinutes, to, appName, appUrl,
+       companyName, companyUrl, companyAddress (the last five are added by EmailNotificationService). */-->
+<html lang="vi" xmlns:th="http://www.thymeleaf.org" th:fragment="email(title, intro)">
+<head>
+    <meta charset="UTF-8" />
+    <title th:text="${title}">Mã xác thực</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #333; background-color: #fff;">
+<div style="margin: 0 auto; width: 100%; max-width: 600px; padding-bottom: 10px; line-height: 1.8;">
+    <div style="border-bottom: 1px solid #eee; padding-bottom: 10px;">
+        <a style="font-size: 1.4em; color: #000; text-decoration: none; font-weight: 600;"
+           th:href="${appUrl}" th:text="${appName}">PathWise</a>
+    </div>
+    <p>Xin chào <strong th:text="${to}">ban@example.com</strong>,</p>
+    <p th:text="${intro}">Mã xác thực của bạn là:</p>
+    <h2 style="background: #00bc88; margin: 0 auto; width: max-content; padding: 10px 30px; color: #fff; border-radius: 4px; font-size: 2em; letter-spacing: 4px; text-align: center;"
+        th:text="${otp}">123456</h2>
+    <p style="font-size: 0.9em;">
+        Mã có hiệu lực trong <strong th:text="${validMinutes}">5</strong> phút và chỉ dùng được một lần.
+        Nhập sai quá số lần cho phép thì mã bị huỷ, bạn cần yêu cầu mã mới.
+        <br /><br />
+        <strong>Không chia sẻ mã này với bất kỳ ai</strong>, kể cả nhân viên của
+        <span th:text="${companyName}">PathWise</span>.
+        Nếu bạn không thực hiện yêu cầu này, hãy bỏ qua email.
+    </p>
+    <p>Trân trọng,<br /><strong th:text="${companyName}">PathWise</strong></p>
+    <hr style="border: none; border-top: 0.5px solid #ccc;" />
+    <div style="color: #999; font-size: 0.8em; line-height: 1.4;">
+        <p>Email này được gửi tự động, vui lòng không trả lời.</p>
+        <p><span th:text="${companyName}">PathWise</span> · <span th:text="${companyAddress}">Địa chỉ</span> ·
+            <a th:href="${companyUrl}" th:text="${companyUrl}">https://example.com</a></p>
+    </div>
+</div>
+</body>
+</html>

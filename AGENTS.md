@@ -1,6 +1,8 @@
 # AGENTS.md — Quy tắc cho coding agent
 
-PathWise là backend Spring Boot 4.1 / Java 21 (`be/`) cho SaaS lập tuyến giao hàng đa tenant (store, OWNER/DISPATCHER/DRIVER).
+PathWise là SaaS lập tuyến giao hàng đa tenant (store, OWNER/DISPATCHER/DRIVER) gồm backend Spring Boot 4.1 / Java 21 (`be/`) và client: web dispatcher (`web/`, React) và app tài xế (`mobile/`, Flutter) (P-40).
+
+> **Làm client (`web/`, `mobile/`, `api/`, `brand/design-system/`): đọc `docs/client/README.md` trước.** Các mục "Đọc trước khi làm", "Quy tắc cứng", "Build và test", "Checklist", "Quy ước code" dưới đây là của backend; mục "Commit" áp dụng cho cả repo. Task client không sửa backend.
 
 ## Đọc trước khi làm
 
@@ -68,5 +70,7 @@ docker compose --profile app up -d --build    # chạy toàn bộ stack trong co
 
 - Code theo phong cách code xung quanh: Lombok (`@RequiredArgsConstructor`), record cho DTO, MapStruct cho mapping, Bean Validation với message là mã UPPER_SNAKE.
 - Tên lớp: `XxxController`, `XxxService`, `XxxManager`, `XxxRepository`, `RedisXxxStore`, `XxxProvider`. Request/response dùng `CreateXxxRequest` / `XxxResponse`.
+- `Optional` chỉ cho tra cứu có thể không có dữ liệu; verify/rotate/authenticate trả kiểu kết quả `sealed interface`; `AppException` chỉ ném từ service; chỉ thêm `ErrorCode` khi client phải xử lý khác đi (P-24, bảng ở `ARCHITECTURE.md` §3).
+- Null trong API (P-48): component của record `*Response` luôn có mặt và không `null`, trừ khi đánh `org.jspecify.annotations.Nullable` (record `@JsonInclude(NON_NULL)` thì field `@Nullable` bị bỏ khỏi JSON); field xoá được của class merge patch cũng đánh `@Nullable`. Thêm field response có thể `null` mà quên đánh dấu thì OpenAPI sai và `OpenApiNullabilityIntegrationTest` báo lỗi. Endpoint trả 201/202/204 đánh `@ResponseStatus` để OpenAPI ghi đúng mã.
 - Đơn vị: mét, giây, capacity là số nguyên. Timestamp dùng `Instant` UTC. Time window dùng `LocalTime` theo timezone của store.
 - Git: mỗi task một branch `task/Txx-...` từ `develop`. Commit theo dạng `feat(module): ...`, `fix(module): ...`.

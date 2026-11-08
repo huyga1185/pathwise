@@ -1,11 +1,10 @@
 package uk.huy.pathwise.auth.token.jwt.infrastructure.generator;
 
-import uk.huy.pathwise.auth.token.jwt.infrastructure.dto.JwtClaimsSet;
+import uk.huy.pathwise.auth.token.jwt.infrastructure.dto.JwtVerification;
 
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 public interface JwtTokenGenerator {
 
@@ -16,6 +15,9 @@ public interface JwtTokenGenerator {
                                  Duration nbf,
                                  Map<String, Object> claims);
 
-    Optional<JwtClaimsSet> verifyJwt(String jwt, String expectedAudience);
+    /**
+     * @throws uk.huy.pathwise.auth.token.jwt.infrastructure.exception.JwtException if verification itself fails (crypto/configuration)
+     */
+    JwtVerification verifyJwt(String jwt, String expectedAudience);
     Duration getExpirationTime();
 }

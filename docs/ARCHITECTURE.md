@@ -18,7 +18,7 @@
    ┌──────────────────── Spring Boot (be/) ────────────────────┐
    │  auth ── user ── store ── fleet ── planning ── routing     │
    │     \______ notification ______/        (driver API)       │
-   │                 core / shared                              │
+   │                 job · core / shared                        │
    └───────────┬───────────────┬─────────────────┬─────────────┘
            MariaDB           Redis        SMTP · Nominatim · OSRM (· Google sau)
 ```
@@ -38,15 +38,16 @@ Package gốc `uk.huy.pathwise`. Mỗi module là một package cấp 1.
 
 | Module | Trách nhiệm | Trạng thái |
 |---|---|---|
-| `core` | Hạ tầng dùng chung, không chứa nghiệp vụ: envelope response, `ErrorCode`/`AppException`/handler, pagination, `StateStore`, rate limiter, **job framework** (`core.job`, §8.4), cấu hình web/JSON. | Có — mở rộng |
-| `shared` | Kiểu dữ liệu chia sẻ giữa module: `UserIdentity`, `UserRole`. Chỉ record/enum, **không** bean. | Có — sửa |
+| `core` | Hạ tầng dùng chung, không chứa nghiệp vụ: envelope response, `ErrorCode`/`AppException`/handler, pagination, `StateStore`, `core.security` (`Hasher` SHA-256, `OpaqueTokenGenerator`; P-28), `core.phonenumber` (chuẩn hoá và validate số VN, P-29), rate limiter, cấu hình web/JSON. | Có — mở rộng |
+| `shared` | Kiểu dữ liệu chia sẻ giữa module: `UserIdentity`, `UserRole`, `UserStatus`, principal `AuthenticatedUser` (P-25). Chỉ record/enum, **không** bean. | Có — sửa |
 | `user` | Tài khoản người dùng: entity `User`, mật khẩu, hồ sơ, trạng thái. | Có — mở rộng |
 | `auth` | Xác thực: đăng ký (orchestrate user + store), đăng nhập, token (access/refresh/OTP token), OTP, session, đổi/quên mật khẩu, security filter chain. | Có — sửa |
-| `notification` | Gửi email theo template (chuyển từ `auth.email.infrastructure` sang, để `store` gửi được lời mời mà không phụ thuộc `auth`). | Mới (tách từ auth) — T12 |
-| `store` | Store, thành viên, lời mời. | Mới — T13, T16 |
-| `fleet` | Xe. | Mới — T20 |
-| `routing` | Adapter định tuyến **không có DB**: `GeocodingProvider`, `MatrixProvider`, `SolverProvider`, (Should) `DirectionsProvider`; endpoint geocoding search. Đổi tên từ `routeoptimizer`. | Có — sửa/thay |
-| `planning` | Route plan, route, stop; optimize, publish, trạng thái; API cho dispatcher **và** API cho driver; vị trí tài xế. | Mới — T24+ |
+| `notification` | Gửi email theo template (chuyển từ `auth.email.infrastructure` sang, để `store` gửi được lời mời mà không phụ thuộc `auth`). API công khai: `EmailNotificationService.send(templateName, to, variables)`, lỗi gửi là `EmailDeliveryException`. | Có (T12) |
+| `store` | Store, thành viên, lời mời. API công khai: `StoreProvisioningService.createStore(name)` (cho đăng ký, tham gia transaction của bên gọi), `StoreMemberQuery.findActiveMember(storeId, userId)` và `findMembers(storeId, ids)` (mọi trạng thái, để hiển thị), `StoreQuery.findStore(storeId)` → `StoreProfile` (depot, timezone), event `MemberDisabledEvent` (P-27, auth nghe để thu hồi session). Đọc và ghi user qua `StoreUserService` của `user`. | Có (T13, T16) |
+| `job` | Job chạy nền dùng chung (D-19, §8.4): bảng `background_jobs`, executor inline/async, khôi phục lúc khởi động, `GET /api/v1/jobs/{id}`. API công khai: `JobService` (`createJob`, `findJob`), interface `JobHandler` cho module sở hữu target implement, record `JobRef`, `JobResponse`. Không biết nghiệp vụ của target (P-31). | Có (T24 entity, T29) |
+| `fleet` | Xe. API công khai: `VehicleQuery.findActive(storeId, vehicleId)`, `listActive(storeId)`, `findAll(storeId, ids)` (cả xe đã tắt, để hiển thị) trả `FleetVehicle`. | Có (T20) |
+| `routing` | Adapter định tuyến **không có DB**: `GeocodingProvider`, `MatrixProvider`, `SolverProvider`, (Should) `DirectionsProvider`; endpoint geocoding search. Thay cho `routeoptimizer` (đã xoá ở T27). | Có — geocoding (T21), matrix (T22), solver (T23) |
+| `planning` | Route plan, route, stop; geocode nền, optimize, publish, trạng thái; API cho dispatcher **và** API cho driver; vị trí tài xế. | Có — draft CRUD (T24), geocode nền (T29); T25+ |
 
 ### 2.1 Quy tắc phụ thuộc giữa module (bắt buộc)
 
@@ -58,13 +59,15 @@ store         →  user, notification
 auth          →  user, store, notification
 fleet         →  (core, shared)
 routing       →  (core)
-planning      →  store, fleet, routing
+job           →  (core, shared)
+planning      →  store, fleet, routing, job
 ```
 
 - **Không có vòng phụ thuộc.** `user` không biết `auth`/`store`; `routing` không biết `planning`.
 - Module khác chỉ được dùng **service interface công khai** và **DTO/record** của module đích (ví dụ `UserAccountService`, `StoreMemberQuery`). **Cấm** inject repository, entity hoặc class trong `infrastructure` của module khác.
 - Entity JPA **không** đi ra khỏi module sở hữu (không trả entity qua service interface công khai, không tạo quan hệ `@ManyToOne` tới entity module khác — dùng cột id `Long storeId`, `Long driverId`).
 - Thêm một mũi tên phụ thuộc mới vào sơ đồ trên = quyết định kiến trúc → ghi vào `DECISIONS.md`.
+- Module phía dưới cần báo cho module phía trên (ví dụ store → auth) thì phát **event đồng bộ** là record public của mình; module phía trên nghe bằng `@EventListener`, chạy trong cùng transaction (P-27).
 
 ### 2.2 Cấu trúc trong một module
 
@@ -87,20 +90,35 @@ Không bắt buộc module nào cũng đủ thư mục; chỉ tạo khi có nộ
 
 | Loại | Được làm | Không được làm | Được phụ thuộc vào |
 |---|---|---|---|
-| `*Controller` | Map HTTP ↔ DTO, `@Valid`, đọc `@AuthenticationPrincipal UserIdentity`, cookie/header, chọn status code, `@PreAuthorize` theo role. | Business logic, gọi repository, `@Transactional`, try/catch để đổi lỗi (để handler toàn cục làm). | Service của chính module. |
+| `*Controller` | Map HTTP ↔ DTO, `@Valid`, đọc `@AuthenticationPrincipal AuthenticatedUser` (P-25), cookie/header, chọn status code, `@PreAuthorize` theo role. | Business logic, gọi repository, `@Transactional`, try/catch để đổi lỗi (để handler toàn cục làm). | Service của chính module. |
 | `*Service` | Use case: kiểm tra quyền sở hữu/tenant, business rule, ranh giới transaction, orchestrate manager/repository/provider, map entity → DTO. | Biết về HTTP (cookie, header, `HttpServletRequest`). | Repository/store/manager/provider của module mình; service interface công khai của module khác. |
 | `*Manager` | Đóng gói vòng đời một khả năng kỹ thuật dùng lại được (sinh/verify/thu hồi token, OTP). | Biết HTTP; kiểm tra quyền nghiệp vụ; được gọi từ controller. | Store/repository/generator/hasher. |
 | `*Repository` | Truy vấn JPA. Mọi truy vấn dữ liệu thuộc store **phải có tham số `storeId`**. | Logic nghiệp vụ. | — |
 | `*Store` | Thao tác Redis có TTL; fail-closed bằng `StateStoreException`. | Logic nghiệp vụ ngoài thao tác atomic cần thiết (ví dụ Lua verify OTP). | `RedisTemplate`. |
-| `*Provider` | Adapter tới hệ thống ngoài; dịch lỗi ngoài thành `ExternalServiceException` (T03). | Biết entity/DTO API của module khác. | HTTP client. |
+| `*Provider` | Adapter tới hệ thống ngoài; dịch lỗi ngoài thành `ExternalServiceException` (T03). Tương tự, class bọc thư viện ngoài (ví dụ `PhoneNumberProcessor`) không để checked exception của thư viện lọt ra nơi gọi (F-42). | Biết entity/DTO API của module khác. | HTTP client. |
 | Mapper (MapStruct) | Entity ↔ DTO trong cùng module. | Gọi service/repository. | — |
+
+**Optional, kết quả và lỗi (P-24):**
+
+| Tình huống | Cách biểu diễn | Ví dụ |
+|---|---|---|
+| Tra cứu có thể không có dữ liệu | `Optional<T>` (chỉ làm kiểu trả về) | `UserRepository.findByEmail`, `StateStore.find` |
+| Kiểm tra/quyết định có nhiều kết quả cần xử lý hoặc log khác nhau, hoặc nhánh thành công mang dữ liệu | `sealed interface` + `record` theo nghiệp vụ (không dùng `Result<T, E>` chung), lý do là enum, xử lý bằng `switch`; chỉ dùng giữa manager và service | `RotationResult` (`Rotated`/`Rejected(reason)`), `AuthenticationResult` |
+| Kiểm tra chỉ có đúng/sai, không cần lý do | `boolean` | `OtpStore.verifyOtp` |
+| Lỗi nghiệp vụ trả cho client | `AppException(ErrorCode)`, chỉ ném từ service (controller khi kiểm tra input). Cần chỉ ra field sai trong `details` (kiểm tra phải đọc DB) thì dùng `DetailedAppException(code, details)` | `AppException(ErrorCode.EMAIL_EXISTED)`; `DetailedAppException(VALIDATION_ERROR, [stops[1].id: INVALID_STOP_ID])` |
+| Lỗi kỹ thuật | Exception cấp thấp trong `infrastructure`; handler map hoặc service dịch; lỗi bug/cấu hình để về 500 | `ExternalServiceException`, `StateStoreException` |
+
+Chỉ thêm `ErrorCode` khi client phải hành động khác đi; lý do chi tiết để ở kiểu kết quả và log. Không tạo exception riêng cho từng lỗi nghiệp vụ (chỉ subclass `AppException` khi cần dữ liệu cho `details`). Không dùng `Optional` làm field/tham số; dùng `orElseThrow`/`map` thay cho `isEmpty()` + `get()`.
 
 **Quy ước tên:** `XxxController`, `XxxService` (interface công khai giữ tên nghiệp vụ, ví dụ `UserAccountService`; implementation có thể là `UserService`), `XxxManager`, `XxxRepository`, `RedisXxxStore`, `NominatimGeocodingProvider`. Request DTO: `CreatePlanRequest`; response: `PlanResponse`, `PlanSummaryResponse`.
 
 ## 4. DTO, validation, mapping
 
 - Request/response là **Java record**. Không dùng entity làm request/response.
-- Validation cú pháp ở request DTO bằng Bean Validation; `message` của constraint là **mã lỗi** UPPER_SNAKE (ví dụ `EMAIL_REQUIRED`), không phải câu văn. (Hiện `VerifyOtpRequest` dùng câu văn — sửa trong T03.)
+- Validation cú pháp ở request DTO bằng Bean Validation; `message` của constraint là **mã lỗi** UPPER_SNAKE (ví dụ `EMAIL_REQUIRED`), không phải câu văn (T03 đã chuyển mọi constraint hiện có sang mã).
+- Kiểm tra chéo nhiều field: DTO implement `core.validation.SelfValidating` và gắn `@SelfValidated`; `validate(FieldErrors)` báo lỗi trên field client cần sửa (`errors.reject("end", "INVALID_TIME_WINDOW")`). Không dùng `@AssertTrue` trên method, vì lỗi sẽ mang tên method (P-32).
+- PATCH: request kế thừa `core.validation.MergePatch` (class có setter đánh dấu field có mặt, không phải record), service dùng `has(field)` để phân biệt vắng với `null`; field không xoá được dùng `rejectNull` → `NOT_NULLABLE` (P-32).
+- Số điện thoại lưu và trả E.164; request nhận dạng bất kỳ và validate bằng `@ValidPhoneNumber` (P-29, P-32).
 - Validation nghiệp vụ (tham chiếu tồn tại, trạng thái, quyền) ở service → `AppException(ErrorCode.X)`.
 - Thời gian trong API: `Instant` ISO-8601 UTC cho sự kiện; `LocalDate` cho `planDate`; `LocalTime` (`HH:mm`) cho time window/ca, hiểu theo timezone của store (P-14).
 - Cấu hình mới dùng `@ConfigurationProperties` (record) theo module, không rải `@Value`.
@@ -113,7 +131,7 @@ Không bắt buộc module nào cũng đủ thư mục; chỉ tạo khi có nộ
   { "code": "VALIDATION_ERROR", "details": [{ "field": "email", "code": "EMAIL_REQUIRED" }] }
   ```
   Profile `dev` được thêm `exception`, `stackTrace`. Không profile nào khác lộ chi tiết nội bộ.
-- Map chuẩn: 400 validation/request sai · 401 chưa xác thực/token sai/sai thông tin đăng nhập · 403 không đủ quyền · 404 không tồn tại **hoặc thuộc store khác** · 405 sai HTTP method · 409 xung đột trạng thái/trùng/optimistic lock · 422 vi phạm business rule hợp lệ cú pháp (ví dụ publish plan chưa tối ưu) · 429 rate limit/cooldown · 502/503 provider ngoài lỗi/hết thời gian · 500 lỗi không lường trước.
+- Map chuẩn: 400 validation/request sai · 401 chưa xác thực/token sai/sai thông tin đăng nhập · 403 không đủ quyền · 404 `NOT_FOUND` khi không tồn tại **hoặc thuộc store khác** (không dùng mã 404 riêng theo loại tài nguyên, P-32) · 405 sai HTTP method · 409 xung đột trạng thái/trùng/optimistic lock · 422 vi phạm business rule hợp lệ cú pháp (ví dụ publish plan chưa tối ưu) · 429 rate limit/cooldown · 502/503 provider ngoài lỗi/hết thời gian · 500 lỗi không lường trước.
 - `AuthenticationEntryPoint` và `AccessDeniedHandler` của Security ghi cùng format: `JsonAuthenticationEntryPoint`, `JsonAccessDeniedHandler` (trong `auth.infrastructure.security`), cùng dùng `ErrorResponseFactory` với `GlobalExceptionHandler`.
 - **Quy tắc (P-23):** những gì `SecurityConfig` hoặc `GlobalExceptionHandler` cần (filter, entry point, `ErrorResponseFactory`) **không là Spring bean** mà được khởi tạo trực tiếp. Lý do: `@WebMvcTest` chỉ nạp controller, advice, filter và cấu hình MVC; một `@Component` thường sẽ thiếu trong slice và làm hỏng mọi controller test.
 - Provider ngoài: timeout kết nối/đọc cấu hình (mặc định 3 s / 10 s); lỗi → `ExternalServiceException` → 502 `ROUTING_PROVIDER_ERROR` hoặc `GEOCODING_PROVIDER_ERROR`.
@@ -124,10 +142,10 @@ Không bắt buộc module nào cũng đủ thư mục; chỉ tạo khi có nộ
 
 | Token | Dạng | Lưu | TTL | Ghi chú |
 |---|---|---|---|---|
-| Access token | JWT HS256, claim `sub`(userId), `email`, `role`, `storeId`, `sid`(sessionId = familyId) (P-09) | Client (memory/secure storage) | 14 phút | Header `Authorization: Bearer`. Không thu hồi được trước hạn. |
+| Access token | JWT HS256, claim `sub`(userId), `email`, `role`, `storeId` (không có với ADMIN), `sid`(sessionId = familyId), `canDrive` (P-09) | Client (memory/secure storage) | 14 phút | Header `Authorization: Bearer`. Không thu hồi được trước hạn. |
 | Refresh token | Opaque 256-bit, lưu SHA-256 | MariaDB `refresh_tokens` | 14 ngày, trượt: rotate bình thường → token con hạn = now + 14 ngày (giữ hành vi hiện tại); nhánh grace giữ nguyên hạn của token active | Xoay vòng mỗi lần dùng; family = session (P-07). Web: cookie; mobile: body (P-04). |
-| OTP | 6 chữ số, lưu SHA-256 + số lần thử | Redis `otp:{purpose}:{userId}` | cấu hình, mặc định 300 s | Verify atomic bằng Lua; cooldown 60 s `otp:cooldown:{purpose}:{userId}`. |
-| Reset token | Opaque (ticket + secret) | Redis `otpToken:{purpose}:{ticket}` → `{userId}:{hash}` | 10 phút | Một lần (GETDEL), bind userId + purpose (P-06). |
+| OTP | 6 chữ số, lưu SHA-256 + số lần thử | Redis `otp:{purpose}:{userId}` | `otp.ttl`, mặc định 5 phút | Verify atomic bằng Lua, huỷ sau `otp.max-attempts` (3) lần sai; cooldown `otp.cooldown` (60 s) `otp:cooldown:{purpose}:{userId}`, được xoá nếu email gửi lỗi. `OtpManager` (generate, lưu, gửi email, verify) trên `OtpStore` (chỉ Redis). |
+| Reset token | Opaque (ticket + secret), client nhận một chuỗi `{ticket}.{secret}` | Redis `otpToken:{purpose}:{ticket}` → `{userId}:{hash}` | 10 phút (TTL do bên gọi `OtpTokenManager.generateToken` truyền vào) | Một lần (GETDEL), bind userId + purpose (P-06). `verifyOtpToken` trả `OtpTokenVerification` (`Verified(userId)`/`Rejected(reason)`); giá trị Redis hỏng ném `IllegalStateException` (500), không coi là token sai (P-24). |
 | Invitation code | Opaque, lưu SHA-256 | MariaDB `store_invitations` | 7 ngày (D-27) | Một lần. |
 
 OTP purpose (enum): `VERIFY_EMAIL`, `RESET_PASSWORD`, `CHANGE_PASSWORD`. Key OTP dùng **userId**, không dùng email (email có thể đổi).
@@ -156,18 +174,17 @@ Hai lớp, **cả hai bắt buộc**:
 | Xem plan & vị trí tài xế | — | ✓ | ✓ | — |
 | Xem route được giao, cập nhật trạng thái stop, gửi vị trí | — | ✓ nếu `canDrive` | ✓ nếu `canDrive` | ✓ (chỉ route của mình) |
 | Bật/tắt `canDrive` của thành viên | — | ✓ | — | — |
-| Đặt lại stop về PENDING | — | ✓ | ✓ | — |
 | Danh sách user toàn hệ thống | ✓ | — | — | — |
 
 ADMIN không có `storeId` và **không** truy cập API của store trong MVP.
 
-"Người được gán route" = user ACTIVE của store có `role=DRIVER` hoặc `canDrive=true` (D-21). API `/driver/**` kiểm tra điều kiện này bằng `@PreAuthorize`, dùng role và claim `canDrive`. Quyền trên từng route kiểm tra `route.driver_id = actor.id()` ở service.
+"Người được gán route" = user ACTIVE của store có `role=DRIVER` hoặc `canDrive=true` (D-21). Quy tắc này chỉ viết ở một chỗ: `UserIdentity.assignableToRoutes()` (T17). API `/driver/**` kiểm tra bằng `@PreAuthorize("@authz.canDrive(principal)")`, dùng role và claim `canDrive`; bean `authz` (`AuthorizationRules`) khai báo trong `SecurityConfig` nên slice test `@Import(SecurityConfig.class)` có sẵn. Khi chọn người cho một plan, service dùng `StoreMemberQuery` (kiểm tra ACTIVE và cùng store) rồi áp cùng quy tắc. Quyền trên từng route kiểm tra `route.driver_id = actor.id()` ở service.
 
 ### 6.4 Web vs mobile (P-04)
 
 - Header `X-Client-Platform: mobile` → refresh token đi trong body request/response, không set cookie.
 - Không có header → refresh token chỉ trong cookie `refreshToken`: `HttpOnly; Secure; SameSite=<auth.cookie.same-site, mặc định Strict>; Path=/api/v1/auth; Max-Age=<còn lại>`. Web và API cùng site dưới `huy-vu.uk` (D-22).
-- CORS: whitelist origin web cấu hình qua env, `allowCredentials=true`. Mobile không bị CORS.
+- CORS: whitelist origin web chính xác qua `cors.allowed-origins` (env `CORS_ALLOWED_ORIGINS`), `allowCredentials=true`, áp cho `/api/**` (T41, P-38). Mobile không bị CORS.
 - CSRF tắt. An toàn dựa vào `SameSite=Strict` cộng access token ở header. Nếu sau này web và API khác site thì phải thêm cơ chế chống CSRF cho `/refresh` và `/log-out` trước khi đổi `SameSite=None`.
 
 ## 7. Persistence, transaction, concurrency
@@ -180,7 +197,8 @@ ADMIN không có `storeId` và **không** truy cập API của store trong MVP.
   - Đăng ký/mời: transaction tạo dữ liệu → commit → gửi email. Email lỗi → user dùng endpoint gửi lại (không rollback dữ liệu).
   - Optimize: tx đọc input → gọi matrix + solver ngoài tx → tx ghi kết quả, kiểm tra `version` của plan (optimistic lock); plan đã đổi → 409 `PLAN_MODIFIED`.
 - Concurrency:
-  - `route_plans.version` (`@Version`) cho mọi sửa plan.
+  - `route_plans.version` (`@Version`) cho mọi sửa plan. Service khoá dòng plan (`SELECT … FOR UPDATE`) rồi so `version` client gửi, nên kiểm tra và ghi là một bước; mỗi request đánh dấu plan đã sửa đúng một lần, và collection route/stop được loại khỏi optimistic lock (`@OptimisticLock(excluded = true)`), nên `version` tăng đúng 1 dù chỉ stop đổi (T24).
+  - **MariaDB snapshot isolation** (bật mặc định từ 11.6, F-44): trong một transaction, nếu đã có một lần đọc thường rồi mới `SELECT … FOR UPDATE` một dòng mà transaction khác vừa sửa, MariaDB ném lỗi 1020 thay vì đợi rồi đọc bản mới. Quy tắc: câu khoá phải là lệnh đọc **đầu tiên** của transaction; cần dữ liệu để biết khoá gì thì đọc nó trong một transaction riêng trước đó (ví dụ publish đọc `plan_date`).
   - Cập nhật trạng thái stop: `UPDATE ... WHERE id=? AND status=?` hoặc `@Version` trên stop; thao tác lặp lại cùng trạng thái là idempotent.
   - Refresh token: giữ pessimistic lock khi rotate.
   - Đăng ký/mời trùng email: dựa vào unique constraint; `DataIntegrityViolationException` → 409 `EMAIL_EXISTED`.
@@ -201,43 +219,51 @@ DRAFT ──optimize(job)──▶ DRAFT có kết quả ──publish──▶ 
 
 - `processing_status` khác `IDLE` thì mọi thao tác ghi lên plan trả 409 `PLAN_BUSY`.
 - Optimize chỉ chạy khi mọi stop có toạ độ (`PROVIDED` hoặc `RESOLVED`). Nếu chưa thì trả 422 `STOPS_NOT_GEOCODED`.
-- Publish kiểm tra **trùng ca** (D-23): với mỗi người được gán và mỗi xe, khoảng `[shiftStart, shiftEnd)` của plan này không được giao với khoảng ca của plan PUBLISHED/IN_PROGRESS khác **cùng `plan_date`** trong store. Vi phạm thì trả 422 `SHIFT_OVERLAP`. Kiểm tra trong transaction publish, khoá các route liên quan bằng `SELECT … FOR UPDATE` theo driver_id/vehicle_id để hai lần publish đồng thời không cùng lọt qua.
+- Publish kiểm tra **trùng ca** (D-23): với mỗi route **có stop** của plan, khoảng `[shiftStart, shiftEnd)` không được giao với khoảng ca của cùng người được gán hoặc cùng xe trong route có stop của plan PUBLISHED/IN_PROGRESS khác **cùng `plan_date`** trong store; route không có stop không tính (P-34). Vi phạm thì trả 422 `SHIFT_OVERLAP`, mỗi xung đột một phần tử `details` có `conflictPlanId`. Để hai lần publish đồng thời không cùng lọt qua, transaction publish **khoá mọi plan của store trong ngày đó** (`SELECT … FOR UPDATE` theo `(store_id, plan_date)`, `ORDER BY id`, nên không deadlock) rồi mới kiểm tra; khoá theo route của plan khác không đủ, vì plan kia còn là DRAFT lúc kiểm tra. `plan_date` được đọc trong một transaction riêng trước đó (xem §7, MariaDB snapshot isolation).
+- Trạng thái đi một chiều, không có đảo ngược (P-34): stop `PENDING → DELIVERED | FAILED | SKIPPED`, plan `PUBLISHED → IN_PROGRESS → COMPLETED` (hoặc thẳng `PUBLISHED → COMPLETED` khi lần cập nhật đầu tiên đã kết thúc mọi stop). Bảng chuyển trạng thái, cách tính tiến độ plan và trạng thái route (`RouteStatus`, tính từ stop, không lưu DB; P-35) nằm ở `planning.model.PlanLifecycle`, dùng chung cho T26, T30, T31.
 
 ### 8.2 Geocoding khi lưu plan (D-18)
 
-1. Lưu draft trong một transaction. Stop có lat/lon thì `geocode_status = PROVIDED`. Stop chỉ có địa chỉ thì `PENDING`. Nếu có ít nhất một stop `PENDING` thì tạo job `GEOCODE_PLAN` và đặt `processing_status = GEOCODING`. Commit.
+1. Lưu draft trong một transaction (`POST`, `PUT`, `PATCH` stop đều vậy). Stop có lat/lon thì `geocode_status = PROVIDED`. Stop chỉ có địa chỉ thì `PENDING`. Nếu có ít nhất một stop `PENDING` thì tạo job `GEOCODE_PLAN`, đặt `processing_status = GEOCODING` và `active_job_id`. Commit.
 2. Sau commit, job chạy trên executor nền. Với mỗi stop `PENDING`:
-   - Gọi `GeocodingProvider.search(address, 1)`. Lớp cache nằm trước provider, và **chỉ cache miss mới tốn slot rate limit**.
+   - Gọi `GeocodingProvider.search(address, 1)`. Lớp cache nằm trước provider, và **chỉ cache miss mới tốn slot rate limit**. Không lấy được slot (`GEOCODING_BUSY`) thì thử lại, tối đa 3 lần cho mỗi stop, rồi mới coi là `PROVIDER_ERROR`.
    - Có kết quả thì `RESOLVED`, ghi lat/lon và `geocoded_display_name`. Không có kết quả thì `FAILED/NOT_FOUND`. Provider lỗi thì `FAILED/PROVIDER_ERROR`, job vẫn tiếp tục với các stop còn lại.
-   - Ghi kết quả theo lô nhỏ, mỗi lô một transaction ngắn, để client polling thấy tiến độ.
-3. Xong thì job `SUCCEEDED`, kể cả khi có stop FAILED, vì đó là lỗi dữ liệu chứ không phải lỗi job. Sau đó `processing_status = IDLE`.
-4. Dispatcher sửa stop FAILED bằng `PATCH` stop (địa chỉ mới hoặc toạ độ) hoặc gọi `POST /plans/{id}/geocode`.
+   - Ghi kết quả theo lô nhỏ (`jobs.geocode-plan.batch-size`, mặc định 5 stop), mỗi lô một transaction ngắn, để client polling thấy tiến độ. Stop không còn `PENDING` với đúng địa chỉ đó thì bỏ qua kết quả.
+3. Xong thì job `SUCCEEDED`, kể cả khi có stop FAILED, vì đó là lỗi dữ liệu chứ không phải lỗi job. Handler đặt `processing_status = IDLE`, `active_job_id = NULL` trong `finally`; việc này tăng `version` của plan đúng 1 (P-30).
+4. Dispatcher sửa stop FAILED bằng `PATCH` stop (địa chỉ mới hoặc toạ độ) hoặc gọi `POST /plans/{id}/geocode`: stop `FAILED` về `PENDING` rồi chạy job mới; không có stop `PENDING`/`FAILED` nào thì 422 `NOTHING_TO_GEOCODE` (P-30).
 5. `PUT` draft giữ kết quả geocode của stop có `id` cũ khi địa chỉ và toạ độ không đổi.
 
 ### 8.3 Optimize (D-19, P-13, P-14)
 
-1. Kiểm tra: plan DRAFT, `IDLE`, mọi stop có toạ độ, có ≥ 1 stop và ≥ 1 assignment, trong giới hạn kích thước, dữ liệu thoả BR-07..BR-09.
+1. Kiểm tra (theo thứ tự): plan DRAFT, `IDLE`, đúng `version`, có ≥ 1 stop và ≥ 1 assignment (`PLAN_INCOMPLETE`, P-33), mọi stop có toạ độ (`STOPS_NOT_GEOCODED`), và BR-07 kiểm lại vì tài xế/xe có thể đã bị tắt kể từ lúc lưu draft (`INVALID_ASSIGNMENT`). Giới hạn kích thước và BR-08, BR-09 đã kiểm khi lưu draft.
 2. Tạo job `OPTIMIZE_PLAN` và đặt `processing_status = OPTIMIZING`, commit. Gửi job cho `JobExecutor`. Trong MVP, executor của loại job này là **inline**, nghĩa là chạy ngay trong thread của request (§8.4).
-3. Job: transaction đọc input. Sau đó, **ngoài transaction**: dựng danh sách node gồm các điểm start/end riêng của từng route (MVP đều là depot) cộng stop, gọi `MatrixProvider.matrix(nodes)` lấy `distanceMeters` và `durationSeconds`, rồi gọi `SolverProvider.solve(VrpProblem)`. Cuối cùng là transaction ghi kết quả có kiểm tra `version`.
+3. Job (`OptimizePlanJobHandler`): transaction đọc input thành `OptimizationInput` (record, không entity) kèm `version`. Sau đó, **ngoài transaction**, `OptimizationModel` dựng danh sách node: các điểm start/end riêng của từng route (trùng toạ độ thì dùng chung một node; MVP đều là depot) cộng mỗi stop một node; gọi `MatrixProvider.matrix(nodes)` lấy `distanceMeters` và `durationSeconds`, rồi gọi `SolverProvider.solve(VrpProblem)`. Cuối cùng là transaction ghi kết quả có kiểm tra `version` (`PlanOptimizationService`). Mọi transaction phía job dùng `REQUIRES_NEW` (§8.4). Giờ ca và time window đổi sang giây từ 00:00 của `planDate`, kết quả đổi lại thành `Instant` theo timezone của plan; cách này giả định ngày đó không đổi giờ mùa hè (đúng với `Asia/Ho_Chi_Minh`).
 4. `VrpProblem` (model của `routing`, không dùng entity):
-   - Xe k có `startNode`, `endNode` **riêng** (D-20, điểm mở rộng cho multi-depot), `capacity`, `shiftStart/End` (tính bằng giây từ 00:00 của `planDate`), `maxDistance?`.
-   - Dimension Capacity theo demand.
+   - Xe k có `startNode`, `endNode` **riêng** (D-20, điểm mở rộng cho multi-depot), `capacityUnit` + `capacity` (D-36), `shiftStart/End` (tính bằng giây từ 00:00 của `planDate`), `maxDistance?`.
+   - Mỗi loại capacity có trong problem một dimension Capacity (D-36): stop đóng góp `demands[loại]`; xe tính theo loại đó bị giới hạn bằng `capacity`, xe tính theo loại khác thì không giới hạn. Planning thêm `ORDER = 1` cho mọi stop khi có xe tính theo `ORDER`. `load` của route tính theo loại của xe.
    - Dimension Time với transit = `duration[i][j] + serviceTime[i]`, có slack để cho phép chờ, cumul nằm trong time window; start và end của xe nằm trong ca.
    - Dimension Distance giới hạn bằng `maxDistance`.
    - Arc cost tính theo duration.
    - Mỗi stop có disjunction kèm penalty lớn, nên stop không xếp được sẽ rơi vào `dropped` (P-13).
-   - First solution `PATH_CHEAPEST_ARC`, metaheuristic `GUIDED_LOCAL_SEARCH`, time limit cấu hình (mặc định 10 giây).
-5. Ghi kết quả: `sequence`, `plannedArrival`, chỉ số từng route, `optimized_at`. Stop bị drop có `route_id = NULL`. Job `SUCCEEDED`, plan về `IDLE`. Nếu provider lỗi thì job `FAILED` (`ROUTING_PROVIDER_ERROR`), plan về `IDLE`, kết quả cũ giữ nguyên.
+   - First solution `PATH_CHEAPEST_ARC`, metaheuristic `GUIDED_LOCAL_SEARCH`, time limit cấu hình (mặc định 10 giây). GLS chạy tới hết time limit, nên mỗi lần optimize có stop luôn mất đúng khoảng đó.
+   - Mỗi node của ma trận là node của đúng một stop hoặc là start/end của xe (nhiều xe dùng chung depot được); vi phạm thì `IllegalArgumentException`. Horizon của dimension Time = giờ lớn nhất trong các ca và các time window, để stop có window nằm ngoài mọi ca bị drop thay vì làm OR-Tools lỗi khi dựng model. Giờ xuất phát được đẩy muộn nhất và giờ về sớm nhất có thể (finalizer). Penalty drop lớn hơn chi phí của mọi xe chạy hết horizon.
+   - `VrpSolution`: một route cho mỗi xe theo thứ tự đầu vào (xe không dùng thì không có visit), ETA = giờ bắt đầu phục vụ, `droppedStops`; `NO_SOLUTION` khi OR-Tools không tìm ra lời giải nào (ví dụ xe không kịp đi từ start tới end trong ca).
+5. Ghi kết quả: `sequence`, `plannedArrival`, chỉ số từng route, `optimized_at`, tổng quãng đường và thời lượng. Stop bị drop có `route_id = NULL`. Route không được dùng có quãng đường và thời lượng 0, giờ đi/về NULL. Kết quả và việc đưa plan về `IDLE` nằm trong **cùng một transaction**, nên `version` tăng đúng 1 cho job (P-30). Job `SUCCEEDED`. Lỗi thì job `FAILED`, plan về `IDLE` trong `finally` (`PlanProcessingService.release`, dùng chung với geocode), kết quả cũ giữ nguyên: provider lỗi → `ROUTING_PROVIDER_ERROR`; plan đổi `version` trong lúc giải → `PLAN_MODIFIED`; solver không có lời giải → `NO_SOLUTION` (P-33).
 
-### 8.4 Job framework (`core.job`, D-19)
+### 8.4 Job framework (module `job`, D-19, P-31)
 
-- Entity và repository `BackgroundJob` (bảng `background_jobs`). Interface `JobHandler` được mỗi loại job implement (`GeocodePlanJobHandler`, `OptimizePlanJobHandler` nằm trong `planning`).
+- Module cấp 1 `uk.huy.pathwise.job` (P-31), cấu trúc theo §2.2: `job.model` (`BackgroundJob`, `JobType`, `JobStatus`, `JobErrors`), `.repository`, `.dto` (`JobRef`, `JobResponse`), `.service` (`JobService`, `JobHandler`, `JobExecutor`, `JobStateService`, `JobRecovery`), `.controller` (`JobController`), `.infrastructure.config` (`JobProperties`, `JobMode`). Module khác chỉ dùng `service.JobService`, `service.JobHandler` và các record/enum ở `dto`/`model`; không inject repository hay entity `BackgroundJob`.
+- Entity và repository `BackgroundJob` (bảng `background_jobs`). Interface `JobHandler` (`type()`, `run(JobRef)`, `abandon(JobRef)`) được mỗi loại job implement (`GeocodePlanJobHandler`, `OptimizePlanJobHandler` nằm trong `planning`). Handler chỉ thấy `JobRef(id, type, storeId, targetId)`, không thấy entity. `abandon` giải phóng target của job sẽ không bao giờ chạy (bị ngắt lúc khởi động, hàng đợi đầy).
+- `JobService.createJob(storeId, type, targetId, createdBy)` (`Propagation.MANDATORY`) ghi job `QUEUED` trong transaction của bên gọi và đăng ký `TransactionSynchronization.afterCommit` để submit. Rollback thì không submit.
+- **Mọi transaction phía job dùng `Propagation.REQUIRES_NEW`** (`JobStateService`, các transaction của handler). Lý do: job inline chạy trong `afterCommit`, lúc đó EntityManager của transaction request vừa commit vẫn còn bind vào thread; `REQUIRED` sẽ nhập vào transaction đã commit và thay đổi không bao giờ được ghi.
+- `JobExecutor` đánh dấu `RUNNING` (bỏ qua nếu job không còn `QUEUED`), gọi handler, rồi `SUCCEEDED`; exception → `FAILED` với `errorCode` là mã của `JobFailedException` (mã riêng của handler, ví dụ `NO_SOLUTION`), `ExternalServiceException` hoặc `AppException`, còn lại `INTERNAL_ERROR`. Thread pool là field riêng của `JobExecutor`, không phải bean `Executor`, để không thay task executor mặc định của Spring Boot. Cấu hình `jobs.executor.pool-size` (2), `jobs.executor.queue-capacity` (50).
 - `JobExecutor.submit(jobId)` có hai chiến lược, chọn theo từng loại job bằng cấu hình `jobs.<type>.mode = inline | async`:
   - `inline`: chạy ngay trong thread hiện tại. MVP dùng cho `OPTIMIZE_PLAN`.
-  - `async`: `ThreadPoolTaskExecutor` có giới hạn (core 2, queue 50). MVP dùng cho `GEOCODE_PLAN`.
+  - `async`: `ThreadPoolTaskExecutor` có giới hạn (core 2, queue 50). MVP dùng cho `GEOCODE_PLAN`. Hàng đợi đầy → job `FAILED/JOB_QUEUE_FULL` và `abandon` (P-30).
+  - Mỗi loại job **phải** có `mode` trong cấu hình, không có giá trị mặc định (thiếu → `IllegalStateException`). Profile test đặt `jobs.geocode-plan.mode=inline`; test async đặt lại bằng `@TestPropertySource`.
 - Job luôn được submit **sau khi commit** transaction tạo job.
 - Handler chịu trách nhiệm cập nhật `processing_status` của plan khi kết thúc, kể cả khi lỗi (dùng `finally`).
-- Khi khởi động: job `RUNNING` chuyển thành `FAILED/INTERRUPTED`, và plan liên quan về `IDLE`.
+- Khi khởi động (`JobRecovery`, `ApplicationReadyEvent`): job `QUEUED` và `RUNNING` chuyển thành `FAILED/INTERRUPTED`, và `abandon` đưa plan liên quan về `IDLE` (P-30).
 - Chuyển optimize sang chạy nền: đổi `jobs.optimize-plan.mode=async`. **Không đổi API.** Client vốn đã polling.
 - Giới hạn đã biết: chỉ một instance. Muốn chạy nhiều instance thì phải claim job bằng `UPDATE … WHERE status='QUEUED'` (Could).
 
@@ -245,9 +271,9 @@ DRAFT ──optimize(job)──▶ DRAFT có kết quả ──publish──▶ 
 
 | Interface | MVP | Sau MVP |
 |---|---|---|
-| `GeocodingProvider.search(query, limit)` | Nominatim (`countrycodes=vn`) với `CachingGeocodingProvider` (Redis 24 giờ) bọc ngoài và rate limiter dùng chung (P-11). Cấu hình `routing.geocoding.nominatim.base-url`, `routing.geocoding.nominatim.rate-limit.enabled`, `.per-second` (D-25). | Google (I-03) |
-| `MatrixProvider.matrix(coords)` | OSRM table `annotations=distance,duration`, base URL cấu hình được | Google Distance Matrix (I-03) |
-| `SolverProvider.solve(problem)` | OR-Tools | — |
+| `GeocodingProvider.search(query, limit)` | Nominatim (`countrycodes=vn`) với `CachingGeocodingProvider` (Redis 24 giờ) bọc ngoài và rate limiter dùng chung (P-11). Cấu hình `routing.geocoding.nominatim.base-url`, `.user-agent`, `.connect-timeout`, `.read-timeout`, `routing.geocoding.nominatim.rate-limit.enabled`, `.per-second`, `.max-wait` (D-25), `routing.geocoding.cache-ttl`. Redis lỗi thì fail-closed (500), không coi là cache miss, vì rate limiter cũng cần Redis. Rate limiter (`RedisRequestThrottle`) đặt slot bằng Lua `ReserveThrottleSlot.lua`: một round trip atomic trả về thời gian phải chờ tới slot của mình, theo thứ tự đến và theo đồng hồ Redis, nên không polling và không tranh slot; chờ quá `max-wait` thì không đặt slot (trade-off kỹ thuật như Lua verify OTP: logic gắn với Redis, chỉ test bằng Testcontainers). | Google (I-03) |
+| `MatrixProvider.matrix(points)` → `TravelMatrix(distanceMeters, durationSeconds)` (int) | OSRM table `annotations=distance,duration`. Cấu hình `routing.matrix.provider`, `routing.matrix.osrm.base-url`, `.user-agent`, `.profile`, `.max-table-size`, `.connect-timeout`, `.read-timeout`. Ô `null` (không có đường) hay response thiếu → 502 `ROUTING_PROVIDER_ERROR`. Server OSRM giới hạn số điểm (`--max-table-size`): quá `max-table-size` điểm thì app chia thành khối `max-table-size / 2` và lấy từng cặp khối bằng `sources`/`destinations` (F-41), nên giá trị cấu hình phải khớp server. | Google Distance Matrix (I-03) |
+| `SolverProvider.solve(VrpProblem)` → `VrpSolution` | OR-Tools (`OrToolsVrpSolver`, T23). Cấu hình `routing.solver.provider`, `routing.solver.time-limit`. | — |
 | `DirectionsProvider.route(coords)` (Should) | OSRM route `steps=true&overview=full&geometries=polyline6`, cache theo route và version | — |
 
 Chọn implementation bằng property (`routing.geocoding.provider=nominatim`), **không** dùng chuỗi `@Qualifier` rải rác.
@@ -264,16 +290,17 @@ Chọn implementation bằng property (`routing.geocoding.provider=nominatim`), 
 
 - Secret chỉ qua biến môi trường (`SPRING_DATASOURCE_PASSWORD`, `SPRING_MAIL_PASSWORD`, `TOKEN_JWT_ACCESS_TOKEN_SECRET`...). `application-dev.yaml` gitignored; cung cấp `application-dev.example.yaml` không có secret (T05).
 - JWT secret ≥ 256 bit, Base64.
-- `ClientDetailFilter` chỉ tin `X-Forwarded-For` khi bật `server.forward-headers-strategy` sau reverse proxy tin cậy (T41).
-- Log: SLF4J, không `System.out`; MDC `requestId`, `userId`, `storeId`. **Cấm log** mật khẩu, OTP, token, ticket, refresh token, secret.
+- `ClientDetailFilter` chỉ đọc `request.getRemoteAddr()`. Profile `staging`/`prod` bật `server.forward-headers-strategy=native`: Tomcat áp `X-Forwarded-For`/`-Proto` chỉ khi request tới từ proxy ở dải IP nội bộ (`server.tomcat.remoteip.internal-proxies`), nên client không giả được IP (T41, P-38).
+- Log: SLF4J, không `System.out`; MDC `requestId` (`core.web.LogContextFilter`, chạy trước security chain, UUID tự sinh, trả trong header `X-Request-Id`), `userId`, `storeId` (`JwtAuthFilter` sau khi xác thực); pattern ở `logging.pattern.level`. Job nền chạy ở thread khác nên không có MDC của request. **Cấm log** mật khẩu, OTP, token, ticket, refresh token, secret.
+- Security headers: mặc định của Spring Security cộng `Referrer-Policy: no-referrer` (P-38).
 
 ## 11. Chiến lược kiểm thử
 
 | Tầng | Công cụ | Phạm vi bắt buộc |
 |---|---|---|
 | Unit | JUnit 5 + Mockito + AssertJ | Service (business rule, quyền), manager token/OTP, solver (ma trận nhỏ cố định, kiểm tra capacity/time window/drop), state machine plan/stop, mapper có logic. |
-| Web slice | `@WebMvcTest` + `@Import(SecurityConfig.class)` + `@MockitoBean AccessTokenManager` (stub token → `UserIdentity`, gửi header `Authorization: Bearer …` để đi qua filter thật). Mẫu: `OptimizationControllerTest`, `ErrorHandlingWebMvcTest`. Controller có DTO dùng custom validator thì `@Import` thêm bean mà validator cần (ví dụ `PhoneNumberProcessor`), nếu không validator lỗi và test có thể pass sai lý do (500). | Mỗi controller: validation → 400 + code, chưa đăng nhập → 401, sai role → 403, happy path, cookie/header web vs mobile. |
-| Integration | `@SpringBootTest` + **Testcontainers** MariaDB + Redis (P-21); `EmailSender` thay bằng fake lưu email để đọc OTP; `MatrixProvider` fake | Luồng auth đầy đủ, Lua OTP, Flyway migrate, tenant isolation, plan lifecycle end-to-end, optimistic lock. |
+| Web slice | `@WebMvcTest` + `@Import(SecurityConfig.class)` + `@MockitoBean AccessTokenManager` (stub token → `AccessTokenVerification.Authenticated(new AuthenticatedUser(...))`, gửi header `Authorization: Bearer …` để đi qua filter thật). Mẫu: `GeocodingControllerTest`, `ErrorHandlingWebMvcTest`. Controller có DTO dùng custom validator thì `@Import` thêm bean mà validator cần (ví dụ `PhoneNumberProcessor`), nếu không validator lỗi và test có thể pass sai lý do (500). | Mỗi controller: validation → 400 + code, chưa đăng nhập → 401, sai role → 403, happy path, cookie/header web vs mobile. |
+| Integration | `@SpringBootTest` + **Testcontainers** MariaDB + Redis (P-21); `EmailSender` thay bằng fake lưu email để đọc OTP; `GeocodingProvider` thay bằng `FakeGeocodingProvider` (`@Primary` trong `AbstractIntegrationTest`, T29); `MatrixProvider` thay bằng `FakeMatrixProvider` (khoảng cách đường thẳng, 10 m/s; T25); solver OR-Tools thật với `routing.solver.time-limit: 1s` ở profile test; chờ job async bằng Awaitility | Luồng auth đầy đủ, Lua OTP, Flyway migrate, tenant isolation, plan lifecycle end-to-end, optimistic lock. |
 | Hợp đồng provider | `MockRestServiceServer` | Parse response/lỗi Nominatim, OSRM (đã có, giữ). |
 
 Quy tắc:
@@ -323,8 +350,9 @@ Cách dùng:
 | `ci.yml` | `pull_request` vào `develop`/`main`; `push` lên `develop`/`main` | `./mvnw -B verify` (compile, test bằng Testcontainers, JaCoCo report). Upload test report và coverage làm artifact, ghi tóm tắt coverage vào job summary. **Đây là check bắt buộc.** |
 | `quality.yml` | `pull_request` | `actions/dependency-review-action` (chặn dependency mới có lỗ hổng high trở lên); `gitleaks` quét secret. |
 | `image.yml` | `push` lên `develop`; tag `v*` | Build image multi-stage (Buildx, cache GHA), quét bằng **Trivy** (fail khi có lỗ hổng CRITICAL đã có bản sửa), push lên `ghcr.io/<owner>/pathwise`. Tag cho `develop`: `develop`, `develop-<shortsha>`. Tag cho `v*`: `x.y.z`, `x.y`, `latest`. Dùng `GITHUB_TOKEN` với quyền `packages: write`, không cần secret khác. |
-| `dependabot.yml` | theo lịch hằng tuần | Ecosystem `maven`, `github-actions`, `docker`. |
+| `dependabot.yml` | theo lịch hằng tuần | Ecosystem `maven`, `github-actions`, `docker`. Gộp PR: Maven minor/patch thành một PR, GitHub Actions thành một PR. Không đề xuất đổi phiên bản Java của Docker image (bỏ qua major `eclipse-temurin` và image `maven`). |
 
+- **Thay đổi chỉ đụng docs** (`docs/**`, `*.md`, `LICENSE`): job `ci` và `dependency-review` bị skip (composite action `.github/actions/detect-code-changes`; job skip vẫn đạt check bắt buộc `ci`, còn lọc ở trigger thì check không bao giờ báo và PR bị kẹt); `image` lọc bằng `paths-ignore` ở trigger (không phải check bắt buộc, tag `v*` luôn build). `gitleaks` luôn chạy. Không xác định được thay đổi thì vẫn chạy đủ.
 - Không có workflow deploy (D-31). Chủ dự án deploy thủ công theo `docs/DEPLOYMENT.md`: `docker compose -f compose.prod.yaml pull && up -d`.
 - Coverage: MVP chỉ báo cáo, **chưa đặt ngưỡng chặn**. Ngưỡng sẽ thêm sau T43 khi coverage đã ổn định. (Đây là điểm mở rộng: thêm rule `jacoco:check` mà không đổi workflow.)
 - Bảo vệ branch (chủ dự án tự cấu hình): `develop` và `main` yêu cầu PR, check `ci` phải xanh, không cho force push.
@@ -338,4 +366,4 @@ Cách dùng:
 | Staging | image `develop` trên VPS | `staging` |
 | Prod | image `x.y.z` trên VPS | `prod` |
 
-OpenAPI/Swagger chỉ bật ở `dev` và `staging`.
+OpenAPI/Swagger chỉ bật ở `dev` và `staging`. Quy ước null (P-48, T46): component của record `*Response` luôn có mặt và không `null`, trừ khi đánh `org.jspecify.annotations.Nullable` (record `@JsonInclude(NON_NULL)` thì bỏ field đó khỏi JSON); field `@Nullable` của class merge patch nghĩa là gửi `null` để xoá. `core.web.NullabilityModelConverter` đọc quy ước này để sinh `required`/kiểu kèm `null`; thêm field response có thể `null` thì phải đánh `@Nullable`, không thì `OpenApiNullabilityIntegrationTest` báo lỗi khi mẫu có `null`.

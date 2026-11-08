@@ -3,6 +3,7 @@ package uk.huy.pathwise.core.exception;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.env.Environment;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
+import uk.huy.pathwise.core.ratelimit.RateLimitedException;
 
 import java.util.List;
 
@@ -35,7 +37,19 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(AppException.class)
     public ResponseEntity<ErrorResponse> handleAppException(AppException ae) {
-        return errors.response(ae.getErrorCode(), null, null);
+        Object details = ae instanceof DetailedAppException detailed ? detailed.getDetails() : null;
+        return errors.response(ae.getErrorCode(), details, null);
+    }
+
+    /**
+     * 429 with {@code Retry-After} in whole seconds, rounded up, so a client waiting that long is never early.
+     */
+    @ExceptionHandler(RateLimitedException.class)
+    public ResponseEntity<ErrorResponse> handleRateLimited(RateLimitedException e) {
+        long seconds = Math.max(1, (e.getRetryAfter().toMillis() + 999) / 1000);
+        return ResponseEntity.status(e.getErrorCode().getHttpCode())
+                .header(HttpHeaders.RETRY_AFTER, String.valueOf(seconds))
+                .body(errors.body(e.getErrorCode(), null, null));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

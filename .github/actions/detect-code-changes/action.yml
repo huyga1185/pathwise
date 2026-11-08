@@ -1,0 +1,40 @@
+# Tells whether a push/PR touches anything besides documentation, so heavy jobs can be skipped on docs-only changes.
+# Requires actions/checkout with fetch-depth: 0. Fails safe: any doubt (unknown base, git error) reports code=true.
+name: detect-code-changes
+description: Outputs code=false only when every changed file is documentation (docs/**, *.md, LICENSE).
+outputs:
+  code:
+    description: "'true' if at least one non-documentation file changed"
+    value: ${{ steps.diff.outputs.code }}
+  web:
+    description: "'true' if the web client or what it is built from changed (web/, api/, brand/, token script, CI)"
+    value: ${{ steps.diff.outputs.web }}
+  e2e:
+    description: "'true' if the end-to-end path may have changed (web/, be/, api/, compose files, CI)"
+    value: ${{ steps.diff.outputs.e2e }}
+  mobile:
+    description: "'true' if the driver app or what it is built from changed (mobile/, api/, brand/, its scripts, CI)"
+    value: ${{ steps.diff.outputs.mobile }}
+runs:
+  using: composite
+  steps:
+    - id: diff
+      shell: bash
+      env:
+        BASE: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+        HEAD: ${{ github.sha }}
+      run: |
+        if [ -z "$BASE" ] || [ "$BASE" = "0000000000000000000000000000000000000000" ] \
+            || ! files=$(git diff --name-only "$BASE" "$HEAD"); then
+          echo "code=true" >> "$GITHUB_OUTPUT"; echo "web=true" >> "$GITHUB_OUTPUT"; echo "e2e=true" >> "$GITHUB_OUTPUT"; echo "mobile=true" >> "$GITHUB_OUTPUT"
+          exit 0
+        fi
+        echo "Changed files:"; echo "$files"
+        if echo "$files" | grep -qvE '^(docs/.*|.*\.md|LICENSE)$'; then code=true; else code=false; fi
+        echo "code=$code" >> "$GITHUB_OUTPUT"
+        if echo "$files" | grep -qE '^(web/|api/|brand/|scripts/build_tokens\.py$|\.github/)'; then web=true; else web=false; fi
+        echo "web=$web" >> "$GITHUB_OUTPUT"
+        if echo "$files" | grep -qE '^(web/|be/|api/|compose[^/]*\.yaml$|\.github/)'; then e2e=true; else e2e=false; fi
+        echo "e2e=$e2e" >> "$GITHUB_OUTPUT"
+        if echo "$files" | grep -qE '^(mobile/|api/|brand/|scripts/(build_tokens\.py|gen_dart_api\.sh|build_mobile_brand\.sh)$|\.github/)'; then mobile=true; else mobile=false; fi
+        echo "mobile=$mobile" >> "$GITHUB_OUTPUT"

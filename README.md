@@ -1,6 +1,6 @@
 # PathWise
 
-Backend Spring Boot 4.1 / Java 21 (`be/`) cho SaaS lập tuyến giao hàng đa tenant. Tài liệu thiết kế nằm trong `docs/`, quy tắc cho coding agent ở `AGENTS.md`.
+SaaS lập tuyến giao hàng đa tenant: backend Spring Boot 4.1 / Java 21 (`be/`), web dispatcher (`web/`) và app tài xế (`mobile/`) (client đang dựng, xem mục Client). Tài liệu thiết kế nằm trong `docs/`, quy tắc cho coding agent ở `AGENTS.md`.
 
 ## Yêu cầu môi trường
 
@@ -37,6 +37,43 @@ cd be && ./mvnw test
 ```
 
 Chỉ cần Docker: test tích hợp tự bật MariaDB và Redis bằng Testcontainers, không dùng stack ở trên.
+
+## Client
+
+Kế hoạch, kiến trúc và quy tắc của web và app tài xế: `docs/client/` (bắt đầu từ `docs/client/README.md`). Hai client dùng chung:
+
+- `api/openapi.json`: hợp đồng API máy đọc, sinh từ backend. Đổi API thì chạy `scripts/sync_openapi.sh` (cần Docker) và commit file này cùng PR; CI fail khi file lệch backend.
+- `brand/design-system/tokens.json`: token giao diện. `python3 scripts/build_tokens.py` sinh theme cho web và mobile; `--check` kiểm file sinh còn khớp.
+- Test của các script: `python3 -m unittest discover -s scripts/tests`.
+
+Web dispatcher (`web/`, Node 24+, pnpm theo `packageManager`):
+
+```bash
+cd web && pnpm install
+pnpm dev          # http://localhost:5173/app/, proxy /api tới backend ở :8080
+pnpm test         # Vitest + MSW, không cần backend
+pnpm lint && pnpm typecheck && pnpm build
+```
+
+App tài xế (`mobile/`, Flutter theo `mobile/.fvmrc`):
+
+```bash
+cd mobile && flutter pub get
+flutter run --dart-define=API_BASE=http://10.0.2.2:8080   # emulator Android tới backend trên máy
+flutter analyze && flutter test
+../scripts/gen_dart_api.sh        # sinh lại client sau khi đổi api/openapi.json (cần Docker)
+../scripts/build_mobile_brand.sh  # sinh lại icon/logo từ brand/logo (cần rsvg-convert)
+```
+
+E2E (Playwright, cần Docker): stack riêng `pathwise-e2e` (cổng trong `web/e2e/e2e.env`, không đụng DB/Mailpit dev; server giả thay Nominatim và OSRM, P-49):
+
+```bash
+export E2E_JWT_SECRET="$(openssl rand -base64 32)"   # sinh mỗi lần, không commit
+docker compose -p pathwise-e2e --env-file web/e2e/e2e.env -f compose.yaml -f compose.e2e.yaml --profile app up -d --build --wait
+cd web && pnpm exec playwright install chromium   # lần đầu
+pnpm e2e          # build web, vite preview :4173 proxy /api tới :8091, chạy web/e2e/
+docker compose -p pathwise-e2e --env-file web/e2e/e2e.env -f compose.yaml -f compose.e2e.yaml --profile app down -v
+```
 
 ## Xem email (OTP, lời mời)
 

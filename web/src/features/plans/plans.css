@@ -1,0 +1,690 @@
+/* Prototypes "Danh sách kế hoạch", "Tạo kế hoạch", "Soạn plan — tìm toạ độ". */
+.pw-plans-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+}
+.pw-plans-intro {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+.pw-back-link {
+  font-weight: 600;
+  text-decoration: none;
+}
+.pw-plan-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+}
+.pw-tabular {
+  font-variant-numeric: tabular-nums;
+}
+.pw-plans-filter {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 16px;
+  padding: 16px;
+  background: var(--surface-raised);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+}
+.pw-plans-filter-date {
+  flex: 0 1 200px;
+}
+.pw-plans-filter-status {
+  flex: 0 1 220px;
+}
+.pw-plans-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.pw-plans-table table {
+  min-width: 900px;
+}
+.pw-plans-link {
+  font-weight: 600;
+}
+.pw-plans-pager {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--ink-muted);
+}
+.pw-plans-pager-buttons {
+  display: flex;
+  gap: 8px;
+}
+.pw-plans-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 48px 24px;
+  text-align: center;
+  background: var(--surface-raised);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+}
+.pw-plans-empty h2 {
+  margin: 0;
+  font-size: 20px;
+  line-height: 28px;
+  font-weight: 600;
+}
+.pw-plans-empty p {
+  max-width: 480px;
+}
+.pw-plans-empty-art {
+  max-width: 100%;
+}
+.pw-art-tint {
+  fill: var(--surface-tint);
+}
+.pw-art-street {
+  stroke: var(--surface-raised);
+}
+.pw-art-route {
+  stroke: var(--route);
+}
+.pw-art-route-fill {
+  fill: var(--route);
+}
+.pw-art-ink {
+  fill: var(--ink);
+}
+.pw-art-raised {
+  fill: var(--surface-raised);
+}
+
+/* Plan form */
+.pw-plan-form {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.pw-plan-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+}
+.pw-plan-footer {
+  display: flex;
+  justify-content: flex-end;
+}
+.pw-plans-alert {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 24px;
+  padding: 16px;
+  background: var(--surface-raised);
+  border: 1px solid var(--danger);
+  border-radius: var(--radius-md);
+  font-weight: 600;
+}
+.pw-plans-alert > span {
+  flex: 1 1 360px;
+}
+.pw-card-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+.pw-card-head h2 {
+  margin: 0;
+  font-size: 20px;
+  line-height: 28px;
+  font-weight: 600;
+}
+.pw-plan-info {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+  gap: 16px;
+}
+.pw-plan-depot {
+  min-height: 36px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.pw-plan-depot a {
+  font-weight: 600;
+}
+.pw-edit-table td,
+.pw-edit-table th {
+  padding: 8px;
+  vertical-align: top;
+}
+.pw-edit-table .pw-field-input {
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+.pw-assign-table {
+  min-width: 820px;
+}
+.pw-stops-table {
+  min-width: 1180px;
+}
+.pw-col-label {
+  width: 120px;
+}
+.pw-col-phone {
+  width: 140px;
+}
+.pw-col-address {
+  width: 300px;
+}
+.pw-col-window {
+  width: 210px;
+}
+.pw-col-demand {
+  width: 80px;
+}
+.pw-cell-error .pw-field-input {
+  border: 2px solid var(--danger);
+  padding: 7px;
+}
+.pw-cell-msg {
+  margin: 4px 0 0;
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--danger);
+}
+.pw-window {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.pw-row-remove:hover {
+  color: var(--danger);
+}
+.pw-plan-add {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Geocode view */
+.pw-plan-header-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  max-width: 100%;
+}
+.pw-plans-why {
+  text-align: right;
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--ink-muted);
+}
+.pw-plans-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px;
+  background: var(--surface-raised);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+}
+.pw-plans-missing {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 24px;
+  padding: 16px;
+  background: var(--surface-raised);
+  border: 1px solid var(--danger);
+  border-radius: var(--radius-md);
+}
+.pw-plans-missing-text {
+  flex: 1 1 420px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.pw-plans-missing h2 {
+  margin: 0;
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 600;
+}
+.pw-geocode-layout {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 24px;
+}
+.pw-geocode-list {
+  flex: 999 1 560px;
+  min-width: 0;
+}
+.pw-geocode-table table {
+  min-width: 720px;
+}
+.pw-plans-found {
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--ink-muted);
+}
+.pw-stop-pick {
+  padding: 0;
+  font: inherit;
+  font-weight: 600;
+  text-align: left;
+  color: var(--ink);
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+.pw-stop-pick:focus-visible {
+  outline: 2px solid var(--route);
+  outline-offset: 2px;
+}
+.pw-geocode-fix {
+  flex: 1 1 400px;
+  min-width: 0;
+}
+.pw-geocode-fix-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.pw-geocode-fix-head h2 {
+  flex: 1 1 auto;
+}
+.pw-or {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--ink-muted);
+}
+.pw-or span {
+  flex: 1 1 auto;
+  height: 1px;
+  background: var(--line);
+}
+.pw-geocode-map {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+.pw-map-4x3 {
+  aspect-ratio: 4 / 3;
+}
+.pw-geocode-fix-actions {
+  justify-content: flex-end;
+}
+
+/* Result and tracking (prototypes "Soạn plan — sau khi tối ưu", "Theo dõi tiến độ"). */
+.pw-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr));
+  gap: 16px;
+}
+.pw-stat {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 16px;
+  background: var(--surface-raised);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+}
+.pw-stat-art {
+  position: absolute;
+  right: -10px;
+  bottom: -14px;
+  z-index: -1;
+  width: 96px;
+  height: 96px;
+  fill: none;
+  stroke: var(--route);
+  stroke-width: 1.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0.14;
+}
+.pw-stat-label {
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+.pw-stat-value {
+  font-size: 20px;
+  line-height: 28px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.pw-infeasible {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  padding: 16px;
+  background: var(--surface-raised);
+  border: 1px solid var(--signal);
+  border-radius: var(--radius-md);
+}
+.pw-infeasible-text {
+  flex: 1 1 420px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.pw-infeasible h2 {
+  margin: 0;
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 600;
+}
+.pw-link-button {
+  padding: 0;
+  font: inherit;
+  font-weight: 600;
+  color: var(--route);
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+.pw-link-button:hover {
+  color: var(--ink);
+}
+.pw-link-button:focus-visible {
+  outline: 2px solid var(--route);
+  outline-offset: 2px;
+}
+.pw-result-layout {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 24px;
+}
+.pw-result-routes {
+  flex: 999 1 540px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.pw-result-map {
+  flex: 1 1 400px;
+  min-width: 0;
+  overflow: hidden;
+  background: var(--surface-raised);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+.pw-result-map .pw-route-map {
+  gap: 0;
+}
+.pw-result-map .pw-map {
+  border: 0;
+  border-radius: 0;
+  aspect-ratio: 15 / 16;
+}
+.pw-result-map .pw-map-legend,
+.pw-result-legend {
+  padding: 8px 16px;
+  border-top: 1px solid var(--line);
+}
+.pw-result-legend {
+  margin: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 24px;
+  align-items: center;
+}
+.pw-result-legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.pw-map-selection {
+  box-sizing: border-box;
+  min-height: 56px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  padding: 8px 16px;
+  border-top: 1px solid var(--line);
+}
+.pw-map-selection .pw-muted {
+  font-size: 12px;
+  line-height: 16px;
+}
+.pw-route-block {
+  overflow: hidden;
+  background: var(--surface-raised);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+}
+.pw-route-block-head {
+  padding: 16px;
+  border-bottom: 1px solid var(--line);
+}
+.pw-route-block-head > p {
+  margin: 8px 0 0;
+}
+.pw-route-toggle {
+  box-sizing: border-box;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 0;
+  font: inherit;
+  text-align: left;
+  color: inherit;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+.pw-route-toggle:focus-visible {
+  outline: 2px solid var(--route);
+  outline-offset: 2px;
+}
+.pw-route-driver {
+  font-size: 20px;
+  line-height: 28px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.pw-route-toggle-label {
+  font-weight: 600;
+  color: var(--ink-muted);
+}
+.pw-grow {
+  flex: 1 1 auto;
+}
+.pw-route-badge {
+  flex: none;
+}
+.pw-route-table {
+  border: 0;
+  border-radius: 0;
+}
+.pw-route-table table {
+  min-width: 680px;
+}
+.pw-col-seq {
+  width: 40px;
+}
+.pw-eta {
+  font-weight: 600;
+}
+.pw-fill-r1 {
+  fill: var(--map-route-1);
+}
+.pw-fill-r2 {
+  fill: var(--map-route-2);
+}
+.pw-fill-r3 {
+  fill: var(--map-route-3);
+}
+.pw-fill-r4 {
+  fill: var(--map-route-4);
+}
+.pw-fill-r5 {
+  fill: var(--map-route-5);
+}
+.pw-fill-r6 {
+  fill: var(--map-route-6);
+}
+.pw-fill-r7 {
+  fill: var(--map-route-7);
+}
+.pw-swatch-r1 {
+  background: var(--map-route-1);
+}
+.pw-swatch-r2 {
+  background: var(--map-route-2);
+}
+.pw-swatch-r3 {
+  background: var(--map-route-3);
+}
+.pw-swatch-r4 {
+  background: var(--map-route-4);
+}
+.pw-swatch-r5 {
+  background: var(--map-route-5);
+}
+.pw-swatch-r6 {
+  background: var(--map-route-6);
+}
+.pw-swatch-r7 {
+  background: var(--map-route-7);
+}
+.pw-dot {
+  display: inline-block;
+  flex: none;
+  width: 12px;
+  height: 12px;
+  border-radius: var(--radius-full);
+}
+.pw-dot-signal,
+.pw-seg-skip {
+  background: var(--signal);
+}
+.pw-seg-ok {
+  background: var(--success);
+}
+.pw-seg-fail {
+  background: var(--danger);
+}
+.pw-seg-wait {
+  background: var(--line);
+}
+.pw-publish-facts {
+  margin: 0 0 16px;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.pw-publish-facts li {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.pw-overlap-link {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 16px;
+  margin: 16px 0;
+  padding: 8px 16px;
+  background: var(--surface);
+  border: 1px solid var(--danger);
+  border-radius: var(--radius-sm);
+}
+.pw-overlap-link a {
+  font-weight: 600;
+}
+.pw-cancelled {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 16px;
+  background: var(--surface-raised);
+  border: 1px solid var(--danger);
+  border-radius: var(--radius-md);
+}
+.pw-track-head {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.pw-track-head > p {
+  margin: 0;
+}
+.pw-track-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.pw-track-title h2 {
+  margin: 0;
+  font-size: 20px;
+  line-height: 28px;
+  font-weight: 600;
+}
+.pw-track-bar {
+  display: flex;
+  gap: 2px;
+  height: 8px;
+  overflow: hidden;
+  border-radius: var(--radius-full);
+  background: var(--surface);
+}
+.pw-track-bar span {
+  flex-basis: 0;
+  flex-shrink: 1;
+}
+.pw-track-reason {
+  margin-top: 4px;
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--danger);
+}
+.pw-toast-dock {
+  position: fixed;
+  left: 24px;
+  bottom: 24px;
+  z-index: 60;
+}

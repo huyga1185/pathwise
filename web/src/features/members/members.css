@@ -1,0 +1,75 @@
+/* Prototype "Thành viên và lời mời": two tabs; members table; invitation form beside the list. */
+.pw-members-intro {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.pw-tabs {
+  display: flex;
+  gap: 24px;
+  border-bottom: 1px solid var(--line);
+}
+.pw-tab {
+  margin-bottom: -1px;
+  padding: 8px 0;
+  font: inherit;
+  font-weight: 600;
+  color: var(--ink-muted);
+  background: none;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+}
+.pw-tab:hover {
+  color: var(--ink);
+}
+.pw-tab[aria-selected='true'] {
+  color: var(--route);
+  border-bottom-color: var(--route);
+}
+.pw-tab:focus-visible {
+  outline: 2px solid var(--route);
+  outline-offset: 2px;
+}
+.pw-members-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.pw-members-table table {
+  min-width: 820px;
+}
+.pw-members-name {
+  font-weight: 600;
+}
+.pw-members-email {
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--ink-muted);
+}
+.pw-members-role {
+  width: auto;
+}
+.pw-members-invite {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 24px;
+}
+.pw-members-invite-form {
+  flex: 1 1 340px;
+  min-width: 0;
+}
+.pw-members-invitations {
+  flex: 999 1 560px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.pw-members-invitations-table table {
+  min-width: 640px;
+}
+.pw-members-date {
+  font-variant-numeric: tabular-nums;
+}

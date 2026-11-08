@@ -10,28 +10,40 @@ import uk.huy.pathwise.core.exception.AppException;
 import uk.huy.pathwise.core.exception.ErrorCode;
 import uk.huy.pathwise.core.pagination.PageResponse;
 import uk.huy.pathwise.core.pagination.PaginationValidator;
-import uk.huy.pathwise.user.dto.request.UserModificationRequest;
+import uk.huy.pathwise.shared.identity.UserRole;
+import uk.huy.pathwise.shared.identity.UserStatus;
+import uk.huy.pathwise.user.dto.AuthenticationResult;
+import uk.huy.pathwise.user.dto.AccountState;
+import uk.huy.pathwise.user.dto.StoreUser;
+import uk.huy.pathwise.user.dto.request.UpdateProfileRequest;
 import uk.huy.pathwise.user.dto.response.AdminGetUserResponse;
 import uk.huy.pathwise.user.dto.response.GetUserResponse;
 import uk.huy.pathwise.user.infrastructure.mapper.UserMapper;
+import uk.huy.pathwise.core.phonenumber.PhoneCheck;
+import uk.huy.pathwise.core.phonenumber.PhoneNumberProcessor;
 import uk.huy.pathwise.user.model.User;
 import uk.huy.pathwise.shared.identity.UserIdentity;
 import uk.huy.pathwise.user.repository.UserRepository;
 
+import java.time.Instant;
+import java.util.Collection;
+import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
 
 @Service
 @AllArgsConstructor
-public class UserService implements UserAccountService, UserProfileService {
+public class UserService implements UserAccountService, UserProfileService, StoreUserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final UserMapper userMapper;
+    private final PhoneNumberProcessor phoneNumberProcessor;
     private static final Set<String> USER_SORT_WHITELIST = Set.of("id", "email", "createdAt", "updatedAt");
 
     private User getUserById (long id) {
         return userRepository.findById(id)
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+                .orElseThrow(() -> new AppException(ErrorCode.NOT_FOUND));
     }
 
     private void checkUserEmailExisted(String email) {
@@ -39,24 +51,40 @@ public class UserService implements UserAccountService, UserProfileService {
             throw new AppException(ErrorCode.EMAIL_EXISTED);
     }
 
-    @Override
-    @Transactional
-    public void createUser(String email, String rawPassword) {
-        checkUserEmailExisted(email);
-        String hashedPassword = passwordEncoder.encode(rawPassword);
-        User user = User.builder()
-                .email(email)
-                .password(hashedPassword).build();
-        userRepository.save(user);
+    /**
+     * Emails are unique whatever their case (BR-02, P-19).
+     */
+    private static String normalizeEmail(String email) {
+        if (email == null) throw new NullPointerException("Email is null");
+        return email.trim().toLowerCase(Locale.ROOT);
     }
 
     @Override
     @Transactional
-    public void updateUser(UserIdentity identity, UserModificationRequest request) {
+    public UserIdentity createOwner(String email, String rawPassword, String fullName, long storeId) {
+        String normalizedEmail = normalizeEmail(email);
+        // Two concurrent registrations can both pass this check; the unique key then answers 409 CONFLICT (F-15).
+        checkUserEmailExisted(normalizedEmail);
+        User user = User.builder()
+                .email(normalizedEmail)
+                .password(passwordEncoder.encode(rawPassword))
+                .fullName(fullName)
+                .role(UserRole.OWNER)
+                .status(UserStatus.PENDING_VERIFICATION)
+                .storeId(storeId)
+                .build();
+        return userMapper.toUserIdentity(userRepository.save(user));
+    }
+
+    @Override
+    @Transactional
+    public GetUserResponse updateUser(UserIdentity identity, UpdateProfileRequest request) {
         if (identity == null) throw new NullPointerException("Identity is null");
+        if (request == null) throw new NullPointerException("Update profile request is null");
         User user = getUserById(identity.id());
-        userMapper.update(user, request);
-        userRepository.save(user);
+        if (request.has("fullName")) user.setFullName(request.getFullName() == null ? null : request.getFullName().trim());
+        if (request.has("phoneNumber")) user.setPhoneNumber(toE164(request.getPhoneNumber()));
+        return userMapper.toGetUserResponse(userRepository.save(user));
     }
 
     @Override
@@ -68,11 +96,18 @@ public class UserService implements UserAccountService, UserProfileService {
     }
 
     @Override
+    public boolean matchesPassword(long id, String rawPassword) {
+        if (rawPassword == null) throw new NullPointerException("Password is null");
+        return passwordEncoder.matches(rawPassword, getUserById(id).getPassword());
+    }
+
+    @Override
     @Transactional
     public void updateUserEmail(long id, String newEmail) {
-        checkUserEmailExisted(newEmail);
+        String normalizedEmail = normalizeEmail(newEmail);
+        checkUserEmailExisted(normalizedEmail);
         User user = getUserById(id);
-        user.setEmail(newEmail);
+        user.setEmail(normalizedEmail);
         userRepository.save(user);
     }
 
@@ -84,19 +119,108 @@ public class UserService implements UserAccountService, UserProfileService {
     }
 
     @Override
-    public Optional<UserIdentity> findUserByCredentials(String email, String password) {
-        if (email == null) throw new NullPointerException("Email is null");
+    public AuthenticationResult authenticate(String email, String password) {
         if (password == null) throw new NullPointerException("Password is null");
-        Optional<User> user = userRepository.findByEmail(email);
-        if (user.isEmpty()) return Optional.empty();
-        if (!passwordEncoder.matches(password, user.get().getPassword())) return Optional.empty();
-        return Optional.of(userMapper.toUserIdentity(user.get()));
+        return userRepository.findByEmail(normalizeEmail(email))
+                .filter(user -> passwordEncoder.matches(password, user.getPassword()))
+                .map(this::toAuthenticationResult)
+                .orElseGet(AuthenticationResult.InvalidCredentials::new);
+    }
+
+    private AuthenticationResult toAuthenticationResult(User user) {
+        return switch (user.getStatus()) {
+            case ACTIVE -> new AuthenticationResult.Authenticated(userMapper.toUserIdentity(user), user.getFullName());
+            case PENDING_VERIFICATION -> new AuthenticationResult.EmailNotVerified();
+            case DISABLED -> new AuthenticationResult.Disabled();
+        };
     }
 
     @Override
     public Optional<UserIdentity> findUserById(long id) {
-        Optional<User> user = userRepository.findById(id);
-        return user.map(value -> new UserIdentity(value.getId(), value.getEmail(), value.getRole()));
+        return userRepository.findById(id).map(userMapper::toUserIdentity);
+    }
+
+    @Override
+    public Optional<UserIdentity> findActiveUserById(long id) {
+        return userRepository.findById(id)
+                .filter(user -> user.getStatus() == UserStatus.ACTIVE)
+                .map(userMapper::toUserIdentity);
+    }
+
+    @Override
+    public Optional<AccountState> findAccountState(String email) {
+        return userRepository.findByEmail(normalizeEmail(email))
+                .map(user -> new AccountState(user.getId(),
+                        user.getEmail(),
+                        user.getStatus(),
+                        user.getEmailVerifiedAt() != null));
+    }
+
+    @Override
+    @Transactional
+    public void markEmailVerified(long id) {
+        User user = getUserById(id);
+        user.setEmailVerifiedAt(Instant.now());
+        // A disabled account stays disabled; verifying the email does not re-enable it.
+        if (user.getStatus() == UserStatus.PENDING_VERIFICATION) user.setStatus(UserStatus.ACTIVE);
+        userRepository.save(user);
+    }
+
+    @Override
+    public Optional<StoreUser> findInStore(long storeId, long userId) {
+        return userRepository.findByIdAndStoreId(userId, storeId).map(userMapper::toStoreUser);
+    }
+
+    @Override
+    public List<StoreUser> findAllInStore(long storeId, Collection<Long> userIds) {
+        if (userIds.isEmpty()) return List.of();
+        return userRepository.findAllByStoreIdAndIdIn(storeId, userIds).stream().map(userMapper::toStoreUser).toList();
+    }
+
+    @Override
+    public List<StoreUser> listInStore(long storeId) {
+        return userRepository.findAllByStoreIdOrderById(storeId).stream().map(userMapper::toStoreUser).toList();
+    }
+
+    @Override
+    public boolean emailExists(String email) {
+        return userRepository.existsByEmail(normalizeEmail(email));
+    }
+
+    @Override
+    @Transactional
+    public StoreUser createMember(long storeId, String email, String rawPassword, String fullName, String phoneNumber,
+                                  UserRole role) {
+        String normalizedEmail = normalizeEmail(email);
+        checkUserEmailExisted(normalizedEmail);
+        User user = User.builder()
+                .email(normalizedEmail)
+                .password(passwordEncoder.encode(rawPassword))
+                .fullName(fullName)
+                .phoneNumber(toE164(phoneNumber))
+                .role(role)
+                .status(UserStatus.ACTIVE)
+                .storeId(storeId)
+                .emailVerifiedAt(Instant.now())
+                .build();
+        return userMapper.toStoreUser(userRepository.save(user));
+    }
+
+    @Override
+    @Transactional
+    public StoreUser updateMember(long storeId, long userId, UserRole role, UserStatus status, Boolean canDrive) {
+        User user = userRepository.findByIdAndStoreId(userId, storeId)
+                .orElseThrow(() -> new AppException(ErrorCode.NOT_FOUND));
+        if (role != null) user.setRole(role);
+        if (status != null) user.setStatus(status);
+        if (canDrive != null) user.setCanDrive(canDrive);
+        return userMapper.toStoreUser(userRepository.save(user));
+    }
+
+    private String toE164(String phoneNumber) {
+        if (phoneNumber == null || phoneNumber.isBlank()) return null;
+        if (phoneNumberProcessor.check(phoneNumber) != PhoneCheck.VALID) throw new AppException(ErrorCode.INVALID_PHONE_NUMBER);
+        return phoneNumberProcessor.toE164(phoneNumber);
     }
 
     @Override

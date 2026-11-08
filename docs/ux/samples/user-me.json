@@ -1,0 +1,12 @@
+{
+  "data": {
+    "id": 451,
+    "email": "driver-a-f79b02ce-4b0d-4329-8282-9c46908da560@pathwise.test",
+    "fullName": "Tài xế A",
+    "phoneNumber": null,
+    "role": "DRIVER",
+    "storeId": 182,
+    "status": "ACTIVE",
+    "canDrive": true
+  }
+}

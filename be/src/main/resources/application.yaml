@@ -18,12 +18,56 @@ spring:
     baseline-on-migrate: true
     baseline-version: 1
 
-api:
-  user-agent: PathWise/1.0 (https://huy-vu.uk/)
+routing:
   geocoding:
-    nominatim-base-url: https://nominatim.openstreetmap.org
+    provider: nominatim
+    cache-ttl: 24h
+    nominatim:
+      base-url: https://nominatim.openstreetmap.org
+      user-agent: PathWise/1.0 (https://huy-vu.uk/)
+      connect-timeout: 3s
+      read-timeout: 10s
+      rate-limit:
+        # Nominatim usage policy: at most 1 request per second. Turn off only for a self-hosted Nominatim (D-25).
+        enabled: true
+        per-second: 1
+        max-wait: 2s
   matrix:
-    osrm-base-url: http://router.project-osrm.org
+    provider: osrm
+    osrm:
+      base-url: http://router.project-osrm.org
+      user-agent: PathWise/1.0 (https://huy-vu.uk/)
+      profile: driving
+      # Must not exceed the server's osrm-routed --max-table-size; larger matrices are split into several requests.
+      max-table-size: 100
+      connect-timeout: 3s
+      read-timeout: 10s
+  solver:
+    provider: ortools
+    # Guided local search runs until this limit, so every optimization takes this long (NFR-02: <= 15 s).
+    time-limit: 10s
+
+jobs:
+  # Background jobs (D-19, ARCHITECTURE.md §8.4). Mode per job type: inline (in the caller's thread, after commit) or async.
+  geocode-plan:
+    mode: async
+    # Stops written per transaction, so that polling clients see progress.
+    batch-size: 5
+  optimize-plan:
+    mode: inline
+  executor:
+    pool-size: 2
+    queue-capacity: 50
+
+# Web origins allowed to call the API from a browser (ARCHITECTURE.md §6.4); env CORS_ALLOWED_ORIGINS, comma separated.
+# None by default: only same-origin pages and mobile apps (which send no Origin) can call the API.
+cors:
+  allowed-origins: []
+
+logging:
+  pattern:
+    # Log context of every request (NFR-06): set by LogContextFilter and JwtAuthFilter, "-" when absent.
+    level: "%5p [requestId=%X{requestId:-} userId=%X{userId:-} storeId=%X{storeId:-}]"
 
 management:
   endpoints:
@@ -40,7 +84,23 @@ management:
       enabled: false
 
 springdoc:
+  # Every endpoint answers JSON; without this the generated document says */* (F-47).
+  default-produces-media-type: application/json
   api-docs:
     enabled: false
   swagger-ui:
     enabled: false
+
+# Fixed window per IP, email, user or store (P-16, T40). Exceeding a limit returns 429 RATE_LIMITED with Retry-After;
+# Redis down returns 503 SERVICE_UNAVAILABLE (fail-closed). Every rule a service checks must be listed here.
+rate-limit:
+  rules:
+    log-in-ip: { limit: 20, window: 5m }
+    log-in-email: { limit: 10, window: 15m }
+    register-ip: { limit: 5, window: 1h }
+    resend-verification-ip: { limit: 10, window: 15m }
+    resend-verification-email: { limit: 5, window: 1h }
+    forgot-password-ip: { limit: 10, window: 15m }
+    forgot-password-email: { limit: 5, window: 1h }
+    change-password-otp-user: { limit: 5, window: 1h }
+    create-invitation-store: { limit: 30, window: 1h }

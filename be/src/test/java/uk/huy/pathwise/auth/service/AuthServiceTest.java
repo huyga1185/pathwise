@@ -1,33 +1,34 @@
 package uk.huy.pathwise.auth.service;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import uk.huy.pathwise.auth.dto.request.UpdateUserPasswordRequest;
-import uk.huy.pathwise.auth.email.manager.OtpEmailManager;
-import uk.huy.pathwise.auth.otp.store.OtpStore;
+import uk.huy.pathwise.auth.dto.request.LogInRequest;
+import uk.huy.pathwise.auth.infrastructure.ratelimit.AuthRateLimitPolicy;
+import uk.huy.pathwise.auth.model.ClientDetail;
 import uk.huy.pathwise.auth.token.jwt.manager.AccessTokenManager;
-import uk.huy.pathwise.auth.token.opaque.otptoken.manager.OtpTokenManager;
 import uk.huy.pathwise.auth.token.opaque.refreshtoken.manager.RefreshTokenManager;
 import uk.huy.pathwise.core.exception.AppException;
 import uk.huy.pathwise.core.exception.ErrorCode;
-import uk.huy.pathwise.shared.identity.UserIdentity;
-import uk.huy.pathwise.shared.identity.UserRole;
+import uk.huy.pathwise.core.ratelimit.RateLimitDecision;
+import uk.huy.pathwise.core.ratelimit.RateLimitedException;
+import uk.huy.pathwise.core.statestore.StateStoreException;
+import uk.huy.pathwise.user.dto.AuthenticationResult;
 import uk.huy.pathwise.user.service.UserAccountService;
 
-import java.util.Optional;
+import java.time.Duration;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class AuthServiceTest {
-    private static final String PURPOSE = "updateUserPassword";
-
     @Mock
     private UserAccountService userService;
     @Mock
@@ -35,46 +36,63 @@ class AuthServiceTest {
     @Mock
     private RefreshTokenManager refreshTokenManager;
     @Mock
-    private OtpStore otpStore;
-    @Mock
-    private OtpTokenManager otpTokenManager;
-    @Mock
-    private OtpEmailManager otpEmailManager;
+    private AuthRateLimitPolicy rateLimitPolicy;
 
     @InjectMocks
     private AuthService authService;
 
-    private final UserIdentity userB = new UserIdentity(2L, "b@pathwise.test", UserRole.USER);
-    private final UpdateUserPasswordRequest request = new UpdateUserPasswordRequest("newPassword123");
+    private final LogInRequest request = new LogInRequest("a@pathwise.test", "Passw0rd!x");
+    private final ClientDetail client = new ClientDetail("JUnit", "127.0.0.1");
 
-    @Test
-    void updateUserPassword_whenTokenIssuedForAnotherUser_throwInvalidTokenAndKeepPassword() {
-        when(otpTokenManager.verifyOtpToken("ticketA", "tokenA", PURPOSE)).thenReturn(Optional.of(1L));
-
-        assertThatThrownBy(() -> authService.updateUserPassword(userB, "ticketA", "tokenA", request))
-                .isInstanceOf(AppException.class)
-                .extracting("errorCode").isEqualTo(ErrorCode.INVALID_TOKEN);
-
-        verify(userService, never()).updateUserPassword(anyLong(), anyString());
+    @BeforeEach
+    void allowByDefault() {
+        lenient().when(rateLimitPolicy.logIn("127.0.0.1", "a@pathwise.test")).thenReturn(new RateLimitDecision.Allowed());
     }
 
     @Test
-    void updateUserPassword_whenTokenInvalid_throwInvalidToken() {
-        when(otpTokenManager.verifyOtpToken("ticket", "token", PURPOSE)).thenReturn(Optional.empty());
+    void logIn_whenRateLimited_throwRateLimitedBeforeCheckingPassword() {
+        when(rateLimitPolicy.logIn("127.0.0.1", "a@pathwise.test"))
+                .thenReturn(new RateLimitDecision.Limited(Duration.ofSeconds(90)));
 
-        assertThatThrownBy(() -> authService.updateUserPassword(userB, "ticket", "token", request))
-                .isInstanceOf(AppException.class)
-                .extracting("errorCode").isEqualTo(ErrorCode.INVALID_TOKEN);
-
-        verify(userService, never()).updateUserPassword(anyLong(), anyString());
+        assertThatThrownBy(() -> authService.logIn(client, request))
+                .isInstanceOfSatisfying(RateLimitedException.class,
+                        e -> assertThat(e.getRetryAfter()).isEqualTo(Duration.ofSeconds(90)));
+        verifyNoInteractions(userService);
     }
 
     @Test
-    void updateUserPassword_whenTokenIssuedForSameUser_updatePassword() {
-        when(otpTokenManager.verifyOtpToken("ticketB", "tokenB", PURPOSE)).thenReturn(Optional.of(2L));
+    void logIn_whenRateLimitCannotBeChecked_throwServiceUnavailable() {
+        when(rateLimitPolicy.logIn("127.0.0.1", "a@pathwise.test")).thenThrow(new StateStoreException("Redis down"));
 
-        authService.updateUserPassword(userB, "ticketB", "tokenB", request);
+        assertThatThrownBy(() -> authService.logIn(client, request))
+                .isInstanceOf(AppException.class)
+                .extracting("errorCode").isEqualTo(ErrorCode.SERVICE_UNAVAILABLE);
+        verifyNoInteractions(userService);
+    }
 
-        verify(userService).updateUserPassword(2L, "newPassword123");
+    @Test
+    void logIn_whenInvalidCredentials_throwInvalidEmailOrPasswordAndIssueNoToken() {
+        assertRejected(new AuthenticationResult.InvalidCredentials(), ErrorCode.INVALID_EMAIL_OR_PASSWORD);
+    }
+
+    @Test
+    void logIn_whenEmailNotVerified_throwEmailNotVerifiedAndIssueNoToken() {
+        assertRejected(new AuthenticationResult.EmailNotVerified(), ErrorCode.EMAIL_NOT_VERIFIED);
+    }
+
+    @Test
+    void logIn_whenDisabled_throwAccountDisabledAndIssueNoToken() {
+        assertRejected(new AuthenticationResult.Disabled(), ErrorCode.ACCOUNT_DISABLED);
+    }
+
+    private void assertRejected(AuthenticationResult result, ErrorCode expected) {
+        when(userService.authenticate("a@pathwise.test", "Passw0rd!x")).thenReturn(result);
+
+        assertThatThrownBy(() -> authService.logIn(client, request))
+                .isInstanceOf(AppException.class)
+                .extracting("errorCode").isEqualTo(expected);
+
+        verify(refreshTokenManager, never()).generateToken(anyLong(), any());
+        verifyNoInteractions(accessTokenManager);
     }
 }

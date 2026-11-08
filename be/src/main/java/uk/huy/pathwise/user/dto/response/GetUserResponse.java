@@ -1,3 +1,17 @@
 package uk.huy.pathwise.user.dto.response;
 
-public record GetUserResponse(long id, String email, String phoneNumber) {}
+import org.jspecify.annotations.Nullable;
+import uk.huy.pathwise.shared.identity.UserRole;
+import uk.huy.pathwise.shared.identity.UserStatus;
+
+/**
+ * @param canDrive true if the user can be assigned routes: always for DRIVER, otherwise the stored flag (D-21)
+ */
+public record GetUserResponse(long id,
+                              String email,
+                              @Nullable String fullName,
+                              @Nullable String phoneNumber,
+                              UserRole role,
+                              @Nullable Long storeId,
+                              UserStatus status,
+                              boolean canDrive) {}

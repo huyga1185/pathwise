@@ -1,6 +1,7 @@
 package uk.huy.pathwise.user.controller;
 
 import lombok.AllArgsConstructor;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
@@ -21,7 +22,7 @@ public class AdminUserController {
 
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ApiResponse<PageResponse<AdminGetUserResponse>>> getListUser(@PageableDefault(sort = "id") Pageable pageable) {
+    public ResponseEntity<ApiResponse<PageResponse<AdminGetUserResponse>>> getListUser(@ParameterObject @PageableDefault(sort = "id") Pageable pageable) {
         return ResponseEntity.ok().body(new ApiResponse<>(null, userService.getListUser(pageable)));
     }
 }

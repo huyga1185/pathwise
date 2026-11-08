@@ -1,30 +1,26 @@
-local requestOtpKey = KEYS[1]
-local requestOtpValue = ARGV[1]
-
-local otp = redis.call('GET', requestOtpKey)
--- Case: otp not found
-if otp == false then
+-- KEYS[1] = otp:{purpose}:{userId}, value = sha256 (64 hex chars) followed by the number of wrong attempts.
+-- ARGV[1] = sha256 of the submitted OTP, ARGV[2] = max wrong attempts.
+-- Returns 1 when the OTP matched (and is deleted: single use), 0 otherwise.
+local key = KEYS[1]
+local stored = redis.call('GET', key)
+if stored == false then
     return 0
 end
 
-local otpValue = string.sub(otp, 1, 64)
-local otpTry = tonumber(string.sub(otp, 65))
+local hash = string.sub(stored, 1, 64)
+local attempts = tonumber(string.sub(stored, 65)) or 0
+local maxAttempts = tonumber(ARGV[2])
 
-if otpTry >= 3 then
-    -- Case: otp try exceeded
-    redis.call('DEL', requestOtpKey)
-    return 0
+if hash == ARGV[1] then
+    redis.call('DEL', key)
+    return 1
+end
+
+attempts = attempts + 1
+if attempts >= maxAttempts then
+    -- Wrong too many times: the OTP is cancelled, a new one must be requested.
+    redis.call('DEL', key)
 else
-    if otpValue == requestOtpValue then
-        -- Case: otp matched
-        redis.call('DEL', requestOtpKey)
-        return 1
-    else
-        -- Case: otp not matched
-        otpTry = otpTry + 1
-        local newOtpTry = tostring(otpTry)
-        local newOtp = otpValue .. newOtpTry
-        redis.call('SET', requestOtpKey, newOtp, 'KEEPTTL')
-        return 0
-    end
+    redis.call('SET', key, hash .. tostring(attempts), 'KEEPTTL')
 end
+return 0

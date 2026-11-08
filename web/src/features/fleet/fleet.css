@@ -1,0 +1,48 @@
+/* Prototype "Xe": list on the left, the form card on the right; they wrap on a narrow screen. */
+.pw-fleet-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+}
+.pw-fleet-intro {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.pw-fleet-layout {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 24px;
+}
+.pw-fleet-list {
+  flex: 999 1 560px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.pw-fleet-table table {
+  min-width: 560px;
+}
+.pw-fleet-name {
+  font-weight: 600;
+}
+.pw-fleet-form {
+  flex: 1 1 360px;
+  min-width: 0;
+}
+.pw-fleet-pair {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: 16px;
+}
+.pw-fleet-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}

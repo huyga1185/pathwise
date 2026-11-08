@@ -4,15 +4,24 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.CacheControl;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.ResponseCookie;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
-import uk.huy.pathwise.auth.dto.request.UpdateUserPasswordRequest;
-import uk.huy.pathwise.auth.dto.request.VerifyOtpRequest;
-import uk.huy.pathwise.auth.dto.response.GetListSessionResponse;
+import uk.huy.pathwise.auth.dto.request.ChangePasswordRequest;
+import uk.huy.pathwise.auth.dto.request.ForgotPasswordRequest;
+import uk.huy.pathwise.auth.dto.request.RequestPasswordChangeOtpRequest;
+import uk.huy.pathwise.auth.dto.request.RefreshTokenRequest;
+import uk.huy.pathwise.auth.dto.request.ResetPasswordRequest;
+import uk.huy.pathwise.auth.dto.request.VerifyResetOtpRequest;
+import uk.huy.pathwise.auth.dto.response.ResetTokenResponse;
+import uk.huy.pathwise.auth.dto.request.ResendVerificationRequest;
+import uk.huy.pathwise.auth.dto.request.VerifyEmailRequest;
+import uk.huy.pathwise.auth.dto.response.RegisterResponse;
+import uk.huy.pathwise.auth.dto.response.AuthTokenResponse;
+import uk.huy.pathwise.auth.dto.response.AuthUserResponse;
+import uk.huy.pathwise.auth.dto.response.SessionResponse;
 import uk.huy.pathwise.auth.dto.response.RefreshTokenResponse;
-import uk.huy.pathwise.auth.dto.response.VerifyOtpResponse;
 import uk.huy.pathwise.auth.infrastructure.annotation.CurrentClient;
 import uk.huy.pathwise.auth.dto.request.LogInRequest;
 import uk.huy.pathwise.auth.dto.request.RegisterRequest;
@@ -20,118 +29,221 @@ import uk.huy.pathwise.auth.dto.response.LogInResponse;
 import uk.huy.pathwise.auth.infrastructure.builder.AuthCookieBuilder;
 import uk.huy.pathwise.auth.model.ClientDetail;
 import uk.huy.pathwise.auth.service.AuthService;
+import uk.huy.pathwise.auth.service.PasswordChangeService;
+import uk.huy.pathwise.auth.service.PasswordResetService;
+import uk.huy.pathwise.auth.service.RegistrationService;
+import uk.huy.pathwise.auth.token.opaque.refreshtoken.dto.RotationResult;
 import uk.huy.pathwise.core.apiresponse.ApiResponse;
+import uk.huy.pathwise.core.exception.AppException;
+import uk.huy.pathwise.core.exception.ErrorCode;
+import uk.huy.pathwise.shared.identity.AuthenticatedUser;
 import uk.huy.pathwise.shared.identity.UserIdentity;
 
-import java.util.Map;
+import java.time.Instant;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/auth")
 @RequiredArgsConstructor
 public class AuthController {
     private final AuthService authService;
+    private final RegistrationService registrationService;
+    private final PasswordResetService passwordResetService;
+    private final PasswordChangeService passwordChangeService;
     private final AuthCookieBuilder authCookieBuilder;
 
-    private final String REFRESH_TOKEN_COOKIE = "refreshToken";
-    private final String REFRESH_TOKEN_COOKIE_PATH = "/api/v1/auth/refresh";
-    private final String UPDATE_USER_PASSWORD_ROUTE = "/api/v1/auth/update-password";
-    private final String UPDATE_USER_PASSWORD_COOKIE = "updateUserPassword";
-    private final String UPDATE_USER_PASSWORD_TICKET = "updateUserPasswordTicket";
+    private static final String REFRESH_TOKEN_COOKIE = "refreshToken";
+    // Covers /refresh and /log-out (F-03).
+    private static final String REFRESH_TOKEN_COOKIE_PATH = "/api/v1/auth";
+    private static final String CLIENT_PLATFORM_HEADER = "X-Client-Platform";
+    private static final String MOBILE_PLATFORM = "mobile";
 
+    @ResponseStatus(HttpStatus.CREATED)
     @PostMapping("/register")
-    public ResponseEntity<Void> register(@Valid @RequestBody RegisterRequest request) {
-        authService.register(request);
+    public ResponseEntity<ApiResponse<RegisterResponse>> register(@CurrentClient ClientDetail clientDetail,
+                                                                  @Valid @RequestBody RegisterRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(new ApiResponse<>(registrationService.register(clientDetail, request)));
+    }
+
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @PostMapping("/email/verify")
+    public ResponseEntity<Void> verifyEmail(@Valid @RequestBody VerifyEmailRequest request) {
+        registrationService.verifyEmail(request);
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * Always 204, whether or not the email is registered.
+     */
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @PostMapping("/email/verify/resend")
+    public ResponseEntity<Void> resendVerification(@CurrentClient ClientDetail clientDetail,
+                                                   @Valid @RequestBody ResendVerificationRequest request) {
+        registrationService.resendVerification(clientDetail, request);
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * Always 204, whether or not the email is registered (P-06).
+     */
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @PostMapping("/password/forgot")
+    public ResponseEntity<Void> forgotPassword(@CurrentClient ClientDetail clientDetail,
+                                               @Valid @RequestBody ForgotPasswordRequest request) {
+        passwordResetService.forgotPassword(clientDetail, request);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/password/reset/verify")
+    public ResponseEntity<ApiResponse<ResetTokenResponse>> verifyResetOtp(@Valid @RequestBody VerifyResetOtpRequest request) {
+        return ResponseEntity.ok()
+                .cacheControl(CacheControl.noStore())
+                .header(HttpHeaders.PRAGMA, "no-cache")
+                .body(new ApiResponse<>(passwordResetService.verifyResetOtp(request)));
+    }
+
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @PostMapping("/password/reset")
+    public ResponseEntity<Void> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        passwordResetService.resetPassword(request);
         return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/log-in")
-    public ResponseEntity<ApiResponse<Map<String, String>>> logIn(@CurrentClient ClientDetail clientDetail,
-                                                                  @Valid @RequestBody LogInRequest request) {
+    public ResponseEntity<ApiResponse<AuthTokenResponse>> logIn(@CurrentClient ClientDetail clientDetail,
+                                                                @RequestHeader(value = CLIENT_PLATFORM_HEADER, required = false) String platform,
+                                                                @Valid @RequestBody LogInRequest request) {
         LogInResponse logInResponse = authService.logIn(clientDetail, request);
-        ResponseCookie cookie = authCookieBuilder.createSecureCookie(REFRESH_TOKEN_COOKIE,
-                logInResponse.refreshToken().token(),
-                REFRESH_TOKEN_COOKIE_PATH,
-                logInResponse.refreshToken().expiresAt());
-        return ResponseEntity.ok()
-                .cacheControl(CacheControl.noStore())
-                .header(HttpHeaders.PRAGMA, "no-cache")
-                .header(HttpHeaders.SET_COOKIE, cookie.toString())
-                .body(new ApiResponse<>(null, Map.of("accessToken", logInResponse.accessToken())));
+        boolean mobile = isMobile(platform);
+        UserIdentity user = logInResponse.user().identity();
+        AuthTokenResponse body = new AuthTokenResponse(logInResponse.accessToken().token(),
+                logInResponse.accessToken().expiresAt(),
+                mobile ? logInResponse.refreshToken().token() : null,
+                logInResponse.refreshToken().expiresAt(),
+                new AuthUserResponse(user.id(),
+                        user.email(),
+                        logInResponse.user().fullName(),
+                        user.role(),
+                        user.storeId(),
+                        user.assignableToRoutes()));
+        return tokenResponse(body, mobile, logInResponse.refreshToken().token(), logInResponse.refreshToken().expiresAt());
     }
 
     @PostMapping("/refresh")
-    public ResponseEntity<ApiResponse<String>> refreshToken(@CookieValue(REFRESH_TOKEN_COOKIE) String refreshToken,
-                                                            @CurrentClient ClientDetail clientDetail) {
-        RefreshTokenResponse response = authService.refreshToken(refreshToken, clientDetail);
-        ResponseCookie cookie = authCookieBuilder.createSecureCookie(REFRESH_TOKEN_COOKIE,
-                response.refreshTokenRotationDetail().token(),
-                REFRESH_TOKEN_COOKIE_PATH,
-                response.refreshTokenRotationDetail().expiresAt());
-        return ResponseEntity.ok()
-                .cacheControl(CacheControl.noStore())
-                .header(HttpHeaders.PRAGMA, "no-cache")
-                .header(HttpHeaders.SET_COOKIE, cookie.toString())
-                .body(new ApiResponse<>(response.accessToken()));
+    public ResponseEntity<ApiResponse<AuthTokenResponse>> refreshToken(@CookieValue(value = REFRESH_TOKEN_COOKIE, required = false) String cookieToken,
+                                                                       @RequestHeader(value = CLIENT_PLATFORM_HEADER, required = false) String platform,
+                                                                       @RequestBody(required = false) RefreshTokenRequest request,
+                                                                       @CurrentClient ClientDetail clientDetail) {
+        boolean mobile = isMobile(platform);
+        String rawToken = mobile ? (request != null ? request.refreshToken() : null) : cookieToken;
+        // Missing credential: same 401 as an unknown token, whatever the transport.
+        if (rawToken == null || rawToken.isBlank()) throw new AppException(ErrorCode.INVALID_TOKEN);
+        RefreshTokenResponse response = authService.refreshToken(rawToken, clientDetail);
+        RotationResult.Rotated rotated = response.refreshToken();
+        AuthTokenResponse body = new AuthTokenResponse(response.accessToken().token(),
+                response.accessToken().expiresAt(),
+                mobile ? rotated.token() : null,
+                rotated.expiresAt(),
+                null);
+        return tokenResponse(body, mobile, rotated.token(), rotated.expiresAt());
     }
 
+    /**
+     * Public and idempotent (P-04): the refresh token identifies the session, so an expired access token
+     * must not prevent logging out. Always 204.
+     */
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     @PostMapping("/log-out")
-    public ResponseEntity<Void> logOut(@CookieValue("refreshToken") String refreshToken) {
-        authService.logOut(refreshToken);
-        return ResponseEntity.noContent()
-                .cacheControl(CacheControl.noStore())
-                .header(HttpHeaders.PRAGMA, "no-cache")
-                .header(HttpHeaders.SET_COOKIE, authCookieBuilder.removeSecureCookie(REFRESH_TOKEN_COOKIE, "removed", REFRESH_TOKEN_COOKIE_PATH).toString())
-                .build();
+    public ResponseEntity<Void> logOut(@CookieValue(value = REFRESH_TOKEN_COOKIE, required = false) String cookieToken,
+                                       @RequestHeader(value = CLIENT_PLATFORM_HEADER, required = false) String platform,
+                                       @RequestBody(required = false) RefreshTokenRequest request) {
+        boolean mobile = isMobile(platform);
+        authService.logOut(mobile ? (request != null ? request.refreshToken() : null) : cookieToken);
+        return loggedOutResponse(mobile);
     }
 
     @GetMapping("/sessions")
-    public ResponseEntity<ApiResponse<GetListSessionResponse>> getListSession(@AuthenticationPrincipal UserIdentity userIdentity) {
-        return ResponseEntity.ok()
-                .body(new ApiResponse<>(authService.getListSession(userIdentity)));
+    public ResponseEntity<ApiResponse<List<SessionResponse>>> listSessions(@AuthenticationPrincipal AuthenticatedUser actor) {
+        return ResponseEntity.ok(new ApiResponse<>(authService.listSessions(actor)));
     }
 
-    @GetMapping("/update-password")
-    public ResponseEntity<Void> getUserPasswordToken(@AuthenticationPrincipal UserIdentity identity) {
-        authService.getUpdateUserPasswordToken(identity);
+    /**
+     * {@code actor} is the caller (its own session is in {@code actor.sessionId()}); the path variable is the session
+     * to revoke. Revoking the caller's current session is a log-out and gets the same response as {@code /log-out}.
+     * See {@link AuthService#revokeSession}.
+     */
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @DeleteMapping("/sessions/{sessionId}")
+    public ResponseEntity<Void> revokeSession(@AuthenticationPrincipal AuthenticatedUser actor,
+                                              @RequestHeader(value = CLIENT_PLATFORM_HEADER, required = false) String platform,
+                                              @PathVariable("sessionId") String targetSessionId) {
+        return switch (authService.revokeSession(actor, targetSessionId)) {
+            case CURRENT_SESSION_LOGGED_OUT -> loggedOutResponse(isMobile(platform));
+            case OTHER_SESSION_REVOKED -> ResponseEntity.noContent().build();
+        };
+    }
+
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @PostMapping("/sessions/revoke-others")
+    public ResponseEntity<Void> revokeOtherSessions(@AuthenticationPrincipal AuthenticatedUser actor) {
+        authService.revokeOtherSessions(actor);
         return ResponseEntity.noContent().build();
     }
 
-    @PostMapping("/update-password/verify")
-    public ResponseEntity<Void> verifyUserPasswordToken(@AuthenticationPrincipal UserIdentity identity,
-                                                        @Valid @RequestBody VerifyOtpRequest verifyOtpRequest) {
-        VerifyOtpResponse verifyOtpResponse = authService.verifyUpdateUserPasswordOtp(identity, verifyOtpRequest);
-        return ResponseEntity.noContent()
-                .cacheControl(CacheControl.noStore())
-                .header(HttpHeaders.PRAGMA, "no-cache")
-                .header(HttpHeaders.SET_COOKIE,
-                        authCookieBuilder.createSecureCookie(UPDATE_USER_PASSWORD_COOKIE,
-                                verifyOtpResponse.token(),
-                                UPDATE_USER_PASSWORD_ROUTE,
-                                verifyOtpResponse.expiresAfter()).toString())
-                .header(HttpHeaders.SET_COOKIE,
-                        authCookieBuilder.createSecureCookie(UPDATE_USER_PASSWORD_TICKET,
-                                verifyOtpResponse.ticket(),
-                                UPDATE_USER_PASSWORD_ROUTE,
-                                verifyOtpResponse.expiresAfter()).toString())
-                .build();
+    /**
+     * Step 1 of a password change (P-05): checks the current password, then emails a {@code CHANGE_PASSWORD} OTP.
+     */
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @PostMapping("/password/change/otp")
+    public ResponseEntity<Void> requestPasswordChangeOtp(@AuthenticationPrincipal AuthenticatedUser actor,
+                                                         @Valid @RequestBody RequestPasswordChangeOtpRequest request) {
+        passwordChangeService.requestChangeOtp(actor, request);
+        return ResponseEntity.noContent().build();
     }
 
-    @PostMapping("/update-password")
-    public ResponseEntity<Void> updateUserPassword(@CookieValue(UPDATE_USER_PASSWORD_COOKIE) String token,
-                                                   @CookieValue(UPDATE_USER_PASSWORD_TICKET) String ticket,
-                                                   @Valid @RequestBody UpdateUserPasswordRequest request,
-                                                   @AuthenticationPrincipal UserIdentity identity) {
-        authService.updateUserPassword(identity, ticket, token, request);
-        return ResponseEntity.noContent()
-                .header(HttpHeaders.PRAGMA, "no-cache")
-                .header(HttpHeaders.SET_COOKIE,
-                        authCookieBuilder.removeSecureCookie(UPDATE_USER_PASSWORD_COOKIE,
-                                null,
-                                UPDATE_USER_PASSWORD_ROUTE).toString())
-                .header(HttpHeaders.SET_COOKIE,
-                        authCookieBuilder.removeSecureCookie(UPDATE_USER_PASSWORD_TICKET,
-                                null,
-                                UPDATE_USER_PASSWORD_ROUTE).toString())
-                .build();
+    /**
+     * Step 2: sets the new password with the emailed OTP; every other session is revoked, this one stays.
+     */
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @PutMapping("/password")
+    public ResponseEntity<Void> changePassword(@AuthenticationPrincipal AuthenticatedUser actor,
+                                               @Valid @RequestBody ChangePasswordRequest request) {
+        passwordChangeService.changePassword(actor, request);
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * Response of a log-out of this device: 204, not cached, and for web the refresh cookie is cleared.
+     */
+    private ResponseEntity<Void> loggedOutResponse(boolean mobile) {
+        ResponseEntity.HeadersBuilder<?> builder = ResponseEntity.noContent()
+                .cacheControl(CacheControl.noStore())
+                .header(HttpHeaders.PRAGMA, "no-cache");
+        if (!mobile) {
+            builder.header(HttpHeaders.SET_COOKIE,
+                    authCookieBuilder.removeSecureCookie(REFRESH_TOKEN_COOKIE, "", REFRESH_TOKEN_COOKIE_PATH).toString());
+        }
+        return builder.build();
+    }
+
+    private static boolean isMobile(String platform) {
+        return MOBILE_PLATFORM.equalsIgnoreCase(platform);
+    }
+
+    /**
+     * Web clients get the refresh token only as an HttpOnly cookie; mobile clients only in the body (D-14, P-04).
+     */
+    private ResponseEntity<ApiResponse<AuthTokenResponse>> tokenResponse(AuthTokenResponse body,
+                                                                         boolean mobile,
+                                                                         String refreshToken,
+                                                                         Instant refreshTokenExpiresAt) {
+        ResponseEntity.BodyBuilder builder = ResponseEntity.ok()
+                .cacheControl(CacheControl.noStore())
+                .header(HttpHeaders.PRAGMA, "no-cache");
+        if (!mobile) {
+            builder.header(HttpHeaders.SET_COOKIE, authCookieBuilder.createSecureCookie(REFRESH_TOKEN_COOKIE,
+                    refreshToken, REFRESH_TOKEN_COOKIE_PATH, refreshTokenExpiresAt).toString());
+        }
+        return builder.body(new ApiResponse<>(body));
     }
 }

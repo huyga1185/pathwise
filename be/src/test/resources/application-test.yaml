@@ -13,6 +13,10 @@ mail:
       address: no-reply@pathwise.test
       name: PathWise Test
 
+# Not the 5 min default, so tests prove the value comes from configuration (F-09).
+otp:
+  ttl: 2m
+
 token:
   jwt:
     # 256-bit all-zero key, test only
@@ -25,3 +29,28 @@ service:
     company-name: PathWise
     company-url: http://localhost
     company-address: Test
+
+# Geocoding jobs run in the request thread after commit, so tests see their result without waiting. The async mode
+# is tested by GeocodePlanJobAsyncIntegrationTest.
+jobs:
+  geocode-plan:
+    mode: inline
+
+# Guided local search runs until the time limit, so every optimization takes this long; keep tests fast.
+routing:
+  solver:
+    time-limit: 1s
+
+# Every test runs from the same IP and many share a user or store: no test may hit a limit by accident.
+# RateLimitIntegrationTest sets its own low limits.
+rate-limit:
+  rules:
+    log-in-ip: { limit: 1000000 }
+    log-in-email: { limit: 1000000 }
+    register-ip: { limit: 1000000 }
+    resend-verification-ip: { limit: 1000000 }
+    resend-verification-email: { limit: 1000000 }
+    forgot-password-ip: { limit: 1000000 }
+    forgot-password-email: { limit: 1000000 }
+    change-password-otp-user: { limit: 1000000 }
+    create-invitation-store: { limit: 1000000 }
