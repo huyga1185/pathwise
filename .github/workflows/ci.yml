@@ -107,7 +107,7 @@ jobs:
         working-directory: web
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v5
         with:
           package_json_file: web/package.json
       - uses: actions/setup-node@v4
@@ -178,7 +178,7 @@ jobs:
           echo "E2E_JWT_SECRET=$secret" >> "$GITHUB_ENV"
       - name: Start the E2E stack
         run: $COMPOSE up -d --build --wait --wait-timeout 600
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v5
         with:
           package_json_file: web/package.json
       - uses: actions/setup-node@v4
