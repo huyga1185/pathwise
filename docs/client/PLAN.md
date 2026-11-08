@@ -209,6 +209,14 @@ File nóng của client (không hai task song song cùng sửa): `web/package.js
 - **Phạm vi:** quên mật khẩu/nhận lời mời (mở web trong trình duyệt, hoặc native nếu chủ dự án muốn — hỏi trước), đăng xuất, cài đặt theme; semantics (TalkBack/VoiceOver) cho nút chính; kiểm cỡ chữ hệ thống lớn; build release Android (ký app là việc của chủ dự án).
 - **Acceptance:** không cắt chữ khi cỡ chữ hệ thống 130%; mọi nút có nhãn đọc được.
 
+- **Phát sinh khi làm (2026-11-08):**
+  - "Quên mật khẩu" và "Nhập mã mời" mở trình duyệt tới màn web (chủ dự án chọn, không làm native). URL lấy từ `--dart-define=WEB_BASE`, mặc định `API_BASE` + `/app` vì web và API cùng origin (P-47); khi dev web chạy Vite riêng thì truyền `WEB_BASE`.
+  - Prototype không có chỗ đổi theme (web để nút ở header): chạm chữ viết tắt tên mở menu tài khoản (bottom sheet) gồm tên, email, Theo máy / Sáng / Tối và "Đăng xuất" (vẫn có hộp xác nhận). Port mới `Preferences` (`shared_preferences`, khoá `pw-theme` như web); `main.dart` đọc theme đã lưu trước frame đầu.
+  - Sau T48: `PLAN_NOT_ACTIVE` khi đọc tuyến hiện "Plan đã kết thúc hoặc đã bị huỷ. Dừng giao và liên hệ điều phối viên."; 404 chỉ còn "Tuyến này không còn".
+  - Test accessibility mới bắt được nhãn `PwButton` tràn ngang ở 360 px với chữ 130 % (đăng nhập, danh sách, chi tiết, báo kết quả): nhãn nay xuống dòng, nút cao lên. Mọi màn đạt các guideline nhãn, vùng chạm 48/44 px, tương phản ở hai theme.
+  - Release Android: chủ dự án không có key và không đưa app lên Google Play, nên mặc định ký key debug và cài APK trực tiếp; `build.gradle.kts` vẫn ký bằng `android/key.properties` nếu ai có key (đã thử với keystore tạm: APK mang chứng chỉ của keystore đó). `mobile/README.md` viết lại: chạy, biến `--dart-define`, test, build và tạo upload key. Icon iOS đã là RGB không alpha (M00 ghi cần làm phẳng): không phải làm gì.
+  - Chưa làm: build iOS (cần macOS và Xcode); kiểm thật bằng TalkBack/VoiceOver trên máy (đã có test semantics).
+
 ## 4. Sau MVP (chưa lên lịch)
 
 Vị trí tài xế (cần T32) · dẫn đường trong app (cần T33) · chỉnh tay tuyến (cần T28) · thông báo đẩy · trang theo dõi đơn cho khách (client thứ ba) · đa ngôn ngữ.

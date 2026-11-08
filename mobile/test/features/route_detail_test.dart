@@ -113,7 +113,7 @@ void main() {
     expect(find.text('ĐÃ XONG (12)'), findsOneWidget);
   });
 
-  testWidgets('tuyến không còn (404, ví dụ plan bị huỷ) thì bảo dừng giao, nút quay lại về danh sách', (tester) async {
+  testWidgets('tuyến không còn (404) thì báo, nút quay lại về danh sách', (tester) async {
     final server = driverServer((request) async {
       if (request.path == '/api/v1/driver/routes/99') return FakeReply.fail(404, 'NOT_FOUND');
       return FakeReply.ok(<Object>[]);
@@ -122,10 +122,7 @@ void main() {
     await goTo(tester, '/routes/99');
 
     expect(find.textContaining('Tuyến này không còn.', findRichText: true), findsOneWidget);
-    expect(
-      find.textContaining('Kế hoạch có thể đã bị huỷ. Dừng giao và liên hệ điều phối viên.', findRichText: true),
-      findsOneWidget,
-    );
+    expect(find.textContaining('Liên hệ điều phối viên nếu cần.', findRichText: true), findsOneWidget);
 
     await tester.tap(find.byTooltip('Về danh sách tuyến'));
     await tester.pumpAndSettle();

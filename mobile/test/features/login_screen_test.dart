@@ -78,4 +78,35 @@ void main() {
     await tester.pump(const Duration(seconds: 1));
     expect(find.text('Thử lại sau 1 phút 59 giây'), findsOneWidget);
   });
+
+  testWidgets('"Quên mật khẩu?" và "Nhập mã mời" mở màn web tương ứng trong trình duyệt (M03)', (tester) async {
+    final launcher = FakeLauncher();
+    await pumpApp(tester, FakeServer((request) async => const FakeReply(401)), launcher: launcher);
+
+    await tester.tap(find.text('Quên mật khẩu?'));
+    await tester.pumpAndSettle();
+    final invite = find.text('Nhập mã mời');
+    await tester.ensureVisible(invite);
+    await tester.tap(invite);
+    await tester.pumpAndSettle();
+
+    // Default WEB_BASE: API_BASE + /app (web and API share an origin, P-47).
+    expect(launcher.opened.map((uri) => uri.toString()), [
+      'http://10.0.2.2:8080/app/forgot-password',
+      'http://10.0.2.2:8080/app/invite',
+    ]);
+  });
+
+  testWidgets('máy không mở được trình duyệt thì báo', (tester) async {
+    await pumpApp(
+      tester,
+      FakeServer((request) async => const FakeReply(401)),
+      launcher: FakeLauncher()..succeeds = false,
+    );
+
+    await tester.tap(find.text('Quên mật khẩu?'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Không mở được ứng dụng trên máy.'), findsOneWidget);
+  });
 }

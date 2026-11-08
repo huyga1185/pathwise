@@ -4,6 +4,7 @@ import 'package:pathwise_driver/app/app.dart';
 import 'package:pathwise_driver/app/providers.dart';
 import 'package:pathwise_driver/platform/clock.dart';
 import 'package:pathwise_driver/platform/launcher.dart';
+import 'package:pathwise_driver/platform/preferences.dart';
 import 'package:pathwise_driver/platform/token_store.dart';
 
 import 'fake_api.dart';
@@ -39,6 +40,7 @@ Future<MemoryTokenStore> pumpApp(
   String? refreshToken,
   Clock? clock,
   Launcher? launcher,
+  Preferences? preferences,
 }) async {
   final store = MemoryTokenStore(refreshToken: refreshToken);
   await tester.pumpWidget(
@@ -47,6 +49,7 @@ Future<MemoryTokenStore> pumpApp(
         apiClientProvider.overrideWithValue(fakeClient(server, store)),
         clockProvider.overrideWithValue(clock ?? FixedClock(sampleNow)),
         launcherProvider.overrideWithValue(launcher ?? FakeLauncher()),
+        preferencesProvider.overrideWithValue(preferences ?? MemoryPreferences()),
       ],
       child: const PathwiseApp(),
     ),

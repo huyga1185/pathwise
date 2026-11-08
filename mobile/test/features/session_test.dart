@@ -14,7 +14,7 @@ void main() {
     final store = await pumpApp(tester, server, refreshToken: 'refresh-1');
 
     expect(find.text('Tuyến của tôi'), findsOneWidget);
-    expect(find.bySemanticsLabel('Tài xế A — đăng xuất'), findsOneWidget);
+    expect(find.bySemanticsLabel('Tài xế A — tài khoản và giao diện'), findsOneWidget);
     expect(store.refreshToken, 'refresh-2');
     expect(bodyOf(server.requests.first), {'refreshToken': 'refresh-1'});
   });

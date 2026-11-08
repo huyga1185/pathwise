@@ -5,8 +5,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../shared/i18n/vi.dart';
 import '../shared/theme/theme.dart';
 import 'router.dart';
+import 'theme_mode.dart';
 
-/// The driver app: Vietnamese only, light/dark theme from the system (ARCHITECTURE §8).
+/// The driver app: Vietnamese only, light/dark theme from the system or the driver's pick (ARCHITECTURE §8).
 class PathwiseApp extends ConsumerWidget {
   const PathwiseApp({super.key});
 
@@ -17,6 +18,7 @@ class PathwiseApp extends ConsumerWidget {
       debugShowCheckedModeBanner: false,
       theme: pwTheme(Brightness.light),
       darkTheme: pwTheme(Brightness.dark),
+      themeMode: ref.watch(themeModeProvider),
       locale: const Locale('vi'),
       supportedLocales: const [Locale('vi')],
       localizationsDelegates: GlobalMaterialLocalizations.delegates,

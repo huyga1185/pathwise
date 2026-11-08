@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:pathwise_api/pathwise_api.dart';
 
 import '../../app/providers.dart';
+import '../../app/theme_mode.dart';
 import '../../shared/errors/errors.dart';
 import '../../shared/format.dart';
 import '../../shared/i18n/vi.dart';
@@ -106,7 +107,7 @@ class _RouteListScreenState extends ConsumerState<RouteListScreen> {
   }
 }
 
-/// "Tuyến của tôi" and the driver's initials, which open sign-out.
+/// "Tuyến của tôi" and the driver's initials, which open the account sheet: appearance and sign-out (M03).
 class _Header extends ConsumerWidget {
   const _Header();
 
@@ -114,7 +115,8 @@ class _Header extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final t = context.pw;
     final session = ref.watch(sessionProvider);
-    final name = session is SessionSignedIn ? (session.user.fullName ?? session.user.email) : '';
+    final user = session is SessionSignedIn ? session.user : null;
+    final name = user == null ? '' : (user.fullName ?? user.email);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: PwSpacing.space4, vertical: PwSpacing.space2),
       decoration: BoxDecoration(
@@ -135,7 +137,7 @@ class _Header extends ConsumerWidget {
             excludeSemantics: true,
             child: InkResponse(
               radius: 28,
-              onTap: () => unawaited(_confirmLogOut(context, ref)),
+              onTap: () => unawaited(_openAccount(context, ref, name, user?.email ?? '')),
               child: SizedBox(
                 width: 48,
                 height: 48,
@@ -155,6 +157,18 @@ class _Header extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  Future<void> _openAccount(BuildContext context, WidgetRef ref, String name, String email) async {
+    final t = context.pw;
+    final logOut = await showModalBottomSheet<bool>(
+      context: context,
+      backgroundColor: t.surfaceRaised,
+      showDragHandle: true,
+      isScrollControlled: true,
+      builder: (sheet) => _AccountSheet(name: name, email: email),
+    );
+    if ((logOut ?? false) && context.mounted) await _confirmLogOut(context, ref);
   }
 
   Future<void> _confirmLogOut(BuildContext context, WidgetRef ref) async {
@@ -371,4 +385,96 @@ class _EmptyPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_EmptyPainter oldDelegate) => oldDelegate.t != t;
+}
+
+/// The account sheet: who is signed in, the theme (system, light, dark; remembered on the phone), sign out.
+class _AccountSheet extends ConsumerWidget {
+  const _AccountSheet({required this.name, required this.email});
+
+  final String name;
+  final String email;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final t = context.pw;
+    final mode = ref.watch(themeModeProvider);
+    return SafeArea(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(PwSpacing.space4, 0, PwSpacing.space4, PwSpacing.space4),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(name, style: PwTypeStyles.title.copyWith(color: t.ink)),
+            if (email.isNotEmpty && email != name)
+              Text(email, style: PwTypeStyles.bodyTouch.copyWith(color: t.inkMuted)),
+            const SizedBox(height: PwSpacing.space4),
+            Semantics(
+              header: true,
+              child: Text(Vi.appearance.toUpperCase(), style: PwTypeStyles.label.copyWith(color: t.inkMuted)),
+            ),
+            const SizedBox(height: PwSpacing.space1),
+            for (final (option, label) in const [
+              (ThemeMode.system, Vi.themeSystem),
+              (ThemeMode.light, Vi.themeLight),
+              (ThemeMode.dark, Vi.themeDark),
+            ])
+              _ThemeOption(
+                label: label,
+                selected: mode == option,
+                onTap: () => unawaited(ref.read(themeModeProvider.notifier).choose(option)),
+              ),
+            const SizedBox(height: PwSpacing.space4),
+            PwButton(label: Vi.logout, block: true, onPressed: () => Navigator.of(context).pop(true)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ThemeOption extends StatelessWidget {
+  const _ThemeOption({required this.label, required this.selected, required this.onTap});
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.pw;
+    return Semantics(
+      inMutuallyExclusiveGroup: true,
+      checked: selected,
+      button: true,
+      label: label,
+      excludeSemantics: true,
+      onTap: onTap,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(PwRadius.radiusSm),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 48),
+          child: Row(
+            children: [
+              Icon(
+                selected ? Icons.radio_button_checked : Icons.radio_button_unchecked,
+                color: selected ? t.route : t.inkMuted,
+              ),
+              const SizedBox(width: PwSpacing.space2),
+              Expanded(
+                child: Text(
+                  label,
+                  style: PwTypeStyles.bodyTouch.copyWith(
+                    color: t.ink,
+                    fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }

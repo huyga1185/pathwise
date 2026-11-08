@@ -7,17 +7,16 @@ import '../../shared/i18n/vi.dart';
 import '../../shared/theme/tokens.g.dart';
 import '../../shared/ui/ui.dart';
 
-/// A route that could not be shown. Gone (404: another driver's, or its plan cancelled, API_SPEC §8) → tell the
-/// driver to stop and call the dispatcher, back to the list; anything else → the error and "Thử lại".
+/// A route that could not be shown. Its plan was cancelled after the driver got it (`PLAN_NOT_ACTIVE`, T48) → say so
+/// and tell them to stop; gone (404: not theirs, or never published, API_SPEC §8) → say it is no longer there; both
+/// go back to the list. Anything else → the error and "Thử lại".
 List<Widget> routeErrorView(BuildContext context, Object error, VoidCallback onRetry) {
+  final back = PwButton(label: Vi.backToRoutes, block: true, onPressed: () => context.go('/routes'));
+  if (error is ApiError && error.code == 'PLAN_NOT_ACTIVE') {
+    return [ErrorBanner(title: messageFor(error), detail: Vi.stopDelivering, action: back)];
+  }
   if (error is ApiError && error.status == 404) {
-    return [
-      ErrorBanner(
-        title: Vi.routeGone,
-        detail: Vi.routeGoneDetail,
-        action: PwButton(label: Vi.backToRoutes, block: true, onPressed: () => context.go('/routes')),
-      ),
-    ];
+    return [ErrorBanner(title: Vi.routeGone, detail: Vi.routeGoneDetail, action: back)];
   }
   return [
     ErrorBanner(title: Vi.routeLoadFailed, detail: messageFor(error)),
