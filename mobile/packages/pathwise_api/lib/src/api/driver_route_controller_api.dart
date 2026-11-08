@@ -112,7 +112,7 @@ _responseData = rawData == null ? null : deserialize<ApiResponseDriverRouteDetai
   /// Returns a [Future] containing a [Response] with a [ApiResponseListDriverRouteSummaryResponse] as data
   /// Throws [DioException] if API call or serialization fails
   Future<Response<ApiResponseListDriverRouteSummaryResponse>> listRoutes({ 
-    DateTime? date,
+    String? date,
     CancelToken? cancelToken,
     Map<String, dynamic>? headers,
     Map<String, dynamic>? extra,

@@ -4,16 +4,17 @@ import '../support/app.dart';
 import '../support/fake_api.dart';
 
 void main() {
-  testWidgets('mở app có refresh token đã lưu thì khôi phục phiên và vào Tuyến hôm nay', (tester) async {
+  testWidgets('mở app có refresh token đã lưu thì khôi phục phiên và vào Tuyến của tôi', (tester) async {
     final server = FakeServer((request) async {
       if (request.path == '/api/v1/auth/refresh') return FakeReply.ok(tokens(refresh: 'refresh-2'));
+      if (request.path == '/api/v1/driver/routes') return FakeReply.ok(<Object>[]);
       return FakeReply.ok(meOf(driverUser));
     });
 
     final store = await pumpApp(tester, server, refreshToken: 'refresh-1');
 
-    expect(find.text('Tuyến hôm nay'), findsOneWidget);
-    expect(find.text('Xin chào, Tài xế A'), findsOneWidget);
+    expect(find.text('Tuyến của tôi'), findsOneWidget);
+    expect(find.bySemanticsLabel('Tài xế A — đăng xuất'), findsOneWidget);
     expect(store.refreshToken, 'refresh-2');
     expect(bodyOf(server.requests.first), {'refreshToken': 'refresh-1'});
   });

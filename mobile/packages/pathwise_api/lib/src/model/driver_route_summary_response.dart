@@ -57,7 +57,7 @@ class DriverRouteSummaryResponse {
   )
 
 
-  final DateTime planDate;
+  final String planDate;
 
 
 

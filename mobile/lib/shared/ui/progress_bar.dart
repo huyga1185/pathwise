@@ -21,7 +21,23 @@ class PwProgressBar extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(label, style: PwTypeStyles.body.copyWith(color: t.ink)),
+          ExcludeSemantics(
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(label, style: PwTypeStyles.body.copyWith(color: t.ink)),
+                ),
+                if (known)
+                  Text(
+                    '$value/$max',
+                    style: PwTypeStyles.body.copyWith(
+                      color: t.inkMuted,
+                      fontFeatures: const [FontFeature.tabularFigures()],
+                    ),
+                  ),
+              ],
+            ),
+          ),
           const SizedBox(height: PwSpacing.space1),
           ClipRRect(
             borderRadius: BorderRadius.circular(PwRadius.radiusFull),

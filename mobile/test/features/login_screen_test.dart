@@ -17,14 +17,17 @@ Future<void> logIn(WidgetTester tester, {String email = 'taixe.a@example.com', S
 }
 
 void main() {
-  testWidgets('đăng nhập là tài xế: gửi X-Client-Platform, lưu refresh token, vào Tuyến hôm nay', (tester) async {
-    final server = FakeServer((request) async => FakeReply.ok(tokens(user: driverUser)));
+  testWidgets('đăng nhập là tài xế: gửi X-Client-Platform, lưu refresh token, vào Tuyến của tôi', (tester) async {
+    final server = FakeServer((request) async {
+      if (request.path == '/api/v1/driver/routes') return FakeReply.ok(<Object>[]);
+      return FakeReply.ok(tokens(user: driverUser));
+    });
     final store = await pumpApp(tester, server);
 
     await logIn(tester);
 
-    expect(find.text('Tuyến hôm nay'), findsOneWidget);
-    final request = server.requests.single;
+    expect(find.text('Tuyến của tôi'), findsOneWidget);
+    final request = server.requests.first;
     expect(request.path, '/api/v1/auth/log-in');
     expect(request.headers['X-Client-Platform'], 'mobile');
     expect(bodyOf(request), {'email': 'taixe.a@example.com', 'password': 'matkhau123'});
@@ -57,7 +60,7 @@ void main() {
       find.textContaining('Tài khoản đã bị vô hiệu hoá. Liên hệ chủ cửa hàng.', findRichText: true),
       findsOneWidget,
     );
-    expect(find.text('Tuyến hôm nay'), findsNothing);
+    expect(find.text('Tuyến của tôi'), findsNothing);
   });
 
   testWidgets('bị giới hạn thì báo và khoá nút theo Retry-After', (tester) async {

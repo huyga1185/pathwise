@@ -28,7 +28,7 @@ DriverRouteDetailResponse _$DriverRouteDetailResponseFromJson(
       'end',
       (v) => LocationResponse.fromJson(v as Map<String, dynamic>),
     ),
-    planDate: $checkedConvert('planDate', (v) => DateTime.parse(v as String)),
+    planDate: $checkedConvert('planDate', (v) => v as String),
     planId: $checkedConvert('planId', (v) => (v as num).toInt()),
     planName: $checkedConvert('planName', (v) => v as String),
     routeId: $checkedConvert('routeId', (v) => (v as num).toInt()),
@@ -55,7 +55,7 @@ Map<String, dynamic> _$DriverRouteDetailResponseToJson(
   DriverRouteDetailResponse instance,
 ) => <String, dynamic>{
   'end': instance.end.toJson(),
-  'planDate': instance.planDate.toIso8601String(),
+  'planDate': instance.planDate,
   'planId': instance.planId,
   'planName': instance.planName,
   'routeId': instance.routeId,

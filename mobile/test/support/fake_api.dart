@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
@@ -81,3 +82,14 @@ ApiClient fakeClient(FakeServer server, MemoryTokenStore store) =>
 
 /// The JSON body of a request, whether the client sent a map or an encoded string.
 Object? bodyOf(RequestOptions request) => request.data is String ? jsonDecode(request.data as String) : request.data;
+
+/// A response of docs/ux/samples (the API's own output, T45/T47), decoded; `data` is the envelope's content.
+Map<String, Object?> sample(String name) =>
+    jsonDecode(File('../docs/ux/samples/$name.json').readAsStringSync()) as Map<String, Object?>;
+
+/// A signed-in driver (refresh → tokens, `/users/me` → driver) whose other requests go to [routes].
+FakeServer driverServer(Future<FakeReply> Function(RequestOptions request) routes) => FakeServer((request) async {
+  if (request.path == '/api/v1/auth/refresh') return FakeReply.ok(tokens());
+  if (request.path == '/api/v1/users/me') return FakeReply.ok(meOf(driverUser));
+  return routes(request);
+});
