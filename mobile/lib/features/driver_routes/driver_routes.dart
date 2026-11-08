@@ -3,3 +3,4 @@ library;
 
 export 'route_detail_screen.dart' show RouteDetailScreen;
 export 'route_list_screen.dart' show RouteListScreen;
+export 'stop_report_screen.dart' show StopReportScreen;

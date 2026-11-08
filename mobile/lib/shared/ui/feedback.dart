@@ -3,12 +3,14 @@ import 'package:flutter/material.dart';
 import '../theme/theme.dart';
 import '../theme/tokens.g.dart';
 
-/// Error box at the top of a form (announced to screen readers); field errors go under the field instead.
+/// Error box at the top of a form (announced to screen readers); field errors go under the field instead. [action]
+/// (a button such as "Gửi lại") sits under the text.
 class ErrorBanner extends StatelessWidget {
-  const ErrorBanner({super.key, required this.title, this.detail});
+  const ErrorBanner({super.key, required this.title, this.detail, this.action});
 
   final String title;
   final String? detail;
+  final Widget? action;
 
   @override
   Widget build(BuildContext context) {
@@ -22,17 +24,23 @@ class ErrorBanner extends StatelessWidget {
           border: Border.all(color: t.danger),
           borderRadius: BorderRadius.circular(PwRadius.radiusMd),
         ),
-        child: Text.rich(
-          TextSpan(
-            children: [
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text.rich(
               TextSpan(
-                text: title,
-                style: TextStyle(color: t.danger, fontWeight: FontWeight.w600),
+                children: [
+                  TextSpan(
+                    text: title,
+                    style: TextStyle(color: t.danger, fontWeight: FontWeight.w600),
+                  ),
+                  if (detail != null) TextSpan(text: ' $detail'),
+                ],
               ),
-              if (detail != null) TextSpan(text: ' $detail'),
-            ],
-          ),
-          style: PwTypeStyles.bodyTouch.copyWith(color: t.ink),
+              style: PwTypeStyles.bodyTouch.copyWith(color: t.ink),
+            ),
+            if (action != null) ...[const SizedBox(height: PwSpacing.space2), action!],
+          ],
         ),
       ),
     );

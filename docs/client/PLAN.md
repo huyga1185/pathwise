@@ -198,6 +198,12 @@ File nóng của client (không hai task song song cùng sửa): `web/package.js
 - **Phạm vi:** ba nút kết quả, hộp xác nhận, lý do bắt buộc khi FAILED (≤ 255, gợi ý nhanh), sang điểm tiếp theo, xong tuyến; hàng đợi gửi lại khi mất mạng (persist, gửi lại cùng nội dung, chặn báo kết quả khác cho stop đang chờ); `PLAN_NOT_ACTIVE`, `INVALID_STOP_TRANSITION`.
 - **Acceptance:** test hàng đợi: tắt mạng → báo kết quả → bật mạng → gửi đúng một nội dung, server trả 200 idempotent khi gửi lại; `routeStatus = COMPLETED` hiện màn xong tuyến.
 
+- **Phát sinh khi làm (2026-11-08):**
+  - **Bỏ hàng đợi khi mất mạng (P-51, chủ dự án chọn):** phạm vi "hàng đợi gửi lại khi mất mạng (persist…)" và phần acceptance "tắt mạng → báo kết quả → bật mạng" được thay bằng: kết quả gửi thẳng lên server; mất mạng thì "Gửi lại" gửi đúng nội dung cũ, server trả 200 idempotent khi lần trước đã ghi mà mất response; tài xế không sang điểm sau khi chưa gửi được. Lý do: có hàng đợi thì tài xế mất mạng vẫn giao tiếp nhiều điểm của plan đã bị huỷ. Bản hàng đợi (lưu `shared_preferences`, thử lại theo hẹn giờ, `connectivity_plus`) đã làm thử rồi bỏ.
+  - Thêm: chi tiết tuyến và màn báo kết quả tự tải lại tuyến mỗi 30 giây khi app đang mở, và đọc lại khi mở màn báo kết quả. Tuyến của plan bị huỷ trả 404 nên app chỉ nói "Tuyến này không còn. Kế hoạch có thể đã bị huỷ…" (F-53). Chủ dự án duyệt task backend T48 (`IMPLEMENTATION_PLAN.md`); sau T48, `route_error.dart` của app thêm nhánh `PLAN_NOT_ACTIVE` để báo chắc "Plan đã kết thúc hoặc đã bị huỷ." (việc nhỏ, làm cùng M03 hoặc ngay sau T48).
+  - Lý do giới hạn 255 đơn vị UTF-16 (cách Java đếm), không theo số ký tự như `maxLength` của Flutter: chữ Việt gõ bằng dấu tổ hợp dài hơn số ký tự nhìn thấy.
+  - `PwButton` thêm `semanticLabel` ("Gọi khách" đọc là "Gọi 0905 123 008"), `ErrorBanner` thêm `action` (nút "Gửi lại", "Về danh sách tuyến").
+
 ### M03. Hoàn thiện app
 - **Ước lượng:** 1 ngày
 - **Phạm vi:** quên mật khẩu/nhận lời mời (mở web trong trình duyệt, hoặc native nếu chủ dự án muốn — hỏi trước), đăng xuất, cài đặt theme; semantics (TalkBack/VoiceOver) cho nút chính; kiểm cỡ chữ hệ thống lớn; build release Android (ký app là việc của chủ dự án).

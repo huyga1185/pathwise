@@ -58,4 +58,45 @@ abstract final class Vi {
   static const noAddress = 'Không có địa chỉ, chỉ đường theo toạ độ';
   static const routeLoadFailed = 'Không tải được tuyến.';
   static const cannotOpen = 'Không mở được ứng dụng trên máy.';
+
+  // Báo kết quả (M02)
+  static const report = 'Báo kết quả';
+  static String stopOf(int sequence, int count) => 'Điểm $sequence/$count';
+  static const backToRoute = 'Về chi tiết tuyến';
+  static const backLabel = 'Quay lại';
+  static const callCustomer = 'Gọi khách';
+  static String callNumber(String phone) => 'Gọi $phone';
+  static String expectedAt(String time) => 'Dự kiến $time';
+  static String receiveWindow(String window) => 'Khung nhận $window';
+  static String expectedAtLower(String time) => 'dự kiến $time';
+  static const noNextStop = 'Không còn điểm nào chờ giao.';
+  static const delivered = 'Đã giao';
+  static const failed = 'Không giao được';
+  static const skipped = 'Bỏ qua';
+  static String confirmDeliveredTitle(String label) => 'Xác nhận đã giao $label?';
+  static const confirmDeliveredBody = 'Kết quả gửi về cho điều phối viên ngay và không sửa được sau khi gửi.';
+  static String confirmSkippedTitle(String label) => 'Bỏ qua $label?';
+  static const confirmSkippedBody =
+      'Điểm này sẽ không được giao trong tuyến hôm nay. Kết quả không sửa được sau khi gửi.';
+  static String failedTitle(String label) => 'Không giao được $label';
+  static const failedHelp = 'Chọn nhanh hoặc ghi lý do. Kết quả không sửa được sau khi gửi.';
+  static const reasonChips = 'Lý do thường gặp';
+  static const commonReasons = ['Vắng nhà', 'Sai địa chỉ', 'Khách hẹn ngày khác', 'Khách từ chối nhận'];
+  static const reason = 'Lý do';
+  static String reasonCount(int length) => '$length/255';
+  static const sendResult = 'Gửi kết quả';
+  static String sentDelivered(String label) => 'Đã báo giao thành công $label';
+  static String sentFailed(String label) => 'Đã báo không giao được $label';
+  static String sentSkipped(String label) => 'Đã bỏ qua $label';
+  static String reasonWas(String reason) => 'Lý do: $reason';
+  static const goNext = 'Sang điểm tiếp theo';
+  static const notSentOffline = 'Chưa gửi được: mất kết nối.';
+  static const notSent = 'Chưa gửi được.';
+  static const waitAndResend = 'Chờ có sóng rồi bấm Gửi lại; gửi lại cùng kết quả không bị trùng.';
+  static const resend = 'Gửi lại';
+  static const planNotActiveDetail = 'Không báo kết quả được nữa. Liên hệ điều phối viên nếu cần.';
+  static const reportFailed = 'Không gửi được kết quả.';
+  static const routeGone = 'Tuyến này không còn.';
+  static const routeGoneDetail = 'Kế hoạch có thể đã bị huỷ. Dừng giao và liên hệ điều phối viên.';
+  static const stopNotFound = 'Không tìm thấy điểm giao này trong tuyến.';
 }

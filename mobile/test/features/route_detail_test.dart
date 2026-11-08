@@ -1,27 +1,9 @@
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:go_router/go_router.dart';
 
 import '../support/app.dart';
 import '../support/fake_api.dart';
-
-/// `driver-route-detail.json` (route 64, 12 PENDING stops), with [finished] stops set by sequence and the route status.
-Map<String, Object?> sampleRoute({Map<int, (String, String?)> finished = const {}, String? status}) {
-  final route = {...sample('driver-route-detail')['data']! as Map<String, Object?>};
-  route['stops'] = [
-    for (final stop in route['stops']! as List<Object?>)
-      {
-        ...stop! as Map<String, Object?>,
-        if (finished[(stop as Map<String, Object?>)['sequence']] case (final status, final reason)) ...{
-          'status': status,
-          'failureReason': reason,
-        },
-      },
-  ];
-  if (status != null) route['status'] = status;
-  return route;
-}
+import '../support/routes.dart';
 
 /// Opens route 64 straight away (as a notification would), the server answering [route].
 Future<FakeServer> openRoute(WidgetTester tester, Map<String, Object?> route, {FakeLauncher? launcher}) async {
@@ -32,12 +14,6 @@ Future<FakeServer> openRoute(WidgetTester tester, Map<String, Object?> route, {F
   await pumpApp(tester, server, refreshToken: 'refresh-1', launcher: launcher);
   await goTo(tester, '/routes/64');
   return server;
-}
-
-/// Opens [location] like a deep link would.
-Future<void> goTo(WidgetTester tester, String location) async {
-  GoRouter.of(tester.element(find.byType(Scaffold).first)).go(location);
-  await tester.pumpAndSettle();
 }
 
 void main() {
@@ -137,7 +113,7 @@ void main() {
     expect(find.text('ĐÃ XONG (12)'), findsOneWidget);
   });
 
-  testWidgets('tuyến không còn thấy được (404) thì báo lỗi, nút quay lại về danh sách', (tester) async {
+  testWidgets('tuyến không còn (404, ví dụ plan bị huỷ) thì bảo dừng giao, nút quay lại về danh sách', (tester) async {
     final server = driverServer((request) async {
       if (request.path == '/api/v1/driver/routes/99') return FakeReply.fail(404, 'NOT_FOUND');
       return FakeReply.ok(<Object>[]);
@@ -145,7 +121,11 @@ void main() {
     await pumpApp(tester, server, refreshToken: 'refresh-1');
     await goTo(tester, '/routes/99');
 
-    expect(find.textContaining('Không tải được tuyến.', findRichText: true), findsOneWidget);
+    expect(find.textContaining('Tuyến này không còn.', findRichText: true), findsOneWidget);
+    expect(
+      find.textContaining('Kế hoạch có thể đã bị huỷ. Dừng giao và liên hệ điều phối viên.', findRichText: true),
+      findsOneWidget,
+    );
 
     await tester.tap(find.byTooltip('Về danh sách tuyến'));
     await tester.pumpAndSettle();
