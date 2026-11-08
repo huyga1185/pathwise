@@ -6,7 +6,6 @@ import 'package:go_router/go_router.dart';
 import 'package:pathwise_api/pathwise_api.dart';
 
 import '../../app/providers.dart';
-import '../../shared/errors/errors.dart';
 import '../../shared/format.dart';
 import '../../shared/i18n/vi.dart';
 import '../../shared/status/status.dart';
@@ -14,10 +13,13 @@ import '../../shared/theme/theme.dart';
 import '../../shared/theme/tokens.g.dart';
 import '../../shared/ui/ui.dart';
 import 'directions.dart';
+import 'route_error.dart';
+import 'route_polling.dart';
 import 'routes_data.dart';
 
-/// "Tài xế — chi tiết tuyến" (SCREENS §2): the next stop stands out with "Gọi" and "Chỉ đường", then the stops left,
-/// then the finished ones (collapsible, with the failure reason). Opened from the list or straight by id (T45).
+/// "Tài xế — chi tiết tuyến" (SCREENS §2): the next stop stands out with "Gọi", "Chỉ đường" and "Báo kết quả", then
+/// the stops left, then the finished ones (collapsible, with the failure reason). Opened from the list or straight by
+/// id (T45). Read again every 30 s and when the app comes back (M02), so a cancelled plan shows.
 class RouteDetailScreen extends ConsumerStatefulWidget {
   const RouteDetailScreen({super.key, required this.routeId});
 
@@ -27,21 +29,11 @@ class RouteDetailScreen extends ConsumerStatefulWidget {
   ConsumerState<RouteDetailScreen> createState() => _RouteDetailScreenState();
 }
 
-class _RouteDetailScreenState extends ConsumerState<RouteDetailScreen> {
+class _RouteDetailScreenState extends ConsumerState<RouteDetailScreen> with RoutePolling {
   bool _doneOpen = true;
-  late final AppLifecycleListener _lifecycle;
 
   @override
-  void initState() {
-    super.initState();
-    _lifecycle = AppLifecycleListener(onResume: () => ref.invalidate(driverRouteProvider(widget.routeId)));
-  }
-
-  @override
-  void dispose() {
-    _lifecycle.dispose();
-    super.dispose();
-  }
+  int get pollRouteId => widget.routeId;
 
   Future<void> _open(Uri uri) async {
     final opened = await ref.read(launcherProvider).open(uri);
@@ -55,7 +47,7 @@ class _RouteDetailScreenState extends ConsumerState<RouteDetailScreen> {
     final t = context.pw;
     final provider = driverRouteProvider(widget.routeId);
     final route = ref.watch(provider);
-    final detail = route.value;
+    final detail = shownRoute(route);
 
     return Scaffold(
       backgroundColor: t.surface,
@@ -71,12 +63,8 @@ class _RouteDetailScreenState extends ConsumerState<RouteDetailScreen> {
                   physics: const AlwaysScrollableScrollPhysics(),
                   padding: const EdgeInsets.fromLTRB(PwSpacing.space4, PwSpacing.space4, PwSpacing.space4, 32),
                   children: switch (route) {
-                    AsyncValue(:final value?) => _content(value),
-                    AsyncValue(:final error?) => [
-                      ErrorBanner(title: Vi.routeLoadFailed, detail: messageFor(error)),
-                      const SizedBox(height: PwSpacing.space4),
-                      PwButton(label: Vi.retry, block: true, onPressed: () => ref.invalidate(provider)),
-                    ],
+                    _ when detail != null => _content(detail),
+                    AsyncValue(:final error?) => routeErrorView(context, error, () => ref.invalidate(provider)),
                     _ => const [
                       Padding(
                         padding: EdgeInsets.only(top: 48),
@@ -113,10 +101,25 @@ class _RouteDetailScreenState extends ConsumerState<RouteDetailScreen> {
           onCall: next.recipientPhone == null ? null : () => unawaited(_open(callUri(next.recipientPhone!))),
         ),
         const SizedBox(height: PwSpacing.space2),
-        PwButton(
-          label: Vi.directions,
-          block: true,
-          onPressed: () => unawaited(_open(directionsUri(next.lat, next.lon, platform))),
+        Row(
+          children: [
+            Expanded(
+              child: PwButton(
+                label: Vi.directions,
+                block: true,
+                onPressed: () => unawaited(_open(directionsUri(next.lat, next.lon, platform))),
+              ),
+            ),
+            const SizedBox(width: PwSpacing.space2),
+            Expanded(
+              child: PwButton(
+                label: Vi.report,
+                variant: PwButtonVariant.primary,
+                block: true,
+                onPressed: () => context.push('/routes/${route.routeId}/stops/${next.id}'),
+              ),
+            ),
+          ],
         ),
       ],
       if (route.status == DriverRouteDetailResponseStatusEnum.COMPLETED) ...[

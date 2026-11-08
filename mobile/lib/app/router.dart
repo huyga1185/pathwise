@@ -8,7 +8,8 @@ import '../shared/i18n/vi.dart';
 
 /// Routes of the driver app (SCREENS §2), redirected by the session (ARCHITECTURE §9): loading → splash,
 /// anonymous → login, not a driver → no access, signed in → today's routes. `/routes/{routeId}` opens a route straight
-/// away (later the `pathwise://routes/{routeId}` deep link of notifications).
+/// away (later the `pathwise://routes/{routeId}` deep link of notifications); `/routes/{routeId}/stops/{stopId}` reports
+/// a stop's result (M02).
 final routerProvider = Provider<GoRouter>((ref) {
   final refresh = ValueNotifier<Session>(ref.read(sessionProvider));
   ref
@@ -39,6 +40,18 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: ':routeId',
             redirect: (context, state) => int.tryParse(state.pathParameters['routeId']!) == null ? '/routes' : null,
             builder: (context, state) => RouteDetailScreen(routeId: int.parse(state.pathParameters['routeId']!)),
+            routes: [
+              GoRoute(
+                path: 'stops/:stopId',
+                redirect: (context, state) => int.tryParse(state.pathParameters['stopId']!) == null
+                    ? '/routes/${state.pathParameters['routeId']}'
+                    : null,
+                builder: (context, state) => StopReportScreen(
+                  routeId: int.parse(state.pathParameters['routeId']!),
+                  stopId: int.parse(state.pathParameters['stopId']!),
+                ),
+              ),
+            ],
           ),
         ],
       ),

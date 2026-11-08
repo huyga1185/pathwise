@@ -19,6 +19,7 @@ class PwButton extends StatelessWidget {
     this.busy = false,
     this.block = false,
     this.icon,
+    this.semanticLabel,
   });
 
   final String label;
@@ -28,6 +29,9 @@ class PwButton extends StatelessWidget {
   final bool busy;
   final bool block;
   final IconData? icon;
+
+  /// What screen readers say instead of [label] when the label alone is vague ("Gọi khách" → "Gọi 0905 123 008").
+  final String? semanticLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -54,7 +58,7 @@ class PwButton extends StatelessWidget {
     final button = Semantics(
       button: true,
       enabled: enabled,
-      label: label,
+      label: semanticLabel ?? label,
       // The label replaces the content; the tap action must stay, or screen readers cannot press the button.
       excludeSemantics: true,
       onTap: enabled ? onPressed : null,

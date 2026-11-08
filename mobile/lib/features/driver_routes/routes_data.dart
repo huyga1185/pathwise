@@ -25,3 +25,62 @@ final driverRouteProvider = FutureProvider.autoDispose.family<DriverRouteDetailR
   final response = await guard(() => api.getRoute(routeId: routeId));
   return response.data!.data;
 }, retry: _noRetry);
+
+/// The three results a driver reports; none can be undone (P-34).
+enum StopResult {
+  delivered('DELIVERED'),
+  failed('FAILED'),
+  skipped('SKIPPED');
+
+  const StopResult(this.value);
+
+  final String value;
+
+  static StopResult? of(String value) => values.where((result) => result.value == value).firstOrNull;
+}
+
+/// No answer from the server, or one saying to try later (5xx, 429): the driver waits and sends the same result again
+/// ("Gửi lại"); the server takes a resend as the same report (P-36).
+bool sendFailed(ApiError error) =>
+    error.code == ApiError.networkError || error.status == null || error.status! >= 500 || error.status == 429;
+
+/// Reports a stop's result (`PATCH …/stops/{stopId}/status`). Sent straight away, never queued on the phone (P-51):
+/// the driver waits for the server, so a cancelled plan stops them at the next stop at the latest.
+class StopReporter {
+  const StopReporter(this._ref);
+
+  final Ref _ref;
+
+  /// Throws an [ApiError]. Once the server has answered (success or refusal) the route and the list are read again.
+  Future<DriverStopUpdateResponse> report({
+    required int routeId,
+    required int stopId,
+    required StopResult result,
+    String? failureReason,
+  }) async {
+    final api = _ref.read(apiClientProvider).api.getDriverRouteControllerApi();
+    try {
+      final response = await guard(
+        () => api.updateStopStatus(
+          routeId: routeId,
+          stopId: stopId,
+          updateStopStatusRequest: UpdateStopStatusRequest(
+            status: UpdateStopStatusRequestStatusEnum.values.byName(result.value),
+            failureReason: failureReason,
+          ),
+        ),
+      );
+      _reload(routeId);
+      return response.data!.data;
+    } on ApiError catch (error) {
+      if (!sendFailed(error)) _reload(routeId);
+      rethrow;
+    }
+  }
+
+  void _reload(int routeId) => _ref
+    ..invalidate(driverRouteProvider(routeId))
+    ..invalidate(driverRoutesProvider);
+}
+
+final stopReporterProvider = Provider<StopReporter>(StopReporter.new);
