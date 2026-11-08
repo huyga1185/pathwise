@@ -28,7 +28,7 @@ DriverRouteSummaryResponse _$DriverRouteSummaryResponseFromJson(
       'completedCount',
       (v) => (v as num).toInt(),
     ),
-    planDate: $checkedConvert('planDate', (v) => DateTime.parse(v as String)),
+    planDate: $checkedConvert('planDate', (v) => v as String),
     planId: $checkedConvert('planId', (v) => (v as num).toInt()),
     planName: $checkedConvert('planName', (v) => v as String),
     plannedStart: $checkedConvert(
@@ -50,7 +50,7 @@ Map<String, dynamic> _$DriverRouteSummaryResponseToJson(
   DriverRouteSummaryResponse instance,
 ) => <String, dynamic>{
   'completedCount': instance.completedCount,
-  'planDate': instance.planDate.toIso8601String(),
+  'planDate': instance.planDate,
   'planId': instance.planId,
   'planName': instance.planName,
   'plannedStart': instance.plannedStart?.toIso8601String(),

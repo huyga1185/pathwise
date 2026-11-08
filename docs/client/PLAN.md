@@ -184,6 +184,14 @@ File nóng của client (không hai task song song cùng sửa): `web/package.js
 - **Phạm vi:** danh sách theo ngày (đổi ngày, kéo tải lại, trạng thái trống); chi tiết (tiêu đề `planName`, điểm tiếp theo, các điểm còn lại, nhóm đã xong); "Gọi" (`tel:`), "Chỉ đường" (Google/Apple Maps theo nền tảng, `url_launcher`).
 - **Acceptance:** widget test với `driver-route-list.json`, `driver-route-detail.json`; deep link chỉ đường đúng định dạng D-07 cho từng nền tảng.
 - **Phát sinh khi chuẩn bị (2026-11-05):** tài xế không đọc được timezone của cửa hàng nên giờ không hiện đúng được; chủ dự án chọn làm T47 trước (thêm `timezone` của plan vào `/driver/routes` và `/driver/routes/{id}`) và duyệt package `timezone` cho mobile (P-50). M01 bắt đầu sau khi T47 vào `develop`.
+- **Phát sinh khi làm (2026-11-05):**
+  - Client Dart sinh `planDate` và query `date` của `GET /driver/routes` thành `DateTime`; dio gửi `2026-12-01 00:00:00.000` nên server trả 400. `gen_dart_api.sh` thêm `--type-mappings date=String` (ngày của cửa hàng giữ dạng `YYYY-MM-DD`); đổi cả các model plan trong package (app chưa dùng).
+  - Package `timezone` 0.11.2 (P-50, dữ liệu `latest_10y`, nạp trong `main.dart` và `test/flutter_test_config.dart`). Port mới ở `platform/`: `Clock` và `Launcher` (`url_launcher`), test thay bằng đồng hồ cố định và launcher giả.
+  - "Hôm nay" khi danh sách trống và chưa biết timezone: lấy ngày trên máy (server vẫn tự chọn hôm nay theo cửa hàng khi không gửi `date`). Có route thì lấy `planDate` của server và `timezone` của route.
+  - Nút "Báo kết quả" ở điểm tiếp theo chưa có (M02); "Chỉ đường" đứng một mình. Đăng xuất chuyển từ nút trên thanh tiêu đề (M00) sang chữ viết tắt tên kèm hộp xác nhận, như prototype; màn cài đặt và đăng xuất đầy đủ vẫn ở M03.
+  - `StopCard` có nút "Gọi 0905 123 008" (`onCall`) như component tham chiếu, thay cho dòng số điện thoại; số thứ tự đọc là "Điểm số N". `PwProgressBar` hiện số `value/max` bên phải nhãn (M00 thiếu).
+  - Riverpod 3 tự thử lại provider lỗi, làm màn quay vòng khi API trả 404/500: provider của tài xế đặt `retry` trả `null`.
+  - Không có emulator trên máy dev: kiểm giao diện bằng ảnh render từ widget test (390×844, font Be Vietnam Pro, sáng và tối) so với prototype; chưa chạy với backend thật.
 
 ### M02. Báo kết quả điểm giao
 - **Ước lượng:** 1,5 ngày · **Màn:** Tài xế — báo kết quả

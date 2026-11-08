@@ -3,11 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../features/auth/auth.dart';
-import '../features/routes/routes_screen.dart';
+import '../features/driver_routes/driver_routes.dart';
 import '../shared/i18n/vi.dart';
 
 /// Routes of the driver app (SCREENS §2), redirected by the session (ARCHITECTURE §9): loading → splash,
-/// anonymous → login, not a driver → no access, signed in → today's routes.
+/// anonymous → login, not a driver → no access, signed in → today's routes. `/routes/{routeId}` opens a route straight
+/// away (later the `pathwise://routes/{routeId}` deep link of notifications).
 final routerProvider = Provider<GoRouter>((ref) {
   final refresh = ValueNotifier<Session>(ref.read(sessionProvider));
   ref
@@ -30,7 +31,17 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/splash', builder: (context, state) => const _Splash()),
       GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
       GoRoute(path: '/no-access', builder: (context, state) => const NoAccessScreen()),
-      GoRoute(path: '/routes', builder: (context, state) => const RoutesScreen()),
+      GoRoute(
+        path: '/routes',
+        builder: (context, state) => const RouteListScreen(),
+        routes: [
+          GoRoute(
+            path: ':routeId',
+            redirect: (context, state) => int.tryParse(state.pathParameters['routeId']!) == null ? '/routes' : null,
+            builder: (context, state) => RouteDetailScreen(routeId: int.parse(state.pathParameters['routeId']!)),
+          ),
+        ],
+      ),
     ],
   );
 });

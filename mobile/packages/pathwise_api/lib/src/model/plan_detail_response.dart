@@ -134,7 +134,7 @@ class PlanDetailResponse {
   )
 
 
-  final DateTime planDate;
+  final String planDate;
 
 
 

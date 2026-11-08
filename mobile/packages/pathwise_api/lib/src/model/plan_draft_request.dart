@@ -78,7 +78,7 @@ class PlanDraftRequest {
   )
 
 
-  final DateTime planDate;
+  final String planDate;
 
 
 

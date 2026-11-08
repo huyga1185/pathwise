@@ -60,7 +60,7 @@ Từ W01, route của màn chưa làm hiện trang "Sắp có" (ghi task phụ t
 
 Hành vi bắt buộc:
 - Chữ `body-touch` 16px, vùng chạm ≥ 48px, nút kết quả 56px xếp dọc ở nửa dưới (DESIGN_SYSTEM).
-- **Tuyến hôm nay:** mặc định hôm nay theo timezone store (server tự xử khi không gửi `date`); thẻ tuyến có `status` của route, `completedCount/stopCount`, giờ xuất phát; kéo xuống tải lại; ngày không có tuyến → trạng thái trống.
-- **Chi tiết tuyến:** tiêu đề `planName` (T45); điểm tiếp theo nổi bật (`StopCard current`) với "Chỉ đường" (Google Maps trên Android, Apple Maps trên iOS, dựng từ `lat/lon`, D-07) và "Báo kết quả"; các điểm còn lại; nhóm đã xong (thu gọn được) có lý do thất bại.
+- **Tuyến hôm nay:** mặc định hôm nay theo timezone store (server tự xử khi không gửi `date`); thẻ tuyến có `status` của route, `completedCount/stopCount`, giờ xuất phát (theo `timezone` của plan, T47); kéo xuống tải lại; ngày không có tuyến → trạng thái trống. Route `/routes`. Đổi ngày gửi `date` tính từ ngày đang xem; nhãn "Hôm nay/Hôm qua/Ngày mai" so với hôm nay theo timezone của route đã tải, chưa có route nào thì theo ngày trên máy. Chữ viết tắt tên ở đầu màn mở hộp xác nhận đăng xuất.
+- **Chi tiết tuyến:** route `/routes/:routeId` (mở thẳng được, id sai → về danh sách); tiêu đề `planName` (T45); điểm tiếp theo nổi bật (`StopCard current`) với "Chỉ đường" (Google Maps trên Android, Apple Maps trên iOS, dựng từ `lat/lon`, D-07) và "Báo kết quả"; các điểm còn lại; nhóm đã xong (thu gọn được) có lý do thất bại.
 - **Báo kết quả:** Đã giao / Không giao được (bắt buộc lý do ≤ 255, gợi ý nhanh) / Bỏ qua, mỗi nút có xác nhận vì không hoàn tác (P-34); xong → điểm tiếp theo; `routeStatus = COMPLETED` → "Bạn đã xong tuyến này"; mất mạng → giữ trong hàng đợi và gửi lại cùng nội dung (idempotent, P-36); `PLAN_NOT_ACTIVE` → báo plan đã huỷ/kết thúc, khoá nút.
 - Quên mật khẩu và nhận lời mời trên mobile: MVP mở trình duyệt tới màn web tương ứng (M03 quyết định có làm native không).

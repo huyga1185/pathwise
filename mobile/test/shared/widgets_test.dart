@@ -38,21 +38,30 @@ void main() {
     expect(find.byType(Text), findsNothing);
   });
 
-  testWidgets('StopCard hiện số điện thoại định dạng và lý do khi không giao được', (tester) async {
+  testWidgets('StopCard có nút gọi với số định dạng, đọc số thứ tự và lý do khi không giao được', (tester) async {
+    var calls = 0;
     await tester.pumpWidget(
       frame(
-        const StopCard(
+        StopCard(
           sequence: 3,
           title: 'ĐH-1009 · Chị Lan',
           address: '887 Nguyễn Tri Phương',
           phone: '+84905123008',
+          onCall: () => calls++,
           status: 'FAILED',
           failureReason: 'Vắng nhà',
         ),
       ),
     );
-    expect(find.text('0905 123 008'), findsOneWidget);
     expect(find.text('Lý do: Vắng nhà'), findsOneWidget);
     expect(find.text('KHÔNG GIAO ĐƯỢC'), findsOneWidget);
+    expect(find.bySemanticsLabel('Điểm số 3'), findsOneWidget);
+    await tester.tap(find.text('Gọi 0905 123 008'));
+    expect(calls, 1);
+  });
+
+  testWidgets('StopCard không có nút gọi khi không có số hoặc không có hành động gọi', (tester) async {
+    await tester.pumpWidget(frame(const StopCard(title: 'ĐH-1015', address: '893 Lê Duẩn', phone: '+84905123014')));
+    expect(find.textContaining('Gọi'), findsNothing);
   });
 }

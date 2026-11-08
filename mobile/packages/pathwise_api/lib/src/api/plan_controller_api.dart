@@ -407,7 +407,7 @@ _responseData = rawData == null ? null : deserialize<ApiResponsePlanDetailRespon
   /// Returns a [Future] containing a [Response] with a [ApiResponsePageResponsePlanSummaryResponse] as data
   /// Throws [DioException] if API call or serialization fails
   Future<Response<ApiResponsePageResponsePlanSummaryResponse>> listPlans({ 
-    DateTime? date,
+    String? date,
     String? status,
     int? page = 0,
     int? size = 10,

@@ -99,7 +99,7 @@ class PlanSummaryResponse {
   )
 
 
-  final DateTime planDate;
+  final String planDate;
 
 
 

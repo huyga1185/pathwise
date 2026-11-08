@@ -23,7 +23,7 @@ PlanDraftRequest _$PlanDraftRequestFromJson(
           v == null ? null : DepotRequest.fromJson(v as Map<String, dynamic>),
     ),
     name: $checkedConvert('name', (v) => v as String),
-    planDate: $checkedConvert('planDate', (v) => DateTime.parse(v as String)),
+    planDate: $checkedConvert('planDate', (v) => v as String),
     stops: $checkedConvert(
       'stops',
       (v) => (v as List<dynamic>?)
@@ -40,7 +40,7 @@ Map<String, dynamic> _$PlanDraftRequestToJson(PlanDraftRequest instance) =>
       'assignments': ?instance.assignments?.map((e) => e.toJson()).toList(),
       'depot': ?instance.depot?.toJson(),
       'name': instance.name,
-      'planDate': instance.planDate.toIso8601String(),
+      'planDate': instance.planDate,
       'stops': ?instance.stops?.map((e) => e.toJson()).toList(),
       'version': instance.version,
     };

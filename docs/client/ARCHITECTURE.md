@@ -67,7 +67,8 @@ Quy tắc cứng:
 | `TokenStore` (giữ token) | bộ nhớ (access) + cookie HttpOnly (refresh, do server đặt) | `flutter_secure_storage` (refresh) + bộ nhớ (access) | Đổi cách lưu (P-46) |
 | `ApiClient` | bọc `openapi-fetch` | bọc client `dart-dio` sinh từ OpenAPI | Đổi thư viện HTTP: chỉ sửa `data/http` |
 | `AppConfig` | `import.meta.env.VITE_*` | `--dart-define` | Thêm môi trường |
-| `Clock` / định dạng giờ | `Intl` + timezone của store | `intl` + timezone của store | Hỗ trợ nhiều timezone |
+| `Clock` / định dạng giờ | `Intl` + timezone của store | `platform/clock.dart` (`Clock`, `SystemClock`; test dùng đồng hồ cố định) + `shared/format.dart` đổi giờ bằng package `timezone` theo `timezone` của plan (T47, P-50) | Hỗ trợ nhiều timezone |
+| `Launcher` (rời app: gọi điện, bản đồ) | — (link thường) | `platform/launcher.dart` (`url_launcher`, `LaunchMode.externalApplication`); test dùng launcher giả ghi lại link | Đổi cách mở app ngoài, thêm dẫn đường trong app (T33) |
 | `Messages` (chuỗi giao diện) | `shared/i18n/vi.ts` | `shared/i18n/vi.dart` | Thêm ngôn ngữ: thêm file, không sửa màn hình |
 
 Mỗi port là một `interface` (TS) hoặc `abstract interface class` (Dart). Code ngoài `platform/` chỉ phụ thuộc vào interface, implementation được chọn ở `app/` (composition root) theo cấu hình. Test thay implementation bằng fake.
@@ -76,7 +77,7 @@ Mỗi port là một `interface` (TS) hoặc `abstract interface class` (Dart). 
 
 - `api/openapi.json` là snapshot sinh từ backend (`ApiSpecContractIntegrationTest` ghi `be/target/openapi.json`; `scripts/sync_openapi.sh` chạy test đó rồi gọi `openapi_snapshot.py write`). Dạng chuẩn: bỏ `servers` (phụ thuộc môi trường), sắp xếp key, thụt 2 dấu cách, nên chạy lại không tạo diff. Commit cùng PR đổi API của backend.
 - CI kiểm **drift**: job `ci` chạy `openapi_snapshot.py check` sau `./mvnw verify`; khác nhau thì fail, in diff và lệnh `sync_openapi.sh`.
-- Web sinh kiểu bằng `openapi-typescript` → `web/src/data/schema.d.ts` (commit, không sửa tay); gọi qua `openapi-fetch`. Mobile sinh bằng `openapi-generator` (generator `dart-dio`, json_serializable, v7.14.0 qua Docker) → package `mobile/packages/pathwise_api` (commit, không sửa tay) bằng `scripts/gen_dart_api.sh`.
+- Web sinh kiểu bằng `openapi-typescript` → `web/src/data/schema.d.ts` (commit, không sửa tay); gọi qua `openapi-fetch`. Mobile sinh bằng `openapi-generator` (generator `dart-dio`, json_serializable, v7.14.0 qua Docker) → package `mobile/packages/pathwise_api` (commit, không sửa tay) bằng `scripts/gen_dart_api.sh`. Kiểu `format: date` sinh thành `String` (`YYYY-MM-DD`, `--type-mappings date=String`): là ngày của cửa hàng, không phải thời điểm; để `DateTime` thì dio gửi query `date` thành `2026-12-01 00:00:00.000` và server trả 400.
 - Từ T46 (P-48): field response luôn có mặt là bắt buộc trong kiểu sinh ra, field có thể `null` có kiểu `X | null` (client đổi sang `undefined` ở view model nếu cần), field vắng mặt được (`@JsonInclude(NON_NULL)`, ví dụ `LoginResponse.user.fullName`) là `X?`; request PATCH có kiểu `X | null` ở field xoá được. Mã thành công trong OpenAPI là mã thật (201/202/204).
 - `API_SPEC.md` vẫn là hợp đồng nghiệp vụ; OpenAPI là bản máy đọc của nó. Client thấy hai bên lệch thì báo, không sửa client cho khớp chỗ sai.
 - **Client không đổi API.** Thiếu field hay endpoint → ghi vào báo cáo task, chủ dự án tạo task backend (mẫu T45).
@@ -125,7 +126,7 @@ Theo API_SPEC §2 và UX_BRIEF §3.
   - Màn theo dõi plan `PUBLISHED`/`IN_PROGRESS`: mỗi 30 s khi tab đang hiện; dừng khi plan `COMPLETED`/`CANCELLED`.
   - Web (W06): một hàm `planRefetchInterval(plan)` (`features/plans/planApi.ts`) quyết định cả ba trường hợp; `refetchIntervalInBackground: false` để không tải khi tab ẩn.
   - Job (optimize): plan về `IDLE` mà không nói job kết thúc thế nào, nên màn kết quả giữ `Job` của `POST /optimize` và đọc `GET /jobs/{id}` mỗi 2 s tới khi `SUCCEEDED`/`FAILED` (API_SPEC §6); `FAILED` → câu theo `errorCode`.
-  - App tài xế: kéo xuống để tải lại; tự tải lại khi app trở lại foreground.
+  - App tài xế: kéo xuống để tải lại; tự tải lại khi app trở lại foreground (`AppLifecycleListener.onResume`, M01). Provider dữ liệu của tài xế tắt retry tự động của Riverpod 3 để lỗi hiện ngay (người dùng tự thử lại).
 - **Optimistic concurrency:** mọi request sửa plan gửi `version` đang có; 409 `PLAN_MODIFIED` → hộp thoại "Plan vừa được người khác thay đổi. Tải lại để xem bản mới." (không tự ghi đè).
 - **Báo kết quả stop (mobile):** idempotent ở server (P-36) nên khi mất mạng app giữ yêu cầu trong hàng đợi trên máy (persist), gửi lại đúng nội dung khi có mạng; không cho báo kết quả khác cho stop đang chờ gửi.
 - Không cập nhật lạc quan (optimistic update) cho thao tác không hoàn tác được (giao việc, huỷ, báo kết quả): chờ server trả về rồi mới đổi giao diện.
