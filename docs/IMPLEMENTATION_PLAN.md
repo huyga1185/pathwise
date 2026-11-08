@@ -437,7 +437,7 @@ T42 cũ (Docker, compose, README) đã được gộp vào T05 và T07 trong M0 
   - Chỉ thêm field: test hiện có không phải sửa assertion cũ; `./mvnw test` xanh.
 
 ### T48. Tài xế đọc tuyến của plan đã huỷ nhận PLAN_NOT_ACTIVE (phát sinh 2026-11-08)
-- **Tầng:** Must (trước M03) · **Ước lượng:** 0,25 ngày · **Quyết định:** P-36, P-51 · **FR:** D01 · **Lỗi:** F-53
+- **Tầng:** Must (trước M03) · **Ước lượng:** 0,25 ngày · **Quyết định:** P-36, P-51, P-52 · **FR:** D01 · **Lỗi:** F-53
 - **Nguồn:** M02 (P-51) bắt tài xế chờ server và tự tải lại tuyến mỗi 30 giây để biết sớm plan đã bị huỷ. Nhưng `GET /driver/routes/{routeId}` của plan đã publish rồi bị huỷ trả 404 `NOT_FOUND`, giống tuyến của người khác, nên app chỉ nói được "Kế hoạch có thể đã bị huỷ". `PATCH …/status` đã trả 422 `PLAN_NOT_ACTIVE` cho đúng trường hợp này (P-36).
 - **Phạm vi:**
   1. `GET /driver/routes/{routeId}`: route của tài xế (cùng store, cùng `driverId`), có ít nhất một stop, thuộc plan đã publish rồi bị huỷ → 422 `PLAN_NOT_ACTIVE`, cùng cách nhận biết "đã publish" với `PATCH` (P-36). Các trường hợp khác giữ 404 như cũ (plan chưa từng publish, tài xế khác, store khác, route không có stop).
@@ -448,6 +448,7 @@ T42 cũ (Docker, compose, README) đã được gộp vào T05 và T07 trong M0 
 - **Acceptance criteria:**
   - Tài xế mở route của plan đã publish rồi bị huỷ → 422 `{code: PLAN_NOT_ACTIVE}`; route của plan chưa từng publish hay của người khác vẫn 404.
   - Test tenant isolation hiện có không phải sửa; `./mvnw test` xanh.
+- **Phát sinh khi làm (2026-11-08):** P-36 (Approved) ghi "`GET` vẫn ẩn plan CANCELLED"; T48 thay phần đó nên ghi thành P-52. Test `routes_whenPlanDraftOrCancelled_hidden` kiểm đúng hành vi cũ (plan publish rồi huỷ → 404) nên được tách: phần plan huỷ khi còn nháp giữ 404, phần plan publish rồi huỷ thành test mới trả 422. Không đổi OpenAPI vì controller của tài xế không khai báo mã lỗi.
 
 ## 8. Should (làm nếu kịp, theo thứ tự)
 
