@@ -91,3 +91,82 @@ Nên chép file backup ra khỏi VPS định kỳ. Redis không cần backup: m�
 | Khởi động lại app | `docker compose -f compose.prod.yaml restart app` |
 | Dừng toàn bộ (giữ dữ liệu) | `docker compose -f compose.prod.yaml down` |
 | Dọn image cũ | `docker image prune` |
+
+## 7. OSRM và Nominatim tự host (`compose.routing.yaml`, P-55)
+
+Không dùng server công khai (`router.project-osrm.org`, `nominatim.openstreetmap.org`) cho prod: server demo không cam kết hoạt động, Nominatim công khai giới hạn 1 request/giây. `compose.routing.yaml` chạy OSRM (ma trận quãng đường/thời gian) và Nominatim (tìm toạ độ) bằng dữ liệu Việt Nam của Geofabrik.
+
+### 7.1 Vùng dữ liệu và tài nguyên
+
+Dữ liệu cắt theo khung toạ độ `ROUTING_BBOX=minlon,minlat,maxlon,maxlat` (mặc định `107.80,15.80,108.40,16.25`: Đà Nẵng và Hội An). Điểm giao hay điểm xuất phát nằm ngoài vùng thì OSRM không có đường (tối ưu trả 502 `ROUTING_PROVIDER_ERROR`) và tìm địa chỉ không ra kết quả; mở rộng sang thành phố khác thì nới khung (§7.4). `ROUTING_BBOX=none` giữ cả nước nhưng **dựng OSRM cần hơn 11 GB RAM** (OSRM v26.10 và v6.0 đều bị OOM kill ở 11 GB), không hợp máy nhỏ.
+
+Số đo trên máy dev (AMD Ryzen 5 PRO 4650U, mỗi container giới hạn 1 CPU bằng `cpus: 1`). Một vCPU của VPS (thường là một luồng hyperthread Xeon, chia với khách khác) có thể chậm hơn 2–3 lần, nên coi thời gian dưới đây là mức tốt nhất:
+
+| Vùng | Dựng OSRM (RAM đỉnh / thời gian) | Import Nominatim (RAM đỉnh / thời gian) | RAM khi chạy | Đĩa |
+|---|---|---|---|---|
+| Đà Nẵng + Hội An (mặc định) | 151 MB / 20 s | ~700 MB / ~5 phút | OSRM 70 MB, Nominatim ~700 MB | ~1,1 GB (gồm file cả nước 330 MB) |
+| TP.HCM (`106.35,10.35,107.05,11.20`, chỉ đo OSRM, 2 CPU) | 1,1 GB / 59 s | chưa đo | OSRM 250 MB | OSRM 405 MB |
+| Cả nước (`none`) | > 11 GB, OOM | chưa đo | — | — |
+
+Thời gian phục vụ (vùng mặc định, 1 CPU): `/table` 100 điểm khoảng 0,18 s, `/search` khoảng 0,7 s; app cache kết quả tìm địa chỉ 24 h. Lần khởi động sau chỉ mất vài giây vì dữ liệu nằm trong volume.
+
+Chọn chỗ chạy:
+
+| Máy | Cách chạy |
+|---|---|
+| VPS của app còn trống từ 1 GB RAM (vùng một thành phố) | Chạy cùng app (§7.3). |
+| VPS của app không còn RAM, hoặc vùng lớn | Máy routing riêng (§7.2), nối qua **mạng riêng** của nhà cung cấp (VPC/private network) hoặc WireGuard. 1 vCPU đủ cho một thành phố. |
+
+Máy 1 vCPU: đặt `OSRM_THREADS=1` và `NOMINATIM_THREADS=1`. Đo trên máy thật sau khi deploy (thay địa chỉ cho phù hợp):
+```bash
+P="108.2022,16.0544;108.2208,16.0678;108.3270,15.8801"
+curl -s -o /dev/null -w '%{time_total}s\n' "http://127.0.0.1:5000/table/v1/driving/$P?annotations=distance,duration"
+curl -s -o /dev/null -w '%{time_total}s\n' -G http://127.0.0.1:8088/search --data-urlencode 'q=Chợ Hàn' -d format=jsonv2
+```
+Hai số này phải nằm xa dưới timeout đọc của app (10 s).
+
+### 7.2 Máy routing riêng
+
+1. Cài Docker như §1. Tạo `/opt/pathwise-routing`, copy `compose.routing.yaml` và tạo `.env`:
+   ```bash
+   ROUTING_BIND=10.0.0.5          # IP mạng riêng của máy routing, KHÔNG để 0.0.0.0
+   ROUTING_BBOX=107.80,15.80,108.40,16.25   # Đà Nẵng + Hội An, xem §7.1
+   NOMINATIM_DB_PASSWORD=<openssl rand -base64 24>
+   OSRM_THREADS=1                  # máy 1 vCPU
+   NOMINATIM_THREADS=1
+   ```
+   OSRM và Nominatim không có xác thực. Docker mở cổng không qua `ufw`, nên chỉ được publish trên IP mạng riêng/VPN; nếu bắt buộc dùng IP công khai thì phải chặn bằng chain `DOCKER-USER` của iptables, chỉ cho IP của VPS app.
+2. `docker compose -f compose.routing.yaml up -d`. Lần đầu: `routing-data` tải file cả nước rồi cắt vùng, `osrm-prepare` dựng đồ thị rồi thoát, `osrm` chạy; `nominatim` import (theo dõi bằng `docker compose -f compose.routing.yaml logs -f nominatim`, xong khi log có `Nominatim is ready to accept requests` và `docker compose ps` báo `healthy`). Dòng `Control server error: ... '/root/.gunicorn'` trong log Nominatim là của image, không ảnh hưởng API.
+3. Kiểm tra từ VPS app:
+   ```bash
+   curl "http://10.0.0.5:5000/table/v1/driving/108.2022,16.0544;108.2208,16.0678;108.3270,15.8801?annotations=distance,duration"
+   curl "http://10.0.0.5:8088/search?q=L%C3%AA%20Du%E1%BA%A9n%20%C4%90%C3%A0%20N%E1%BA%B5ng&format=jsonv2&limit=1"
+   ```
+4. Trên VPS app, thêm vào `.env` (xem `.env.prod.example`) rồi `docker compose -f compose.prod.yaml up -d`:
+   ```bash
+   ROUTING_MATRIX_OSRM_BASEURL=http://10.0.0.5:5000
+   ROUTING_MATRIX_OSRM_MAXTABLESIZE=200          # bằng OSRM_MAX_TABLE_SIZE của máy routing (F-41)
+   ROUTING_GEOCODING_NOMINATIM_BASEURL=http://10.0.0.5:8088
+   ROUTING_GEOCODING_NOMINATIM_RATELIMIT_ENABLED=false
+   ```
+
+### 7.3 Cùng máy với app
+
+Copy thêm `compose.routing.yaml` vào thư mục của môi trường, `.env` như trên nhưng `ROUTING_MATRIX_OSRM_BASEURL=http://osrm:5000`, `ROUTING_GEOCODING_NOMINATIM_BASEURL=http://nominatim:8080` (mạng nội bộ của compose), giữ `ROUTING_BIND=127.0.0.1`. Mọi lệnh ở §2–§6 thêm `-f compose.routing.yaml`. Dev làm tương tự với `compose.yaml` (`.env.example`).
+
+### 7.4 Đổi vùng và cập nhật dữ liệu bản đồ
+
+Đổi vùng (ví dụ thêm thành phố khác): sửa `ROUTING_BBOX` trong `.env`, xoá volume của Nominatim (nó chỉ import một lần), rồi chạy lại. `routing-data` và `osrm-prepare` tự nhận ra vùng đã đổi và làm lại, không tải lại file cả nước:
+```bash
+docker compose -f compose.routing.yaml down
+docker volume rm pathwise-routing_nominatim-data
+docker compose -f compose.routing.yaml up -d
+```
+
+Cập nhật dữ liệu mới (đường mới, địa chỉ mới; không tự cập nhật vì `UPDATE_MODE=none`): xoá cả ba volume để tải lại từ Geofabrik:
+```bash
+docker compose -f compose.routing.yaml down
+docker volume rm pathwise-routing_routing-pbf pathwise-routing_osrm-data pathwise-routing_nominatim-data
+docker compose -f compose.routing.yaml up -d
+```
+Tên volume có tiền tố là tên thư mục/project (xem `docker volume ls`). Làm vào giờ vắng: trong lúc dựng lại, app trả 502/503 khi tối ưu hay tìm toạ độ; dispatcher thử lại sau.
