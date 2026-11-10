@@ -115,7 +115,8 @@ Thời gian phục vụ (vùng mặc định, 1 CPU): `/table` 100 điểm kho�
 - RAM khi chạy: app ~590 MB, Nominatim ~700 MB, MariaDB ~130 MB, OSRM ~75 MB, Redis ~10 MB.
 - Plan 100 điểm, 3 tài xế: geocode 50 địa chỉ 6 s; tối ưu 11,6 s (giới hạn thời gian của solver là 10 s); trong lúc tối ưu, request khác của dispatcher trung bình 225 ms, chậm nhất 2,6 s. Tìm địa chỉ lần đầu tới 1,3 s, sau đó dưới 100 ms.
 - Tải nặng hơn (3 store, mỗi store 5 tài xế và plan 100 điểm): 3 store tối ưu cùng lúc, mỗi plan 13,9 s, request khác trong lúc đó dưới 100 ms. Sau đó 5 phút giao hàng với 12 tài xế gửi vị trí mỗi 10 s, tải tuyến mỗi 30 s, báo kết quả khoảng 20 s một lần, và 3 dispatcher polling 5 s: không lỗi 5xx; p50 dưới 25 ms, p95 dưới 200 ms trừ tải tuyến của tài xế (690 ms) và tìm địa chỉ mới (4,5 s, khi nhiều request dồn vào 1 CPU); RAM tiến trình đỉnh 1,65 GB, không OOM.
-- Phần dư khoảng 350–500 MB phải đủ cho hệ điều hành và dockerd của VPS, nên **bật swap 1–2 GB** làm đệm (lệnh ở §7.2 bước 1). Không chạy vùng lớn hơn một thành phố trên máy này.
+- **VPS 2 GB thật** còn khoảng 1,75 GB cho container: Ubuntu kèm Docker, ufw, ufw-docker và CrowdSec dùng sẵn ~270 MB khi chưa chạy container. Đo lại với giới hạn 1.776 MB, không swap, bật các giới hạn RAM ở khối cuối `.env.prod.example` (`JAVA_OPTS=-Xmx384m …`, `MARIADB_INNODB_BUFFER_POOL_SIZE=64M`, `shared_buffers` Nominatim 128 MB), cài routing trước rồi mới bật app: routing sẵn sàng sau 8 phút (đỉnh 670 MB), app healthy sau 92 s, RAM tiến trình lúc nghỉ 1,37 GB. Cùng bài tải nặng: không lỗi 5xx, không OOM, đỉnh **1,68 GB**; 3 store tối ưu cùng lúc 12,4 s; p95 dưới 300 ms trừ tìm địa chỉ mới (2,4 s) và bật chia sẻ vị trí (0,4 s).
+- Phần dư chỉ còn ~100 MB và page cache gần như hết, nên trên VPS 2 GB **bắt buộc bật swap 2 GB** (lệnh ở §7.2 bước 1) và dùng các giới hạn RAM trên. Các giới hạn này chặn RAM tăng dần theo thời gian chạy (heap JVM, cache InnoDB, PostgreSQL), chứ không làm số đo lúc tải nhỏ đi đáng kể. Không chạy vùng lớn hơn một thành phố trên máy này; nhiều store hơn thì lên 4 GB hoặc tách routing.
 
 Chọn chỗ chạy:
 
@@ -160,7 +161,7 @@ Hai số này phải nằm xa dưới timeout đọc của app (10 s).
 
 ### 7.3 Cùng máy với app
 
-Copy thêm `compose.routing.yaml` vào thư mục của môi trường, `.env` như trên nhưng `ROUTING_MATRIX_OSRM_BASEURL=http://osrm:5000`, `ROUTING_GEOCODING_NOMINATIM_BASEURL=http://nominatim:8080` (mạng nội bộ của compose), giữ `ROUTING_BIND=127.0.0.1`. Mọi lệnh ở §2–§6 thêm `-f compose.routing.yaml`. Dev làm tương tự với `compose.yaml` (`.env.example`).
+Lần cài đầu trên máy nhỏ, chạy routing trước để import Nominatim không tranh RAM với app: `docker compose -f compose.routing.yaml up -d`, chờ `docker compose -f compose.routing.yaml ps` báo `nominatim` `healthy`, rồi mới chạy lệnh ghép bên dưới. Copy thêm `compose.routing.yaml` vào thư mục của môi trường, `.env` như trên nhưng `ROUTING_MATRIX_OSRM_BASEURL=http://osrm:5000`, `ROUTING_GEOCODING_NOMINATIM_BASEURL=http://nominatim:8080` (mạng nội bộ của compose), giữ `ROUTING_BIND=127.0.0.1`. Mọi lệnh ở §2–§6 thêm `-f compose.routing.yaml`. Dev làm tương tự với `compose.yaml` (`.env.example`).
 
 ### 7.4 Đổi vùng và cập nhật dữ liệu bản đồ
 
