@@ -676,6 +676,16 @@
   flex-basis: 0;
   flex-shrink: 1;
 }
+.pw-track-loc {
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ink-muted);
+}
+.pw-track-loc-none {
+  font-style: italic;
+}
 .pw-track-reason {
   margin-top: 4px;
   font-size: 12px;

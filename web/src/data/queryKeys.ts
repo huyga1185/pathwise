@@ -11,4 +11,5 @@ export const queryKeys = {
   plans: (filter: { date?: string; status?: string; page: number }) => ['plans', filter] as const,
   plansAll: ['plans'] as const,
   plan: (id: number) => ['plan', id] as const,
+  driverLocations: (planId: number) => ['driver-locations', planId] as const,
 };

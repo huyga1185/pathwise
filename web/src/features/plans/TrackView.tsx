@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { Link } from 'react-router';
-import { RouteMap } from '@/platform/map';
-import { formatDateLong, formatTime } from '@/shared/format';
+import { DriverIcon, RouteMap, routeColour, type MapDriver } from '@/platform/map';
+import { formatDateLong, formatPhone, formatTime } from '@/shared/format';
 import { vi } from '@/shared/i18n/vi';
 import { Button, buttonClass, StatusPill } from '@/shared/ui';
 import { CancelDialog } from './PlanDialogs';
-import { allStops, type PlanDetail, type PlanStop } from './planApi';
+import { allStops, useDriverLocations, type DriverLocation, type PlanDetail, type PlanStop } from './planApi';
 import { describeSelection } from './ResultView';
 import {
   driverName,
@@ -19,6 +19,9 @@ import {
 } from './planShared';
 
 const t = vi.track;
+const loc = vi.location;
+/** Selection id of a driver marker; stops are selected by their numeric id. */
+const driverKey = (routeId: number) => `driver-${routeId}`;
 const OUTCOMES = ['DELIVERED', 'FAILED', 'SKIPPED', 'PENDING'] as const;
 type Outcome = (typeof OUTCOMES)[number];
 
@@ -31,16 +34,80 @@ function countByResult(stops: PlanStop[]): Record<Outcome, number> {
   return count;
 }
 
+function minutesAgo(instant: string, now: number): string {
+  return loc.ago(Math.max(0, Math.floor((now - Date.parse(instant)) / 60_000)));
+}
+
+/**
+ * The line under a route's progress (prototype "Theo dõi — vị trí tài xế"): when its position was updated, or why
+ * there is none, from the state the driver's app reported (P-53). Nothing for a finished route.
+ */
+function locationLine(route: PlanRoute, found: DriverLocation | undefined, timeZone: string, now: number) {
+  if (route.status === 'COMPLETED') return null;
+  if (found?.location) {
+    const { recordedAt } = found.location;
+    return { located: true, text: loc.updated(minutesAgo(recordedAt, now), formatTime(recordedAt, timeZone)) };
+  }
+  const state = found?.sharing?.state;
+  const why = state && state !== 'SHARING' ? loc.why[state](driverName(route)) : loc.why.NO_SIGNAL();
+  const phone = route.driver.phoneNumber ? ` · ${loc.call(formatPhone(route.driver.phoneNumber))}` : '';
+  return { located: false, text: why + phone };
+}
+
+/** What the line under the map says about a selected driver. */
+function describeDriver(route: PlanRoute, found: DriverLocation, timeZone: string, now: number) {
+  const position = found.location;
+  if (!position) return null;
+  const ago = minutesAgo(position.recordedAt, now);
+  const next = route.stops.find((stop) => stop.status === 'PENDING');
+  const speed =
+    position.speedMps === null
+      ? ''
+      : position.speedMps === 0
+        ? loc.still
+        : loc.speed(Math.round(position.speedMps * 3.6));
+  return {
+    title: loc.title(driverName(route), route.vehicle.name, formatTime(position.recordedAt, timeZone), ago),
+    detail: [
+      position.accuracyMeters === null ? '' : loc.accuracy(Math.round(position.accuracyMeters)),
+      speed,
+      next ? loc.next(stopTitle(next)) : '',
+    ]
+      .filter(Boolean)
+      .join(' · '),
+  };
+}
+
 /**
  * Prototype "Theo dõi tiến độ" (SCREENS §1.1): counts by result, one block per route with the server's route status
  * (`routes[].status`, T45: never worked out here), a bar split by result, the reason of a failed stop, the map coloured
- * by result. The page reads the plan again every 30 s while it is being delivered (planApi). A cancelled plan shows
- * the same view with a notice.
+ * by result. The page reads the plan again every 30 s while it is being delivered (planApi), and where the drivers
+ * are (T32): an arrow per driver on the map, a line per route. A cancelled plan shows the same view with a notice.
  */
 export function TrackView({ plan, updatedAt }: { plan: PlanDetail; updatedAt: number }) {
-  const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [selectedId, setSelectedId] = useState<number | string | null>(null);
   const [cancelling, setCancelling] = useState(false);
   const live = plan.status === 'PUBLISHED' || plan.status === 'IN_PROGRESS';
+  const locationsQuery = useDriverLocations(plan.id, live);
+  // Unknown until read: no line rather than "no position" while loading or when the request failed.
+  const locations = live ? (locationsQuery.data ?? null) : null;
+  // "4 phút trước" counts from when the positions were read, like the page's "cập nhật lúc".
+  const now = locationsQuery.dataUpdatedAt;
+  const locationOf = (route: PlanRoute) => locations?.find((found) => found.routeId === route.id);
+  const drivers: MapDriver[] = plan.routes.flatMap((route, index) => {
+    const position = locationOf(route)?.location;
+    if (!position || route.status === 'COMPLETED') return [];
+    return [
+      {
+        id: driverKey(route.id),
+        routeIndex: index,
+        lat: position.lat,
+        lon: position.lon,
+        headingDegrees: position.headingDegrees,
+        label: loc.marker(driverName(route), route.vehicle.name, minutesAgo(position.recordedAt, now)),
+      },
+    ];
+  });
   const routed = plan.routes.flatMap((route) => route.stops);
   const total = countByResult(routed);
   const infeasible = plan.unassignedStops.filter((stop) => stop.dropReason === 'INFEASIBLE');
@@ -53,6 +120,10 @@ export function TrackView({ plan, updatedAt }: { plan: PlanDetail; updatedAt: nu
   const { routes, unassigned } = mapData(plan, true);
   const selection = describeSelection(plan, allStops(plan).find((stop) => stop.id === selectedId) ?? null);
   const selected = allStops(plan).find((stop) => stop.id === selectedId);
+  const selectedRoute = plan.routes.find((route) => driverKey(route.id) === selectedId);
+  const selectedLocation = selectedRoute ? locationOf(selectedRoute) : undefined;
+  const driverSelection =
+    selectedRoute && selectedLocation ? describeDriver(selectedRoute, selectedLocation, plan.timezone, now) : null;
 
   return (
     <section className="pw-page-section" aria-labelledby="plan-title">
@@ -123,6 +194,7 @@ export function TrackView({ plan, updatedAt }: { plan: PlanDetail; updatedAt: nu
               timeZone={plan.timezone}
               selectedId={selectedId}
               onSelect={setSelectedId}
+              location={locations ? locationLine(route, locationOf(route), plan.timezone, now) : null}
             />
           ))}
         </div>
@@ -131,12 +203,18 @@ export function TrackView({ plan, updatedAt }: { plan: PlanDetail; updatedAt: nu
             depot={{ lat: plan.depot.lat, lon: plan.depot.lon }}
             routes={routes}
             unassigned={unassigned}
+            drivers={drivers}
             selectedId={selectedId}
-            onSelect={(id) => setSelectedId(Number(id))}
+            onSelect={(id) => setSelectedId(typeof id === 'string' && id.startsWith('driver-') ? id : Number(id))}
             labels={MAP_LABELS}
           />
           <div role="status" className="pw-map-selection">
-            {selection && selected ? (
+            {driverSelection ? (
+              <>
+                <strong>{driverSelection.title}</strong>
+                <span className="pw-muted">{driverSelection.detail}</span>
+              </>
+            ) : selection && selected ? (
               <>
                 <strong>{selection.title}</strong>
                 <span className="pw-muted">
@@ -166,6 +244,12 @@ export function TrackView({ plan, updatedAt }: { plan: PlanDetail; updatedAt: nu
               <span className="pw-dot pw-seg-skip" aria-hidden="true" />
               {t.part.SKIPPED}
             </li>
+            {live ? (
+              <li>
+                <DriverIcon />
+                {loc.legend}
+              </li>
+            ) : null}
           </ul>
         </section>
       </div>
@@ -186,12 +270,14 @@ function TrackRoute({
   timeZone,
   selectedId,
   onSelect,
+  location,
 }: {
   route: PlanRoute;
   index: number;
   timeZone: string;
-  selectedId: number | null;
+  selectedId: number | string | null;
   onSelect: (id: number) => void;
+  location: { located: boolean; text: string } | null;
 }) {
   const count = countByResult(route.stops);
   const parts = OUTCOMES.filter((outcome) => outcome === 'DELIVERED' || count[outcome] > 0).map((outcome) =>
@@ -223,6 +309,12 @@ function TrackRoute({
           )}
         </div>
         <p className="pw-muted pw-tabular">{parts.join(' · ')}</p>
+        {location ? (
+          <p className={location.located ? 'pw-track-loc' : 'pw-track-loc pw-track-loc-none'}>
+            {location.located ? <DriverArrow index={index} /> : null}
+            {location.text}
+          </p>
+        ) : null}
       </div>
       <div className="pw-table-wrap pw-route-table">
         <table className="pw-table">
@@ -275,5 +367,15 @@ function TrackRoute({
         </table>
       </div>
     </section>
+  );
+}
+
+/** The map's driver marker, small, in the route's colour (prototype route block). */
+function DriverArrow({ index }: { index: number }) {
+  return (
+    <svg viewBox="0 0 40 40" width="18" height="18" aria-hidden="true" focusable="false">
+      <circle className={`pw-fill-r${routeColour(index)}`} cx="20" cy="20" r="18" stroke="#ffffff" strokeWidth="2.5" />
+      <path d="M20 8.5L28.5 30L20 25L11.5 30Z" fill="#ffffff" />
+    </svg>
   );
 }

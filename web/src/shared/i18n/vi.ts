@@ -462,7 +462,8 @@ export const vi = {
     done: 'Đã huỷ kế hoạch.',
   },
   track: {
-    live: (date: string, time: string) => `${date} · Tự tải lại mỗi 30 giây · cập nhật lúc ${time}`,
+    live: (date: string, time: string) =>
+      `${date} · Tự tải lại mỗi 30 giây (kết quả và vị trí tài xế) · cập nhật lúc ${time}`,
     ended: (date: string) => `${date} · Kế hoạch đã kết thúc: mọi điểm giao đều đã có kết quả.`,
     results: 'Kết quả',
     delivered: (done: number, total: number) => `${done} / ${total} điểm`,
@@ -478,6 +479,25 @@ export const vi = {
     reason: (text: string) => `Lý do: ${text}`,
     mapLabel: 'Bản đồ kết quả',
     pickHint: 'Chọn một điểm để xem kết quả.',
+  },
+  location: {
+    legend: 'Vị trí tài xế (mũi tên chỉ hướng đi)',
+    ago: (minutes: number) => (minutes < 1 ? 'vừa xong' : `${minutes} phút trước`),
+    updated: (ago: string, time: string) => `Vị trí cập nhật ${ago} (${time})`,
+    marker: (driver: string, vehicle: string, ago: string) => `${driver} · ${vehicle}, vị trí cập nhật ${ago}`,
+    title: (driver: string, vehicle: string, time: string, ago: string) =>
+      `${driver} · ${vehicle} · vị trí lúc ${time} (${ago})`,
+    accuracy: (meters: number) => `Sai số khoảng ${meters} m`,
+    speed: (kmh: number) => `${kmh} km/h`,
+    still: 'đang đứng yên',
+    next: (stop: string) => `điểm tiếp theo: ${stop}`,
+    why: {
+      DECLINED: (driver: string) => `${driver} tắt chia sẻ vị trí cho tuyến này`,
+      NO_PERMISSION: (driver: string) => `Máy của ${driver} chưa cho PathWise dùng vị trí`,
+      GPS_OFF: (driver: string) => `GPS trên máy của ${driver} đang tắt`,
+      NO_SIGNAL: () => 'Chưa có vị trí trong 10 phút qua (có thể mất sóng)',
+    },
+    call: (phone: string) => `gọi ${phone} để nhắc`,
   },
   theme: { toggle: 'Đổi giao diện sáng/tối', light: 'Sáng', dark: 'Tối', system: 'Theo hệ thống' },
   pages: {
