@@ -26,6 +26,37 @@ abstract final class Vi {
   static const logoutBody = 'Bạn cần đăng nhập lại để xem tuyến của mình.';
   static String accountMenu(String name) => '$name — tài khoản và giao diện';
   static const appearance = 'Giao diện';
+  // Location sharing (T32, P-54; prototype "Tài xế — chia sẻ vị trí").
+  static const shareAskTitle = 'Chia sẻ vị trí cho tuyến này?';
+  static String shareAskBody(String plan) =>
+      'Trong lúc giao tuyến $plan, PathWise gửi vị trí của bạn cho điều phối viên của cửa hàng, kể cả khi bạn đang '
+      'mở Google Maps để chỉ đường. App tự dừng khi tuyến xong hoặc bạn đăng xuất.';
+  static const shareRemember = 'Ghi nhớ lựa chọn, không hỏi lại';
+  static const shareRememberHint = 'Đổi lại trong menu tài khoản (chạm chữ viết tắt tên).';
+  static const shareConfirm = 'Chia sẻ vị trí';
+  static const shareDecline = 'Không chia sẻ';
+  static const sharingOn = 'Đang chia sẻ vị trí với điều phối viên';
+  static const sharingDeclinedTitle = 'Bạn đang không chia sẻ vị trí cho tuyến này.';
+  static const sharingDeclinedBody = 'Điều phối viên thấy "tài xế tắt chia sẻ vị trí". Bật lại lúc nào cũng được.';
+  static const sharingEnable = 'Bật chia sẻ vị trí';
+  static const sharingDeniedTitle = 'Chưa chia sẻ vị trí.';
+  static const sharingDeniedBody = 'Máy chưa cho PathWise dùng vị trí nên điều phối viên không thấy bạn trên bản đồ.';
+  static const sharingDeniedForeverBody =
+      'Máy chưa cho PathWise dùng vị trí nên điều phối viên không thấy bạn trên bản đồ. Trong cài đặt, cho phép '
+      'PathWise dùng vị trí.';
+  static const openSettings = 'Mở cài đặt';
+  static const gpsOffTitle = 'Định vị (GPS) đang tắt.';
+  static const gpsOffBody = 'Bật định vị để điều phối viên thấy bạn trên bản đồ.';
+  static const gpsTurnOn = 'Bật định vị';
+  static const sharingNotificationTitle = 'Đang chia sẻ vị trí';
+  static String sharingNotificationText(String plan) => 'Tuyến $plan. Tự dừng khi tuyến xong hoặc bạn đăng xuất.';
+  static const sharingSetting = 'Chia sẻ vị trí khi giao';
+  static const shareChoiceAsk = 'Hỏi khi bắt đầu mỗi tuyến';
+  static const shareChoiceAskHint = 'Mặc định';
+  static const shareChoiceAlways = 'Luôn chia sẻ';
+  static const shareChoiceAlwaysHint = 'Không hỏi, tự bật khi mở tuyến đang giao';
+  static const shareChoiceNever = 'Không chia sẻ';
+  static const shareChoiceNeverHint = 'Không hỏi; bật riêng từng tuyến ở chi tiết tuyến';
   static const themeSystem = 'Theo máy';
   static const themeLight = 'Sáng';
   static const themeDark = 'Tối';
