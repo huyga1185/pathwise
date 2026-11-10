@@ -1,0 +1,26 @@
+{
+  "data": [
+    {
+      "routeId": 63,
+      "driverId": 451,
+      "location": {
+        "lat": 16.0605,
+        "lon": 108.1985,
+        "accuracyMeters": 12.0,
+        "headingDegrees": 90.0,
+        "speedMps": 7.8,
+        "recordedAt": "2026-12-01T04:01:20Z"
+      },
+      "sharing": null
+    },
+    {
+      "routeId": 64,
+      "driverId": 452,
+      "location": null,
+      "sharing": {
+        "state": "DECLINED",
+        "updatedAt": "2026-12-01T03:40:05.335626Z"
+      }
+    }
+  ]
+}

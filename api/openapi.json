@@ -171,6 +171,23 @@
         ],
         "type": "object"
       },
+      "ApiResponseListDriverLocationResponse": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/DriverLocationResponse"
+            },
+            "type": "array"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "type": "object"
+      },
       "ApiResponseListDriverRouteSummaryResponse": {
         "properties": {
           "data": {
@@ -617,6 +634,12 @@
             "format": "int64",
             "type": "integer"
           },
+          "phoneNumber": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "role": {
             "enum": [
               "ADMIN",
@@ -630,7 +653,93 @@
         "required": [
           "fullName",
           "id",
+          "phoneNumber",
           "role"
+        ],
+        "type": "object"
+      },
+      "DriverLocationResponse": {
+        "properties": {
+          "driverId": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "location": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DriverPosition"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "routeId": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "sharing": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DriverSharing"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "driverId",
+          "location",
+          "routeId",
+          "sharing"
+        ],
+        "type": "object"
+      },
+      "DriverPosition": {
+        "properties": {
+          "accuracyMeters": {
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "headingDegrees": {
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "lat": {
+            "format": "double",
+            "type": "number"
+          },
+          "lon": {
+            "format": "double",
+            "type": "number"
+          },
+          "recordedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "speedMps": {
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "accuracyMeters",
+          "headingDegrees",
+          "lat",
+          "lon",
+          "recordedAt",
+          "speedMps"
         ],
         "type": "object"
       },
@@ -742,6 +851,28 @@
           "status",
           "stopCount",
           "timezone"
+        ],
+        "type": "object"
+      },
+      "DriverSharing": {
+        "properties": {
+          "state": {
+            "enum": [
+              "SHARING",
+              "DECLINED",
+              "NO_PERMISSION",
+              "GPS_OFF"
+            ],
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "state",
+          "updatedAt"
         ],
         "type": "object"
       },
@@ -1108,6 +1239,64 @@
           "startedAt",
           "status",
           "type"
+        ],
+        "type": "object"
+      },
+      "LocationBatchRequest": {
+        "properties": {
+          "points": {
+            "items": {
+              "$ref": "#/components/schemas/LocationPointRequest"
+            },
+            "maxItems": 100,
+            "minItems": 0,
+            "type": "array"
+          }
+        },
+        "required": [
+          "points"
+        ],
+        "type": "object"
+      },
+      "LocationPointRequest": {
+        "properties": {
+          "accuracyMeters": {
+            "format": "double",
+            "minimum": 0,
+            "type": "number"
+          },
+          "headingDegrees": {
+            "exclusiveMaximum": 360,
+            "format": "double",
+            "minimum": 0,
+            "type": "number"
+          },
+          "lat": {
+            "format": "double",
+            "maximum": 90,
+            "minimum": -90,
+            "type": "number"
+          },
+          "lon": {
+            "format": "double",
+            "maximum": 180,
+            "minimum": -180,
+            "type": "number"
+          },
+          "recordedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "speedMps": {
+            "format": "double",
+            "minimum": 0,
+            "type": "number"
+          }
+        },
+        "required": [
+          "lat",
+          "lon",
+          "recordedAt"
         ],
         "type": "object"
       },
@@ -2184,6 +2373,28 @@
         ],
         "type": "object"
       },
+      "UpdateLocationSharingRequest": {
+        "properties": {
+          "routeId": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "state": {
+            "enum": [
+              "SHARING",
+              "DECLINED",
+              "NO_PERMISSION",
+              "GPS_OFF"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "routeId",
+          "state"
+        ],
+        "type": "object"
+      },
       "UpdateMemberRequest": {
         "properties": {
           "canDrive": {
@@ -2882,6 +3093,52 @@
         ]
       }
     },
+    "/api/v1/driver/location": {
+      "post": {
+        "operationId": "recordLocations",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LocationBatchRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        },
+        "tags": [
+          "driver-location-controller"
+        ]
+      }
+    },
+    "/api/v1/driver/location/sharing": {
+      "put": {
+        "operationId": "updateSharing",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateLocationSharingRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        },
+        "tags": [
+          "driver-location-controller"
+        ]
+      }
+    },
     "/api/v1/driver/routes": {
       "get": {
         "operationId": "listRoutes",
@@ -3333,6 +3590,37 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiResponsePlanDetailResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "plan-controller"
+        ]
+      }
+    },
+    "/api/v1/plans/{id}/driver-locations": {
+      "get": {
+        "operationId": "driverLocations",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseListDriverLocationResponse"
                 }
               }
             },

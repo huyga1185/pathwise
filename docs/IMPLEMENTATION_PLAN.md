@@ -456,6 +456,14 @@ T42 cũ (Docker, compose, README) đã được gộp vào T05 và T07 trong M0 
 - **Ước lượng:** 1 ngày · **Quyết định:** D-08, D-26, P-15 · **FR:** D04
 - **Phạm vi:** `POST /driver/location` nhận lô `points` (D-26); `DriverLocationService` đẩy vào danh sách `LocationSink`, MVP có `LastKnownLocationSink` (Redis TTL 10 phút, bỏ qua điểm cũ hơn); `GET /plans/{id}/driver-locations`; chỉ DRIVER đang có route trong plan PUBLISHED hoặc IN_PROGRESS mới hiển thị.
 - **Acceptance criteria:** gửi lô 3 điểm lộn thứ tự → lưu điểm `recordedAt` mới nhất; lô sau có điểm cũ hơn điểm đang lưu → không ghi đè; vị trí cũ hơn 10 phút không trả về; DISPATCHER store khác → 404; validate lat/lon.
+- **Phát sinh khi chuẩn bị (2026-11-10):** chủ dự án yêu cầu làm T32 cùng phần client (web W09, app M04 trong `docs/client/PLAN.md`) trên một branch `task/T32-driver-location`, mỗi phần một commit, một PR. Thiết kế đã duyệt trên prototype (artboard "Theo dõi — vị trí tài xế (T32)" và "Tài xế — chia sẻ vị trí (T32)"); quyết định P-53 (API) và P-54 (app). Phạm vi backend thêm:
+  1. `POST /driver/location` (D-26) như trên, thêm: bỏ qua điểm có `recordedAt` muộn hơn giờ server quá 2 phút hoặc sớm hơn 10 phút (vẫn 204); TTL key = 10 phút tính từ `recordedAt` của điểm lưu; ghi "chỉ khi mới hơn" bằng Lua (atomic, như `ReserveThrottleSlot.lua`).
+  2. `PUT /driver/location/sharing {routeId, state}` (P-53): 204; route không thấy được → 404; plan COMPLETED/CANCELLED → 422 `PLAN_NOT_ACTIVE`; Redis `driver:sharing:{storeId}:{driverId}` TTL 12 giờ.
+  3. `GET /plans/{id}/driver-locations` (O, D): mỗi route có stop một phần tử `{routeId, driverId, location, sharing}` theo thứ tự `PlanDetail.routes`; plan không PUBLISHED/IN_PROGRESS → `[]`; plan store khác → 404.
+  4. `PlanDetail.routes[].driver.phoneNumber` (E.164, `@Nullable`) lấy từ `StoreMemberQuery.findMembers`.
+  5. Lớp: `DriverLocationController` (`/driver/location`), `DriverLocationService` → danh sách `LocationSink` (`LastKnownLocationSink`), Redis store `DriverLocationStore`/`LocationSharingStore` ở `planning/store/` (interface + `RedisXxx`, ARCHITECTURE §9). Không thêm `ErrorCode`, không migration.
+  6. OpenAPI (`scripts/sync_openapi.sh`), sinh lại client web/mobile, mẫu `docs/ux/samples/plan-driver-locations.json` (+ `phoneNumber` trong mẫu plan detail).
+- **Acceptance criteria bổ sung:** điểm ở tương lai quá 2 phút không lưu và không chặn điểm thật sau đó; `PUT sharing` route của tài xế khác hay store khác → 404, plan COMPLETED → 422; `driver-locations` trả `sharing` chỉ cho đúng route, `location: null` khi hết hạn; tenant isolation cho cả ba endpoint; `./mvnw test` xanh.
 
 ### T33. Turn-by-turn directions
 - **Ước lượng:** 1,5 ngày · **Quyết định:** D-07 · **FR:** D05

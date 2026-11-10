@@ -280,10 +280,11 @@ Chọn implementation bằng property (`routing.geocoding.provider=nominatim`), 
 
 ## 9. Vị trí tài xế (P-15, D-26)
 
-- `POST /driver/location {points:[…]}` → `DriverLocationService` → danh sách `LocationSink`.
-- MVP có một sink, `LastKnownLocationSink`: ghi điểm có `recordedAt` mới nhất vào Redis `driver:location:{storeId}:{driverId}` (TTL 10 phút), bỏ qua điểm cũ hơn điểm đang lưu.
-- Mở rộng sau này (I-05): thêm `LocationHistorySink` ghi lịch sử vào DB hoặc time-series. Không đổi API hay client, vì client đã gửi đủ chuỗi điểm.
-- Dispatcher đọc vị trí của người được gán route trong plan PUBLISHED hoặc IN_PROGRESS.
+- `POST /driver/location {points:[…]}` → `DriverLocationService` (bỏ điểm có `recordedAt` muộn hơn giờ server quá 2 phút, sắp theo thời gian, P-53) → mọi bean `LocationSink` (`planning.service.location`).
+- MVP có một sink, `LastKnownLocationSink`: lấy điểm mới nhất của lô, bỏ nếu cũ hơn 10 phút (`MAX_AGE`), ghi qua `DriverLocationStore` (`planning.store`, `RedisDriverLocationStore`) vào Redis `driver:location:{storeId}:{driverId}`, TTL = 10 phút tính từ `recordedAt`. So sánh và ghi trong `scripts/SaveLatestLocation.lua` (atomic): điểm không mới hơn điểm đang lưu thì không ghi đè.
+- Trạng thái chia sẻ (P-53): `PUT /driver/location/sharing` → `DriverLocationService.updateSharing` kiểm route như `GET /driver/routes/{id}` rồi ghi `LocationSharingStore` (`RedisLocationSharingStore`, `driver:sharing:{storeId}:{driverId}`, TTL 12 giờ). Ghi Redis nằm trong transaction chỉ-đọc của bước kiểm route; không có lời gọi dịch vụ ngoài.
+- Mở rộng sau này (I-05): thêm `LocationHistorySink` ghi lịch sử vào DB hoặc time-series. Sink nhận cả điểm cũ (chỉ điểm "ở tương lai" bị bỏ trước), nên không đổi API hay client.
+- Dispatcher đọc `GET /plans/{id}/driver-locations` (`DriverLocationService.planLocations`): plan PUBLISHED hoặc IN_PROGRESS, mỗi route có stop một phần tử với vị trí cuối của tài xế (bỏ nếu cũ hơn 10 phút) và trạng thái chia sẻ nếu thuộc đúng route.
 - Realtime push để sau (I-04).
 
 ## 10. Cấu hình & bảo mật vận hành

@@ -20,13 +20,16 @@ import uk.huy.pathwise.job.dto.JobResponse;
 import uk.huy.pathwise.planning.dto.request.PatchStopRequest;
 import uk.huy.pathwise.planning.dto.request.PlanDraftRequest;
 import uk.huy.pathwise.planning.dto.request.PlanVersionRequest;
+import uk.huy.pathwise.planning.dto.response.DriverLocationResponse;
 import uk.huy.pathwise.planning.dto.response.PlanDetailResponse;
 import uk.huy.pathwise.planning.dto.response.PlanSummaryResponse;
 import uk.huy.pathwise.planning.model.PlanStatus;
+import uk.huy.pathwise.planning.service.DriverLocationService;
 import uk.huy.pathwise.planning.service.PlanService;
 import uk.huy.pathwise.shared.identity.AuthenticatedUser;
 
 import java.time.LocalDate;
+import java.util.List;
 
 /**
  * Plan drafts of the caller's store (API_SPEC §7). OWNER and DISPATCHER only (ARCHITECTURE.md §6.3).
@@ -37,6 +40,7 @@ import java.time.LocalDate;
 @PreAuthorize("hasAnyRole('OWNER', 'DISPATCHER')")
 public class PlanController {
     private final PlanService planService;
+    private final DriverLocationService driverLocationService;
 
     @ResponseStatus(HttpStatus.CREATED)
     @PostMapping
@@ -116,5 +120,11 @@ public class PlanController {
                                                                       @PathVariable("id") long planId,
                                                                       @Valid @RequestBody PlanVersionRequest request) {
         return ResponseEntity.ok(new ApiResponse<>(planService.cancelPlan(actor.identity(), planId, request)));
+    }
+
+    @GetMapping("/{id}/driver-locations")
+    public ResponseEntity<ApiResponse<List<DriverLocationResponse>>> driverLocations(@AuthenticationPrincipal AuthenticatedUser actor,
+                                                                                     @PathVariable("id") long planId) {
+        return ResponseEntity.ok(new ApiResponse<>(driverLocationService.planLocations(actor.identity(), planId)));
     }
 }

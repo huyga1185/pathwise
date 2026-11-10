@@ -201,7 +201,8 @@ Index `(status, created_at)`, `(store_id, target_id)`. Tên ràng buộc trong V
 | `ratelimit:{rule}:{sha256(subject)}` | số request trong window; `rule` như `log-in-email`, subject là IP, email chuẩn hoá, userId hoặc storeId (T40, P-37). Lua `FixedWindowRateLimit.lua` tăng và đặt TTL trong một bước | = window, tính từ request đầu tiên (`rate-limit.rules.<rule>.window`) | core |
 | `geocode:nominatim:{sha256(normalizedQuery + "|" + limit)}` | JSON danh sách `{displayName, lat, lon}` (cả danh sách rỗng); query chuẩn hoá = trim, gộp khoảng trắng, chữ thường | `routing.geocoding.cache-ttl` (24 h) | routing |
 | `geocode:nominatim:next-slot` | thời điểm (ms, đồng hồ Redis) slot trống kế tiếp; Lua `ReserveThrottleSlot.lua` đặt slot theo thứ tự đến (P-11) | hết khi slot cuối đã đặt kết thúc (`chờ + 1000 / per-second` ms) | routing |
-| `driver:location:{storeId}:{driverId}` | JSON vị trí | 10 phút | planning |
+| `driver:location:{storeId}:{driverId}` | hash: `t` = `recordedAt` (epoch ms), `v` = JSON `{lat, lon, accuracyMeters, headingDegrees, speedMps, recordedAt}`; Lua `SaveLatestLocation.lua` chỉ ghi khi điểm mới hơn (T32) | 10 phút tính từ `recordedAt` | planning |
+| `driver:sharing:{storeId}:{driverId}` | JSON `{routeId, state, updatedAt}`, `state` là `SHARING`/`DECLINED`/`NO_PERMISSION`/`GPS_OFF` (P-53, T32) | 12 giờ | planning |
 | `directions:route:{routeId}:{planVersion}` (Should) | JSON geometry/steps | 24 h | planning |
 
 Key OTP dùng **userId** (T12), không dùng email. OTP bị xoá khi đúng (dùng một lần) hoặc khi sai đủ `otp.max-attempts` (mặc định 3) lần.

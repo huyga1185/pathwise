@@ -9,6 +9,7 @@ import 'package:pathwise_api/src/auth/bearer_auth.dart';
 import 'package:pathwise_api/src/auth/oauth.dart';
 import 'package:pathwise_api/src/api/admin_user_controller_api.dart';
 import 'package:pathwise_api/src/api/auth_controller_api.dart';
+import 'package:pathwise_api/src/api/driver_location_controller_api.dart';
 import 'package:pathwise_api/src/api/driver_route_controller_api.dart';
 import 'package:pathwise_api/src/api/geocoding_controller_api.dart';
 import 'package:pathwise_api/src/api/invitation_controller_api.dart';
@@ -81,6 +82,12 @@ class PathwiseApi {
   /// by doing that all interceptors will not be executed
   AuthControllerApi getAuthControllerApi() {
     return AuthControllerApi(dio);
+  }
+
+  /// Get DriverLocationControllerApi instance, base route and serializer can be overridden by a given but be careful,
+  /// by doing that all interceptors will not be executed
+  DriverLocationControllerApi getDriverLocationControllerApi() {
+    return DriverLocationControllerApi(dio);
   }
 
   /// Get DriverRouteControllerApi instance, base route and serializer can be overridden by a given but be careful,

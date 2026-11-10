@@ -76,7 +76,7 @@ Mỗi user thuộc tối đa 1 store và có đúng 1 role (D-02). OWNER hoặc 
 | FR-D01 | Tài xế xem các route được giao (theo ngày) và chi tiết route: stop theo thứ tự, toạ độ, ETA, time window, liên hệ, ghi chú. | Must | ✅ (T30): `GET /driver/routes`, `GET /driver/routes/{routeId}`; trạng thái stop đổi bằng API của T31 |
 | FR-D02 | Dữ liệu đủ để app mở Google/Apple Maps dẫn đường tới stop kế tiếp (deep link). | Must | ✅ (T30): stop có `lat`/`lon`, app tự dựng deep link (P-32) |
 | FR-D03 | Cập nhật trạng thái stop: DELIVERED / FAILED (bắt buộc lý do) / SKIPPED; dispatcher thấy ngay khi tải lại. | Must | ✅ (T31): `PATCH /driver/routes/{routeId}/stops/{stopId}/status`; plan tự chuyển IN_PROGRESS/COMPLETED (BR-11) |
-| FR-D04 | Gửi vị trí định kỳ (15–30 s) theo **lô điểm** (gom được các điểm bị mất mạng); dispatcher xem vị trí cuối của các tài xế đang chạy plan. Thiết kế mở rộng được sang lưu lịch sử (D-26). | Should¹ | ❌ |
+| FR-D04 | Gửi vị trí định kỳ (15–30 s) theo **lô điểm** (gom được các điểm bị mất mạng); dispatcher xem vị trí cuối của các tài xế đang chạy plan. Thiết kế mở rộng được sang lưu lịch sử (D-26). | Should¹ | ✅ (T32, W09, M04): `POST /driver/location`, `GET /plans/{id}/driver-locations`, thêm trạng thái chia sẻ `PUT /driver/location/sharing` (P-53); app gửi cả khi chạy nền (P-54) |
 | FR-D05 | Turn-by-turn trong app: backend trả geometry + chỉ dẫn từng bước cho route. | Should (fallback FR-D02) | ❌ |
 
 ¹ Chủ dự án muốn làm polling ngay sau core (D-08); xếp Should vì phụ thuộc toàn bộ phần plan/driver.

@@ -32,9 +32,11 @@ public record PlanRouteResponse(long id,
                                 @Nullable Integer load,
                                 List<PlanStopResponse> stops) {
     /**
-     * Current name and role of the member, even if disabled since the assignment.
+     * Current name, role and phone number of the member, even if disabled since the assignment.
+     *
+     * @param phoneNumber E.164, for the dispatcher to call (P-53); null if the member has none
      */
-    public record Driver(long id, @Nullable String fullName, UserRole role) {}
+    public record Driver(long id, @Nullable String fullName, UserRole role, @Nullable String phoneNumber) {}
 
     /**
      * Current name of the vehicle; {@code capacity} and {@code capacityUnit} are the snapshot of the assignment.
