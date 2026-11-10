@@ -110,11 +110,17 @@ Số đo trên máy dev (AMD Ryzen 5 PRO 4650U, mỗi container giới hạn 1 C
 
 Thời gian phục vụ (vùng mặc định, 1 CPU): `/table` 100 điểm khoảng 0,18 s, `/search` khoảng 0,7 s; app cache kết quả tìm địa chỉ 24 h. Lần khởi động sau chỉ mất vài giây vì dữ liệu nằm trong volume.
 
+**Cả app và routing trên một VPS 1 vCPU, 2 GB RAM** (đo bằng Docker-in-Docker giới hạn `--cpus 1 --memory 2g`, không swap, chạy `compose.prod.yaml` + `compose.routing.yaml` với image `develop`, vùng mặc định, `JAVA_OPTS=-XX:MaxRAM=2g`): **chạy được nhưng sát**.
+- Một lệnh `up -d` cho cả stack: cắt vùng 100 s, dựng OSRM 87 s, Nominatim sẵn sàng sau 7,5 phút; không container nào bị OOM. RAM tiến trình đỉnh 1,4 GB lúc import, 1,5 GB lúc tải.
+- RAM khi chạy: app ~590 MB, Nominatim ~700 MB, MariaDB ~130 MB, OSRM ~75 MB, Redis ~10 MB.
+- Plan 100 điểm, 3 tài xế: geocode 50 địa chỉ 6 s; tối ưu 11,6 s (giới hạn thời gian của solver là 10 s); trong lúc tối ưu, request khác của dispatcher trung bình 225 ms, chậm nhất 2,6 s. Tìm địa chỉ lần đầu tới 1,3 s, sau đó dưới 100 ms.
+- Phần dư khoảng 500 MB phải đủ cho hệ điều hành và dockerd của VPS, nên **bật swap 1–2 GB** làm đệm (lệnh ở §7.2 bước 1). Không chạy vùng lớn hơn một thành phố trên máy này.
+
 Chọn chỗ chạy:
 
 | Máy | Cách chạy |
 |---|---|
-| VPS của app còn trống từ 1 GB RAM (vùng một thành phố) | Chạy cùng app (§7.3). |
+| VPS của app từ 2 GB RAM, vùng một thành phố | Chạy cùng app (§7.3), có swap. |
 | VPS của app không còn RAM, hoặc vùng lớn | Máy routing riêng (§7.2), nối qua **mạng riêng** của nhà cung cấp (VPC/private network) hoặc WireGuard. 1 vCPU đủ cho một thành phố. |
 
 Máy 1 vCPU: đặt `OSRM_THREADS=1` và `NOMINATIM_THREADS=1`. Đo trên máy thật sau khi deploy (thay địa chỉ cho phù hợp):
@@ -135,6 +141,7 @@ Hai số này phải nằm xa dưới timeout đọc của app (10 s).
    OSRM_THREADS=1                  # máy 1 vCPU
    NOMINATIM_THREADS=1
    ```
+   Máy ít RAM thì bật swap trước khi chạy: `fallocate -l 2G /swapfile && chmod 600 /swapfile && mkswap /swapfile && swapon /swapfile`, thêm `/swapfile none swap sw 0 0` vào `/etc/fstab`.
    OSRM và Nominatim không có xác thực. Docker mở cổng không qua `ufw`, nên chỉ được publish trên IP mạng riêng/VPN; nếu bắt buộc dùng IP công khai thì phải chặn bằng chain `DOCKER-USER` của iptables, chỉ cho IP của VPS app.
 2. `docker compose -f compose.routing.yaml up -d`. Lần đầu: `routing-data` tải file cả nước rồi cắt vùng, `osrm-prepare` dựng đồ thị rồi thoát, `osrm` chạy; `nominatim` import (theo dõi bằng `docker compose -f compose.routing.yaml logs -f nominatim`, xong khi log có `Nominatim is ready to accept requests` và `docker compose ps` báo `healthy`). Dòng `Control server error: ... '/root/.gunicorn'` trong log Nominatim là của image, không ảnh hưởng API.
 3. Kiểm tra từ VPS app:

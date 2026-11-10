@@ -28,7 +28,7 @@ services:
           echo "extract for $${BBOX} ready"; exit 0
         fi
         apt-get update -qq
-        DEBIAN_FRONTEND=noninteractive apt-get install -y -qq curl ca-certificates osmium-tool >/dev/null
+        DEBIAN_FRONTEND=noninteractive apt-get install -y -qq curl ca-certificates osmctools >/dev/null
         if [ ! -s /data/country.osm.pbf ]; then
           curl -fL --retry 5 -o /data/country.osm.pbf.part "$${PBF_URL}"
           mv /data/country.osm.pbf.part /data/country.osm.pbf
@@ -36,7 +36,11 @@ services:
         if [ "$${BBOX}" = none ]; then
           cp /data/country.osm.pbf /data/region.osm.pbf.part
         else
-          osmium extract --overwrite -s smart -b "$${BBOX}" -f pbf -o /data/region.osm.pbf.part /data/country.osm.pbf
+          # osmconvert with a bounded hash: ~0.7 GB peak for the Vietnam file. osmium extract keeps a bitmap over
+          # every node id (~1.9 GB peak) and was killed on a 2 GB host. A small hash may keep a few extra objects
+          # from outside the area, which is harmless.
+          osmconvert /data/country.osm.pbf -b="$${BBOX}" --complete-ways --hash-memory=100 --out-pbf \
+            -o=/data/region.osm.pbf.part
         fi
         mv /data/region.osm.pbf.part /data/region.osm.pbf
         echo "$${BBOX}" > /data/region.bbox
