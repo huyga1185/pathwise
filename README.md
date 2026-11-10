@@ -30,6 +30,16 @@ App được build từ `be/Dockerfile` (multi-stage), chạy bằng user không
 
 Dừng: `docker compose --profile app down`. Thêm `-v` để xoá luôn dữ liệu MariaDB và Redis.
 
+## OSRM và Nominatim tự host (tuỳ chọn)
+
+Mặc định app gọi server công khai của OSRM và Nominatim (chỉ hợp cho dev/demo). Chạy bản tự host với dữ liệu OpenStreetMap cắt theo vùng `ROUTING_BBOX` (mặc định Đà Nẵng và Hội An):
+
+```bash
+docker compose -f compose.yaml -f compose.routing.yaml up -d   # lần đầu: tải ~330 MB, cắt vùng, dựng OSRM, import Nominatim
+```
+
+Rồi trỏ app vào `http://localhost:5000` (OSRM) và `http://localhost:8088` (Nominatim), tắt rate limit của Nominatim: biến ở `.env.example`. Prod và máy routing riêng: `docs/DEPLOYMENT.md` §7.
+
 ## Chạy test
 
 ```bash
