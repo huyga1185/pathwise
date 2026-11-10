@@ -42,6 +42,8 @@ services:
           osmconvert /data/country.osm.pbf -b="$${BBOX}" --complete-ways --hash-memory=100 --out-pbf \
             -o=/data/region.osm.pbf.part
         fi
+        # osmconvert creates its output as 0600; Nominatim reads the file as its own user.
+        chmod 644 /data/region.osm.pbf.part
         mv /data/region.osm.pbf.part /data/region.osm.pbf
         echo "$${BBOX}" > /data/region.bbox
     environment:
