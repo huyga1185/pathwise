@@ -114,7 +114,8 @@ Thời gian phục vụ (vùng mặc định, 1 CPU): `/table` 100 điểm kho�
 - Một lệnh `up -d` cho cả stack: cắt vùng 100 s, dựng OSRM 87 s, Nominatim sẵn sàng sau 7,5 phút; không container nào bị OOM. RAM tiến trình đỉnh 1,4 GB lúc import, 1,5 GB lúc tải.
 - RAM khi chạy: app ~590 MB, Nominatim ~700 MB, MariaDB ~130 MB, OSRM ~75 MB, Redis ~10 MB.
 - Plan 100 điểm, 3 tài xế: geocode 50 địa chỉ 6 s; tối ưu 11,6 s (giới hạn thời gian của solver là 10 s); trong lúc tối ưu, request khác của dispatcher trung bình 225 ms, chậm nhất 2,6 s. Tìm địa chỉ lần đầu tới 1,3 s, sau đó dưới 100 ms.
-- Phần dư khoảng 500 MB phải đủ cho hệ điều hành và dockerd của VPS, nên **bật swap 1–2 GB** làm đệm (lệnh ở §7.2 bước 1). Không chạy vùng lớn hơn một thành phố trên máy này.
+- Tải nặng hơn (3 store, mỗi store 5 tài xế và plan 100 điểm): 3 store tối ưu cùng lúc, mỗi plan 13,9 s, request khác trong lúc đó dưới 100 ms. Sau đó 5 phút giao hàng với 12 tài xế gửi vị trí mỗi 10 s, tải tuyến mỗi 30 s, báo kết quả khoảng 20 s một lần, và 3 dispatcher polling 5 s: không lỗi 5xx; p50 dưới 25 ms, p95 dưới 200 ms trừ tải tuyến của tài xế (690 ms) và tìm địa chỉ mới (4,5 s, khi nhiều request dồn vào 1 CPU); RAM tiến trình đỉnh 1,65 GB, không OOM.
+- Phần dư khoảng 350–500 MB phải đủ cho hệ điều hành và dockerd của VPS, nên **bật swap 1–2 GB** làm đệm (lệnh ở §7.2 bước 1). Không chạy vùng lớn hơn một thành phố trên máy này.
 
 Chọn chỗ chạy:
 
