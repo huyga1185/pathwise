@@ -123,7 +123,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('ĐIỂM TIẾP THEO'), findsOneWidget);
-    expect(server.requests.last.path, '/api/v1/driver/routes/64');
+    // Then the sharing state of the route (T32).
+    expect(server.requests.map((request) => request.path), contains('/api/v1/driver/routes/64'));
   });
 
   testWidgets('chữ viết tắt tên mở menu tài khoản; "Đăng xuất" hỏi lại rồi đăng xuất', (tester) async {

@@ -4,6 +4,7 @@ import '../data/api_client.dart';
 import '../platform/clock.dart';
 import '../platform/config.dart';
 import '../platform/launcher.dart';
+import '../platform/location.dart';
 import '../platform/preferences.dart';
 import '../platform/token_store.dart';
 
@@ -21,3 +22,5 @@ final clockProvider = Provider<Clock>((ref) => const SystemClock());
 final launcherProvider = Provider<Launcher>((ref) => const UrlLauncher());
 
 final preferencesProvider = Provider<Preferences>((ref) => SharedPreferencesStore());
+
+final locationSourceProvider = Provider<LocationSource>((ref) => const GeolocatorLocationSource());

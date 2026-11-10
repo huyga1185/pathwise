@@ -56,7 +56,8 @@ class OpenApiNullabilityIntegrationTest extends AbstractIntegrationTest {
             Map.entry("user-me", "get /api/v1/users/me 200"),
             Map.entry("driver-route-list", "get /api/v1/driver/routes 200"),
             Map.entry("driver-route-detail", "get /api/v1/driver/routes/{routeId} 200"),
-            Map.entry("driver-stop-status-update", "patch /api/v1/driver/routes/{routeId}/stops/{stopId}/status 200"));
+            Map.entry("driver-stop-status-update", "patch /api/v1/driver/routes/{routeId}/stops/{stopId}/status 200"),
+            Map.entry("plan-driver-locations", "get /api/v1/plans/{id}/driver-locations 200"));
 
     @Autowired
     private MockMvc mockMvc;
@@ -108,6 +109,8 @@ class OpenApiNullabilityIntegrationTest extends AbstractIntegrationTest {
         assertThat(responses("delete", "/api/v1/auth/sessions/{sessionId}")).containsOnlyKeys("204");
         assertThat(responses("post", "/api/v1/plans/{id}/optimize")).containsOnlyKeys("202");
         assertThat(responses("get", "/api/v1/plans/{id}")).containsOnlyKeys("200");
+        assertThat(responses("post", "/api/v1/driver/location")).containsOnlyKeys("204");
+        assertThat(responses("put", "/api/v1/driver/location/sharing")).containsOnlyKeys("204");
     }
 
     @Test

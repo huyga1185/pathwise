@@ -22,6 +22,7 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.time.LocalTime;
 import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -135,6 +136,20 @@ class MvpScenarioIntegrationTest extends AbstractIntegrationTest {
         // Drivers report their stops: the plan moves to IN_PROGRESS, then COMPLETED.
         long routeA = driverRouteId(driverA);
         long routeB = driverRouteId(driverB);
+
+        // Driver A's app sends a batch of positions; driver B chooses not to share (T32, P-53). The dispatcher sees
+        // A's newest point and B's reason.
+        Instant now = Instant.now().truncatedTo(ChronoUnit.SECONDS);
+        call(post("/api/v1/driver/location"), driverA, "{\"points\":["
+                + point(16.0601, 108.1979, now.minusSeconds(60)) + "," + point(16.0605, 108.1985, now.minusSeconds(30)) + "]}")
+                .andExpect(status().isNoContent());
+        call(put("/api/v1/driver/location/sharing"), driverB, "{\"routeId\":" + routeB + ",\"state\":\"DECLINED\"}")
+                .andExpect(status().isNoContent());
+        String locations = body(get("/api/v1/plans/" + planId + "/driver-locations"), dispatcher);
+        assertThat(JsonPath.<List<Integer>>read(locations, "$.data[*].routeId")).containsExactlyInAnyOrder((int) routeA, (int) routeB);
+        assertThat(JsonPath.<List<Double>>read(locations, "$.data[?(@.routeId == " + routeA + ")].location.lat")).containsExactly(16.0605);
+        assertThat(JsonPath.<List<String>>read(locations, "$.data[?(@.routeId == " + routeB + ")].sharing.state")).containsExactly("DECLINED");
+        sample("plan-driver-locations", locations);
         String first = updateStop(driverA, routeA, stopsOfA.getFirst(), "{\"status\":\"DELIVERED\"}");
         assertThat((String) JsonPath.read(first, "$.data.planStatus")).isEqualTo("IN_PROGRESS");
         sample("driver-stop-status-update", first);
@@ -269,6 +284,11 @@ class MvpScenarioIntegrationTest extends AbstractIntegrationTest {
     private long driverRouteId(String driver) throws Exception {
         String list = call(get("/api/v1/driver/routes?date=" + DAY), driver, null).andReturn().getResponse().getContentAsString();
         return ((Number) JsonPath.read(list, "$.data[0].routeId")).longValue();
+    }
+
+    private static String point(double lat, double lon, Instant recordedAt) {
+        return "{\"lat\":%s,\"lon\":%s,\"accuracyMeters\":12,\"headingDegrees\":90,\"speedMps\":7.8,\"recordedAt\":\"%s\"}"
+                .formatted(lat, lon, recordedAt);
     }
 
     private String updateStop(String driver, long routeId, long stopId, String body) throws Exception {

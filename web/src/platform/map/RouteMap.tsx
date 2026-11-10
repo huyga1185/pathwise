@@ -23,6 +23,17 @@ export interface MapRoute {
   stops: MapStop[];
 }
 
+/** Where the driver of a route is (T32): drawn in the route's colour, pointing where the driver is heading. */
+export interface MapDriver extends LatLng {
+  id: string | number;
+  /** Index of the driver's route in `routes`, for its colour. */
+  routeIndex: number;
+  /** Degrees clockwise from north; without it the marker has no arrow. */
+  headingDegrees?: number | null;
+  /** Accessible name ("Tài xế B · Xe 2, vị trí cập nhật 4 phút trước"). */
+  label: string;
+}
+
 export interface RouteMapLabels extends MapFrameLabels {
   depot: string;
   expand: string;
@@ -54,15 +65,47 @@ function stopIcon(stop: MapStop, colour: number | null, selected: boolean) {
   });
 }
 
+/** The white arrow of a driver marker (prototype "Theo dõi — vị trí tài xế"), pointing north before rotation. */
+const ARROW = 'M20 8.5L28.5 30L20 25L11.5 30Z';
+
+export function driverSvg(colour: number, headingDegrees?: number | null, size = 40): string {
+  const arrow =
+    typeof headingDegrees === 'number'
+      ? `<g transform="rotate(${Math.round(headingDegrees)} 20 20)"><path d="${ARROW}" fill="#ffffff" stroke="#ffffff" stroke-width="1.5" stroke-linejoin="round"/></g>`
+      : '<circle cx="20" cy="20" r="6" fill="#ffffff"/>';
+  return `<svg class="pw-driver-svg" viewBox="0 0 40 40" width="${size}" height="${size}" aria-hidden="true"><circle class="pw-driver-r${colour}" cx="20" cy="20" r="18" stroke="#ffffff" stroke-width="2.5"/>${arrow}</svg>`;
+}
+
+function driverIcon(driver: MapDriver, selected: boolean) {
+  return divIcon({
+    html: `<span data-theme="light" class="pw-driver${selected ? ' pw-driver-selected' : ''}">${driverSvg(routeColour(driver.routeIndex), driver.headingDegrees)}</span>`,
+    className: 'pw-driver-marker',
+    iconSize: [40, 40],
+    iconAnchor: [20, 20],
+  });
+}
+
+/** Legend swatch of driver positions: a grey marker with its arrow. */
+export function DriverIcon() {
+  return (
+    <svg viewBox="0 0 40 40" width="20" height="20" aria-hidden="true" className="pw-driver-legend">
+      <circle cx="20" cy="20" r="18" stroke="#ffffff" strokeWidth="2.5" />
+      <path d={ARROW} fill="#ffffff" />
+    </svg>
+  );
+}
+
 /**
  * Routes of a plan on the map (DESIGN_SYSTEM): stops numbered by `sequence` in the route's colour, straight lines from
  * the depot through the stops and back (the API has no road geometry yet), stops without a route apart, the depot,
  * a legend with the drivers' names, + / − and a button to make the map larger. Selecting a marker selects its row.
+ * `drivers` adds where each driver is (T32), above the stops; selecting one selects it like a stop.
  */
 export function RouteMap({
   depot,
   routes,
   unassigned = [],
+  drivers = [],
   selectedId,
   onSelect,
   labels,
@@ -70,6 +113,7 @@ export function RouteMap({
   depot: LatLng | null;
   routes: MapRoute[];
   unassigned?: MapStop[];
+  drivers?: MapDriver[];
   selectedId?: string | number | null;
   onSelect?: (id: string | number) => void;
   labels: RouteMapLabels;
@@ -142,6 +186,17 @@ export function RouteMap({
         {depot ? (
           <Marker position={[depot.lat, depot.lon]} icon={depotMarkerIcon} title={labels.depot} alt={labels.depot} />
         ) : null}
+        {drivers.map((driver) => (
+          <Marker
+            key={`driver-${driver.id}`}
+            position={[driver.lat, driver.lon]}
+            icon={driverIcon(driver, selectedId === driver.id)}
+            title={driver.label}
+            alt={driver.label}
+            zIndexOffset={1000}
+            eventHandlers={markerHandlers(driver.id)}
+          />
+        ))}
         <MapOverlay className="pw-map-actions">
           <button
             type="button"

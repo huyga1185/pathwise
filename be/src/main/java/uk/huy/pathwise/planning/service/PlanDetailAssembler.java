@@ -85,7 +85,8 @@ class PlanDetailAssembler {
                 // Missing only if the user or vehicle left the store's data, which the schema does not allow.
                 new PlanRouteResponse.Driver(route.getDriverId(),
                         driver == null ? null : driver.fullName(),
-                        driver == null ? null : driver.role()),
+                        driver == null ? null : driver.role(),
+                        driver == null ? null : driver.phoneNumber()),
                 new PlanRouteResponse.Vehicle(route.getVehicleId(),
                         vehicle == null ? null : vehicle.name(),
                         route.getVehicleCapacity(),

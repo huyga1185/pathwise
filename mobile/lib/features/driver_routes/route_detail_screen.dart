@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:pathwise_api/pathwise_api.dart';
 
 import '../../app/providers.dart';
+import '../../data/api_error.dart';
 import '../../shared/format.dart';
 import '../../shared/i18n/vi.dart';
 import '../../shared/status/status.dart';
@@ -13,13 +14,16 @@ import '../../shared/theme/theme.dart';
 import '../../shared/theme/tokens.g.dart';
 import '../../shared/ui/ui.dart';
 import 'directions.dart';
+import 'location_sharing.dart';
+import 'location_sharing_view.dart';
 import 'route_error.dart';
 import 'route_polling.dart';
 import 'routes_data.dart';
 
 /// "Tài xế — chi tiết tuyến" (SCREENS §2): the next stop stands out with "Gọi", "Chỉ đường" and "Báo kết quả", then
 /// the stops left, then the finished ones (collapsible, with the failure reason). Opened from the list or straight by
-/// id (T45). Read again every 30 s and when the app comes back (M02), so a cancelled plan shows.
+/// id (T45). Read again every 30 s and when the app comes back (M02), so a cancelled plan shows. Opening a route not
+/// finished starts sharing the driver's position, or asks first (T32, P-54); a finished or cancelled route stops it.
 class RouteDetailScreen extends ConsumerStatefulWidget {
   const RouteDetailScreen({super.key, required this.routeId});
 
@@ -31,9 +35,49 @@ class RouteDetailScreen extends ConsumerStatefulWidget {
 
 class _RouteDetailScreenState extends ConsumerState<RouteDetailScreen> with RoutePolling {
   bool _doneOpen = true;
+  bool _opened = false;
+  bool _asking = false;
+  late final AppLifecycleListener _sharingLifecycle;
+  late final ProviderSubscription<AsyncValue<DriverRouteDetailResponse>> _routeSubscription;
 
   @override
   int get pollRouteId => widget.routeId;
+
+  LocationSharingController get _sharing => ref.read(locationSharingProvider.notifier);
+
+  @override
+  void initState() {
+    super.initState();
+    // Back from the settings: the driver may have allowed the location or turned the GPS on.
+    _sharingLifecycle = AppLifecycleListener(onResume: () => unawaited(_sharing.recheck()));
+    _routeSubscription = ref.listenManual(driverRouteProvider(widget.routeId), (previous, next) {
+      final route = next.value;
+      if (next.error case ApiError(code: 'PLAN_NOT_ACTIVE')) {
+        _sharing.routeEnded(widget.routeId);
+      } else if (route != null && !next.isLoading) {
+        if (!_opened || route.status == DriverRouteDetailResponseStatusEnum.COMPLETED) unawaited(_openRoute(route));
+        _opened = true;
+      }
+    }, fireImmediately: true);
+  }
+
+  @override
+  void dispose() {
+    _sharingLifecycle.dispose();
+    _routeSubscription.close();
+    super.dispose();
+  }
+
+  Future<void> _openRoute(DriverRouteDetailResponse route) async {
+    await _sharing.openRoute(route);
+    final status = ref.read(locationSharingProvider);
+    if (!mounted || _asking || status.phase != SharingPhase.asking || status.routeId != route.routeId) return;
+    _asking = true;
+    final answer = await showShareDialog(context, route.planName);
+    _asking = false;
+    // Dismissed without an answer: asked again the next time the route opens.
+    if (answer != null) await _sharing.answer(share: answer.share, remember: answer.remember);
+  }
 
   Future<void> _open(Uri uri) async {
     final opened = await ref.read(launcherProvider).open(uri);
@@ -91,6 +135,10 @@ class _RouteDetailScreenState extends ConsumerState<RouteDetailScreen> with Rout
 
     return [
       PwProgressBar(label: Vi.stopsDone, value: done.length, max: route.stops.length),
+      if (ref.watch(locationSharingProvider).isFor(route.routeId)) ...[
+        const SizedBox(height: PwSpacing.space4),
+        LocationSharingBanner(routeId: route.routeId),
+      ],
       if (next != null) ...[
         gap,
         _SectionTitle(Vi.nextStop),

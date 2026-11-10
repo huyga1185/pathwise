@@ -69,7 +69,8 @@ Quy tắc cứng:
 | `AppConfig` | `import.meta.env.VITE_*` | `--dart-define` | Thêm môi trường |
 | `Clock` / định dạng giờ | `Intl` + timezone của store | `platform/clock.dart` (`Clock`, `SystemClock`; test dùng đồng hồ cố định) + `shared/format.dart` đổi giờ bằng package `timezone` theo `timezone` của plan (T47, P-50) | Hỗ trợ nhiều timezone |
 | `Launcher` (rời app: gọi điện, bản đồ, trình duyệt) | — (link thường) | `platform/launcher.dart` (`url_launcher`, `LaunchMode.externalApplication`); test dùng launcher giả ghi lại link. M03: "Quên mật khẩu", "Nhập mã mời" mở `AppConfig.webPage(...)` | Đổi cách mở app ngoài, thêm dẫn đường trong app (T33) |
-| `Preferences` (cài đặt nhỏ trên máy) | `PreferenceStore` (`localStorage`) | `platform/preferences.dart` (`shared_preferences`; theme, khoá `pw-theme` như web; không chứa token); test dùng `MemoryPreferences` | Đổi nơi lưu |
+| `Preferences` (cài đặt nhỏ trên máy) | `PreferenceStore` (`localStorage`) | `platform/preferences.dart` (`shared_preferences`; theme, khoá `pw-theme` như web; T32: `pw-location-sharing` = `ALWAYS`/`NEVER`, không có = hỏi, và `pw-location-route` = câu trả lời của tuyến gần nhất `routeId:1\|0`; không chứa token); test dùng `MemoryPreferences` | Đổi nơi lưu |
+| `LocationSource` (vị trí máy, T32) | — | `platform/location.dart` (`geolocator`, P-54): `check`/`request` quyền và GPS (`LocationAccess`), `watch` luồng `LocationFix` chạy nền (Android foreground service có thông báo cố định, iOS background location), `openAppSettings`/`openLocationSettings`; lỗi luồng là `LocationUnavailable`. Test dùng `FakeLocationSource` | Đổi thư viện vị trí, thêm lưu điểm khi app bị tắt |
 | `Messages` (chuỗi giao diện) | `shared/i18n/vi.ts` | `shared/i18n/vi.dart` | Thêm ngôn ngữ: thêm file, không sửa màn hình |
 
 Mỗi port là một `interface` (TS) hoặc `abstract interface class` (Dart). Code ngoài `platform/` chỉ phụ thuộc vào interface, implementation được chọn ở `app/` (composition root) theo cấu hình. Test thay implementation bằng fake.
@@ -198,7 +199,7 @@ Theo API_SPEC §2 và UX_BRIEF §3.
 
 ## 13. Mở rộng sau MVP (đã chừa chỗ)
 
-- Vị trí tài xế (T32): `mobile/platform/location` (port `LocationSource`), web thêm lớp marker tài xế trong `RouteMap`.
+- Vị trí tài xế (T32, đã làm): mobile có port `LocationSource` và `LocationSharingController` (`features/driver_routes/location_sharing.dart`: một tuyến chia sẻ tại một thời điểm, gom điểm trong bộ nhớ tối đa 100, gửi lô mỗi 30 s, báo trạng thái `PUT /driver/location/sharing`, dừng khi tuyến xong, `PLAN_NOT_ACTIVE` hoặc phiên kết thúc); web có prop `drivers` (`MapDriver`) của `RouteMap` và `useDriverLocations` (cùng nhịp 30 s với plan, chỉ khi đang giao). Lịch sử vị trí (I-05) chỉ thêm sink ở backend.
 - Dẫn đường trong app (T33): port `DirectionsSource` ở mobile, màn riêng; khi chưa có thì giữ deep link Google/Apple Maps.
 - Chỉnh tay tuyến (T28): `RouteMap` nhận chế độ kéo thả; logic nằm ở feature `plans`.
 - Client thứ ba: tạo thư mục mới cùng cấp, dùng lại `api/openapi.json`, `tokens.json`, quy tắc trong file này.

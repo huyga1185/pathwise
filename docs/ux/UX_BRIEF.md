@@ -51,7 +51,7 @@ Một người có `canDrive` dùng cả hai: web để điều phối, mobile �
 | Geocode | tự chạy khi lưu; `POST /plans/{id}/geocode` | §5.1. Stop `FAILED` cần nổi bật kèm lý do; sửa bằng địa chỉ mới hoặc kéo pin trên bản đồ. |
 | Tối ưu và kết quả | `POST /plans/{id}/optimize`, `GET /plans/{id}` | Mỗi route một màu trên bản đồ, danh sách stop theo `sequence` kèm ETA; tổng km/thời gian, tải/capacity mỗi xe; `unassignedStops` có `dropReason = INFEASIBLE` là cảnh báo, vẫn publish được. Optimize mất khoảng 10 s: hiện trạng thái đang tính. |
 | Publish, huỷ | `POST /plans/{id}/publish`, `/cancel` | `SHIFT_OVERLAP` chỉ ra phân công nào trùng ca với plan nào (`details[].conflictPlanId`, dẫn link sang plan đó). Huỷ được ở DRAFT và PUBLISHED. |
-| Theo dõi tiến độ | `GET /plans/{id}` (tải lại định kỳ) | Trạng thái từng stop và từng route; lý do thất bại. Không có realtime trong MVP. |
+| Theo dõi tiến độ | `GET /plans/{id}`, `GET /plans/{id}/driver-locations` (tải lại định kỳ, T32) | Trạng thái từng stop và từng route; lý do thất bại; vị trí cuối của tài xế (10 phút) hoặc lý do không có (tài xế tắt chia sẻ, chưa cấp quyền, GPS tắt, mất sóng) kèm số điện thoại `driver.phoneNumber` để gọi nhắc. Không có realtime trong MVP. |
 
 ### 4.2 Mobile (tài xế)
 
@@ -62,6 +62,7 @@ Một người có `canDrive` dùng cả hai: web để điều phối, mobile �
 | Chi tiết route | `GET /driver/routes/{routeId}` | Tiêu đề lấy `planName` của response (mở thẳng màn này vẫn có tên). Danh sách stop theo `sequence`: nhãn, người nhận (nút gọi), địa chỉ, ETA, time window, ghi chú, trạng thái. Stop kế tiếp nổi bật. |
 | Dẫn đường | không có endpoint | Nút mở Google Maps (`https://www.google.com/maps/dir/?api=1&destination={lat},{lon}`) hoặc Apple Maps (`https://maps.apple.com/?daddr={lat},{lon}`) theo nền tảng (D-07, FR-D02). |
 | Báo kết quả stop | `PATCH /driver/routes/{routeId}/stops/{stopId}/status` | Ba nút: Đã giao, Không giao được (bắt buộc lý do, ≤ 255 ký tự), Bỏ qua. **Không hoàn tác được** (P-34): cần bước xác nhận. Response có `routeStatus`, `planStatus` để báo "đã xong route". Mất mạng thì gửi lại cùng trạng thái: server trả 200 (idempotent). |
+| Chia sẻ vị trí (T32, P-53, P-54) | `PUT /driver/location/sharing`, `POST /driver/location` | Mặc định hỏi khi mở một tuyến chưa xong ("Chia sẻ vị trí cho tuyến này?", ô ghi nhớ); menu tài khoản chọn Hỏi / Luôn / Không (chỉ lưu trên máy). App báo trạng thái `SHARING`, `DECLINED`, `NO_PERMISSION`, `GPS_OFF` để dispatcher biết lý do; gửi lô điểm mỗi 30 giây kể cả khi chạy nền (thông báo cố định trên Android), dừng khi tuyến xong, plan hết chạy hoặc đăng xuất. |
 
 ## 5. Trạng thái cần thiết kế
 
@@ -153,7 +154,7 @@ Danh sách đầy đủ theo endpoint: API_SPEC §2–§8. Mã không có trong 
 
 ## 7. Ngoài phạm vi MVP (thiết kế chỗ trống, chưa có API)
 
-Vị trí tài xế trên bản đồ (T32), dẫn đường từng bước trong app (T33), kéo thả chỉnh route sau optimize (T28). Có thể thiết kế trước để giữ chỗ trong layout, đánh dấu "sắp có".
+Dẫn đường từng bước trong app (T33), kéo thả chỉnh route sau optimize (T28). Có thể thiết kế trước để giữ chỗ trong layout, đánh dấu "sắp có". Vị trí tài xế đã có từ T32 (§4.1, §4.2).
 
 ## 8. Dữ liệu mẫu (`docs/ux/samples`)
 

@@ -22,6 +22,8 @@ class Driver {
 
     required  this.id,
 
+    required  this.phoneNumber,
+
     required  this.role,
   });
 
@@ -51,6 +53,18 @@ class Driver {
 
   @JsonKey(
     
+    name: r'phoneNumber',
+    required: true,
+    includeIfNull: true,
+  )
+
+
+  final String? phoneNumber;
+
+
+
+  @JsonKey(
+    
     name: r'role',
     required: true,
     includeIfNull: false,
@@ -67,12 +81,14 @@ class Driver {
     bool operator ==(Object other) => identical(this, other) || other is Driver &&
       other.fullName == fullName &&
       other.id == id &&
+      other.phoneNumber == phoneNumber &&
       other.role == role;
 
     @override
     int get hashCode =>
         (fullName == null ? 0 : fullName.hashCode) +
         id.hashCode +
+        (phoneNumber == null ? 0 : phoneNumber.hashCode) +
         role.hashCode;
 
   factory Driver.fromJson(Map<String, dynamic> json) => _$DriverFromJson(json);
