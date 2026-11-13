@@ -156,6 +156,10 @@ Session = refresh token family (`family_id`). Đăng xuất = revoke family. "Đ
 
 Race đã biết (F-29): request refresh đồng thời trong grace 3 s có thể dẫn tới đăng xuất ở lần refresh sau. Chấp nhận trong MVP; client nên serialize refresh (một refresh tại một thời điểm).
 
+### 6.2a ADMIN đầu tiên (T59)
+
+`auth.service.AdminBootstrapService` chạy ở `ApplicationReadyEvent`: có `bootstrap.admin.email` (`BOOTSTRAP_ADMIN_EMAIL`) và chưa có ADMIN nào (`UserAccountService.adminExists`, tính cả ADMIN bị khoá) thì tạo một ADMIN đã xác thực qua `UserAccountService.createAdmin`. Không có mật khẩu thì dùng mật khẩu ngẫu nhiên (`OpaqueTokenGenerator`) và gửi OTP `RESET_PASSWORD` sau khi đã tạo (ngoài transaction). Cấu hình sai chỉ log lỗi, không dừng app; không bao giờ log mật khẩu. Nhiều instance cùng khởi động: unique email chặn bản thứ hai (`EMAIL_EXISTED`, log rồi bỏ qua).
+
 ### 6.3 Authorization (P-08)
 
 Hai lớp, **cả hai bắt buộc**:

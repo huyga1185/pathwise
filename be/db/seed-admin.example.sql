@@ -1,4 +1,5 @@
 -- Creates the first platform ADMIN (DATA_MODEL.md §5). Not run automatically.
+-- Prefer BOOTSTRAP_ADMIN_EMAIL (T59, docs/DEPLOYMENT.md §2): the app creates the ADMIN at startup. This file is the fallback.
 -- 1. Copy this file outside the repository and replace the email and the password hash.
 --    Generate a BCrypt hash, for example: htpasswd -bnBC 10 "" 'your-password' | tr -d ':\n' | sed 's/^\$2y/$2a/'
 -- 2. Run it against the database after Flyway has migrated it, e.g.:

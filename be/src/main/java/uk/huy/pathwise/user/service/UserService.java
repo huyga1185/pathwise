@@ -77,6 +77,28 @@ public class UserService implements UserAccountService, UserProfileService, Stor
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public boolean adminExists() {
+        return userRepository.existsByRole(UserRole.ADMIN);
+    }
+
+    @Override
+    @Transactional
+    public UserIdentity createAdmin(String email, String rawPassword, String fullName) {
+        String normalizedEmail = normalizeEmail(email);
+        checkUserEmailExisted(normalizedEmail);
+        User user = User.builder()
+                .email(normalizedEmail)
+                .password(passwordEncoder.encode(rawPassword))
+                .fullName(fullName)
+                .role(UserRole.ADMIN)
+                .status(UserStatus.ACTIVE)
+                .emailVerifiedAt(Instant.now())
+                .build();
+        return userMapper.toUserIdentity(userRepository.save(user));
+    }
+
+    @Override
     @Transactional
     public GetUserResponse updateUser(UserIdentity identity, UpdateProfileRequest request) {
         if (identity == null) throw new NullPointerException("Identity is null");

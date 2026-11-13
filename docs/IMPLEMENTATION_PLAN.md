@@ -540,6 +540,7 @@ ADMIN **không xem nội dung** của cửa hàng (plan, xe, điểm giao, ngư�
 - **Ước lượng:** 0,5 ngày · **Phụ thuộc:** —
 - **Phạm vi:** khi khởi động, nếu chưa có ADMIN nào và có biến `BOOTSTRAP_ADMIN_EMAIL` (+ mật khẩu lấy từ biến hoặc sinh ngẫu nhiên gửi qua email đặt lại mật khẩu) thì tạo một ADMIN đã xác thực; đã có ADMIN thì bỏ qua và log cảnh báo nếu biến còn đặt; không log mật khẩu. DEPLOYMENT hướng dẫn.
 - **Acceptance:** lần đầu tạo đúng một ADMIN; khởi động lại không tạo thêm; ADMIN đăng nhập được.
+- **Phát sinh khi làm (2026-11-14):** biến `BOOTSTRAP_ADMIN_EMAIL`, `BOOTSTRAP_ADMIN_PASSWORD` (8–72 ký tự, tuỳ chọn), `BOOTSTRAP_ADMIN_FULL_NAME` (mặc định `Admin`), cấu hình `bootstrap.admin.*`. Không có mật khẩu: mật khẩu ngẫu nhiên không ai biết, gửi ngay OTP đặt lại mật khẩu (hết hạn 5 phút; quá hạn thì dùng "Quên mật khẩu" như mọi tài khoản). Cấu hình sai (mật khẩu sai độ dài, email đã thuộc tài khoản khác) chỉ log lỗi và bỏ qua, không làm app dừng; "đã có ADMIN" tính cả ADMIN bị khoá. Code ở `auth` (`AdminBootstrapService`, chạy ở `ApplicationReadyEvent`), tạo user qua `UserAccountService.createAdmin`/`adminExists`.
 
 #### T55. Danh sách và chi tiết cửa hàng; sửa danh sách user
 - **Ước lượng:** 1 ngày · **Phụ thuộc:** T59
