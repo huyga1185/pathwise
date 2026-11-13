@@ -10,7 +10,7 @@ import org.springframework.test.context.ActiveProfiles;
 /**
  * Base class for integration tests: full application context against MariaDB and Redis
  * Testcontainers (requires Docker), with emails captured by {@link FakeEmailSender} and geocoding and travel matrices
- * answered by {@link FakeGeocodingProvider} and {@link FakeMatrixProvider}.
+ * answered by {@link FakeGeocodingProvider}, {@link FakeMatrixProvider} and {@link FakeDirectionsProvider}.
  */
 @SpringBootTest
 @ActiveProfiles("test")
@@ -34,6 +34,12 @@ public abstract class AbstractIntegrationTest {
         @Primary
         FakeMatrixProvider fakeMatrixProvider() {
             return new FakeMatrixProvider();
+        }
+
+        @Bean
+        @Primary
+        FakeDirectionsProvider fakeDirectionsProvider() {
+            return new FakeDirectionsProvider();
         }
     }
 }

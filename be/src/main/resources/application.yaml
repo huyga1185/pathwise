@@ -42,6 +42,15 @@ routing:
       max-table-size: 100
       connect-timeout: 3s
       read-timeout: 10s
+  directions:
+    provider: osrm
+    osrm:
+      # Same server as the matrix unless set (ROUTING_DIRECTIONS_OSRM_BASEURL); compose.routing.yaml serves both.
+      base-url: ${routing.matrix.osrm.base-url}
+      user-agent: PathWise/1.0 (https://huy-vu.uk/)
+      profile: driving
+      connect-timeout: 3s
+      read-timeout: 10s
   solver:
     provider: ortools
     # Guided local search runs until this limit, so every optimization takes this long (NFR-02: <= 15 s).
@@ -104,3 +113,5 @@ rate-limit:
     forgot-password-email: { limit: 5, window: 1h }
     change-password-otp-user: { limit: 5, window: 1h }
     create-invitation-store: { limit: 30, window: 1h }
+    # Turn-by-turn directions from the driver's position (T33, P-57): the app asks again only when off the route.
+    directions-user: { limit: 30, window: 5m }
