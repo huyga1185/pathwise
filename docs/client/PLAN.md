@@ -13,7 +13,7 @@ W00 ─┬─ W01 ─┬─ W02
      │       ├─ W03
      │       └─ W04 ── W05 ── W06 ── W07 ── W08 (sau khi chốt deploy)
      │                         └─ W09 (cần T32)
-     └─ M00 ── M01 ── M02 ── M03 ── M04 (cần T32)
+     └─ M00 ── M01 ── M02 ── M03 ── M04 (cần T32) ── M05 (cần T33)
 ```
 
 | Task | Phụ thuộc | Song song được với |
@@ -33,6 +33,7 @@ W00 ─┬─ W01 ─┬─ W02
 | M03 | M02 | W* |
 | W09 | W07, T32 | M04 (cùng branch T32) |
 | M04 | M03, T32 | W09 (cùng branch T32) |
+| M05 | M04, T33 | — (cùng branch T33) |
 
 File nóng của client (không hai task song song cùng sửa): `web/package.json`, `web/pnpm-lock.yaml`, `web/vite.config.ts`, `web/src/app/router.tsx`, `mobile/pubspec.yaml`, `mobile/pubspec.lock`, `mobile/lib/app/router.dart`, `api/openapi.json`, `brand/design-system/tokens.json`, cùng các file nóng của backend (`.github/**`, `compose*.yaml`…). Task song song mà phải thêm route/dependency thì bên merge sau rebase.
 
@@ -251,6 +252,19 @@ File nóng của client (không hai task song song cùng sửa): `web/package.js
   - `pumpApp` của test mặc định lựa chọn "Không chia sẻ" (`notSharing()`) và `FakeLocationSource`, để test của màn khác không bị hộp hỏi che; test chia sẻ truyền `MemoryPreferences` riêng. Test accessibility thêm hộp hỏi và ba khung báo ở hai theme.
   - Chưa kiểm trên máy thật: không có emulator; iOS chưa build được (không có macOS). Cách kiểm tay ghi trong `mobile/README.md`.
 
+### M05. Dẫn đường trong app (cùng T33)
+- **Ước lượng:** 3 ngày · **Màn:** Tài xế — dẫn đường (mới, làm thẳng theo design system, chủ dự án chọn không qua prototype) · **Quyết định:** P-57, D-07, P-44 (`flutter_map`), P-45 (basemap)
+- **Phạm vi:**
+  - `platform/map` của mobile: `basemap.dart` (contract `Basemap` như web: MapTiler theo `MAPTILER_KEY`, `osm()` chỉ khi debug, không key ở release thì nền trống), `NavigationMap` (chỉ file này import `flutter_map`/`latlong2`): vẽ polyline của chặng, điểm đích, vị trí tài xế (mũi tên theo hướng đi), bám theo vị trí, nút "Về vị trí của tôi" khi tài xế kéo bản đồ.
+  - Feature `navigation`: port `DirectionsSource` (gọi `GET /driver/routes/{routeId}/directions`, test dùng fake), `geometry.dart` (giải mã polyline6, khoảng cách điểm–đoạn, chiếu vị trí lên đường), `instructions.dart` (câu tiếng Việt từ `maneuver`, `roadName`, `exitNumber`; khoảng cách "400 m", "1,2 km"), `NavigationController` (Riverpod), `NavigationScreen` (route `/routes/:routeId/navigate`, `?stopId=` tuỳ chọn).
+  - Luồng: mở màn → kiểm quyền vị trí và GPS qua `LocationSource` (M04; không có quyền/GPS tắt → khung giải thích kèm "Bật định vị"/"Mở cài đặt" và "Mở Google Maps") → chờ điểm GPS đầu tiên (tối đa 15 s) → gọi directions → dẫn: chiếu vị trí lên polyline, bước hiện tại là thao tác kế tiếp phía trước; thanh trên cùng "Rẽ trái vào Nguyễn Văn Linh" + khoảng cách tới chỗ rẽ; thanh dưới quãng đường còn lại, thời gian, giờ tới dự kiến, nút "Mở Google Maps" (Apple Maps trên iOS) và "Báo kết quả".
+  - Lệch đường: cách polyline quá `max(50 m, độ chính xác GPS)` ở 3 điểm liên tiếp → "Đang tìm đường mới…" và gọi lại từ vị trí hiện tại; hai lần gọi cách nhau ít nhất 20 s. Tới nơi: cách đích ≤ 40 m → "Bạn đã tới …" và nút "Báo kết quả" (mở màn báo kết quả của điểm đó).
+  - Lỗi: 502, 429, mất mạng, hết 15 s chưa có GPS → khung "Không dẫn đường được lúc này" với "Thử lại" và "Mở Google Maps"; 422/404 như chi tiết tuyến. Không dừng chia sẻ vị trí (M04 chạy riêng).
+  - Lối vào: "Chỉ đường" ở điểm tiếp theo của chi tiết tuyến và ở màn báo kết quả mở màn dẫn đường (trước đây mở thẳng Google/Apple Maps; giờ nút mở bản đồ ngoài nằm trong màn dẫn đường).
+  - Giữ màn hình sáng khi màn dẫn đường đang mở, tắt khi rời màn: port `ScreenAwake` (`platform/screen_awake.dart`, bọc `wakelock_plus`; test dùng bản giả).
+  - Dependency: `flutter_map` (P-44), `latlong2` (kiểu toạ độ trong API của `flutter_map`), `wakelock_plus` (chủ dự án duyệt, P-57).
+- **Acceptance:** unit test giải mã polyline6 với chuỗi mẫu, chiếu vị trí và chọn bước hiện tại, phát hiện lệch đường (3 điểm, ngưỡng theo độ chính xác, không gọi lại trong 20 s), tới nơi; câu chỉ dẫn cho mọi `maneuver`; widget test màn dẫn đường với `DirectionsSource` và `LocationSource` giả (đang dẫn, lệch đường → gọi lại, tới nơi → "Báo kết quả", lỗi 502 → "Mở Google Maps", không có quyền vị trí); `flutter analyze`, `flutter test` xanh; APK debug build được. Kiểm trên máy thật khi có (ghi vào báo cáo nếu chưa).
+
 ## 4. Sau MVP (chưa lên lịch)
 
-Vị trí tài xế: xong ở T32/W09/M04 · dẫn đường trong app (cần T33) · chỉnh tay tuyến (cần T28) · thông báo đẩy · trang theo dõi đơn cho khách (client thứ ba) · đa ngôn ngữ.
+Vị trí tài xế: xong ở T32/W09/M04 · dẫn đường trong app: M05 (cùng T33) · chỉnh tay tuyến (cần T28) · thông báo đẩy · trang theo dõi đơn cho khách (client thứ ba) · đa ngôn ngữ.

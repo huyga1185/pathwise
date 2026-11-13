@@ -63,7 +63,7 @@ Quy tắc cứng:
 | Port (contract) | Web | Mobile | Đổi khi nào |
 |---|---|---|---|
 | `Basemap` (tile bản đồ) | `platform/map/basemap.ts` | `platform/map/basemap.dart` | Đổi nhà cung cấp tile (MapTiler → khác): thêm một factory, đổi biến cấu hình (P-45) |
-| `MapView` component (`RouteMap`, `PinMap`, icon kho; `PinPicker` ghép ở `shared/ui`) | Leaflet bên trong `platform/map/*` | flutter_map bên trong `platform/map/*` | Đổi thư viện bản đồ (Leaflet → MapLibre): chỉ viết lại component trong `platform/map` |
+| `MapView` component (`RouteMap`, `PinMap`, icon kho; `PinPicker` ghép ở `shared/ui`) | Leaflet bên trong `platform/map/*` | flutter_map bên trong `platform/map/*`: `NavigationMap` (M05, màn dẫn đường) | Đổi thư viện bản đồ (Leaflet → MapLibre): chỉ viết lại component trong `platform/map` |
 | `TokenStore` (giữ token) | bộ nhớ (access) + cookie HttpOnly (refresh, do server đặt) | `flutter_secure_storage` (refresh) + bộ nhớ (access) | Đổi cách lưu (P-46) |
 | `ApiClient` | bọc `openapi-fetch` | bọc client `dart-dio` sinh từ OpenAPI | Đổi thư viện HTTP: chỉ sửa `data/http` |
 | `AppConfig` | `platform/config.ts`: `window.__PATHWISE_CONFIG__` của `/app/config.js` (cấu hình lúc chạy của bản deploy, P-56) rồi `import.meta.env.VITE_*` | `--dart-define` | Thêm môi trường |
@@ -71,6 +71,8 @@ Quy tắc cứng:
 | `Launcher` (rời app: gọi điện, bản đồ, trình duyệt) | — (link thường) | `platform/launcher.dart` (`url_launcher`, `LaunchMode.externalApplication`); test dùng launcher giả ghi lại link. M03: "Quên mật khẩu", "Nhập mã mời" mở `AppConfig.webPage(...)` | Đổi cách mở app ngoài, thêm dẫn đường trong app (T33) |
 | `Preferences` (cài đặt nhỏ trên máy) | `PreferenceStore` (`localStorage`) | `platform/preferences.dart` (`shared_preferences`; theme, khoá `pw-theme` như web; T32: `pw-location-sharing` = `ALWAYS`/`NEVER`, không có = hỏi, và `pw-location-route` = câu trả lời của tuyến gần nhất `routeId:1\|0`; không chứa token); test dùng `MemoryPreferences` | Đổi nơi lưu |
 | `LocationSource` (vị trí máy, T32) | — | `platform/location.dart` (`geolocator`, P-54): `check`/`request` quyền và GPS (`LocationAccess`), `watch` luồng `LocationFix` chạy nền (Android foreground service có thông báo cố định, iOS background location), `openAppSettings`/`openLocationSettings`; lỗi luồng là `LocationUnavailable`. Test dùng `FakeLocationSource` | Đổi thư viện vị trí, thêm lưu điểm khi app bị tắt |
+| `DirectionsSource` (đường đi, T33) | — | `features/navigation/directions_source.dart`: `GET /driver/routes/{routeId}/directions` từ vị trí hiện tại (P-57), lỗi đổi sang kiểu lỗi của app; test dùng `FakeDirectionsSource` | Đổi nguồn đường đi (ví dụ tính trên máy) mà không sửa màn hình |
+| `ScreenAwake` (giữ màn hình sáng, M05) | — | `platform/screen_awake.dart` (`wakelock_plus`); bật khi màn dẫn đường mở, tắt khi rời màn; test dùng bản giả | Đổi thư viện |
 | `Messages` (chuỗi giao diện) | `shared/i18n/vi.ts` | `shared/i18n/vi.dart` | Thêm ngôn ngữ: thêm file, không sửa màn hình |
 
 Mỗi port là một `interface` (TS) hoặc `abstract interface class` (Dart). Code ngoài `platform/` chỉ phụ thuộc vào interface, implementation được chọn ở `app/` (composition root) theo cấu hình. Test thay implementation bằng fake.
@@ -200,6 +202,6 @@ Theo API_SPEC §2 và UX_BRIEF §3.
 ## 13. Mở rộng sau MVP (đã chừa chỗ)
 
 - Vị trí tài xế (T32, đã làm): mobile có port `LocationSource` và `LocationSharingController` (`features/driver_routes/location_sharing.dart`: một tuyến chia sẻ tại một thời điểm, gom điểm trong bộ nhớ tối đa 100, gửi lô mỗi 30 s, báo trạng thái `PUT /driver/location/sharing`, dừng khi tuyến xong, `PLAN_NOT_ACTIVE` hoặc phiên kết thúc); web có prop `drivers` (`MapDriver`) của `RouteMap` và `useDriverLocations` (cùng nhịp 30 s với plan, chỉ khi đang giao). Lịch sử vị trí (I-05) chỉ thêm sink ở backend.
-- Dẫn đường trong app (T33): port `DirectionsSource` ở mobile, màn riêng; khi chưa có thì giữ deep link Google/Apple Maps.
+- Dẫn đường trong app (T33, M05, P-57): port `DirectionsSource` ở mobile, feature `navigation`, `NavigationMap` trong `platform/map`; deep link Google/Apple Maps vẫn là đường lùi.
 - Chỉnh tay tuyến (T28): `RouteMap` nhận chế độ kéo thả; logic nằm ở feature `plans`.
 - Client thứ ba: tạo thư mục mới cùng cấp, dùng lại `api/openapi.json`, `tokens.json`, quy tắc trong file này.
