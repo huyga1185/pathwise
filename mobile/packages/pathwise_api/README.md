@@ -83,6 +83,8 @@ Class | Method | HTTP request | Description
 [*AuthControllerApi*](doc/AuthControllerApi.md) | [**revokeSession**](doc/AuthControllerApi.md#revokesession) | **DELETE** /api/v1/auth/sessions/{sessionId} | 
 [*AuthControllerApi*](doc/AuthControllerApi.md) | [**verifyEmail**](doc/AuthControllerApi.md#verifyemail) | **POST** /api/v1/auth/email/verify | 
 [*AuthControllerApi*](doc/AuthControllerApi.md) | [**verifyResetOtp**](doc/AuthControllerApi.md#verifyresetotp) | **POST** /api/v1/auth/password/reset/verify | 
+[*DriverLocationControllerApi*](doc/DriverLocationControllerApi.md) | [**recordLocations**](doc/DriverLocationControllerApi.md#recordlocations) | **POST** /api/v1/driver/location | 
+[*DriverLocationControllerApi*](doc/DriverLocationControllerApi.md) | [**updateSharing**](doc/DriverLocationControllerApi.md#updatesharing) | **PUT** /api/v1/driver/location/sharing | 
 [*DriverRouteControllerApi*](doc/DriverRouteControllerApi.md) | [**getRoute**](doc/DriverRouteControllerApi.md#getroute) | **GET** /api/v1/driver/routes/{routeId} | 
 [*DriverRouteControllerApi*](doc/DriverRouteControllerApi.md) | [**listRoutes**](doc/DriverRouteControllerApi.md#listroutes) | **GET** /api/v1/driver/routes | 
 [*DriverRouteControllerApi*](doc/DriverRouteControllerApi.md) | [**updateStopStatus**](doc/DriverRouteControllerApi.md#updatestopstatus) | **PATCH** /api/v1/driver/routes/{routeId}/stops/{stopId}/status | 
@@ -92,6 +94,7 @@ Class | Method | HTTP request | Description
 [*JobControllerApi*](doc/JobControllerApi.md) | [**getJob**](doc/JobControllerApi.md#getjob) | **GET** /api/v1/jobs/{id} | 
 [*PlanControllerApi*](doc/PlanControllerApi.md) | [**cancelPlan**](doc/PlanControllerApi.md#cancelplan) | **POST** /api/v1/plans/{id}/cancel | 
 [*PlanControllerApi*](doc/PlanControllerApi.md) | [**createPlan**](doc/PlanControllerApi.md#createplan) | **POST** /api/v1/plans | 
+[*PlanControllerApi*](doc/PlanControllerApi.md) | [**driverLocations**](doc/PlanControllerApi.md#driverlocations) | **GET** /api/v1/plans/{id}/driver-locations | 
 [*PlanControllerApi*](doc/PlanControllerApi.md) | [**geocodePlan**](doc/PlanControllerApi.md#geocodeplan) | **POST** /api/v1/plans/{id}/geocode | 
 [*PlanControllerApi*](doc/PlanControllerApi.md) | [**getPlan**](doc/PlanControllerApi.md#getplan) | **GET** /api/v1/plans/{id} | 
 [*PlanControllerApi*](doc/PlanControllerApi.md) | [**listPlans**](doc/PlanControllerApi.md#listplans) | **GET** /api/v1/plans | 
@@ -126,6 +129,7 @@ Class | Method | HTTP request | Description
  - [ApiResponseInvitationPreviewResponse](doc/ApiResponseInvitationPreviewResponse.md)
  - [ApiResponseInvitationResponse](doc/ApiResponseInvitationResponse.md)
  - [ApiResponseJobResponse](doc/ApiResponseJobResponse.md)
+ - [ApiResponseListDriverLocationResponse](doc/ApiResponseListDriverLocationResponse.md)
  - [ApiResponseListDriverRouteSummaryResponse](doc/ApiResponseListDriverRouteSummaryResponse.md)
  - [ApiResponseListInvitationResponse](doc/ApiResponseListInvitationResponse.md)
  - [ApiResponseListMemberResponse](doc/ApiResponseListMemberResponse.md)
@@ -149,8 +153,11 @@ Class | Method | HTTP request | Description
  - [DepotRequest](doc/DepotRequest.md)
  - [DepotResponse](doc/DepotResponse.md)
  - [Driver](doc/Driver.md)
+ - [DriverLocationResponse](doc/DriverLocationResponse.md)
+ - [DriverPosition](doc/DriverPosition.md)
  - [DriverRouteDetailResponse](doc/DriverRouteDetailResponse.md)
  - [DriverRouteSummaryResponse](doc/DriverRouteSummaryResponse.md)
+ - [DriverSharing](doc/DriverSharing.md)
  - [DriverStopResponse](doc/DriverStopResponse.md)
  - [DriverStopUpdateResponse](doc/DriverStopUpdateResponse.md)
  - [ForgotPasswordRequest](doc/ForgotPasswordRequest.md)
@@ -159,6 +166,8 @@ Class | Method | HTTP request | Description
  - [InvitationPreviewResponse](doc/InvitationPreviewResponse.md)
  - [InvitationResponse](doc/InvitationResponse.md)
  - [JobResponse](doc/JobResponse.md)
+ - [LocationBatchRequest](doc/LocationBatchRequest.md)
+ - [LocationPointRequest](doc/LocationPointRequest.md)
  - [LocationResponse](doc/LocationResponse.md)
  - [LogInRequest](doc/LogInRequest.md)
  - [MemberResponse](doc/MemberResponse.md)
@@ -185,6 +194,7 @@ Class | Method | HTTP request | Description
  - [TimeWindowRequest](doc/TimeWindowRequest.md)
  - [TimeWindowResponse](doc/TimeWindowResponse.md)
  - [UpdateCanDriveRequest](doc/UpdateCanDriveRequest.md)
+ - [UpdateLocationSharingRequest](doc/UpdateLocationSharingRequest.md)
  - [UpdateMemberRequest](doc/UpdateMemberRequest.md)
  - [UpdateProfileRequest](doc/UpdateProfileRequest.md)
  - [UpdateStopStatusRequest](doc/UpdateStopStatusRequest.md)

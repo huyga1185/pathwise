@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:pathwise_driver/platform/location.dart';
+import 'package:pathwise_driver/platform/preferences.dart';
+
 import 'features/stop_report_test.dart' show RouteServer, inDialog;
 import 'support/app.dart';
 import 'support/fake_api.dart';
+import 'support/location.dart';
 import 'support/routes.dart';
 
 /// M03 acceptance (docs/client/PLAN.md): on a small phone (360 × 640) with the system text at 130 %, every screen of
@@ -74,6 +78,33 @@ void main() {
       }, dark: dark);
     });
 
+    // T32: the question, then each box of the route detail (declined is the default of pumpApp).
+    testWidgets('hỏi chia sẻ vị trí ($theme)', (tester) async {
+      await check(tester, () async {
+        await pumpApp(tester, RouteServer(sampleRoute()).server, refreshToken: 'r', preferences: MemoryPreferences());
+        await goTo(tester, '/routes/64');
+      }, dark: dark);
+    });
+
+    for (final (name, access) in [
+      ('đang chia sẻ', LocationAccess.granted),
+      ('máy chưa cho dùng vị trí', LocationAccess.deniedForever),
+      ('GPS tắt', LocationAccess.serviceOff),
+    ]) {
+      testWidgets('chi tiết tuyến, $name ($theme)', (tester) async {
+        await check(tester, () async {
+          await pumpApp(
+            tester,
+            RouteServer(sampleRoute()).server,
+            refreshToken: 'r',
+            preferences: MemoryPreferences({'pw-location-sharing': 'ALWAYS'}),
+            location: FakeLocationSource(access: access),
+          );
+          await goTo(tester, '/routes/64');
+        }, dark: dark);
+      });
+    }
+
     testWidgets('chi tiết tuyến đang giao ($theme)', (tester) async {
       await check(
         tester,
@@ -84,7 +115,11 @@ void main() {
 
     testWidgets('chi tiết tuyến đã xong ($theme)', (tester) async {
       final all = {for (var sequence = 1; sequence <= 12; sequence++) sequence: ('DELIVERED', null)};
-      await check(tester, () => openRoute(tester, RouteServer(sampleRoute(finished: all, status: 'COMPLETED'))), dark: dark);
+      await check(
+        tester,
+        () => openRoute(tester, RouteServer(sampleRoute(finished: all, status: 'COMPLETED'))),
+        dark: dark,
+      );
     });
 
     testWidgets('báo kết quả ($theme)', (tester) async {

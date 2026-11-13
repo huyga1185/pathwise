@@ -7,6 +7,8 @@ services:
   mariadb:
     image: mariadb:11.8 # D-35
     restart: unless-stopped
+    # InnoDB cache; 64M on a 2 GB host that also runs compose.routing.yaml (docs/DEPLOYMENT.md §7.1).
+    command: ["--innodb-buffer-pool-size=${MARIADB_INNODB_BUFFER_POOL_SIZE:-128M}"]
     environment:
       MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD:?set in .env}
       MARIADB_DATABASE: ${MARIADB_DATABASE:-pathwise}

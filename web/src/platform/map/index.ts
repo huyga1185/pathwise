@@ -4,4 +4,13 @@ export { BasemapProvider, useBasemap } from './BasemapContext';
 export { DepotIcon } from './depotIcon';
 export { DEFAULT_CENTER, type LatLng, type MapFrameLabels } from './MapFrame';
 export { PinMap, type PinMapLabels } from './PinMap';
-export { RouteMap, routeColour, type MapRoute, type MapStop, type MarkerTone, type RouteMapLabels } from './RouteMap';
+export {
+  DriverIcon,
+  RouteMap,
+  routeColour,
+  type MapDriver,
+  type MapRoute,
+  type MapStop,
+  type MarkerTone,
+  type RouteMapLabels,
+} from './RouteMap';

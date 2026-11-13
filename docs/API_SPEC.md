@@ -5,11 +5,11 @@
 > Cột "Hiện trạng" ở mọi bảng: ✅ khớp spec và có test · 🟡 có nhưng còn lệch (ghi rõ lệch gì) · ❌ chưa có. Lịch sử triển khai theo task nằm ở `CURRENT_STATE.md` §5, không ghi ở đây.
 > Lần rà soát contract gần nhất: T44 (2026-10-29, P-32).
 
-## 0. Lệch hiện tại so với spec (cập nhật 2026-11-08, sau T48)
+## 0. Lệch hiện tại so với spec (cập nhật 2026-11-10, sau T32)
 
 - `GET /admin/users` chưa trả `storeId`, `status`.
-- §7: chưa có `driver-locations` (T32), `routes` (T28).
-- §8: chưa có `POST /driver/location` (T32), `directions` (T33).
+- §7: chưa có `routes` (T28).
+- §8: chưa có `directions` (T33).
 - Tài liệu OpenAPI sinh tự động (`/v3/api-docs` ở dev/staging; CI xuất artifact `api-contract` gồm `openapi.json` và dữ liệu mẫu) dùng để sinh code client; endpoint (method + path) được kiểm tự động khớp spec (`ApiSpecContractIntegrationTest`). Từ T46 (P-48): mã thành công đúng như spec (201, 202, 204); field response luôn có mặt là `required`, field có thể `null` có kiểu kèm `null`; field của request PATCH gửi `null` để xoá có kiểu kèm `null`. Response thật được kiểm khớp schema đó (`OpenApiNullabilityIntegrationTest`, trên `docs/ux/samples` và các response tài khoản). OpenAPI chưa mô tả response lỗi (dùng §1 và §9). Spec này vẫn là hợp đồng; hướng dẫn cho client ở `docs/ux/UX_BRIEF.md`.
 - Endpoint vận hành ngoài `/api/v1`, giữ có chủ đích: `GET /actuator/health` (kèm `/liveness`, `/readiness`), Public, chỉ trả `status` và tên các `groups` (T05, `ARCHITECTURE.md` §12.1). Mọi endpoint actuator khác tắt.
 
@@ -200,8 +200,22 @@ Ghi chú:
 | `POST /plans/{id}/optimize` | O, D | `{version}` | 202 `Job` (mode inline mặc định: job đã chạy xong khi trả về). Kết quả đọc qua `GET /plans/{id}`. | 404 · 409 `PLAN_MODIFIED`/`PLAN_BUSY` · 422 `PLAN_NOT_EDITABLE` · 422 `PLAN_INCOMPLETE` · 422 `STOPS_NOT_GEOCODED` · 422 `INVALID_ASSIGNMENT` | ✅ |
 | `POST /plans/{id}/publish` | O, D | `{version}` | 200 `PlanDetail` (PUBLISHED) | 404 · 409 `PLAN_MODIFIED`/`PLAN_BUSY` · 422 `PLAN_NOT_EDITABLE` · 422 `PLAN_NOT_OPTIMIZED` · 422 `INVALID_ASSIGNMENT` · 422 `SHIFT_OVERLAP` | ✅ |
 | `POST /plans/{id}/cancel` | O, D | `{version}` | 200 `PlanDetail` (CANCELLED) | 404 · 409 `PLAN_MODIFIED`/`PLAN_BUSY` · 422 `PLAN_NOT_CANCELLABLE` | ✅ |
-| `GET /plans/{id}/driver-locations` | O, D | — | `[{driverId, routeId, lat, lon, accuracyMeters, headingDegrees, speedMps, recordedAt}]` (Should) | 404 | ❌ T32 |
+| `GET /plans/{id}/driver-locations` | O, D | — | `DriverLocation[]` (xem dưới, P-53): mỗi route có stop một phần tử, theo thứ tự `routes`; plan không PUBLISHED/IN_PROGRESS → `[]` | 404 | ✅ |
 | `PUT /plans/{id}/routes` | O, D | `{version, routes:[{routeId, stopIds:[...]}], unassignedStopIds:[...]}`. Chỉnh tay, tính lại ETA và quãng đường (Should, D-24). | 200 `PlanDetail`, có `violations[]` (hình dạng chốt ở T28) | 409 · 422 | ❌ T28 |
+
+**Vị trí tài xế (T32, P-15, D-26, P-53):** dispatcher polling cùng nhịp với `GET /plans/{id}` khi plan đang giao.
+
+```jsonc
+// DriverLocation
+{ "routeId": 63, "driverId": 451,
+  "location": { "lat": 16.0605, "lon": 108.1985, "accuracyMeters": 12.0, "headingDegrees": 90.0, "speedMps": 7.8,
+                "recordedAt": "2026-12-01T04:01:20Z" },       // điểm cuối của tài xế trong 10 phút qua; null nếu không có
+  "sharing": { "state": "DECLINED", "updatedAt": "2026-12-01T03:40:05Z" } }   // trạng thái app báo cho đúng route này; null nếu không có
+```
+
+- `location` là vị trí cuối của **tài xế** (không gắn với route); `accuracyMeters`, `headingDegrees` (0–360, theo chiều kim đồng hồ từ hướng bắc), `speedMps` có thể `null`.
+- `sharing` chỉ có khi trạng thái tài xế báo gần nhất (`PUT /driver/location/sharing`, giữ 12 giờ) là của route này. Client hiển thị: có `location` → vẽ vị trí; không có → lý do theo `sharing.state` (`DECLINED` tài xế tắt chia sẻ, `NO_PERMISSION` máy chưa cấp quyền, `GPS_OFF` GPS tắt); không có `sharing` hoặc `SHARING` → chưa có vị trí trong 10 phút (có thể mất sóng).
+- Plan của store khác → 404.
 
 ```jsonc
 // PlanDraftRequest
@@ -236,7 +250,7 @@ Ghi chú:
   "depot": { "address": "…", "lat": 16.05, "lon": 108.2 }, "timezone": "Asia/Ho_Chi_Minh",
   "optimizedAt": "…|null", "totalDistanceMeters": 52340, "totalDurationSeconds": 9800,
   "routes": [
-    { "id": 11, "driver": { "id": 21, "fullName": "Tùng", "role": "DRIVER" }, "vehicle": { "id": 5, "name": "Xe 1", "capacity": 40, "capacityUnit": "BOX" },
+    { "id": 11, "driver": { "id": 21, "fullName": "Tùng", "role": "DRIVER", "phoneNumber": "+84905123019" },   // phoneNumber: E.164 hoặc null, để gọi nhắc (P-53, T32) "vehicle": { "id": 5, "name": "Xe 1", "capacity": 40, "capacityUnit": "BOX" },
       "status": "PENDING|IN_PROGRESS|COMPLETED",            // của route, như §8 (P-35, P-39); plan DRAFT luôn PENDING
       "shiftStart": "08:00", "shiftEnd": "17:00", "maxDistanceMeters": 80000,
       "start": { "address": "…", "lat": 16.05, "lon": 108.2 }, "end": { "address": "…", "lat": 16.05, "lon": 108.2 },
@@ -320,8 +334,13 @@ Người gọi phải có `role=DRIVER` hoặc `canDrive=true` (D-21); người 
 | `GET /driver/routes` | R | `date?` (`YYYY-MM-DD`, mặc định hôm nay theo timezone store) | `[{routeId, planId, planName, planDate, timezone, status, stopCount, completedCount, plannedStart}]`, theo `plannedStart`; `timezone` là timezone của plan (T47) | 400 `MALFORMED_REQUEST` (ngày sai dạng) | ✅ |
 | `GET /driver/routes/{routeId}` | R | — | `DriverRouteDetail` | 404 · 422 `PLAN_NOT_ACTIVE` (plan đã publish rồi bị huỷ, T48) | ✅ |
 | `PATCH /driver/routes/{routeId}/stops/{stopId}/status` | R | `{status: DELIVERED\|FAILED\|SKIPPED, failureReason?}` | 200 `{stop: DriverStop, routeStatus, planStatus}` | 400 · 404 · 422 `INVALID_STOP_TRANSITION` · 422 `FAILURE_REASON_REQUIRED` · 422 `PLAN_NOT_ACTIVE` | ✅ |
-| `POST /driver/location` | R | `{points:[{lat, lon, accuracyMeters?, headingDegrees?, speedMps?, recordedAt}]}`, 1–100 điểm theo thứ tự thời gian (D-26) | 204 (Should). MVP chỉ giữ điểm có `recordedAt` mới nhất. | 400 | ❌ T32 |
+| `POST /driver/location` | R | `{points:[{lat, lon, accuracyMeters?, headingDegrees?, speedMps?, recordedAt}]}`, 1–100 điểm (D-26), thứ tự tuỳ ý | 204. MVP chỉ giữ điểm có `recordedAt` mới nhất (xem dưới). | 400 | ✅ |
+| `PUT /driver/location/sharing` | R | `{routeId, state: SHARING\|DECLINED\|NO_PERMISSION\|GPS_OFF}` (P-53) | 204 | 400 · 404 · 422 `PLAN_NOT_ACTIVE` | ✅ |
 | `GET /driver/routes/{routeId}/directions` | R | — | `DirectionsResponse` (Should) | 404 · 502 | ❌ T33 |
+
+**Vị trí (T32):**
+- `POST /driver/location`: mã validation `POINTS_REQUIRED`, `TOO_MANY_POINTS` (> 100), `POINT_REQUIRED`, `LATITUDE_REQUIRED`, `LONGITUDE_REQUIRED`, `INVALID_LATITUDE`, `INVALID_LONGITUDE`, `INVALID_ACCURACY` (< 0), `INVALID_HEADING` (ngoài `[0, 360)`), `INVALID_SPEED` (< 0), `RECORDED_AT_REQUIRED` (trên `points[i].<field>`). Lô hợp lệ luôn 204, kể cả khi không điểm nào được giữ: điểm có `recordedAt` muộn hơn giờ server quá 2 phút bị bỏ (đồng hồ máy chạy nhanh); điểm cũ hơn 10 phút không lưu; điểm không mới hơn điểm đang lưu không ghi đè. Gửi được khi không có route đang chạy (dispatcher chỉ đọc qua route của plan đang giao).
+- `PUT /driver/location/sharing`: route phải là route tài xế thấy được như `GET /driver/routes/{routeId}` (khác thì 404); plan COMPLETED hoặc đã publish rồi huỷ → 422 `PLAN_NOT_ACTIVE`. Mã validation `ROUTE_ID_REQUIRED`, `SHARING_STATE_REQUIRED`; `state` ngoài enum → 400 `MALFORMED_REQUEST`. Mỗi tài xế giữ một trạng thái (route mới nhất được báo). Lựa chọn "Hỏi / Luôn / Không" của tài xế chỉ ở trên máy.
 
 ```jsonc
 // DriverRouteDetail

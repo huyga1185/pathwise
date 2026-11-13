@@ -1,12 +1,34 @@
 /// <reference types="vitest/config" />
+import type { IncomingMessage, ServerResponse } from 'node:http';
 import { fileURLToPath, URL } from 'node:url';
 import react from '@vitejs/plugin-react';
-import { defineConfig } from 'vite';
+import { defineConfig, type Plugin } from 'vite';
 
-// P-47: the SPA lives under /app/ on the same origin as the API (/api/). In dev, Vite proxies /api to the backend.
+/**
+ * Runtime config (W08, P-56): /app/config.js sets window.__PATHWISE_CONFIG__ before the app starts. The build ships
+ * an empty one, which keeps the values baked in at build time; the web container rewrites it from its environment.
+ * Dev and preview serve the same empty file.
+ */
+function runtimeConfig(): Plugin {
+  const source = 'window.__PATHWISE_CONFIG__ = window.__PATHWISE_CONFIG__ || {};\n';
+  const serve = (_req: IncomingMessage, res: ServerResponse) => {
+    res.setHeader('Content-Type', 'text/javascript; charset=utf-8');
+    res.setHeader('Cache-Control', 'no-store');
+    res.end(source);
+  };
+  return {
+    name: 'pathwise-runtime-config',
+    configureServer: (server) => void server.middlewares.use('/app/config.js', serve),
+    configurePreviewServer: (server) => void server.middlewares.use('/app/config.js', serve),
+    generateBundle() {
+      this.emitFile({ type: 'asset', fileName: 'config.js', source });
+    },
+  };
+}
+
 export default defineConfig({
   base: '/app/',
-  plugins: [react()],
+  plugins: [react(), runtimeConfig()],
   // Favicons and logos come straight from brand/logo (docs/client/ARCHITECTURE.md §8): served under /app/ in dev, copied into dist.
   publicDir: '../brand/logo',
   resolve: {

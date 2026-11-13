@@ -29,7 +29,8 @@
         "driver": {
           "id": 451,
           "fullName": "Tài xế A",
-          "role": "DRIVER"
+          "role": "DRIVER",
+          "phoneNumber": null
         },
         "vehicle": {
           "id": 74,
@@ -63,7 +64,8 @@
         "driver": {
           "id": 452,
           "fullName": "Tài xế B",
-          "role": "DRIVER"
+          "role": "DRIVER",
+          "phoneNumber": "+84905123019"
         },
         "vehicle": {
           "id": 75,

@@ -71,6 +71,8 @@ Plan có tối đa 20 route. Route thứ *n* (theo thứ tự trong `routes` c�
 
 Stop trên bản đồ là `MapMarker` mang số `sequence`, màu theo route (`routeIndex`); stop không xếp được dùng `signal`, chưa xếp tuyến dùng `ink-muted`, cả hai không có số. Kho (depot) là icon nhà kho tô đặc màu thương hiệu `#0b6a5c` (giữ nguyên ở hai theme) có viền trắng và bóng nhẹ để nổi trên tile, cửa kho trắng, cỡ 30px, không có nền vuông; chú giải dưới bản đồ luôn có mục "Kho xuất phát" với cùng icon. Sau khi plan chạy, marker đổi theo kết quả: đã giao `success`, không giao được `danger`.
 
+Vị trí tài xế (T32) là hình tròn 40px tô màu route, viền trắng 2,5px, bóng nhẹ, bên trong là mũi tên trắng kiểu định vị xoay theo hướng đi (`headingDegrees`, 0° = bắc); không biết hướng (đứng yên) thì chấm trắng ở giữa. Marker tài xế nằm trên marker điểm, chọn được như marker điểm (viền `#18231f` 3px khi chọn). Chú giải có mục "Vị trí tài xế (mũi tên chỉ hướng đi)" với marker xám `#56635e`. Trong khối tuyến dùng cùng marker cỡ 18px trước dòng "Vị trí cập nhật …".
+
 ## Component tham chiếu
 
 Bộ component React (`window.PathWise`) là bản tham chiếu cho web dashboard: Button, TextField, StatusPill, ProgressBar, DataTable, StopCard, MapMarker, Dialog, Toast, kèm hàm `formatPhone` và `statusInfo`. Web (React + Vite) dựng lại theo cùng tên, props và class; app tài xế (Flutter) dựng lại theo cùng token và quy tắc, lấy `StopCard` và nút kết quả làm mẫu. Mọi màu trong component lấy từ token, nên theme tối không cần CSS riêng.

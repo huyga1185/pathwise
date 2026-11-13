@@ -244,6 +244,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/driver/location": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["recordLocations"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/driver/location/sharing": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["updateSharing"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/driver/routes": {
         parameters: {
             query?: never;
@@ -398,6 +430,22 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["cancelPlan"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/plans/{id}/driver-locations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["driverLocations"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -662,6 +710,10 @@ export interface components {
             data: components["schemas"]["JobResponse"];
             message?: string;
         };
+        ApiResponseListDriverLocationResponse: {
+            data: components["schemas"]["DriverLocationResponse"][];
+            message?: string;
+        };
         ApiResponseListDriverRouteSummaryResponse: {
             data: components["schemas"]["DriverRouteSummaryResponse"][];
             message?: string;
@@ -786,8 +838,31 @@ export interface components {
             fullName: string | null;
             /** Format: int64 */
             id: number;
+            phoneNumber: string | null;
             /** @enum {string} */
             role: "ADMIN" | "OWNER" | "DISPATCHER" | "DRIVER";
+        };
+        DriverLocationResponse: {
+            /** Format: int64 */
+            driverId: number;
+            location: components["schemas"]["DriverPosition"] | null;
+            /** Format: int64 */
+            routeId: number;
+            sharing: components["schemas"]["DriverSharing"] | null;
+        };
+        DriverPosition: {
+            /** Format: double */
+            accuracyMeters: number | null;
+            /** Format: double */
+            headingDegrees: number | null;
+            /** Format: double */
+            lat: number;
+            /** Format: double */
+            lon: number;
+            /** Format: date-time */
+            recordedAt: string;
+            /** Format: double */
+            speedMps: number | null;
         };
         DriverRouteDetailResponse: {
             end: components["schemas"]["LocationResponse"];
@@ -821,6 +896,12 @@ export interface components {
             /** Format: int32 */
             stopCount: number;
             timezone: string;
+        };
+        DriverSharing: {
+            /** @enum {string} */
+            state: "SHARING" | "DECLINED" | "NO_PERMISSION" | "GPS_OFF";
+            /** Format: date-time */
+            updatedAt: string;
         };
         DriverStopResponse: {
             address: string | null;
@@ -915,6 +996,23 @@ export interface components {
             status: "QUEUED" | "RUNNING" | "SUCCEEDED" | "FAILED";
             /** @enum {string} */
             type: "GEOCODE_PLAN" | "OPTIMIZE_PLAN";
+        };
+        LocationBatchRequest: {
+            points: components["schemas"]["LocationPointRequest"][];
+        };
+        LocationPointRequest: {
+            /** Format: double */
+            accuracyMeters?: number;
+            /** Format: double */
+            headingDegrees?: number;
+            /** Format: double */
+            lat: number;
+            /** Format: double */
+            lon: number;
+            /** Format: date-time */
+            recordedAt: string;
+            /** Format: double */
+            speedMps?: number;
         };
         LocationResponse: {
             address: string | null;
@@ -1193,6 +1291,12 @@ export interface components {
         };
         UpdateCanDriveRequest: {
             canDrive: boolean;
+        };
+        UpdateLocationSharingRequest: {
+            /** Format: int64 */
+            routeId: number;
+            /** @enum {string} */
+            state: "SHARING" | "DECLINED" | "NO_PERMISSION" | "GPS_OFF";
         };
         UpdateMemberRequest: {
             canDrive?: boolean;
@@ -1610,6 +1714,50 @@ export interface operations {
             };
         };
     };
+    recordLocations: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LocationBatchRequest"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    updateSharing: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateLocationSharingRequest"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     listRoutes: {
         parameters: {
             query?: {
@@ -1893,6 +2041,28 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ApiResponsePlanDetailResponse"];
+                };
+            };
+        };
+    };
+    driverLocations: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponseListDriverLocationResponse"];
                 };
             };
         };

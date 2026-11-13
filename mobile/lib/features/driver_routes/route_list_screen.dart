@@ -15,6 +15,7 @@ import '../../shared/theme/theme.dart';
 import '../../shared/theme/tokens.g.dart';
 import '../../shared/ui/ui.dart';
 import '../auth/auth.dart';
+import 'location_sharing.dart';
 import 'routes_data.dart';
 
 /// "Tài xế — tuyến hôm nay" (SCREENS §2): the driver's routes of one day, today by default. Pull down or come back to
@@ -387,7 +388,8 @@ class _EmptyPainter extends CustomPainter {
   bool shouldRepaint(_EmptyPainter oldDelegate) => oldDelegate.t != t;
 }
 
-/// The account sheet: who is signed in, the theme (system, light, dark; remembered on the phone), sign out.
+/// The account sheet: who is signed in, location sharing (ask, always, never; T32), the theme (system, light, dark),
+/// both remembered on the phone, sign out.
 class _AccountSheet extends ConsumerWidget {
   const _AccountSheet({required this.name, required this.email});
 
@@ -398,6 +400,7 @@ class _AccountSheet extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final t = context.pw;
     final mode = ref.watch(themeModeProvider);
+    final sharing = ref.watch(sharingChoiceProvider).value ?? SharingChoice.ask;
     return SafeArea(
       child: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(PwSpacing.space4, 0, PwSpacing.space4, PwSpacing.space4),
@@ -408,6 +411,23 @@ class _AccountSheet extends ConsumerWidget {
             Text(name, style: PwTypeStyles.title.copyWith(color: t.ink)),
             if (email.isNotEmpty && email != name)
               Text(email, style: PwTypeStyles.bodyTouch.copyWith(color: t.inkMuted)),
+            const SizedBox(height: PwSpacing.space4),
+            Semantics(
+              header: true,
+              child: Text(Vi.sharingSetting.toUpperCase(), style: PwTypeStyles.label.copyWith(color: t.inkMuted)),
+            ),
+            const SizedBox(height: PwSpacing.space1),
+            for (final (option, label, hint) in const [
+              (SharingChoice.ask, Vi.shareChoiceAsk, Vi.shareChoiceAskHint),
+              (SharingChoice.always, Vi.shareChoiceAlways, Vi.shareChoiceAlwaysHint),
+              (SharingChoice.never, Vi.shareChoiceNever, Vi.shareChoiceNeverHint),
+            ])
+              _ThemeOption(
+                label: label,
+                hint: hint,
+                selected: sharing == option,
+                onTap: () => unawaited(ref.read(sharingChoiceProvider.notifier).choose(option)),
+              ),
             const SizedBox(height: PwSpacing.space4),
             Semantics(
               header: true,
@@ -433,10 +453,12 @@ class _AccountSheet extends ConsumerWidget {
   }
 }
 
+/// One choice of a group in the account sheet (radio), with an optional hint under it.
 class _ThemeOption extends StatelessWidget {
-  const _ThemeOption({required this.label, required this.selected, required this.onTap});
+  const _ThemeOption({required this.label, required this.selected, required this.onTap, this.hint});
 
   final String label;
+  final String? hint;
   final bool selected;
   final VoidCallback onTap;
 
@@ -447,7 +469,7 @@ class _ThemeOption extends StatelessWidget {
       inMutuallyExclusiveGroup: true,
       checked: selected,
       button: true,
-      label: label,
+      label: hint == null ? label : '$label. $hint',
       excludeSemantics: true,
       onTap: onTap,
       child: InkWell(
@@ -463,11 +485,20 @@ class _ThemeOption extends StatelessWidget {
               ),
               const SizedBox(width: PwSpacing.space2),
               Expanded(
-                child: Text(
-                  label,
-                  style: PwTypeStyles.bodyTouch.copyWith(
-                    color: t.ink,
-                    fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: PwSpacing.space1),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        label,
+                        style: PwTypeStyles.bodyTouch.copyWith(
+                          color: t.ink,
+                          fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+                        ),
+                      ),
+                      if (hint != null) Text(hint!, style: PwTypeStyles.body.copyWith(color: t.inkMuted)),
+                    ],
                   ),
                 ),
               ),

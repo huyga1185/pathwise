@@ -12,7 +12,8 @@
 W00 ─┬─ W01 ─┬─ W02
      │       ├─ W03
      │       └─ W04 ── W05 ── W06 ── W07 ── W08 (sau khi chốt deploy)
-     └─ M00 ── M01 ── M02 ── M03
+     │                         └─ W09 (cần T32)
+     └─ M00 ── M01 ── M02 ── M03 ── M04 (cần T32)
 ```
 
 | Task | Phụ thuộc | Song song được với |
@@ -30,6 +31,8 @@ W00 ─┬─ W01 ─┬─ W02
 | M01 | M00 | W* |
 | M02 | M01 | W* |
 | M03 | M02 | W* |
+| W09 | W07, T32 | M04 (cùng branch T32) |
+| M04 | M03, T32 | W09 (cùng branch T32) |
 
 File nóng của client (không hai task song song cùng sửa): `web/package.json`, `web/pnpm-lock.yaml`, `web/vite.config.ts`, `web/src/app/router.tsx`, `mobile/pubspec.yaml`, `mobile/pubspec.lock`, `mobile/lib/app/router.dart`, `api/openapi.json`, `brand/design-system/tokens.json`, cùng các file nóng của backend (`.github/**`, `compose*.yaml`…). Task song song mà phải thêm route/dependency thì bên merge sau rebase.
 
@@ -157,9 +160,25 @@ File nóng của client (không hai task song song cùng sửa): `web/package.js
   - Rà responsive ở 360px trên backend dev (Kế hoạch, Tạo kế hoạch, Xe, Thành viên, Cửa hàng, Hồ sơ): không cuộn ngang trang, bảng cuộn trong khung, bản đồ xuống dưới bảng khi hẹp; không cần sửa. Axe thêm trang 404, không có quyền, "Dùng app tài xế" (mọi màn của SCREENS đều có kiểm axe).
   - Màn kết quả và theo dõi được kiểm với backend thật qua E2E (không chụp ảnh riêng).
 
+### W09. Vị trí tài xế trên màn theo dõi (cùng T32)
+- **Ước lượng:** 0,75 ngày · **Màn:** Theo dõi — vị trí tài xế (T32) · **Quyết định:** P-53, P-54
+- **Phạm vi:** khi plan PUBLISHED/IN_PROGRESS, `GET /plans/{id}/driver-locations` cùng nhịp polling 30 s của plan (chỉ khi tab hiện, dừng khi kết thúc); `RouteMap` thêm lớp vị trí tài xế (prop `drivers`, chỉ trong `platform/map`): mũi tên trắng xoay theo `headingDegrees` trong hình tròn màu tuyến, viền trắng, bấm/Enter chọn → dòng dưới bản đồ "Tài xế B · Xe 2 · vị trí lúc 10:58 (4 phút trước)" + "Sai số khoảng 25 m · 28 km/h | đang đứng yên · điểm tiếp theo: …"; mỗi khối tuyến chưa COMPLETED thêm dòng "Vị trí cập nhật 1 phút trước (11:01)" hoặc lý do không có vị trí theo `sharing.state` (`DECLINED`, `NO_PERMISSION`, `GPS_OFF`; không có hoặc `SHARING` → "Chưa có vị trí trong 10 phút qua (có thể mất sóng)") kèm "gọi <số> để nhắc" nếu có `driver.phoneNumber`; chú giải thêm "Vị trí tài xế (mũi tên chỉ hướng đi)"; headline "Tự tải lại mỗi 30 giây (kết quả và vị trí tài xế)". Không có `headingDegrees` thì vẽ chấm tròn không mũi tên.
+- **Acceptance:** test với `plan-driver-locations.json`: vẽ đúng số mũi tên, đúng lý do cho từng `state`, plan COMPLETED không gọi endpoint và không vẽ; route COMPLETED không hiện lý do; chọn mũi tên hiện dòng mô tả.
+- **Phát sinh khi làm (2026-11-10):**
+  - Lý do dùng tên tài xế nguyên dạng: "Máy của Tài xế B chưa cho PathWise dùng vị trí", "GPS trên máy của Tài xế B đang tắt" (prototype viết "Máy tài xế B…", không hợp với tên thật như "Nguyễn Văn An").
+  - "N phút trước" tính từ lúc đọc vị trí (`dataUpdatedAt` của query), như "cập nhật lúc" ở headline; React không cho gọi `Date.now()` khi render.
+  - Mục chú giải "Vị trí tài xế" nằm ở chú giải kết quả dưới bản đồ (như prototype), không thêm vào chú giải tên tài xế của `RouteMap`. Bản đồ không fit lại theo vị trí tài xế mỗi lần đọc.
+  - Schema OpenAPI của vị trí và trạng thái là `DriverPosition`, `DriverSharing` (record lồng trong `DriverLocationResponse`; tên `Location`/`Sharing` quá chung).
+
 ### W08. Đóng gói và deploy web
 - **Ước lượng:** 0,5–1 ngày · **Điều kiện:** chủ dự án chốt reverse proxy và domain (đang để sau, xem P-47)
 - **Phạm vi:** build tĩnh phục vụ ở `/app/` cùng origin với `/api/`; cấu hình proxy (Caddy hoặc nginx); cache header cho asset có hash; `CORS_ALLOWED_ORIGINS` không cần khi cùng origin; cập nhật `docs/DEPLOYMENT.md`.
+- **Phát sinh khi làm (2026-11-13):** chủ dự án chọn Caddy, chạy được **cả trong container lẫn trên host**, domain đặt bằng biến (chưa có domain), key MapTiler đọc **lúc chạy**, release không kèm APK (P-56).
+  - `deploy/caddy/Caddyfile` dùng chung: `/api/*` và Swagger về app, `/` → `/app/` (302) tới khi có landing, `/app` → `/app/`, route của SPA về `index.html`, asset thiếu trả 404, `/app/assets/*` cache 1 năm `immutable`, còn lại `no-cache`; HSTS, `nosniff`, `X-Frame-Options: DENY`, bỏ header `Server`; nén zstd/gzip; `/actuator` không mở.
+  - Web: `/app/config.js` đặt `window.__PATHWISE_CONFIG__` trước khi app chạy; `readConfig` lấy giá trị khác rỗng của nó trước `VITE_*`. Build sinh `config.js` rỗng, dev và preview phục vụ cùng file (plugin trong `vite.config.ts`); container ghi lại file từ `PATHWISE_MAPTILER_KEY`/`PATHWISE_BASEMAP`/`PATHWISE_API_ORIGIN` (`deploy/caddy/write-config.sh`, chỉ nhận chữ, số và `._:/-`).
+  - Image `pathwise-web` (`web/Dockerfile`, context là gốc repo vì Vite chép `brand/logo`; `web/Dockerfile.dockerignore`): Node 24.11.1 build, Caddy 2.10.2 chạy, `caddy validate` trong lúc build; ~84 MB. Sau merge, workflow `image` chặn image vì Trivy thấy CRITICAL đã có bản sửa (Alpine 3.22 của Caddy 2.10.2: OpenSSL; binary Caddy build bằng Go 1.25.0) và khoá CA nội bộ do `caddy validate` tạo nằm trong image: đổi sang Caddy 2.11.7 + `apk upgrade`, `validate` ghi dữ liệu vào thư mục tạm rồi xoá. pnpm cài bằng `npm install -g` vì corepack của Node 24.11 không chạy được pnpm 12. Workflow `image` build theo matrix cùng image app; job `web` của CI build thêm image (bộ lọc thay đổi gồm `deploy/caddy/`).
+  - `compose.web.yaml` (service `web`, cổng 80/443/443-udp, volume chứng chỉ); workflow `release` đính `pathwise-web-<tag>.tar.gz` (`app/` + `Caddyfile`) khi publish release, cho Caddy trên host.
+  - Kiểm tay trên máy dev (`localhost`, chứng chỉ nội bộ của Caddy): container và Caddy kiểu host đều chạy đúng redirect, SPA fallback, cache header, `config.js`, `/api` qua Caddy; `/actuator` 404.
 
 ## 3. App tài xế
 
@@ -217,6 +236,21 @@ File nóng của client (không hai task song song cùng sửa): `web/package.js
   - Release Android: chủ dự án không có key và không đưa app lên Google Play, nên mặc định ký key debug và cài APK trực tiếp; `build.gradle.kts` vẫn ký bằng `android/key.properties` nếu ai có key (đã thử với keystore tạm: APK mang chứng chỉ của keystore đó). `mobile/README.md` viết lại: chạy, biến `--dart-define`, test, build và tạo upload key. Icon iOS đã là RGB không alpha (M00 ghi cần làm phẳng): không phải làm gì.
   - Chưa làm: build iOS (cần macOS và Xcode); kiểm thật bằng TalkBack/VoiceOver trên máy (đã có test semantics).
 
+### M04. Chia sẻ vị trí khi giao (cùng T32)
+- **Ước lượng:** 1,5 ngày · **Màn:** Tài xế — chia sẻ vị trí (T32) · **Quyết định:** P-53, P-54 (thêm `geolocator`)
+- **Phạm vi:**
+  - Port `platform/location`: `LocationSource` (quyền, GPS bật/tắt, mở cài đặt, luồng điểm chạy nền có thông báo cố định) với implementation `geolocator`; test dùng fake. Android: quyền `ACCESS_FINE_LOCATION`, `ACCESS_COARSE_LOCATION`, `FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_LOCATION`, `POST_NOTIFICATIONS`; iOS: `NSLocationWhenInUseUsageDescription`, `UIBackgroundModes: location`.
+  - `LocationSharing` (feature `driver_routes`): một tuyến chia sẻ tại một thời điểm; mở chi tiết tuyến chưa COMPLETED → theo lựa chọn đã lưu (Hỏi/Luôn/Không, `Preferences` khoá `pw-location-sharing`) mà hỏi bằng hộp "Chia sẻ vị trí cho tuyến này?" (ô "Ghi nhớ lựa chọn, không hỏi lại"), bật luôn, hoặc không; mỗi tuyến chỉ hỏi một lần: câu trả lời của tuyến gần nhất lưu ở `pw-location-route` (`routeId` + chia sẻ hay không), nên mở lại app không hỏi lại. Gom điểm, gửi `POST /driver/location` mỗi 30 s (tối đa 100 điểm, lỗi mạng giữ lại để lần sau, 400 thì bỏ lô); báo `PUT /driver/location/sharing` khi trạng thái đổi và mỗi lần mở chi tiết tuyến. Dừng khi tuyến COMPLETED, `PLAN_NOT_ACTIVE`, tài xế chọn không chia sẻ, đăng xuất.
+  - Chi tiết tuyến dưới thanh tiến độ: "Đang chia sẻ vị trí với điều phối viên" (chấm xanh) hoặc khung cảnh báo `declined` (nút "Bật chia sẻ vị trí"), `denied` (nút "Bật chia sẻ vị trí" khi còn hỏi được, "Mở cài đặt" khi bị từ chối hẳn; quay lại app thì kiểm lại), `gps-off` ("Bật định vị"). Menu tài khoản thêm nhóm "Chia sẻ vị trí khi giao" (3 lựa chọn).
+- **Acceptance:** widget test: hỏi khi lựa chọn là Hỏi, không hỏi khi Luôn/Không; ghi nhớ đổi lựa chọn trong menu; từ chối quyền → khung `denied` và báo `NO_PERMISSION`; GPS tắt → `GPS_OFF`; tuyến COMPLETED dừng gửi; lô điểm gửi lại sau lỗi mạng. Không có máy Android thật/emulator thì ghi cách kiểm tay vào báo cáo.
+- **Phát sinh khi làm (2026-11-10):**
+  - `geolocator` 14.1.2 (phát hành 2026-10-19, P-54). Plugin tự khai báo service `foregroundServiceType="location"`; app thêm quyền `ACCESS_FINE_LOCATION`, `ACCESS_COARSE_LOCATION`, `FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_LOCATION` và iOS `NSLocationWhenInUseUsageDescription`, `UIBackgroundModes: location`.
+  - Không xin quyền "Luôn cho phép": foreground service bắt đầu khi app đang mở chỉ cần quyền "Khi dùng ứng dụng", nên câu `denied` của prototype ("chọn Luôn cho phép") đổi thành "cho phép PathWise dùng vị trí". Không xin `POST_NOTIFICATIONS` (cần thêm luồng xin quyền): trên Android 13+ chưa cho phép thông báo thì thông báo cố định có thể bị ẩn trong ngăn thông báo, việc gửi vị trí vẫn chạy.
+  - Đứng yên (tốc độ < 0,5 m/s) hoặc máy không biết hướng thì gửi `headingDegrees = null` (web vẽ chấm, không mũi tên).
+  - Đóng hộp hỏi mà không trả lời thì lần mở tuyến sau hỏi lại; đã trả lời thì lưu `pw-location-route`. Báo trạng thái là best effort (lỗi mạng bỏ qua), trừ `PLAN_NOT_ACTIVE` thì dừng chia sẻ.
+  - `pumpApp` của test mặc định lựa chọn "Không chia sẻ" (`notSharing()`) và `FakeLocationSource`, để test của màn khác không bị hộp hỏi che; test chia sẻ truyền `MemoryPreferences` riêng. Test accessibility thêm hộp hỏi và ba khung báo ở hai theme.
+  - Chưa kiểm trên máy thật: không có emulator; iOS chưa build được (không có macOS). Cách kiểm tay ghi trong `mobile/README.md`.
+
 ## 4. Sau MVP (chưa lên lịch)
 
-Vị trí tài xế (cần T32) · dẫn đường trong app (cần T33) · chỉnh tay tuyến (cần T28) · thông báo đẩy · trang theo dõi đơn cho khách (client thứ ba) · đa ngôn ngữ.
+Vị trí tài xế: xong ở T32/W09/M04 · dẫn đường trong app (cần T33) · chỉnh tay tuyến (cần T28) · thông báo đẩy · trang theo dõi đơn cho khách (client thứ ba) · đa ngôn ngữ.

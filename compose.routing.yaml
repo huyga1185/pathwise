@@ -1,0 +1,135 @@
+# Self-hosted routing (D-25, D-33, P-55): OSRM (distance/duration matrix) and Nominatim (geocoding) with OpenStreetMap
+# data of Vietnam from Geofabrik, cut to the area of ROUTING_BBOX, instead of the public servers.
+#
+# Two ways to run it (docs/DEPLOYMENT.md §7):
+#   - On its own host:
+#       docker compose -f compose.routing.yaml up -d
+#     and point the app at it with ROUTING_* in the app's .env (private network or firewall allowlist, never public).
+#   - Next to the app on one host (the services share the project network):
+#       docker compose -f compose.prod.yaml -f compose.routing.yaml up -d      # VPS
+#       docker compose -f compose.yaml -f compose.routing.yaml up -d           # dev
+#
+# ROUTING_BBOX (minlon,minlat,maxlon,maxlat) defaults to Da Nang with Hoi An; "none" keeps the whole country, which
+# needs more than 11 GB of RAM to prepare OSRM (measured). Points outside the area have no route (optimize answers
+# 502) and no geocoding results. The first start downloads the country extract (~330 MB) once, cuts it, prepares OSRM
+# and imports Nominatim; data stays in volumes, so later starts take seconds. Variables come from .env.
+# Neither service has authentication: ports are published on ROUTING_BIND only (127.0.0.1 by default).
+
+services:
+  routing-data:
+    # Downloads the country extract once, then cuts it to ROUTING_BBOX into region.osm.pbf. Redone when the area
+    # changes: region.bbox records which area the file holds.
+    image: debian:trixie-20251020-slim
+    entrypoint: ["sh", "-c"]
+    command:
+      - |
+        set -e
+        if [ -s /data/region.osm.pbf ] && [ "$$(cat /data/region.bbox 2>/dev/null)" = "$${BBOX}" ]; then
+          echo "extract for $${BBOX} ready"; exit 0
+        fi
+        apt-get update -qq
+        DEBIAN_FRONTEND=noninteractive apt-get install -y -qq curl ca-certificates osmctools >/dev/null
+        if [ ! -s /data/country.osm.pbf ]; then
+          curl -fL --retry 5 -o /data/country.osm.pbf.part "$${PBF_URL}"
+          mv /data/country.osm.pbf.part /data/country.osm.pbf
+        fi
+        if [ "$${BBOX}" = none ]; then
+          cp /data/country.osm.pbf /data/region.osm.pbf.part
+        else
+          # osmconvert with a bounded hash: ~0.7 GB peak for the Vietnam file. osmium extract keeps a bitmap over
+          # every node id (~1.9 GB peak) and was killed on a 2 GB host. A small hash may keep a few extra objects
+          # from outside the area, which is harmless.
+          osmconvert /data/country.osm.pbf -b="$${BBOX}" --complete-ways --hash-memory=100 --out-pbf \
+            -o=/data/region.osm.pbf.part
+        fi
+        # osmconvert creates its output as 0600; Nominatim reads the file as its own user.
+        chmod 644 /data/region.osm.pbf.part
+        mv /data/region.osm.pbf.part /data/region.osm.pbf
+        echo "$${BBOX}" > /data/region.bbox
+    environment:
+      PBF_URL: ${ROUTING_PBF_URL:-https://download.geofabrik.de/asia/vietnam-latest.osm.pbf}
+      BBOX: ${ROUTING_BBOX:-107.80,15.80,108.40,16.25}
+    volumes:
+      - routing-pbf:/data
+
+  osrm-prepare:
+    # Builds the car graph (MLD) from region.osm.pbf; skipped when the graph already matches the area.
+    image: ghcr.io/project-osrm/osrm-backend:v26.10.0-debian
+    entrypoint: ["sh", "-c"]
+    command:
+      - |
+        set -e
+        if [ -s /osrm/region.osrm.mldgr ] && cmp -s /data/region.bbox /osrm/region.bbox; then
+          echo "OSRM graph already prepared for $$(cat /osrm/region.bbox)"; exit 0
+        fi
+        find /osrm -maxdepth 1 -name 'region.*' -delete
+        cp /data/region.osm.pbf /osrm/region.osm.pbf
+        osrm-extract --threads "$${OSRM_THREADS}" -p /opt/car.lua /osrm/region.osm.pbf
+        osrm-partition --threads "$${OSRM_THREADS}" /osrm/region.osrm
+        osrm-customize --threads "$${OSRM_THREADS}" /osrm/region.osrm
+        find /osrm -maxdepth 1 -name 'region.osm.pbf' -delete
+        cp /data/region.bbox /osrm/region.bbox
+    environment:
+      # Each thread adds memory; the whole country needs more than 11 GB even with 2.
+      OSRM_THREADS: ${OSRM_THREADS:-2}
+    volumes:
+      - routing-pbf:/data:ro
+      - osrm-data:/osrm
+    depends_on:
+      routing-data:
+        condition: service_completed_successfully
+
+  osrm:
+    image: ghcr.io/project-osrm/osrm-backend:v26.10.0-debian
+    restart: unless-stopped
+    # max-table-size must equal ROUTING_MATRIX_OSRM_MAXTABLESIZE of the app (F-41): a plan has at most
+    # 100 stops plus the start and end of its routes.
+    command: ["osrm-routed", "--algorithm", "mld", "--max-table-size", "${OSRM_MAX_TABLE_SIZE:-200}", "/osrm/region.osrm"]
+    ports:
+      - "${ROUTING_BIND:-127.0.0.1}:${OSRM_PORT:-5000}:5000"
+    volumes:
+      - osrm-data:/osrm:ro
+    depends_on:
+      osrm-prepare:
+        condition: service_completed_successfully
+
+  nominatim:
+    # Imports region.osm.pbf on the first start only (it answers once the import is done), then serves. After changing
+    # ROUTING_BBOX, remove the nominatim-data volume to import the new area (docs/DEPLOYMENT.md §7.4).
+    image: mediagis/nominatim:5.3.3
+    restart: unless-stopped
+    shm_size: 512m
+    environment:
+      PBF_PATH: /data/region.osm.pbf
+      # full: addresses and places (shops, markets, schools…) that stores type as delivery addresses.
+      IMPORT_STYLE: ${NOMINATIM_IMPORT_STYLE:-full}
+      NOMINATIM_PASSWORD: ${NOMINATIM_DB_PASSWORD:-nominatim}
+      THREADS: ${NOMINATIM_THREADS:-2}
+      # No automatic updates of the data: import again to refresh it (docs/DEPLOYMENT.md §7.4).
+      UPDATE_MODE: none
+      # Memory of the bundled PostgreSQL, sized for a city on a small host; raise for a larger area.
+      POSTGRES_SHARED_BUFFERS: ${NOMINATIM_PG_SHARED_BUFFERS:-256MB}
+      POSTGRES_MAINTENANCE_WORK_MEM: ${NOMINATIM_PG_MAINTENANCE_WORK_MEM:-256MB}
+      POSTGRES_AUTOVACUUM_WORK_MEM: ${NOMINATIM_PG_AUTOVACUUM_WORK_MEM:-128MB}
+      POSTGRES_WORK_MEM: ${NOMINATIM_PG_WORK_MEM:-16MB}
+      POSTGRES_EFFECTIVE_CACHE_SIZE: ${NOMINATIM_PG_EFFECTIVE_CACHE_SIZE:-1GB}
+    ports:
+      - "${ROUTING_BIND:-127.0.0.1}:${NOMINATIM_PORT:-8088}:8080"
+    volumes:
+      - routing-pbf:/data:ro
+      - nominatim-data:/var/lib/postgresql/16/main
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fs http://localhost:8080/status || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      # The first import takes minutes for a city, hours for the whole country.
+      start_period: 6h
+    depends_on:
+      routing-data:
+        condition: service_completed_successfully
+
+volumes:
+  routing-pbf:
+  osrm-data:
+  nominatim-data:

@@ -13,6 +13,7 @@ export type PlanDraft = Schemas['PlanDraftRequest'];
 export type StopPatch = Schemas['PatchStopRequest'];
 export type AssignableMember = Schemas['MemberResponse'];
 export type ActiveVehicle = Schemas['VehicleResponse'];
+export type DriverLocation = Schemas['DriverLocationResponse'];
 
 /** While the server works on a plan (geocode, optimize) it is read again this often (UX_BRIEF §5.1: 2–3 s). */
 export const POLL_INTERVAL_MS = 2000;
@@ -62,6 +63,21 @@ export function usePlan(id: number, enabled = true) {
     queryFn: () => unwrap(api.GET('/api/v1/plans/{id}', { params: { path: { id } } })),
     enabled,
     refetchInterval: (query) => planRefetchInterval(query.state.data),
+    refetchIntervalInBackground: false,
+  });
+}
+
+/**
+ * `GET /plans/{id}/driver-locations` (T32) at the pace of the plan while it is being delivered, only while the tab is
+ * visible; not read otherwise (the server answers `[]` anyway).
+ */
+export function useDriverLocations(planId: number, live: boolean) {
+  const api = useApi();
+  return useQuery({
+    queryKey: queryKeys.driverLocations(planId),
+    queryFn: () => unwrap(api.GET('/api/v1/plans/{id}/driver-locations', { params: { path: { id: planId } } })),
+    enabled: live,
+    refetchInterval: live ? TRACK_INTERVAL_MS : false,
     refetchIntervalInBackground: false,
   });
 }

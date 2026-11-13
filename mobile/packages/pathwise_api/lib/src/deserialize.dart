@@ -7,6 +7,7 @@ import 'package:pathwise_api/src/model/api_response_get_user_response.dart';
 import 'package:pathwise_api/src/model/api_response_invitation_preview_response.dart';
 import 'package:pathwise_api/src/model/api_response_invitation_response.dart';
 import 'package:pathwise_api/src/model/api_response_job_response.dart';
+import 'package:pathwise_api/src/model/api_response_list_driver_location_response.dart';
 import 'package:pathwise_api/src/model/api_response_list_driver_route_summary_response.dart';
 import 'package:pathwise_api/src/model/api_response_list_invitation_response.dart';
 import 'package:pathwise_api/src/model/api_response_list_member_response.dart';
@@ -30,8 +31,11 @@ import 'package:pathwise_api/src/model/create_vehicle_request.dart';
 import 'package:pathwise_api/src/model/depot_request.dart';
 import 'package:pathwise_api/src/model/depot_response.dart';
 import 'package:pathwise_api/src/model/driver.dart';
+import 'package:pathwise_api/src/model/driver_location_response.dart';
+import 'package:pathwise_api/src/model/driver_position.dart';
 import 'package:pathwise_api/src/model/driver_route_detail_response.dart';
 import 'package:pathwise_api/src/model/driver_route_summary_response.dart';
+import 'package:pathwise_api/src/model/driver_sharing.dart';
 import 'package:pathwise_api/src/model/driver_stop_response.dart';
 import 'package:pathwise_api/src/model/driver_stop_update_response.dart';
 import 'package:pathwise_api/src/model/forgot_password_request.dart';
@@ -40,6 +44,8 @@ import 'package:pathwise_api/src/model/get_user_response.dart';
 import 'package:pathwise_api/src/model/invitation_preview_response.dart';
 import 'package:pathwise_api/src/model/invitation_response.dart';
 import 'package:pathwise_api/src/model/job_response.dart';
+import 'package:pathwise_api/src/model/location_batch_request.dart';
+import 'package:pathwise_api/src/model/location_point_request.dart';
 import 'package:pathwise_api/src/model/location_response.dart';
 import 'package:pathwise_api/src/model/log_in_request.dart';
 import 'package:pathwise_api/src/model/member_response.dart';
@@ -66,6 +72,7 @@ import 'package:pathwise_api/src/model/store_response.dart';
 import 'package:pathwise_api/src/model/time_window_request.dart';
 import 'package:pathwise_api/src/model/time_window_response.dart';
 import 'package:pathwise_api/src/model/update_can_drive_request.dart';
+import 'package:pathwise_api/src/model/update_location_sharing_request.dart';
 import 'package:pathwise_api/src/model/update_member_request.dart';
 import 'package:pathwise_api/src/model/update_profile_request.dart';
 import 'package:pathwise_api/src/model/update_stop_status_request.dart';
@@ -112,6 +119,8 @@ final _regMap = RegExp(r'^Map<String,(.*)>$');
           return ApiResponseInvitationResponse.fromJson(value as Map<String, dynamic>) as ReturnType;
         case 'ApiResponseJobResponse':
           return ApiResponseJobResponse.fromJson(value as Map<String, dynamic>) as ReturnType;
+        case 'ApiResponseListDriverLocationResponse':
+          return ApiResponseListDriverLocationResponse.fromJson(value as Map<String, dynamic>) as ReturnType;
         case 'ApiResponseListDriverRouteSummaryResponse':
           return ApiResponseListDriverRouteSummaryResponse.fromJson(value as Map<String, dynamic>) as ReturnType;
         case 'ApiResponseListInvitationResponse':
@@ -158,10 +167,16 @@ final _regMap = RegExp(r'^Map<String,(.*)>$');
           return DepotResponse.fromJson(value as Map<String, dynamic>) as ReturnType;
         case 'Driver':
           return Driver.fromJson(value as Map<String, dynamic>) as ReturnType;
+        case 'DriverLocationResponse':
+          return DriverLocationResponse.fromJson(value as Map<String, dynamic>) as ReturnType;
+        case 'DriverPosition':
+          return DriverPosition.fromJson(value as Map<String, dynamic>) as ReturnType;
         case 'DriverRouteDetailResponse':
           return DriverRouteDetailResponse.fromJson(value as Map<String, dynamic>) as ReturnType;
         case 'DriverRouteSummaryResponse':
           return DriverRouteSummaryResponse.fromJson(value as Map<String, dynamic>) as ReturnType;
+        case 'DriverSharing':
+          return DriverSharing.fromJson(value as Map<String, dynamic>) as ReturnType;
         case 'DriverStopResponse':
           return DriverStopResponse.fromJson(value as Map<String, dynamic>) as ReturnType;
         case 'DriverStopUpdateResponse':
@@ -178,6 +193,10 @@ final _regMap = RegExp(r'^Map<String,(.*)>$');
           return InvitationResponse.fromJson(value as Map<String, dynamic>) as ReturnType;
         case 'JobResponse':
           return JobResponse.fromJson(value as Map<String, dynamic>) as ReturnType;
+        case 'LocationBatchRequest':
+          return LocationBatchRequest.fromJson(value as Map<String, dynamic>) as ReturnType;
+        case 'LocationPointRequest':
+          return LocationPointRequest.fromJson(value as Map<String, dynamic>) as ReturnType;
         case 'LocationResponse':
           return LocationResponse.fromJson(value as Map<String, dynamic>) as ReturnType;
         case 'LogInRequest':
@@ -230,6 +249,8 @@ final _regMap = RegExp(r'^Map<String,(.*)>$');
           return TimeWindowResponse.fromJson(value as Map<String, dynamic>) as ReturnType;
         case 'UpdateCanDriveRequest':
           return UpdateCanDriveRequest.fromJson(value as Map<String, dynamic>) as ReturnType;
+        case 'UpdateLocationSharingRequest':
+          return UpdateLocationSharingRequest.fromJson(value as Map<String, dynamic>) as ReturnType;
         case 'UpdateMemberRequest':
           return UpdateMemberRequest.fromJson(value as Map<String, dynamic>) as ReturnType;
         case 'UpdateProfileRequest':

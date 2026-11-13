@@ -20,6 +20,12 @@
 	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>PathWise gửi vị trí của bạn cho điều phối viên của cửa hàng trong lúc giao tuyến, kể cả khi bạn đang mở Bản đồ để chỉ đường.</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>location</string>
+	</array>
 	<key>CFBundleName</key>
 	<string>pathwise_driver</string>
 	<key>CFBundlePackageType</key>

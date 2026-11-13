@@ -39,6 +39,16 @@ flutter analyze
 flutter test        # gồm test accessibility: 360×640, chữ 130 %, hai theme
 ```
 
+### Kiểm tay chia sẻ vị trí (T32) trên máy Android
+
+1. Cài APK, đăng nhập bằng tài khoản tài xế có tuyến trong plan đang giao hôm nay.
+2. Mở chi tiết tuyến: hộp "Chia sẻ vị trí cho tuyến này?" hiện ra. Chọn "Chia sẻ vị trí", cho phép vị trí "Khi dùng ứng dụng".
+3. Thấy dòng "Đang chia sẻ vị trí với điều phối viên" và thông báo cố định "Đang chia sẻ vị trí" trên Android (Android 13+ cần cho phép thông báo của PathWise trong cài đặt thì mới thấy thông báo).
+4. Bấm "Chỉ đường" sang Google Maps, đi vài trăm mét: trên web, màn theo dõi plan hiện mũi tên của tài xế, cập nhật trong khoảng 30–60 giây.
+5. Tắt GPS: app báo "Định vị (GPS) đang tắt.", web ghi "GPS trên máy của … đang tắt". Bật lại rồi quay về app: chia sẻ tiếp.
+6. Báo kết quả điểm cuối: tuyến xong, thông báo cố định biến mất.
+7. Menu tài khoản (chạm chữ viết tắt tên) → "Chia sẻ vị trí khi giao": đổi Hỏi / Luôn chia sẻ / Không chia sẻ.
+
 ## Build release Android
 
 ```bash
