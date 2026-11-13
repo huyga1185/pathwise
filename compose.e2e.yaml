@@ -5,8 +5,17 @@
 # The backend's map clients point at a stub (web/e2e/stub/server.mjs): the run calls no real third-party service.
 # Mail goes to this project's Mailpit only.
 
+# Docker keeps container logs without limit by default: a small VPS fills its disk (T51, P-59). Each container keeps
+# at most LOG_MAX_FILE files of LOG_MAX_SIZE (30 MB by default); older lines are dropped.
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: ${LOG_MAX_SIZE:-10m}
+    max-file: "${LOG_MAX_FILE:-3}"
+
 services:
   map-stub:
+    logging: *logging
     image: node:22-alpine
     command: ["node", "/stub/server.mjs"]
     volumes:
@@ -18,6 +27,7 @@ services:
       retries: 20
 
   app:
+    logging: *logging
     # Only the values below: a developer's .env must not leak in (it may point at a real SMTP server).
     env_file: !reset []
     environment:
