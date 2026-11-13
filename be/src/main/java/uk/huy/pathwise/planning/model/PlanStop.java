@@ -4,7 +4,9 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.BatchSize;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.JdbcType;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.hibernate.type.descriptor.jdbc.LocalTimeJdbcType;
 import uk.huy.pathwise.fleet.model.CapacityUnit;
 
 import java.time.Instant;
@@ -86,9 +88,13 @@ public class PlanStop {
     private int serviceTimeSeconds;
 
     // Both null or both set, start before end; local times in the plan timezone (P-14).
+    // LocalTimeJdbcType binds the value as it is (F-54, T50): the default goes through java.sql.Time on 1970-01-01 in the
+    // JVM's time zone (UTC+8 for Asia/Ho_Chi_Minh then), which moved the stored time when the JVM was not on UTC.
+    @JdbcType(LocalTimeJdbcType.class)
     @Column(name = "tw_start")
     private LocalTime timeWindowStart;
 
+    @JdbcType(LocalTimeJdbcType.class)
     @Column(name = "tw_end")
     private LocalTime timeWindowEnd;
 

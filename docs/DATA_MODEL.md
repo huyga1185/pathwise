@@ -2,7 +2,7 @@
 
 > Hiện trạng: có `users`, `refresh_tokens` (`V1__baseline.sql`), `stores` cùng các cột tenancy của `users` (`V2__stores_and_user_tenancy.sql`, T13), `store_invitations` (`V3__store_invitations.sql`, T16), `vehicles` (`V4__vehicles.sql`, T20) và `background_jobs`, `route_plans`, `route_plan_routes`, `route_plan_stops`, `route_plan_stop_demands` (`V5__route_plans.sql`, T24). Mọi bảng mục tiêu đã tồn tại.
 > Dựa trên D-01..D-05, D-15, D-16, D-18..D-21, P-01, P-07, P-14 (đã Approved). Dữ liệu cũ không được giữ (D-29).
-> Quy ước: `BIGINT AUTO_INCREMENT` id; timestamp sự kiện `DATETIME(6)` lưu UTC (`hibernate.jdbc.time_zone: UTC`, Java `Instant`); toạ độ `DOUBLE`; khoảng cách mét `INT`, thời lượng giây `INT`; enum lưu `VARCHAR` (`@Enumerated(STRING)`); bảng thuộc store luôn có `store_id NOT NULL` + FK + index.
+> Quy ước: `BIGINT AUTO_INCREMENT` id; timestamp sự kiện `DATETIME(6)` lưu UTC (`hibernate.jdbc.time_zone: UTC`, Java `Instant`); giờ trong ngày `TIME` lưu đúng giờ trên đồng hồ theo timezone của plan (`LocalTime` gắn `@JdbcType(LocalTimeJdbcType.class)`, không đổi theo múi giờ JVM; F-54, T50); ngày `DATE` (`LocalDate`); toạ độ `DOUBLE`; khoảng cách mét `INT`, thời lượng giây `INT`; enum lưu `VARCHAR` (`@Enumerated(STRING)`); bảng thuộc store luôn có `store_id NOT NULL` + FK + index.
 
 ## 1. Sơ đồ quan hệ
 

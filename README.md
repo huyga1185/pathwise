@@ -30,6 +30,14 @@ App được build từ `be/Dockerfile` (multi-stage), chạy bằng user không
 
 Dừng: `docker compose --profile app down`. Thêm `-v` để xoá luôn dữ liệu MariaDB và Redis.
 
+**DB dev tạo trước T50:** app chạy từ IDE (JVM múi giờ +07) từng lưu giờ ca và khung giờ lệch 8 tiếng (F-54). Dữ liệu dev không quan trọng thì xoá volume (`docker compose down -v`); muốn giữ thì chạy một lần, **chỉ trên DB dev đã ghi từ IDE** (không chạy trên staging/prod, nơi app chạy trong container UTC):
+
+```sql
+-- Dời thêm 8 giờ, quay vòng trong ngày (giờ lưu 16:30 là 00:30 thật).
+UPDATE route_plan_routes SET shift_start = SEC_TO_TIME(MOD(TIME_TO_SEC(shift_start) + 8 * 3600 + 86400, 86400)), shift_end = SEC_TO_TIME(MOD(TIME_TO_SEC(shift_end) + 8 * 3600 + 86400, 86400));
+UPDATE route_plan_stops SET tw_start = SEC_TO_TIME(MOD(TIME_TO_SEC(tw_start) + 8 * 3600 + 86400, 86400)), tw_end = SEC_TO_TIME(MOD(TIME_TO_SEC(tw_end) + 8 * 3600 + 86400, 86400)) WHERE tw_start IS NOT NULL;
+```
+
 ## OSRM và Nominatim tự host (tuỳ chọn)
 
 Mặc định app gọi server công khai của OSRM và Nominatim (chỉ hợp cho dev/demo). Chạy bản tự host với dữ liệu OpenStreetMap cắt theo vùng `ROUTING_BBOX` (mặc định Đà Nẵng và Hội An):
