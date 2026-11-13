@@ -90,6 +90,10 @@ Nên chép file backup ra khỏi VPS định kỳ. Redis không cần backup: m�
 | Khởi động lại app | `docker compose -f compose.prod.yaml restart app` |
 | Dừng toàn bộ (giữ dữ liệu) | `docker compose -f compose.prod.yaml down` |
 | Dọn image cũ | `docker image prune` |
+| Log trong 1 giờ qua | `docker compose -f compose.prod.yaml logs --since 1h app` |
+| Dung lượng log của các container | `sudo du -ch /var/lib/docker/containers/*/*-json.log \| tail -1` |
+
+**Giới hạn log (T51):** mọi service trong các file compose giữ tối đa `LOG_MAX_FILE` file × `LOG_MAX_SIZE` (mặc định 3 × 10 MB, tức 30 MB mỗi container); dòng cũ hơn bị bỏ. Muốn giữ nhiều hơn để điều tra thì tăng hai biến trong `.env` rồi `up -d` lại (container được tạo lại mới nhận giới hạn mới). Log đã bị bỏ không lấy lại được: cần lưu lâu thì gom log ra ngoài (chưa làm). Kiểm tra một container: `docker inspect -f '{{json .HostConfig.LogConfig}}' <container>`.
 
 ## 7. OSRM và Nominatim tự host (`compose.routing.yaml`, P-55)
 

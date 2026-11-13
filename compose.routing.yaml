@@ -15,8 +15,17 @@
 # and imports Nominatim; data stays in volumes, so later starts take seconds. Variables come from .env.
 # Neither service has authentication: ports are published on ROUTING_BIND only (127.0.0.1 by default).
 
+# Docker keeps container logs without limit by default: a small VPS fills its disk (T51, P-59). Each container keeps
+# at most LOG_MAX_FILE files of LOG_MAX_SIZE (30 MB by default); older lines are dropped.
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: ${LOG_MAX_SIZE:-10m}
+    max-file: "${LOG_MAX_FILE:-3}"
+
 services:
   routing-data:
+    logging: *logging
     # Downloads the country extract once, then cuts it to ROUTING_BBOX into region.osm.pbf. Redone when the area
     # changes: region.bbox records which area the file holds.
     image: debian:trixie-20251020-slim
@@ -53,6 +62,7 @@ services:
       - routing-pbf:/data
 
   osrm-prepare:
+    logging: *logging
     # Builds the car graph (MLD) from region.osm.pbf; skipped when the graph already matches the area.
     image: ghcr.io/project-osrm/osrm-backend:v26.10.0-debian
     entrypoint: ["sh", "-c"]
@@ -80,6 +90,7 @@ services:
         condition: service_completed_successfully
 
   osrm:
+    logging: *logging
     image: ghcr.io/project-osrm/osrm-backend:v26.10.0-debian
     restart: unless-stopped
     # max-table-size must equal ROUTING_MATRIX_OSRM_MAXTABLESIZE of the app (F-41): a plan has at most
@@ -94,6 +105,7 @@ services:
         condition: service_completed_successfully
 
   nominatim:
+    logging: *logging
     # Imports region.osm.pbf on the first start only (it answers once the import is done), then serves. After changing
     # ROUTING_BBOX, remove the nominatim-data volume to import the new area (docs/DEPLOYMENT.md §7.4).
     image: mediagis/nominatim:5.3.3

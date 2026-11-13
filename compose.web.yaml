@@ -5,8 +5,17 @@
 # GitHub release. Variables come from .env (see .env.prod.example).
 # With ufw-docker, open 80/443 for this container with `ufw-docker allow` (plain `ufw allow` does not reach containers).
 
+# Docker keeps container logs without limit by default: a small VPS fills its disk (T51, P-59). Each container keeps
+# at most LOG_MAX_FILE files of LOG_MAX_SIZE (30 MB by default); older lines are dropped.
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: ${LOG_MAX_SIZE:-10m}
+    max-file: "${LOG_MAX_FILE:-3}"
+
 services:
   web:
+    logging: *logging
     image: ${WEB_IMAGE:-ghcr.io/huyga1185/pathwise-web}:${APP_IMAGE_TAG:?set in .env, e.g. 0.1.0 or develop}
     restart: unless-stopped
     environment:

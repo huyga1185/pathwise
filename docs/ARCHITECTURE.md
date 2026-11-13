@@ -344,6 +344,7 @@ Cách dùng:
 - Thêm `--profile routing`: chạy kèm OSRM và Nominatim local. App trỏ tới chúng qua `ROUTING_GEOCODING_NOMINATIM_BASE_URL`, `ROUTING_MATRIX_OSRM_BASE_URL`, và đặt `...RATE_LIMIT_ENABLED=false`.
 - `.env.example` liệt kê mọi biến môi trường (không chứa secret thật). File `.env` được gitignore.
 - `compose.prod.yaml`: dùng cho VPS, gồm `app` (image từ `ghcr.io`, không build tại chỗ), `mariadb`, `redis`, không có mailpit, dùng SMTP thật qua env. App kết nối DB bằng user riêng (không phải root); chỉ cổng app được publish, ở `127.0.0.1`. HTTPS và web dispatcher qua Caddy (W08, P-56): `compose.web.yaml` (container `web`, image `pathwise-web`) hoặc Caddy trên host với `deploy/caddy/Caddyfile`; cookie `Secure` yêu cầu HTTPS.
+- Mọi service trong mọi file compose có `logging` chung (`x-logging`: `json-file`, `LOG_MAX_SIZE` × `LOG_MAX_FILE`, mặc định 10 MB × 3; T51, P-59) để log không làm đầy đĩa VPS.
 
 ### 12.3 GitHub Actions
 
