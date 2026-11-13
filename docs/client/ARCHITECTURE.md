@@ -73,6 +73,7 @@ Quy tắc cứng:
 | `LocationSource` (vị trí máy, T32) | — | `platform/location.dart` (`geolocator`, P-54): `check`/`request` quyền và GPS (`LocationAccess`), `watch` luồng `LocationFix` chạy nền (Android foreground service có thông báo cố định, iOS background location), `openAppSettings`/`openLocationSettings`; lỗi luồng là `LocationUnavailable`. Nhiều người nghe cùng lúc (chia sẻ M04, dẫn đường M05 với `precise: true`) dùng chung một luồng `geolocator`, mở lại với cấu hình dày nhất đang cần. Test dùng `FakeLocationSource` | Đổi thư viện vị trí, thêm lưu điểm khi app bị tắt |
 | `DirectionsSource` (đường đi, T33) | — | `features/navigation/directions_source.dart`: `GET /driver/routes/{routeId}/directions` từ vị trí hiện tại (P-57), lỗi đổi sang kiểu lỗi của app; test dùng `FakeDirectionsSource` | Đổi nguồn đường đi (ví dụ tính trên máy) mà không sửa màn hình |
 | `ScreenAwake` (giữ màn hình sáng, M05) | — | `platform/screen_awake.dart` (`wakelock_plus`); bật khi màn dẫn đường mở, tắt khi rời màn; test dùng bản giả | Đổi thư viện |
+| `SortableBoard` (kéo thả, T28) | `platform/dnd/SortableBoard.tsx` (`@dnd-kit/core` + `sortable`, P-58): cột và danh sách id, `renderItem`, `onChange(columns)`, bàn phím và câu đọc tiếng Việt; feature không import `@dnd-kit` | — | Đổi thư viện kéo thả |
 | `Messages` (chuỗi giao diện) | `shared/i18n/vi.ts` | `shared/i18n/vi.dart` | Thêm ngôn ngữ: thêm file, không sửa màn hình |
 
 Mỗi port là một `interface` (TS) hoặc `abstract interface class` (Dart). Code ngoài `platform/` chỉ phụ thuộc vào interface, implementation được chọn ở `app/` (composition root) theo cấu hình. Test thay implementation bằng fake.
@@ -203,5 +204,5 @@ Theo API_SPEC §2 và UX_BRIEF §3.
 
 - Vị trí tài xế (T32, đã làm): mobile có port `LocationSource` và `LocationSharingController` (`features/driver_routes/location_sharing.dart`: một tuyến chia sẻ tại một thời điểm, gom điểm trong bộ nhớ tối đa 100, gửi lô mỗi 30 s, báo trạng thái `PUT /driver/location/sharing`, dừng khi tuyến xong, `PLAN_NOT_ACTIVE` hoặc phiên kết thúc); web có prop `drivers` (`MapDriver`) của `RouteMap` và `useDriverLocations` (cùng nhịp 30 s với plan, chỉ khi đang giao). Lịch sử vị trí (I-05) chỉ thêm sink ở backend.
 - Dẫn đường trong app (T33, M05, P-57): port `DirectionsSource` ở mobile, feature `navigation`, `NavigationMap` trong `platform/map`; deep link Google/Apple Maps vẫn là đường lùi.
-- Chỉnh tay tuyến (T28): `RouteMap` nhận chế độ kéo thả; logic nằm ở feature `plans`.
+- Chỉnh tay tuyến (T28, W10, P-58): kéo thả trong danh sách tuyến qua port `platform/dnd` (`SortableBoard`); `RouteMap` chỉ vẽ theo thứ tự nháp, không kéo trên bản đồ; logic nháp và vi phạm ở feature `plans`.
 - Client thứ ba: tạo thư mục mới cùng cấp, dùng lại `api/openapi.json`, `tokens.json`, quy tắc trong file này.

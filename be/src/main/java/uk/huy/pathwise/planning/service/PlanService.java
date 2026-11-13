@@ -593,6 +593,7 @@ public class PlanService {
             stop.setRoute(null);
             stop.setSequence(null);
             stop.setPlannedArrival(null);
+            stop.setManuallyUnassigned(false);
         }
         for (PlanRoute route : plan.getRoutes()) {
             route.setPlannedDistanceMeters(null);

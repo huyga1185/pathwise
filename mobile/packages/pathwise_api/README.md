@@ -103,6 +103,7 @@ Class | Method | HTTP request | Description
 [*PlanControllerApi*](doc/PlanControllerApi.md) | [**patchStop**](doc/PlanControllerApi.md#patchstop) | **PATCH** /api/v1/plans/{id}/stops/{stopId} | 
 [*PlanControllerApi*](doc/PlanControllerApi.md) | [**publishPlan**](doc/PlanControllerApi.md#publishplan) | **POST** /api/v1/plans/{id}/publish | 
 [*PlanControllerApi*](doc/PlanControllerApi.md) | [**replacePlan**](doc/PlanControllerApi.md#replaceplan) | **PUT** /api/v1/plans/{id} | 
+[*PlanControllerApi*](doc/PlanControllerApi.md) | [**replaceRoutes**](doc/PlanControllerApi.md#replaceroutes) | **PUT** /api/v1/plans/{id}/routes | 
 [*StoreControllerApi*](doc/StoreControllerApi.md) | [**getStore**](doc/StoreControllerApi.md#getstore) | **GET** /api/v1/store | 
 [*StoreControllerApi*](doc/StoreControllerApi.md) | [**updateStore**](doc/StoreControllerApi.md#updatestore) | **PUT** /api/v1/store | 
 [*StoreInvitationControllerApi*](doc/StoreInvitationControllerApi.md) | [**createInvitation**](doc/StoreInvitationControllerApi.md#createinvitation) | **POST** /api/v1/store/invitations | 
@@ -191,10 +192,12 @@ Class | Method | HTTP request | Description
  - [RefreshTokenRequest](doc/RefreshTokenRequest.md)
  - [RegisterRequest](doc/RegisterRequest.md)
  - [RegisterResponse](doc/RegisterResponse.md)
+ - [ReplaceRoutesRequest](doc/ReplaceRoutesRequest.md)
  - [RequestPasswordChangeOtpRequest](doc/RequestPasswordChangeOtpRequest.md)
  - [ResendVerificationRequest](doc/ResendVerificationRequest.md)
  - [ResetPasswordRequest](doc/ResetPasswordRequest.md)
  - [ResetTokenResponse](doc/ResetTokenResponse.md)
+ - [RouteStops](doc/RouteStops.md)
  - [SessionResponse](doc/SessionResponse.md)
  - [StoreResponse](doc/StoreResponse.md)
  - [TimeWindowRequest](doc/TimeWindowRequest.md)
@@ -210,6 +213,7 @@ Class | Method | HTTP request | Description
  - [VehicleResponse](doc/VehicleResponse.md)
  - [VerifyEmailRequest](doc/VerifyEmailRequest.md)
  - [VerifyResetOtpRequest](doc/VerifyResetOtpRequest.md)
+ - [ViolationResponse](doc/ViolationResponse.md)
 
 
 ## Documentation For Authorization

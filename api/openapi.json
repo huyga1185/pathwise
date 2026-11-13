@@ -1807,6 +1807,12 @@
           "version": {
             "format": "int64",
             "type": "integer"
+          },
+          "violations": {
+            "items": {
+              "$ref": "#/components/schemas/ViolationResponse"
+            },
+            "type": "array"
           }
         },
         "required": [
@@ -1824,7 +1830,8 @@
           "totalDistanceMeters",
           "totalDurationSeconds",
           "unassignedStops",
-          "version"
+          "version",
+          "violations"
         ],
         "type": "object"
       },
@@ -2049,7 +2056,8 @@
           "dropReason": {
             "enum": [
               "NOT_OPTIMIZED",
-              "INFEASIBLE"
+              "INFEASIBLE",
+              "MANUAL"
             ],
             "type": [
               "string",
@@ -2342,6 +2350,33 @@
         ],
         "type": "object"
       },
+      "ReplaceRoutesRequest": {
+        "properties": {
+          "routes": {
+            "items": {
+              "$ref": "#/components/schemas/RouteStops"
+            },
+            "type": "array"
+          },
+          "unassignedStopIds": {
+            "items": {
+              "format": "int64",
+              "type": "integer"
+            },
+            "type": "array"
+          },
+          "version": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "routes",
+          "unassignedStopIds",
+          "version"
+        ],
+        "type": "object"
+      },
       "RequestPasswordChangeOtpRequest": {
         "properties": {
           "currentPassword": {
@@ -2398,6 +2433,26 @@
         "required": [
           "expiresAt",
           "resetToken"
+        ],
+        "type": "object"
+      },
+      "RouteStops": {
+        "properties": {
+          "routeId": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "stopIds": {
+            "items": {
+              "format": "int64",
+              "type": "integer"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "routeId",
+          "stopIds"
         ],
         "type": "object"
       },
@@ -2769,6 +2824,41 @@
         "required": [
           "email",
           "otp"
+        ],
+        "type": "object"
+      },
+      "ViolationResponse": {
+        "properties": {
+          "code": {
+            "enum": [
+              "CAPACITY_EXCEEDED",
+              "TIME_WINDOW_MISSED",
+              "SHIFT_EXCEEDED",
+              "MAX_DISTANCE_EXCEEDED"
+            ],
+            "type": "string"
+          },
+          "excess": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "routeId": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "stopId": {
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "code",
+          "excess",
+          "routeId",
+          "stopId"
         ],
         "type": "object"
       }
@@ -3938,6 +4028,47 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/PlanVersionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponsePlanDetailResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "plan-controller"
+        ]
+      }
+    },
+    "/api/v1/plans/{id}/routes": {
+      "put": {
+        "operationId": "replaceRoutes",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReplaceRoutesRequest"
               }
             }
           },

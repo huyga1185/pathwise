@@ -68,10 +68,12 @@ import 'package:pathwise_api/src/model/plan_version_request.dart';
 import 'package:pathwise_api/src/model/refresh_token_request.dart';
 import 'package:pathwise_api/src/model/register_request.dart';
 import 'package:pathwise_api/src/model/register_response.dart';
+import 'package:pathwise_api/src/model/replace_routes_request.dart';
 import 'package:pathwise_api/src/model/request_password_change_otp_request.dart';
 import 'package:pathwise_api/src/model/resend_verification_request.dart';
 import 'package:pathwise_api/src/model/reset_password_request.dart';
 import 'package:pathwise_api/src/model/reset_token_response.dart';
+import 'package:pathwise_api/src/model/route_stops.dart';
 import 'package:pathwise_api/src/model/session_response.dart';
 import 'package:pathwise_api/src/model/store_response.dart';
 import 'package:pathwise_api/src/model/time_window_request.dart';
@@ -87,6 +89,7 @@ import 'package:pathwise_api/src/model/vehicle.dart';
 import 'package:pathwise_api/src/model/vehicle_response.dart';
 import 'package:pathwise_api/src/model/verify_email_request.dart';
 import 'package:pathwise_api/src/model/verify_reset_otp_request.dart';
+import 'package:pathwise_api/src/model/violation_response.dart';
 
 final _regList = RegExp(r'^List<(.*)>$');
 final _regSet = RegExp(r'^Set<(.*)>$');
@@ -246,6 +249,8 @@ final _regMap = RegExp(r'^Map<String,(.*)>$');
           return RegisterRequest.fromJson(value as Map<String, dynamic>) as ReturnType;
         case 'RegisterResponse':
           return RegisterResponse.fromJson(value as Map<String, dynamic>) as ReturnType;
+        case 'ReplaceRoutesRequest':
+          return ReplaceRoutesRequest.fromJson(value as Map<String, dynamic>) as ReturnType;
         case 'RequestPasswordChangeOtpRequest':
           return RequestPasswordChangeOtpRequest.fromJson(value as Map<String, dynamic>) as ReturnType;
         case 'ResendVerificationRequest':
@@ -254,6 +259,8 @@ final _regMap = RegExp(r'^Map<String,(.*)>$');
           return ResetPasswordRequest.fromJson(value as Map<String, dynamic>) as ReturnType;
         case 'ResetTokenResponse':
           return ResetTokenResponse.fromJson(value as Map<String, dynamic>) as ReturnType;
+        case 'RouteStops':
+          return RouteStops.fromJson(value as Map<String, dynamic>) as ReturnType;
         case 'SessionResponse':
           return SessionResponse.fromJson(value as Map<String, dynamic>) as ReturnType;
         case 'StoreResponse':
@@ -284,6 +291,8 @@ final _regMap = RegExp(r'^Map<String,(.*)>$');
           return VerifyEmailRequest.fromJson(value as Map<String, dynamic>) as ReturnType;
         case 'VerifyResetOtpRequest':
           return VerifyResetOtpRequest.fromJson(value as Map<String, dynamic>) as ReturnType;
+        case 'ViolationResponse':
+          return ViolationResponse.fromJson(value as Map<String, dynamic>) as ReturnType;
         default:
           RegExpMatch? match;
 

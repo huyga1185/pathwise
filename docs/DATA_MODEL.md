@@ -218,6 +218,7 @@ Version được cấp trước — agent **không** tự chọn số khác:
 | V3 | `V3__store_invitations.sql` | T16 ✓ | Bảng `store_invitations`. **Đã tạo.** |
 | V4 | `V4__vehicles.sql` | T20 ✓ | Bảng `vehicles`. **Đã tạo.** |
 | V5 | `V5__route_plans.sql` | T24 ✓ | `background_jobs`, `route_plans`, `route_plan_routes`, `route_plan_stops`, `route_plan_stop_demands` (D-36). **Đã tạo.** |
+| V6 | `V6__manual_route_edit.sql` | T28 | `route_plan_stops.manually_unassigned BOOLEAN NOT NULL DEFAULT FALSE`: stop dispatcher bỏ ra khỏi route bằng `PUT /plans/{id}/routes` (`dropReason = MANUAL`, P-58); optimize, `PUT /plans/{id}` và `PATCH` stop đặt lại `FALSE`. |
 
 Task phát sinh cần migration mới lấy số tiếp theo **sau khi** cập nhật bảng này trong cùng PR.
 

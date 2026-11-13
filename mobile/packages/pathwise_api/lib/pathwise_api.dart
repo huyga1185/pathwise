@@ -93,10 +93,12 @@ export 'package:pathwise_api/src/model/plan_version_request.dart';
 export 'package:pathwise_api/src/model/refresh_token_request.dart';
 export 'package:pathwise_api/src/model/register_request.dart';
 export 'package:pathwise_api/src/model/register_response.dart';
+export 'package:pathwise_api/src/model/replace_routes_request.dart';
 export 'package:pathwise_api/src/model/request_password_change_otp_request.dart';
 export 'package:pathwise_api/src/model/resend_verification_request.dart';
 export 'package:pathwise_api/src/model/reset_password_request.dart';
 export 'package:pathwise_api/src/model/reset_token_response.dart';
+export 'package:pathwise_api/src/model/route_stops.dart';
 export 'package:pathwise_api/src/model/session_response.dart';
 export 'package:pathwise_api/src/model/store_response.dart';
 export 'package:pathwise_api/src/model/time_window_request.dart';
@@ -112,4 +114,5 @@ export 'package:pathwise_api/src/model/vehicle.dart';
 export 'package:pathwise_api/src/model/vehicle_response.dart';
 export 'package:pathwise_api/src/model/verify_email_request.dart';
 export 'package:pathwise_api/src/model/verify_reset_otp_request.dart';
+export 'package:pathwise_api/src/model/violation_response.dart';
 

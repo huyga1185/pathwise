@@ -21,7 +21,11 @@ const STATUS: Record<StatusKind, Record<string, [string, Tone]>> = {
     FAILED: ['KHÔNG GIAO ĐƯỢC', 'danger'],
     SKIPPED: ['BỎ QUA', 'signal'],
   },
-  dropReason: { NOT_OPTIMIZED: ['CHƯA XẾP TUYẾN', 'muted'], INFEASIBLE: ['KHÔNG XẾP ĐƯỢC', 'signal'] },
+  dropReason: {
+    NOT_OPTIMIZED: ['CHƯA XẾP TUYẾN', 'muted'],
+    INFEASIBLE: ['KHÔNG XẾP ĐƯỢC', 'signal'],
+    MANUAL: ['ĐÃ BỎ RA', 'muted'],
+  },
   geocode: { PENDING: ['ĐANG TÌM TOẠ ĐỘ', 'info'], FAILED: ['KHÔNG TÌM THẤY', 'danger'] },
   processing: { GEOCODING: ['ĐANG TÌM TOẠ ĐỘ', 'info'], OPTIMIZING: ['ĐANG TỐI ƯU', 'info'] },
   invitation: {

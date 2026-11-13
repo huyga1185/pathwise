@@ -69,7 +69,8 @@ public class FakeMatrixProvider implements MatrixProvider {
         return latch;
     }
 
-    private static double meters(Coordinate a, Coordinate b) {
+    /** Straight-line distance the fake uses, for tests that check recomputed distances and times. */
+    public static double meters(Coordinate a, Coordinate b) {
         double lat1 = Math.toRadians(a.lat());
         double lat2 = Math.toRadians(b.lat());
         double dLat = lat2 - lat1;
