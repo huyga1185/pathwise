@@ -1,0 +1,43 @@
+# Release assets (W08, P-56): when a GitHub release is published, attach the web app for a Caddy installed on the host
+# (docs/DEPLOYMENT.md §8.2): pathwise-web-<tag>.tar.gz with app/ (the build, configured at runtime by app/config.js)
+# and the Caddyfile. The images themselves come from image.yml on the tag.
+name: release
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write # upload the asset to the release
+
+jobs:
+  web-tarball:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v5
+        with:
+          package_json_file: web/package.json
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: web/.nvmrc
+          cache: pnpm
+          cache-dependency-path: web/pnpm-lock.yaml
+      - name: Build
+        working-directory: web
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm build
+      - name: Package
+        env:
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          mkdir -p "pathwise-web-$TAG"
+          cp -r web/dist "pathwise-web-$TAG/app"
+          cp deploy/caddy/Caddyfile "pathwise-web-$TAG/Caddyfile"
+          tar -czf "pathwise-web-$TAG.tar.gz" "pathwise-web-$TAG"
+      - name: Upload to the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.event.release.tag_name }}
+        run: gh release upload "$TAG" "pathwise-web-$TAG.tar.gz" --clobber

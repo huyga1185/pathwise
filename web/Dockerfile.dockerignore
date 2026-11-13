@@ -1,0 +1,10 @@
+# Build context of web/Dockerfile is the repository root: send only what the web build needs.
+*
+!web
+!brand/logo
+!deploy/caddy
+web/node_modules
+web/dist
+web/test-results
+web/playwright-report
+web/.env*

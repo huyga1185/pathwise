@@ -1,4 +1,5 @@
-# Build, scan and publish the app image to GHCR (ARCHITECTURE.md §12.3, D-31, D-34).
+# Build, scan and publish the images to GHCR (ARCHITECTURE.md §12.3, D-31, D-34): pathwise (the app, be/) and
+# pathwise-web (the web app behind Caddy, web/Dockerfile; W08, P-56), with the same tags:
 #   push to develop -> develop, develop-<shortsha>   (staging)
 #   tag v*          -> x.y.z, x.y, latest           (prod)
 name: image
@@ -20,7 +21,6 @@ permissions:
   packages: write
 
 env:
-  IMAGE: ghcr.io/${{ github.repository_owner }}/pathwise
   # Mirrors first: ghcr.io often rate-limits the Trivy databases.
   TRIVY_DB_REPOSITORY: public.ecr.aws/aquasecurity/trivy-db,ghcr.io/aquasecurity/trivy-db
   TRIVY_JAVA_DB_REPOSITORY: public.ecr.aws/aquasecurity/trivy-java-db,ghcr.io/aquasecurity/trivy-java-db
@@ -28,6 +28,19 @@ env:
 jobs:
   image:
     runs-on: ubuntu-latest
+    strategy:
+      # One image failing its scan must not cancel the other.
+      fail-fast: false
+      matrix:
+        include:
+          - name: pathwise
+            context: be
+            file: be/Dockerfile
+          - name: pathwise-web
+            context: .
+            file: web/Dockerfile
+    env:
+      IMAGE: ghcr.io/${{ github.repository_owner }}/${{ matrix.name }}
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-buildx-action@v4
@@ -45,12 +58,13 @@ jobs:
       - name: Build
         uses: docker/build-push-action@v7
         with:
-          context: be
+          context: ${{ matrix.context }}
+          file: ${{ matrix.file }}
           target: runtime
           load: true
           tags: ${{ env.IMAGE }}:scan
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=${{ matrix.name }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.name }}
       - name: Trivy report (HIGH, CRITICAL)
         # Pinned to an immutable commit: trivy-action tags < 0.35.0 were force-pushed to malware (GHSA-69fq-xp46-6x23).
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
@@ -65,7 +79,7 @@ jobs:
         if: always()
         run: |
           {
-            echo '### Trivy (HIGH, CRITICAL)'
+            echo '### Trivy ${{ matrix.name }} (HIGH, CRITICAL)'
             echo '```'
             cat trivy-report.txt 2>/dev/null || echo 'no report'
             echo '```'
@@ -88,9 +102,10 @@ jobs:
       - name: Push
         uses: docker/build-push-action@v7
         with:
-          context: be
+          context: ${{ matrix.context }}
+          file: ${{ matrix.file }}
           target: runtime
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
+          cache-from: type=gha,scope=${{ matrix.name }}

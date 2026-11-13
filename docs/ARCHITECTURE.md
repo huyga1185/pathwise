@@ -342,7 +342,7 @@ Cách dùng:
 - `docker compose --profile app up -d --build`: chạy toàn bộ stack.
 - Thêm `--profile routing`: chạy kèm OSRM và Nominatim local. App trỏ tới chúng qua `ROUTING_GEOCODING_NOMINATIM_BASE_URL`, `ROUTING_MATRIX_OSRM_BASE_URL`, và đặt `...RATE_LIMIT_ENABLED=false`.
 - `.env.example` liệt kê mọi biến môi trường (không chứa secret thật). File `.env` được gitignore.
-- `compose.prod.yaml`: dùng cho VPS, gồm `app` (image từ `ghcr.io`, không build tại chỗ), `mariadb`, `redis`, không có mailpit, dùng SMTP thật qua env. App kết nối DB bằng user riêng (không phải root); chỉ cổng app được publish, ở `127.0.0.1`. Reverse proxy TLS (Caddy/Nginx) nằm ngoài phạm vi repo; cookie `Secure` yêu cầu HTTPS.
+- `compose.prod.yaml`: dùng cho VPS, gồm `app` (image từ `ghcr.io`, không build tại chỗ), `mariadb`, `redis`, không có mailpit, dùng SMTP thật qua env. App kết nối DB bằng user riêng (không phải root); chỉ cổng app được publish, ở `127.0.0.1`. HTTPS và web dispatcher qua Caddy (W08, P-56): `compose.web.yaml` (container `web`, image `pathwise-web`) hoặc Caddy trên host với `deploy/caddy/Caddyfile`; cookie `Secure` yêu cầu HTTPS.
 
 ### 12.3 GitHub Actions
 
@@ -350,7 +350,8 @@ Cách dùng:
 |---|---|---|
 | `ci.yml` | `pull_request` vào `develop`/`main`; `push` lên `develop`/`main` | `./mvnw -B verify` (compile, test bằng Testcontainers, JaCoCo report). Upload test report và coverage làm artifact, ghi tóm tắt coverage vào job summary. **Đây là check bắt buộc.** |
 | `quality.yml` | `pull_request` | `actions/dependency-review-action` (chặn dependency mới có lỗ hổng high trở lên); `gitleaks` quét secret. |
-| `image.yml` | `push` lên `develop`; tag `v*` | Build image multi-stage (Buildx, cache GHA), quét bằng **Trivy** (fail khi có lỗ hổng CRITICAL đã có bản sửa), push lên `ghcr.io/<owner>/pathwise`. Tag cho `develop`: `develop`, `develop-<shortsha>`. Tag cho `v*`: `x.y.z`, `x.y`, `latest`. Dùng `GITHUB_TOKEN` với quyền `packages: write`, không cần secret khác. |
+| `image.yml` | `push` lên `develop`; tag `v*` | Build image multi-stage (Buildx, cache GHA), quét bằng **Trivy** (fail khi có lỗ hổng CRITICAL đã có bản sửa), push lên `ghcr.io/<owner>/pathwise`; matrix build thêm `ghcr.io/<owner>/pathwise-web` (`web/Dockerfile`, W08) cùng tag. Tag cho `develop`: `develop`, `develop-<shortsha>`. Tag cho `v*`: `x.y.z`, `x.y`, `latest`. Dùng `GITHUB_TOKEN` với quyền `packages: write`, không cần secret khác. |
+| `release.yml` | GitHub Release được publish | Build web, đính `pathwise-web-<tag>.tar.gz` (`app/` + `Caddyfile`) vào release cho Caddy trên host (W08, P-56). Quyền `contents: write`. |
 | `dependabot.yml` | theo lịch hằng tuần | Ecosystem `maven`, `github-actions`, `docker`. Gộp PR: Maven minor/patch thành một PR, GitHub Actions thành một PR. Không đề xuất đổi phiên bản Java của Docker image (bỏ qua major `eclipse-temurin` và image `maven`). |
 
 - **Thay đổi chỉ đụng docs** (`docs/**`, `*.md`, `LICENSE`): job `ci` và `dependency-review` bị skip (composite action `.github/actions/detect-code-changes`; job skip vẫn đạt check bắt buộc `ci`, còn lọc ở trigger thì check không bao giờ báo và PR bị kẹt); `image` lọc bằng `paths-ignore` ở trigger (không phải check bắt buộc, tag `v*` luôn build). `gitleaks` luôn chạy. Không xác định được thay đổi thì vẫn chạy đủ.

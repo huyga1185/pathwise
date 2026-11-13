@@ -93,7 +93,7 @@ Mọi email khi dev được gửi tới Mailpit: mở http://localhost:8025.
 
 Quy trình branch và CI: `docs/CONTRIBUTING.md`.
 
-Deploy lên VPS (staging/prod): `docs/DEPLOYMENT.md`.
+Deploy lên VPS (staging/prod): `docs/DEPLOYMENT.md`. Web dispatcher và HTTPS chạy qua Caddy, trong container (`compose.web.yaml`) hoặc trên host (`deploy/caddy/Caddyfile`), xem §8.
 
 ## Troubleshooting
 
