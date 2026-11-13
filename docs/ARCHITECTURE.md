@@ -38,7 +38,7 @@ Package gốc `uk.huy.pathwise`. Mỗi module là một package cấp 1.
 
 | Module | Trách nhiệm | Trạng thái |
 |---|---|---|
-| `core` | Hạ tầng dùng chung, không chứa nghiệp vụ: envelope response, `ErrorCode`/`AppException`/handler, pagination, `StateStore`, `core.security` (`Hasher` SHA-256, `OpaqueTokenGenerator`; P-28), `core.phonenumber` (chuẩn hoá và validate số VN, P-29), rate limiter, `core.housekeeping` (dọn dữ liệu cũ theo lịch, §7.1; T53), cấu hình web/JSON. | Có — mở rộng |
+| `core` | Hạ tầng dùng chung, không chứa nghiệp vụ: envelope response, `ErrorCode`/`AppException`/handler, pagination, `StateStore`, `core.security` (`Hasher` SHA-256, `OpaqueTokenGenerator`; P-28), `core.phonenumber` (chuẩn hoá và validate số VN, P-29), rate limiter, `core.housekeeping` (dọn dữ liệu cũ theo lịch, §7.1; T53), `core.observability` (`FailureLog`, §10; T54), cấu hình web/JSON. | Có — mở rộng |
 | `shared` | Kiểu dữ liệu chia sẻ giữa module: `UserIdentity`, `UserRole`, `UserStatus`, principal `AuthenticatedUser` (P-25). Chỉ record/enum, **không** bean. | Có — sửa |
 | `user` | Tài khoản người dùng: entity `User`, mật khẩu, hồ sơ, trạng thái. | Có — mở rộng |
 | `auth` | Xác thực: đăng ký (orchestrate user + store), đăng nhập, token (access/refresh/OTP token), OTP, session, đổi/quên mật khẩu, security filter chain. | Có — sửa |
@@ -301,6 +301,7 @@ Chọn implementation bằng property (`routing.geocoding.provider=nominatim`), 
 - JWT secret ≥ 256 bit, Base64.
 - `ClientDetailFilter` chỉ đọc `request.getRemoteAddr()`. Profile `staging`/`prod` bật `server.forward-headers-strategy=native`: Tomcat áp `X-Forwarded-For`/`-Proto` chỉ khi request tới từ proxy ở dải IP nội bộ (`server.tomcat.remoteip.internal-proxies`), nên client không giả được IP (T41, P-38).
 - Log: SLF4J, không `System.out`; MDC `requestId` (`core.web.LogContextFilter`, chạy trước security chain, UUID tự sinh, trả trong header `X-Request-Id`), `userId`, `storeId` (`JwtAuthFilter` sau khi xác thực); pattern ở `logging.pattern.level`. Job nền chạy ở thread khác nên không có MDC của request. **Cấm log** mật khẩu, OTP, token, ticket, refresh token, secret.
+- Lỗi vận hành (T54, P-59) báo qua `core.observability.FailureLog` (một chỗ, để T60 thêm bộ đếm Micrometer sau interface này): một dòng cố định `failure source=<EMAIL|ROUTING|GEOCODING|JOB> operation=<…> reason=<…> [key=value…]` trên logger `uk.huy.pathwise.failure`, WARN (ERROR kèm stack trace khi lỗi không lường trước). Nơi báo: `DefaultEmailSender` (`smtp.send`, reason `send_failed`/`authentication_failed`/`invalid_message`, chỉ giữ tên lớp của nguyên nhân vì thông báo của SMTP có thể chứa email người nhận); decorator `routing.infrastructure.failure.FailureLogging*Provider` bọc provider trong `MatrixConfig`/`DirectionsConfig`/`GeocodingConfig` (`osrm.table`, `osrm.route`, `nominatim.search`; reason `unreachable`/`http_<status>`/`bad_response`; `GEOCODING_BUSY` là giới hạn của ta nên không báo; geocoding đặt dưới cache và không ghi địa chỉ tìm); `JobExecutor`/`JobRecovery` (operation là loại job, reason là `errorCode`, kèm `jobId`). Không truyền dữ liệu cá nhân vào `FailureLog`.
 - Security headers: mặc định của Spring Security cộng `Referrer-Policy: no-referrer` (P-38).
 
 ## 11. Chiến lược kiểm thử
@@ -353,6 +354,7 @@ Cách dùng:
 - `compose.prod.yaml`: dùng cho VPS, gồm `app` (image từ `ghcr.io`, không build tại chỗ), `mariadb`, `redis`, không có mailpit, dùng SMTP thật qua env. App kết nối DB bằng user riêng (không phải root); chỉ cổng app được publish, ở `127.0.0.1`. HTTPS và web dispatcher qua Caddy (W08, P-56): `compose.web.yaml` (container `web`, image `pathwise-web`) hoặc Caddy trên host với `deploy/caddy/Caddyfile`; cookie `Secure` yêu cầu HTTPS.
 - Mọi service trong mọi file compose có `logging` chung (`x-logging`: `json-file`, `LOG_MAX_SIZE` × `LOG_MAX_FILE`, mặc định 10 MB × 3; T51, P-59) để log không làm đầy đĩa VPS.
 - `compose.backup.yaml` (T52, P-59): `backup` (image `mariadb:11.8`, dump hằng đêm, nén, mã hoá tuỳ chọn, xoay vòng ngày/tuần, file trạng thái) và `backup-offsite` (image `rclone/rclone`, chép lên bucket S3 tương thích khi có cấu hình). Không build image riêng: script nằm trong `command` như `compose.routing.yaml`.
+- Giám sát (T54, P-59): không có service giám sát trong compose. Health công khai `/actuator/health` qua Caddy cho uptime bên ngoài; script host `deploy/monitor/pathwise-monitor.sh` chạy bằng cron (đĩa, RAM, container, health, file trạng thái backup) và gửi email qua SMTP của app bằng `curl` (DEPLOYMENT §9).
 
 ### 12.3 GitHub Actions
 

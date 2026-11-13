@@ -4,3 +4,4 @@ __pycache__/
 
 # Database backups written by compose.backup.yaml (T52)
 /backups/
+/.monitor/

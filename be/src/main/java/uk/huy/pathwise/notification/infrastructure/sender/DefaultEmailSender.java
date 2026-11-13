@@ -2,23 +2,31 @@ package uk.huy.pathwise.notification.infrastructure.sender;
 
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
-import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.NestedExceptionUtils;
 import org.springframework.mail.MailAuthenticationException;
 import org.springframework.mail.MailSendException;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Component;
+import uk.huy.pathwise.core.observability.FailureLog;
+import uk.huy.pathwise.core.observability.FailureSource;
 
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
 
+/**
+ * Sends through the SMTP server of {@code spring.mail.*}. Failures are reported to {@link FailureLog} (T54) without
+ * the recipient: the server's message may contain the address, so only the type of the root cause is kept.
+ */
 @Component
-@Slf4j
 public class DefaultEmailSender implements EmailSender {
+    private static final String OPERATION = "smtp.send";
     private final JavaMailSender javaMailSender;
+    private final FailureLog failureLog;
 
-    public DefaultEmailSender(JavaMailSender javaMailSender) {
+    public DefaultEmailSender(JavaMailSender javaMailSender, FailureLog failureLog) {
         this.javaMailSender = javaMailSender;
+        this.failureLog = failureLog;
     }
 
     @Override
@@ -46,17 +54,21 @@ public class DefaultEmailSender implements EmailSender {
             mimeMessageHelper.setSubject(subject);
             mimeMessageHelper.setText(content, isHtml);
         } catch (MessagingException | UnsupportedEncodingException e) {
-            log.error("Could not create mime message", e);
+            failureLog.record(FailureSource.EMAIL, OPERATION, "invalid_message", "", e);
             throw new EmailSenderException("Could not create mime message");
         }
         try {
             javaMailSender.send(mimeMessage);
         } catch (MailAuthenticationException e) {
-            log.error("Mail server authentication failure", e);
+            failureLog.record(FailureSource.EMAIL, OPERATION, "authentication_failed", rootCause(e), null);
             throw new EmailSenderException("Could not send email");
         } catch(MailSendException e) {
-            log.error("An unexpected error occurred when sending email", e);
+            failureLog.record(FailureSource.EMAIL, OPERATION, "send_failed", rootCause(e), null);
             throw new EmailSenderException("Could not send email");
         }
+    }
+
+    private static String rootCause(Exception e) {
+        return "cause=" + NestedExceptionUtils.getMostSpecificCause(e).getClass().getSimpleName();
     }
 }

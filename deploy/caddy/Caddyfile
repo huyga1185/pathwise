@@ -16,8 +16,9 @@
 		-Server
 	}
 
-	# The API, and Swagger on staging (prod answers 404 itself). Actuator is not exposed.
-	@backend path /api/* /swagger-ui* /v3/api-docs*
+	# The API, Swagger on staging (prod answers 404 itself), and the overall health for an external uptime check (T54):
+	# {"status":"UP"} or 503, no details. The rest of Actuator is not exposed.
+	@backend path /api/* /swagger-ui* /v3/api-docs* /actuator/health
 	handle @backend {
 		reverse_proxy {$PATHWISE_UPSTREAM:app:8080}
 	}

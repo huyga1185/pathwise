@@ -530,6 +530,7 @@ Làm **A trước B**. A giữ an toàn dữ liệu và VPS (2 GB, chạy cả r
 - **Ước lượng:** 1 ngày · **Phụ thuộc:** T52 (trạng thái backup)
 - **Phạm vi:** không thêm Prometheus/Grafana (VPS 2 GB). (1) Health công khai đủ cho dịch vụ uptime bên ngoài (UptimeRobot/BetterStack, gói miễn phí) qua Caddy; hướng dẫn đăng ký. (2) Script cron trên host (trong repo, `deploy/monitor/`): đĩa > 85 %, RAM khả dụng thấp, container restart hoặc unhealthy, backup đêm qua thất bại → gửi email qua SMTP của app. (3) App log có cấu trúc khi gửi SMTP lỗi, OSRM/Nominatim lỗi, job lỗi, để T60 đếm.
 - **Acceptance:** chạy script với ngưỡng thấp gửi được email (Mailpit ở dev); dừng container app thì script báo; DEPLOYMENT có mục giám sát.
+- **Phát sinh khi làm (2026-11-14):** health công khai là `https://<domain>/actuator/health` (Caddy mở đúng path này). Script `deploy/monitor/pathwise-monitor.sh` (bash + curl + docker, không cài thêm gì) đọc cấu hình từ `.env` (biến môi trường thắng), gửi email bằng `curl` qua SMTP của app; mỗi sự cố báo một lần khi bắt đầu, nhắc lại sau `MONITOR_REMIND_HOURS` (6 giờ), báo khi hết (trạng thái ở `.monitor/`); thêm kiểm tra health của app và container tự khởi động lại; `--dry-run`, `--test-email`. Log lỗi qua interface `core.observability.FailureLog` (ARCHITECTURE §10) để T60 gắn bộ đếm vào cùng chỗ. SMTP chết thì script không gửi được: uptime bên ngoài là lớp báo thứ hai.
 
 ### Giai đoạn B: ADMIN có thực quyền
 
