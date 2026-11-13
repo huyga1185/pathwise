@@ -41,6 +41,21 @@ docker compose -f compose.prod.yaml logs app | grep -E "Flyway|Migrating|Started
 
 Flyway tự tạo schema ở lần chạy đầu. Swagger chỉ có ở staging: `https://<domain>/swagger-ui/index.html`.
 
+**ADMIN đầu tiên (T59).** Trước lần `up -d` đầu, thêm vào `.env`:
+
+```bash
+BOOTSTRAP_ADMIN_EMAIL=admin@example.com
+# Tuỳ chọn, 8–72 ký tự. Bỏ trống: app gửi email mã đặt lại mật khẩu (hạn 5 phút; quá hạn thì dùng "Quên mật khẩu" trên web).
+BOOTSTRAP_ADMIN_PASSWORD=
+BOOTSTRAP_ADMIN_FULL_NAME=Quản trị
+```
+
+Khi khởi động, nếu chưa có ADMIN nào, app tạo một ADMIN đã xác thực email và log `First ADMIN created`:
+```bash
+docker compose -f compose.prod.yaml logs app | grep -i admin
+```
+Đã có ADMIN thì app bỏ qua và log cảnh báo nhắc xoá biến. Đăng nhập được rồi thì **xoá cả ba dòng khỏi `.env`** (nhất là mật khẩu) và `up -d app`. Email đã thuộc tài khoản khác hoặc mật khẩu sai độ dài: app vẫn chạy, log lỗi, không tạo gì; sửa `.env` rồi `up -d app`. Cách dự phòng bằng SQL: `be/db/seed-admin.example.sql`.
+
 Caddy trong container (§8.1): mọi lệnh `docker compose` ở mục này và các mục sau thêm `-f compose.web.yaml` sau `-f compose.prod.yaml`; lần cập nhật phiên bản thì `pull`/`up -d` cả `app web`.
 
 ## 3. Cập nhật phiên bản

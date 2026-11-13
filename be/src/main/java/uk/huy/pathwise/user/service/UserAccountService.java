@@ -18,6 +18,19 @@ public interface UserAccountService {
      */
     UserIdentity createOwner(String email, String rawPassword, String fullName, long storeId);
 
+    /**
+     * @return true if any platform ADMIN exists, whatever its status
+     */
+    boolean adminExists();
+
+    /**
+     * Creates a platform ADMIN: no store, ACTIVE, email already verified (T59).
+     *
+     * @return the new user, with its normalized email
+     * @throws uk.huy.pathwise.core.exception.AppException {@code EMAIL_EXISTED} if the email is taken
+     */
+    UserIdentity createAdmin(String email, String rawPassword, String fullName);
+
     void updateUserPassword(long id, String newRawPassword);
 
     /**

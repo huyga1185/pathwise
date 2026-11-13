@@ -228,7 +228,7 @@ Task phát sinh cần migration mới lấy số tiếp theo **sau khi** cập n
 - **Không chuyển dữ liệu.** Trước khi chạy V2, dev xoá DB local (`DROP DATABASE pathwise; CREATE DATABASE pathwise;`) để Flyway chạy lại từ V1.
 - V2 thêm các cột NOT NULL (`status`...) mà không đặt giá trị mặc định cho dữ liệu cũ. Nếu bảng `users` còn dữ liệu thì migration fail, coi như tín hiệu nhắc phải reset DB.
 - Testcontainers và CI luôn bắt đầu từ DB trống nên không bị ảnh hưởng.
-- ADMIN đầu tiên được tạo bằng script seed thủ công. T13 cung cấp file `be/db/seed-admin.example.sql`, không chạy tự động.
+- ADMIN đầu tiên: từ T59, app tự tạo lúc khởi động khi chưa có ADMIN nào và có `BOOTSTRAP_ADMIN_EMAIL` (DEPLOYMENT §2): `role=ADMIN`, `store_id NULL`, `ACTIVE`, `email_verified_at` có giá trị. File `be/db/seed-admin.example.sql` (T13, chạy tay) còn giữ làm cách dự phòng.
 
 ## 6. Thời gian giữ dữ liệu (T53, P-59)
 
