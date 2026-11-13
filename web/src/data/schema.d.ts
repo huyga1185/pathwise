@@ -516,6 +516,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/plans/{id}/routes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["replaceRoutes"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/plans/{id}/stops/{stopId}": {
         parameters: {
             query?: never;
@@ -1165,6 +1181,7 @@ export interface components {
             unassignedStops: components["schemas"]["PlanStopResponse"][];
             /** Format: int64 */
             version: number;
+            violations: components["schemas"]["ViolationResponse"][];
         };
         PlanDraftRequest: {
             assignments?: components["schemas"]["AssignmentRequest"][];
@@ -1228,7 +1245,7 @@ export interface components {
                 [key: string]: number;
             };
             /** @enum {string|null} */
-            dropReason: "NOT_OPTIMIZED" | "INFEASIBLE" | null;
+            dropReason: "NOT_OPTIMIZED" | "INFEASIBLE" | "MANUAL" | null;
             failureReason: string | null;
             /** @enum {string|null} */
             geocodeError: "NOT_FOUND" | "PROVIDER_ERROR" | null;
@@ -1299,6 +1316,12 @@ export interface components {
             /** @enum {string} */
             status: "PENDING_VERIFICATION" | "ACTIVE" | "DISABLED";
         };
+        ReplaceRoutesRequest: {
+            routes: components["schemas"]["RouteStops"][];
+            unassignedStopIds: number[];
+            /** Format: int64 */
+            version: number;
+        };
         RequestPasswordChangeOtpRequest: {
             currentPassword: string;
         };
@@ -1314,6 +1337,11 @@ export interface components {
             /** Format: date-time */
             expiresAt: string;
             resetToken: string;
+        };
+        RouteStops: {
+            /** Format: int64 */
+            routeId: number;
+            stopIds: number[];
         };
         SessionResponse: {
             current: boolean;
@@ -1412,6 +1440,16 @@ export interface components {
             /** Format: email */
             email: string;
             otp: string;
+        };
+        ViolationResponse: {
+            /** @enum {string} */
+            code: "CAPACITY_EXCEEDED" | "TIME_WINDOW_MISSED" | "SHIFT_EXCEEDED" | "MAX_DISTANCE_EXCEEDED";
+            /** Format: int32 */
+            excess: number;
+            /** Format: int64 */
+            routeId: number;
+            /** Format: int64 */
+            stopId: number | null;
         };
     };
     responses: never;
@@ -2212,6 +2250,32 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["PlanVersionRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponsePlanDetailResponse"];
+                };
+            };
+        };
+    };
+    replaceRoutes: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReplaceRoutesRequest"];
             };
         };
         responses: {

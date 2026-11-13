@@ -59,6 +59,10 @@ export default tseslint.config(
               group: ['leaflet', 'leaflet/*', 'react-leaflet', 'react-leaflet/*'],
               message: 'The map library is only used inside src/platform/map (P-45).',
             },
+            {
+              group: ['@dnd-kit/*'],
+              message: 'The drag-and-drop library is only used inside src/platform/dnd (P-58).',
+            },
           ],
         },
       ],
@@ -74,8 +78,8 @@ export default tseslint.config(
     rules: { 'no-console': 'off' },
   },
   {
-    // The map platform is the one place allowed to use the map library.
-    files: ['src/platform/map/**'],
+    // The map and drag-and-drop platforms are the one place allowed to use their library.
+    files: ['src/platform/map/**', 'src/platform/dnd/**'],
     rules: {
       'no-restricted-imports': [
         'error',

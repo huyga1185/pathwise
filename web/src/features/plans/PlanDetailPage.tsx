@@ -48,7 +48,11 @@ export function PlanDetailPage() {
     data.status === 'DRAFT' && !data.optimizedAt ? (
       <GeocodeView plan={data} />
     ) : data.status === 'DRAFT' ? (
-      <ResultView plan={data} onPublished={(drivers) => setToast(vi.publish.done(drivers))} />
+      <ResultView
+        plan={data}
+        onPublished={(drivers) => setToast(vi.publish.done(drivers))}
+        onSaved={() => setToast(vi.manual.saved)}
+      />
     ) : (
       <TrackView plan={data} updatedAt={plan.dataUpdatedAt} />
     );

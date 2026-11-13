@@ -348,7 +348,9 @@ enum PlanStopResponseDropReasonEnum {
 @JsonValue(r'NOT_OPTIMIZED')
 NOT_OPTIMIZED(r'NOT_OPTIMIZED'),
 @JsonValue(r'INFEASIBLE')
-INFEASIBLE(r'INFEASIBLE');
+INFEASIBLE(r'INFEASIBLE'),
+@JsonValue(r'MANUAL')
+MANUAL(r'MANUAL');
 
 const PlanStopResponseDropReasonEnum(this.value);
 

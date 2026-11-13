@@ -21,7 +21,7 @@
 | `/plans/new`, `/plans/:id/edit` | Tạo/sửa kế hoạch | Tạo kế hoạch | O, D | `POST /plans`, `PUT /plans/{id}`, `GET /store/members?assignable=true`, `GET /vehicles?active=true` | W05 |
 | `/plans/:id` (DRAFT, chưa tối ưu) | Tìm toạ độ, sửa điểm lỗi | Soạn plan — tìm toạ độ | O, D | `GET /plans/{id}` (polling), `PATCH /plans/{id}/stops/{stopId}`, `POST /plans/{id}/geocode`, `GET /geocoding/search` | W05 |
 | `/plans/:id` (DRAFT, đã tối ưu) | Kết quả tối ưu, bản đồ | Soạn plan — sau khi tối ưu | O, D | `POST /plans/{id}/optimize`, `GET /plans/{id}` | W06 |
-| `/plans/:id` (DRAFT, chế độ chỉnh tay) | Chỉnh tay tuyến | Kế hoạch — chỉnh tay tuyến (W10) | O, D | `PUT /plans/{id}/routes` | W10 |
+| `/plans/:id` (DRAFT, chế độ chỉnh tay) | Chỉnh tay tuyến | Kế hoạch — chỉnh tay tuyến (T28) | O, D | `PUT /plans/{id}/routes` | W10 |
 | (hộp thoại trên `/plans/:id`) | Xác nhận giao việc, trùng ca, huỷ | Xác nhận giao việc | O, D | `POST /plans/{id}/publish`, `POST /plans/{id}/cancel` | W06 |
 | `/plans/:id` (PUBLISHED trở đi) | Theo dõi tiến độ | Theo dõi tiến độ | O, D | `GET /plans/{id}` (30 s) | W06 |
 | `*` | Không tìm thấy / không có quyền / tài xế dùng web | (không có artboard) | — | — | W01 |

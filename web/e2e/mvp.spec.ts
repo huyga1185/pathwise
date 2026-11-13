@@ -99,8 +99,32 @@ test('chủ cửa hàng đi hết luồng MVP tới khi kế hoạch hoàn thàn
     await expect(page.getByRole('region', { name: 'Tổng quan' })).toContainText('3/3 đã xếp tuyến', {
       timeout: 60_000,
     });
+  });
+
+  await test.step('chỉnh tay: kéo điểm đầu xuống cuối bằng bàn phím rồi lưu (W10)', async () => {
+    await page.getByRole('button', { name: 'Chỉnh tay' }).click();
+    const save = page.getByRole('button', { name: 'Lưu thay đổi' });
+    await expect(save).toBeDisabled();
+    const firstHandle = page.getByRole('button', { name: /^Kéo .*vị trí 1$/ }).first();
+    const moved = ((await firstHandle.getAttribute('aria-label')) ?? '').replace(/^Kéo (.*), .* vị trí 1$/, '$1');
+    await firstHandle.focus();
+    // The sensor measures the items after the lift: give each key a moment, as a person would.
+    for (const key of ['Space', 'ArrowDown', 'ArrowDown', 'Space']) {
+      await page.keyboard.press(key);
+      await page.waitForTimeout(200);
+    }
+    await expect(page.getByRole('button', { name: `Kéo ${moved}, Tài xế E2E vị trí 3` })).toBeVisible();
+    await save.click();
+    await expect(page.getByText('Đã lưu tuyến chỉnh tay.')).toBeVisible();
+  });
+
+  await test.step('giao việc', async () => {
     await page.getByRole('button', { name: 'Giao việc cho 1 tài xế' }).click();
-    await page.getByRole('dialog').getByRole('button', { name: 'Giao việc', exact: true }).click();
+    // A manual edit may break a time window: the button then reads "Vẫn giao việc" (P-58).
+    await page
+      .getByRole('dialog')
+      .getByRole('button', { name: /^(Giao việc|Vẫn giao việc)$/ })
+      .click();
     await expect(page.getByText('Đã giao việc cho 1 tài xế.')).toBeVisible();
     await expect(page.getByText(/Tự tải lại mỗi 30 giây/)).toBeVisible();
   });

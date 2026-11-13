@@ -3,6 +3,7 @@
 //
 
 // ignore_for_file: unused_element
+import 'package:pathwise_api/src/model/violation_response.dart';
 import 'package:pathwise_api/src/model/plan_route_response.dart';
 import 'package:pathwise_api/src/model/job_response.dart';
 import 'package:pathwise_api/src/model/geocoding_summary_response.dart';
@@ -52,6 +53,8 @@ class PlanDetailResponse {
     required  this.unassignedStops,
 
     required  this.version,
+
+    required  this.violations,
   });
 
   @JsonKey(
@@ -234,6 +237,18 @@ class PlanDetailResponse {
 
 
 
+  @JsonKey(
+    
+    name: r'violations',
+    required: true,
+    includeIfNull: false,
+  )
+
+
+  final List<ViolationResponse> violations;
+
+
+
 
 
     @override
@@ -252,7 +267,8 @@ class PlanDetailResponse {
       other.totalDistanceMeters == totalDistanceMeters &&
       other.totalDurationSeconds == totalDurationSeconds &&
       other.unassignedStops == unassignedStops &&
-      other.version == version;
+      other.version == version &&
+      other.violations == violations;
 
     @override
     int get hashCode =>
@@ -270,7 +286,8 @@ class PlanDetailResponse {
         (totalDistanceMeters == null ? 0 : totalDistanceMeters.hashCode) +
         (totalDurationSeconds == null ? 0 : totalDurationSeconds.hashCode) +
         unassignedStops.hashCode +
-        version.hashCode;
+        version.hashCode +
+        violations.hashCode;
 
   factory PlanDetailResponse.fromJson(Map<String, dynamic> json) => _$PlanDetailResponseFromJson(json);
 

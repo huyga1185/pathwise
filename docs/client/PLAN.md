@@ -182,6 +182,11 @@ File nóng của client (không hai task song song cùng sửa): `web/package.js
   - Điểm `dropReason = MANUAL` ở khối "Chưa xếp tuyến" với nhãn "Đã bỏ ra" (khác cảnh báo `INFEASIBLE`).
   - Lỗi: `PLAN_MODIFIED`/`PLAN_BUSY` → tải lại plan, giữ nháp nếu còn áp được, báo; 400 (`INVALID_STOP_ID`, `STOPS_INCOMPLETE`…: lỗi client) → câu chung và tải lại; 502 → "Không tính lại được giờ và quãng đường, thử lại." giữ nháp.
   - Dependency: `@dnd-kit/core` 6.3.1, `@dnd-kit/sortable` 10.0.0, `@dnd-kit/utilities` 3.2.2 (P-58).
+- **Phát sinh khi làm (2026-11-14):**
+  - Artboard `ManualEdit.dc.html` ("Kế hoạch — chỉnh tay tuyến (T28)") vẽ trước trong prototype, làm theo nó.
+  - Kéo thả thật cần trình duyệt (jsdom không có vị trí phần tử): test component dùng menu "Chuyển sang…" (`PlanManual.test.tsx`, 5 test), kéo bằng bàn phím kiểm ở E2E (bước "chỉnh tay" của `mvp.spec.ts`) thay cho test `SortableBoard` riêng.
+  - Nháp không còn khớp plan (người khác sửa, tối ưu lại) tự bỏ khi render, không qua effect (luật `react-hooks/set-state-in-effect`). Câu báo của chế độ chỉnh tay là state riêng (`messageFor` chỉ đọc mã lỗi).
+  - ESLint cấm `@dnd-kit/*` ngoài `src/platform/dnd` (như thư viện bản đồ).
 - **Acceptance:** test `SortableBoard` riêng (kéo bằng bàn phím đổi thứ tự và chuyển cột, câu đọc); test màn kết quả với fixture: bật chỉnh, chuyển điểm sang tuyến khác bằng menu → tải tính lại, "Lưu" gửi đúng body (`version`, mọi tuyến, `unassignedStopIds`), hiện vi phạm từ response; "Huỷ" bỏ nháp; giao việc khi có vi phạm hiện hộp xác nhận có danh sách; `MANUAL` hiện "Đã bỏ ra"; lỗi 409 tải lại. `pnpm lint/typecheck/test/build` xanh; E2E: chỉnh tay một điểm rồi giao việc.
 
 ### W08. Đóng gói và deploy web

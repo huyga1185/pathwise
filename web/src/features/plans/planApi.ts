@@ -14,6 +14,7 @@ export type StopPatch = Schemas['PatchStopRequest'];
 export type AssignableMember = Schemas['MemberResponse'];
 export type ActiveVehicle = Schemas['VehicleResponse'];
 export type DriverLocation = Schemas['DriverLocationResponse'];
+export type RoutesEdit = Schemas['ReplaceRoutesRequest'];
 
 /** While the server works on a plan (geocode, optimize) it is read again this often (UX_BRIEF §5.1: 2–3 s). */
 export const POLL_INTERVAL_MS = 2000;
@@ -155,6 +156,9 @@ export function usePlanApi() {
         await reload(id);
         return job;
       },
+      /** Saves a manual edit of the optimized routes (T28, P-58); the plan comes back with its violations. */
+      replaceRoutes: async (id: number, body: RoutesEdit) =>
+        store(await unwrap(api.PUT('/api/v1/plans/{id}/routes', { params: { path: { id } }, body }))),
       publish: async (id: number, version: number) =>
         store(await unwrap(api.POST('/api/v1/plans/{id}/publish', { params: { path: { id } }, body: { version } }))),
       cancel: async (id: number, version: number) =>
