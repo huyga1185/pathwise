@@ -38,7 +38,7 @@ Package gốc `uk.huy.pathwise`. Mỗi module là một package cấp 1.
 
 | Module | Trách nhiệm | Trạng thái |
 |---|---|---|
-| `core` | Hạ tầng dùng chung, không chứa nghiệp vụ: envelope response, `ErrorCode`/`AppException`/handler, pagination, `StateStore`, `core.security` (`Hasher` SHA-256, `OpaqueTokenGenerator`; P-28), `core.phonenumber` (chuẩn hoá và validate số VN, P-29), rate limiter, cấu hình web/JSON. | Có — mở rộng |
+| `core` | Hạ tầng dùng chung, không chứa nghiệp vụ: envelope response, `ErrorCode`/`AppException`/handler, pagination, `StateStore`, `core.security` (`Hasher` SHA-256, `OpaqueTokenGenerator`; P-28), `core.phonenumber` (chuẩn hoá và validate số VN, P-29), rate limiter, `core.housekeeping` (dọn dữ liệu cũ theo lịch, §7.1; T53), cấu hình web/JSON. | Có — mở rộng |
 | `shared` | Kiểu dữ liệu chia sẻ giữa module: `UserIdentity`, `UserRole`, `UserStatus`, principal `AuthenticatedUser` (P-25). Chỉ record/enum, **không** bean. | Có — sửa |
 | `user` | Tài khoản người dùng: entity `User`, mật khẩu, hồ sơ, trạng thái. | Có — mở rộng |
 | `auth` | Xác thực: đăng ký (orchestrate user + store), đăng nhập, token (access/refresh/OTP token), OTP, session, đổi/quên mật khẩu, security filter chain. | Có — sửa |
@@ -203,6 +203,13 @@ ADMIN không có `storeId` và **không** truy cập API của store trong MVP.
   - Refresh token: giữ pessimistic lock khi rotate.
   - Đăng ký/mời trùng email: dựa vào unique constraint; `DataIntegrityViolationException` → 409 `EMAIL_EXISTED`.
   - OTP: atomic trong Lua; reset token: GETDEL.
+
+### 7.1 Dọn dữ liệu cũ (`core.housekeeping`, T53, P-59)
+
+- `HousekeepingScheduler` (`@Scheduled`, `housekeeping.cron`/`zone`) gọi `HousekeepingService.run()`: lấy khoá Redis `housekeeping:lock` (`HousekeepingLock`, TTL `housekeeping.lock-ttl`) nên nhiều instance chỉ một lần chạy; không lấy được thì bỏ lượt.
+- `core` không biết bảng của module nào. Mỗi module sở hữu bảng implement `core.housekeeping.RetentionTask` (`name()`, `purge(cutoff)`, transaction riêng trong task) và xoá bằng repository của mình: `auth` (`RefreshTokenRetention`), `job` (`JobRetention`), `store` (`InvitationRetention`). `cutoff = now − housekeeping.retention.<name>`; quy tắc giữ ở DATA_MODEL §6.
+- Ngoại lệ có chủ đích: câu xoá của `JobRetention` đọc `route_plans.active_job_id` (`NOT EXISTS`) vì cột này có FK tới `background_jobs`; không có điều kiện đó, một job còn được plan trỏ tới làm cả lệnh xoá lỗi. Chỉ là điều kiện SQL, `job` không dùng entity hay repository của `planning`.
+- Task mới (ví dụ `audit_events` của T58) chỉ cần thêm một bean `RetentionTask` và một dòng `housekeeping.retention`.
 
 ## 8. Routing, geocoding, optimization
 

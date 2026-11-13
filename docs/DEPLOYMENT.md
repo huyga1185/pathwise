@@ -118,6 +118,24 @@ So số bảng và số plan với DB thật (`docker compose -f compose.prod.ya
 
 Redis không cần backup: mọi key đều có TTL.
 
+### 5.5 Dọn dữ liệu cũ (T53)
+
+App tự xoá dòng cũ mỗi đêm lúc 03:30 giờ Việt Nam (sau backup 02:30): refresh token hết hạn hoặc bị thu hồi quá 30 ngày, job nền đã kết thúc quá 30 ngày, lời mời hết hạn hoặc bị huỷ quá 90 ngày (lời mời đã nhận giữ lại). Quy tắc đủ ở DATA_MODEL §6. Mỗi lần chạy log số dòng đã xoá của từng loại:
+
+```bash
+docker compose -f compose.prod.yaml logs app | grep -i housekeeping
+```
+
+Đổi lịch hoặc số ngày trong `.env` (app đọc `.env`), rồi `up -d` lại app:
+
+| Biến | Mặc định | Ghi chú |
+|---|---|---|
+| `HOUSEKEEPING_CRON` | `0 30 3 * * *` | cron Spring 6 trường; `-` tắt hẳn |
+| `HOUSEKEEPING_ZONE` | `Asia/Ho_Chi_Minh` | |
+| `SPRING_APPLICATION_JSON` | — | số ngày giữ, ví dụ `{"housekeeping":{"retention":{"jobs":"60d","invitations":"180d","refresh-tokens":"30d"}}}`. Dùng JSON vì tên `refresh-tokens` có gạch nối không viết được thành biến môi trường thường. |
+
+Dòng đã xoá chỉ lấy lại được từ backup.
+
 ## 6. Lệnh thường dùng
 
 | Việc | Lệnh |

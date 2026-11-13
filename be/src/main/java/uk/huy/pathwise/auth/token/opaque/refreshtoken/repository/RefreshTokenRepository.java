@@ -37,4 +37,12 @@ public interface RefreshTokenRepository extends JpaRepository<RefreshToken, Long
     @Query("UPDATE RefreshToken rf SET rf.state = 'REVOKED' WHERE rf.userId = :userId AND rf.state <> 'REVOKED' "
             + "AND (:exceptFamilyId IS NULL OR rf.familyId <> :exceptFamilyId)")
     void revokeAllForUser(@Param("userId") Long userId, @Param("exceptFamilyId") String exceptFamilyId);
+
+    /**
+     * Tokens expired before {@code cutoff}, and tokens revoked before it (T53). A used token of a live session expires
+     * within the refresh lifetime, well before any cutoff, so reuse detection keeps working.
+     */
+    @Modifying
+    @Query("DELETE FROM RefreshToken rf WHERE rf.expiresAt < :cutoff OR (rf.state = 'REVOKED' AND rf.updatedAt < :cutoff)")
+    int deleteStale(@Param("cutoff") Instant cutoff);
 }
