@@ -149,12 +149,22 @@ Job thất bại có `errorCode` riêng: `NO_SOLUTION` ("Không tìm được l�
 - **Số điện thoại:** `PHONE_NUMBER_INVALID`, `PHONE_NUMBER_WRONG_REGION` ("Chỉ nhận số Việt Nam"), `PHONE_NUMBER_TOO_SHORT`, `PHONE_NUMBER_TOO_LONG`, `PHONE_NUMBER_TYPE_NOT_ALLOWED`.
 - **Kiểm tra chéo:** `INVALID_TIME_WINDOW` (giờ kết thúc phải sau giờ bắt đầu, trên `timeWindow.end`), `INVALID_SHIFT` (trên `shiftEnd`), `COORDINATES_INCOMPLETE` (thiếu `lat` hoặc `lon`), `ADDRESS_OR_COORDINATES_REQUIRED` (trên `address`), `ORDER_DEMAND_NOT_ALLOWED`, `INVALID_STOP_ID`, `NOT_NULLABLE` (bug client).
 - **Trong `PLAN_INCOMPLETE`:** `STOPS_REQUIRED`, `ASSIGNMENTS_REQUIRED`. **Trong `SHIFT_OVERLAP`:** mỗi phần tử có `conflictPlanId`.
+- **Chỉnh tay tuyến (`PUT /plans/{id}/routes`, T28):** `INVALID_ROUTE_ID`, `ROUTES_INCOMPLETE`, `INVALID_STOP_ID`, `STOPS_INCOMPLETE`, `STOP_NOT_GEOCODED` là lỗi của client (nháp lệch với plan): hiện "Danh sách tuyến đã thay đổi, tải lại rồi chỉnh lại." và tải lại plan.
+
+### 6.3 Vi phạm sau khi chỉnh tay (`PlanDetail.violations`, T28)
+
+Không phải lỗi: plan vẫn lưu và giao việc được (P-58). Câu theo `code`, `excess` đổi đơn vị:
+- `CAPACITY_EXCEEDED`: "{Tuyến}: vượt tải {excess} {đơn vị của xe}" (ví dụ "vượt tải 3 thùng"; `ORDER` là "đơn").
+- `TIME_WINDOW_MISSED`: "{Điểm}: tới muộn {phút} phút so với khung giờ" (làm tròn lên).
+- `SHIFT_EXCEEDED`: "{Tuyến}: về muộn {phút} phút so với ca".
+- `MAX_DISTANCE_EXCEEDED`: "{Tuyến}: vượt {km} km quãng đường tối đa".
+Giao việc khi còn vi phạm: hộp xác nhận liệt kê các dòng trên, nút "Vẫn giao việc".
 
 Danh sách đầy đủ theo endpoint: API_SPEC §2–§8. Mã không có trong bảng: hiện "Giá trị không hợp lệ".
 
 ## 7. Ngoài phạm vi MVP (thiết kế chỗ trống, chưa có API)
 
-Dẫn đường từng bước trong app (T33), kéo thả chỉnh route sau optimize (T28). Có thể thiết kế trước để giữ chỗ trong layout, đánh dấu "sắp có". Vị trí tài xế đã có từ T32 (§4.1, §4.2).
+Không còn mục nào: dẫn đường trong app (T33, M05), chỉnh tay tuyến (T28, W10) và vị trí tài xế (T32) đã có.
 
 ## 8. Dữ liệu mẫu (`docs/ux/samples`)
 

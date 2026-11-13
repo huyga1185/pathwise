@@ -12,7 +12,8 @@
 W00 ─┬─ W01 ─┬─ W02
      │       ├─ W03
      │       └─ W04 ── W05 ── W06 ── W07 ── W08 (sau khi chốt deploy)
-     │                         └─ W09 (cần T32)
+     │                         ├─ W09 (cần T32)
+     │                         └─ W10 (cần T28)
      └─ M00 ── M01 ── M02 ── M03 ── M04 (cần T32) ── M05 (cần T33)
 ```
 
@@ -32,6 +33,7 @@ W00 ─┬─ W01 ─┬─ W02
 | M02 | M01 | W* |
 | M03 | M02 | W* |
 | W09 | W07, T32 | M04 (cùng branch T32) |
+| W10 | W06, T28 | — (cùng branch T28) |
 | M04 | M03, T32 | W09 (cùng branch T32) |
 | M05 | M04, T33 | — (cùng branch T33) |
 
@@ -171,6 +173,17 @@ File nóng của client (không hai task song song cùng sửa): `web/package.js
   - Mục chú giải "Vị trí tài xế" nằm ở chú giải kết quả dưới bản đồ (như prototype), không thêm vào chú giải tên tài xế của `RouteMap`. Bản đồ không fit lại theo vị trí tài xế mỗi lần đọc.
   - Schema OpenAPI của vị trí và trạng thái là `DriverPosition`, `DriverSharing` (record lồng trong `DriverLocationResponse`; tên `Location`/`Sharing` quá chung).
 
+### W10. Chỉnh tay tuyến sau tối ưu (cùng T28)
+- **Ước lượng:** 2 ngày · **Màn:** Kế hoạch — chỉnh tay tuyến (artboard mới trong prototype, vẽ trước khi code, P-58) · **Quyết định:** D-24, P-58
+- **Phạm vi:**
+  - Port `platform/dnd` (chỉ file trong thư mục này import `@dnd-kit`): component `SortableBoard` nhận các cột (mỗi tuyến một cột, cùng cột "Chưa xếp tuyến"), danh sách id trong mỗi cột, `renderItem`, nhãn cột và câu đọc tiếng Việt, gọi `onChange(columns)` khi thả; kéo bằng chuột, cảm ứng, bàn phím (Space nhấc/thả, mũi tên di chuyển, Esc huỷ), câu đọc cho trình đọc màn hình ("Đã nhấc ĐH-1009…", "Đã thả vào Tuyến 2, vị trí 3"). Test của feature thay bằng thao tác không qua `@dnd-kit` (prop `onChange` gọi thẳng).
+  - Màn kết quả (`ResultView`, plan DRAFT đã tối ưu): nút "Chỉnh tay" bật chế độ chỉnh: khối tuyến thành cột kéo thả, mỗi điểm có tay nắm và menu "Chuyển sang…" (các tuyến khác, "Bỏ ra khỏi tuyến"); bản nháp chưa lưu: số điểm và tải của từng tuyến tính lại ngay ở client (tải vượt thì tô `danger`), bản đồ vẽ theo thứ tự nháp; "Lưu thay đổi" gửi `PUT /plans/{id}/routes` (bản đồ, giờ, quãng đường theo response), "Huỷ" bỏ nháp (hỏi lại nếu đã đổi); "Tối ưu lại" khi đang có nháp hỏi lại; rời trang khi có nháp hỏi lại.
+  - Vi phạm (`PlanDetail.violations`): khung cảnh báo trên danh sách tuyến ("3 vi phạm sau khi chỉnh tay") liệt kê từng dòng ("Tuyến 2 · Anh Khoa: vượt tải 3 thùng", "ĐH-1009: tới muộn 12 phút so với khung giờ", "Tuyến 1: về muộn 25 phút so với ca", "Tuyến 3: vượt 4,2 km quãng đường tối đa"), bấm dòng thì chọn tuyến/điểm trên bản đồ; huy hiệu trên khối tuyến; dòng điểm trễ có nhãn. Giao việc khi còn vi phạm: hộp xác nhận thêm đoạn liệt kê vi phạm, nút "Vẫn giao việc".
+  - Điểm `dropReason = MANUAL` ở khối "Chưa xếp tuyến" với nhãn "Đã bỏ ra" (khác cảnh báo `INFEASIBLE`).
+  - Lỗi: `PLAN_MODIFIED`/`PLAN_BUSY` → tải lại plan, giữ nháp nếu còn áp được, báo; 400 (`INVALID_STOP_ID`, `STOPS_INCOMPLETE`…: lỗi client) → câu chung và tải lại; 502 → "Không tính lại được giờ và quãng đường, thử lại." giữ nháp.
+  - Dependency: `@dnd-kit/core` 6.3.1, `@dnd-kit/sortable` 10.0.0, `@dnd-kit/utilities` 3.2.2 (P-58).
+- **Acceptance:** test `SortableBoard` riêng (kéo bằng bàn phím đổi thứ tự và chuyển cột, câu đọc); test màn kết quả với fixture: bật chỉnh, chuyển điểm sang tuyến khác bằng menu → tải tính lại, "Lưu" gửi đúng body (`version`, mọi tuyến, `unassignedStopIds`), hiện vi phạm từ response; "Huỷ" bỏ nháp; giao việc khi có vi phạm hiện hộp xác nhận có danh sách; `MANUAL` hiện "Đã bỏ ra"; lỗi 409 tải lại. `pnpm lint/typecheck/test/build` xanh; E2E: chỉnh tay một điểm rồi giao việc.
+
 ### W08. Đóng gói và deploy web
 - **Ước lượng:** 0,5–1 ngày · **Điều kiện:** chủ dự án chốt reverse proxy và domain (đang để sau, xem P-47)
 - **Phạm vi:** build tĩnh phục vụ ở `/app/` cùng origin với `/api/`; cấu hình proxy (Caddy hoặc nginx); cache header cho asset có hash; `CORS_ALLOWED_ORIGINS` không cần khi cùng origin; cập nhật `docs/DEPLOYMENT.md`.
@@ -275,4 +288,4 @@ File nóng của client (không hai task song song cùng sửa): `web/package.js
 
 ## 4. Sau MVP (chưa lên lịch)
 
-Vị trí tài xế: xong ở T32/W09/M04 · dẫn đường trong app: M05 (cùng T33) · chỉnh tay tuyến (cần T28) · thông báo đẩy · trang theo dõi đơn cho khách (client thứ ba) · đa ngôn ngữ.
+Vị trí tài xế: xong ở T32/W09/M04 · dẫn đường trong app: M05 (cùng T33) · chỉnh tay tuyến: W10 (cùng T28) · thông báo đẩy · trang theo dõi đơn cho khách (client thứ ba) · đa ngôn ngữ.

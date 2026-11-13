@@ -200,7 +200,7 @@ Ghi chú:
 | `POST /plans/{id}/publish` | O, D | `{version}` | 200 `PlanDetail` (PUBLISHED) | 404 · 409 `PLAN_MODIFIED`/`PLAN_BUSY` · 422 `PLAN_NOT_EDITABLE` · 422 `PLAN_NOT_OPTIMIZED` · 422 `INVALID_ASSIGNMENT` · 422 `SHIFT_OVERLAP` | ✅ |
 | `POST /plans/{id}/cancel` | O, D | `{version}` | 200 `PlanDetail` (CANCELLED) | 404 · 409 `PLAN_MODIFIED`/`PLAN_BUSY` · 422 `PLAN_NOT_CANCELLABLE` | ✅ |
 | `GET /plans/{id}/driver-locations` | O, D | — | `DriverLocation[]` (xem dưới, P-53): mỗi route có stop một phần tử, theo thứ tự `routes`; plan không PUBLISHED/IN_PROGRESS → `[]` | 404 | ✅ |
-| `PUT /plans/{id}/routes` | O, D | `{version, routes:[{routeId, stopIds:[...]}], unassignedStopIds:[...]}`. Chỉnh tay, tính lại ETA và quãng đường (Should, D-24). | 200 `PlanDetail`, có `violations[]` (hình dạng chốt ở T28) | 409 · 422 | ❌ T28 |
+| `PUT /plans/{id}/routes` | O, D | `{version, routes:[{routeId, stopIds:[...]}], unassignedStopIds:[...]}`. Chỉnh tay sau optimize: chuyển stop giữa route, đổi thứ tự, bỏ ra ngoài; tính lại ETA và quãng đường bằng matrix, không giải lại (Should, D-24, P-58). | 200 `PlanDetail` (có `violations[]`) | 400 · 404 · 409 `PLAN_MODIFIED`/`PLAN_BUSY` · 422 `PLAN_NOT_EDITABLE` · 422 `PLAN_NOT_OPTIMIZED` · 502 `ROUTING_PROVIDER_ERROR` | ❌ T28 |
 
 **Vị trí tài xế (T32, P-15, D-26, P-53):** dispatcher polling cùng nhịp với `GET /plans/{id}` khi plan đang giao.
 
@@ -237,6 +237,10 @@ Ghi chú:
     // MVP: start/end của route = depot của plan. Sau này có thể thêm "start"/"end" riêng cho từng route (D-20).
   ]
 }
+// Violation (một phần tử của PlanDetail.violations, T28, P-58)
+{ "code": "CAPACITY_EXCEEDED|TIME_WINDOW_MISSED|SHIFT_EXCEEDED|MAX_DISTANCE_EXCEEDED",
+  "routeId": 11, "stopId": 101,   // stopId chỉ có với TIME_WINDOW_MISSED, null với code khác
+  "excess": 3 }                   // vượt bao nhiêu: theo capacityUnit của xe (CAPACITY), giây (TIME_WINDOW: tới muộn hơn time window end; SHIFT: về muộn hơn shiftEnd), mét (MAX_DISTANCE)
 // PlanSummary (một phần tử của GET /plans)
 { "id": 7, "name": "…", "planDate": "2026-10-22", "status": "DRAFT", "processingStatus": "IDLE", "version": 3,
   "stopCount": 30, "routeCount": 2, "optimizedAt": "…|null", "totalDistanceMeters": 52340, "totalDurationSeconds": 9800,
@@ -257,7 +261,8 @@ Ghi chú:
       "plannedStart": "…", "plannedEnd": "…", "load": 31,   // theo capacityUnit của xe (D-36); null khi chưa optimize
       "stops": [ PlanStop, … ] }                            // theo sequence
   ],
-  "unassignedStops": [ PlanStop, … ]   // stop chưa gán route: plan chưa optimize, hoặc solver đã bỏ (P-13); theo id
+  "unassignedStops": [ PlanStop, … ],  // stop chưa gán route: plan chưa optimize, solver đã bỏ (P-13), hoặc dispatcher bỏ ra (T28); theo id
+  "violations": [ Violation, … ]       // ràng buộc bị vi phạm sau khi chỉnh tay (T28, P-58); rỗng khi không có
 }
 // PlanStop (cùng một dạng trong routes[].stops và unassignedStops)
 { "id": 101, "sequence": 1, "label": "ĐH-1024", "recipientName": "Chị Lan", "recipientPhone": "+84905…",
@@ -266,13 +271,14 @@ Ghi chú:
   "geocodedDisplayName": "…|null", "demands": { "BOX": 3 }, "serviceTimeSeconds": 300,
   "timeWindow": { "start": "09:00", "end": "11:00" } | null, "note": "…", "plannedArrival": "…|null",
   "status": "PENDING|DELIVERED|FAILED|SKIPPED", "failureReason": null,
-  "dropReason": "NOT_OPTIMIZED|INFEASIBLE|null" }   // null trong route
+  "dropReason": "NOT_OPTIMIZED|INFEASIBLE|MANUAL|null" }   // null trong route
 ```
 
 `PlanDetail`:
 - `routes` theo id. `PUT` tạo lại mọi route từ `assignments`, nên id route đổi sau mỗi `PUT`; client tải lại `PlanDetail` sau khi `PUT`.
 - `routes[].driver` (`fullName`, `role`) và `routes[].vehicle.name` là giá trị hiện tại, kể cả khi thành viên đã bị vô hiệu hoá hay xe đã tắt; `vehicle.capacity`, `vehicle.capacityUnit` là snapshot lúc phân công.
-- `PlanStop.demands` chỉ có các loại khác 0. `dropReason`: `NOT_OPTIMIZED` khi plan chưa có kết quả tối ưu, `INFEASIBLE` khi solver không xếp được.
+- `PlanStop.demands` chỉ có các loại khác 0. `dropReason`: `NOT_OPTIMIZED` khi plan chưa có kết quả tối ưu, `INFEASIBLE` khi solver không xếp được, `MANUAL` khi dispatcher bỏ ra khỏi route bằng `PUT /plans/{id}/routes` (T28).
+- `violations` (T28, P-58): luôn có mặt, rỗng khi không có vi phạm; tính từ route đang lưu mỗi lần đọc (không lưu riêng), rỗng khi plan chưa tối ưu. Kết quả của optimize không vi phạm; vi phạm chỉ xuất hiện sau khi chỉnh tay. Thứ tự: theo `routes`, rồi theo `sequence` của stop.
 
 **Lưu draft (`POST`, `PUT`):**
 - Không có `depot` thì snapshot depot hiện tại của store; store chưa có depot → 422 `STORE_DEPOT_REQUIRED`. `depot` trong request phải có `lat`, `lon`. Timezone luôn snapshot từ store mỗi lần lưu.
@@ -311,11 +317,17 @@ Ghi chú:
 
 **Vòng đời plan và stop (P-34):** `DRAFT → PUBLISHED → IN_PROGRESS → COMPLETED`, và `DRAFT | PUBLISHED → CANCELLED`. Plan PUBLISHED chuyển thẳng sang COMPLETED nếu lần cập nhật đầu tiên đã kết thúc mọi stop. Stop đi một chiều `PENDING → DELIVERED | FAILED | SKIPPED`. **Không có đảo ngược**: stop đã kết thúc và plan COMPLETED/CANCELLED không đổi được nữa; không có endpoint đặt lại stop về PENDING. Giao lại thì tạo stop trong một plan mới.
 
+**Chỉnh tay route (`PUT /plans/{id}/routes`, T28, D-24, P-58):**
+- Chỉ plan DRAFT đã có kết quả tối ưu. Kiểm tra theo thứ tự: 404 → `PLAN_NOT_EDITABLE` (không phải DRAFT) → `PLAN_BUSY` → `PLAN_MODIFIED` → `PLAN_NOT_OPTIMIZED` → 400 validation.
+- `routes` phải liệt kê **mọi** route của plan đúng một lần (kể cả route không có stop, gửi `stopIds: []`); mỗi stop của plan nằm đúng một lần trong `routes[].stopIds` hoặc `unassignedStopIds`. Lỗi là 400 `VALIDATION_ERROR` với `details`: `routes[i].routeId` `INVALID_ROUTE_ID` (không phải route của plan, hoặc lặp); `routes` `ROUTES_INCOMPLETE` (thiếu route); `routes[i].stopIds[j]` hoặc `unassignedStopIds[j]` `INVALID_STOP_ID` (không phải stop của plan, hoặc lặp); `stops` `STOPS_INCOMPLETE` (có stop không được nhắc tới); `routes[i].stopIds[j]` `STOP_NOT_GEOCODED` (stop chưa có toạ độ không được vào route). Mã field thiếu: `VERSION_REQUIRED`, `ROUTES_REQUIRED`, `UNASSIGNED_STOP_IDS_REQUIRED`.
+- Tính lại bằng `MatrixProvider` (cùng node như optimize), gọi ngoài transaction; ghi trong transaction kiểm tra `version` (đổi giữa chừng → 409 `PLAN_MODIFIED`); matrix lỗi → 502 `ROUTING_PROVIDER_ERROR`, không đổi gì. Mỗi route có stop: rời điểm đầu lúc `shiftStart`, hoặc muộn hơn để tới stop đầu đúng lúc time window của nó mở (không chờ ở stop đầu); tới sớm thì chờ tới đầu time window; `plannedArrival` = giờ bắt đầu phục vụ; `plannedEnd` = giờ về điểm cuối; `plannedDurationSeconds` = `plannedEnd − plannedStart` (lái, phục vụ, chờ); `plannedDistanceMeters` theo matrix. Route không còn stop: như route không được dùng của optimize. `totalDistanceMeters`/`totalDurationSeconds` tính lại; `optimizedAt` giữ nguyên; `version` tăng 1.
+- Lưu được cả khi vi phạm ràng buộc (vượt tải, trễ time window, quá ca, quá `maxDistanceMeters`): response có `violations`. Stop trong `unassignedStopIds` có `dropReason = MANUAL` tới lần optimize sau; optimize lại thay mọi chỉnh tay bằng kết quả mới.
+
 **Publish (T26):**
 - Kiểm tra theo thứ tự: 404 → `PLAN_NOT_EDITABLE` (không phải DRAFT) → `PLAN_BUSY` → `PLAN_MODIFIED` → `PLAN_NOT_OPTIMIZED` (chưa có kết quả tối ưu còn hiệu lực, BR-06) → `INVALID_ASSIGNMENT` (tài xế/xe của route có stop không còn dùng được, `details` như optimize) → `SHIFT_OVERLAP`.
 - Trùng ca (D-23, BR-12): với mỗi route **có stop**, ca `[shiftStart, shiftEnd)` không được giao với ca của cùng tài xế hoặc cùng xe trong một route có stop của plan PUBLISHED/IN_PROGRESS khác **cùng `planDate`** trong store. Ca nửa mở: 08:00–12:00 và 12:00–16:00 không trùng. Route không có stop không tính (P-34). Plan CANCELLED, COMPLETED, DRAFT không tính.
 - `SHIFT_OVERLAP` trả mỗi xung đột là một phần tử `details`: `{field: "assignments[i].driverId" | "assignments[i].vehicleId", code: "SHIFT_OVERLAP", conflictPlanId}` (P-32); `i` là thứ tự route trong `PlanDetail.routes`. Trùng cả tài xế lẫn xe với một plan thì có hai phần tử.
-- Plan còn stop trong `unassignedStops` (`INFEASIBLE`) vẫn publish được (P-13); client cảnh báo dựa vào `unassignedStops`.
+- Plan còn stop trong `unassignedStops` (`INFEASIBLE`, `MANUAL`) vẫn publish được (P-13); client cảnh báo dựa vào `unassignedStops`. Plan còn `violations` cũng publish được (P-58); client hỏi xác nhận trước khi gửi.
 - Thành công: `status = PUBLISHED`, `version` tăng 1. Sau đó `PUT`, `PATCH` stop, `geocode`, `optimize`, `publish` → 422 `PLAN_NOT_EDITABLE`.
 
 **Cancel (T26):** được từ DRAFT và PUBLISHED; IN_PROGRESS, COMPLETED, CANCELLED → 422 `PLAN_NOT_CANCELLABLE`. Kiểm tra theo thứ tự: 404 → `PLAN_NOT_CANCELLABLE` → `PLAN_BUSY` → `PLAN_MODIFIED`. Kết quả tối ưu giữ lại để tra cứu; `version` tăng 1.
