@@ -54,3 +54,4 @@ rate-limit:
     forgot-password-email: { limit: 1000000 }
     change-password-otp-user: { limit: 1000000 }
     create-invitation-store: { limit: 1000000 }
+    directions-user: { limit: 1000000 }

@@ -87,6 +87,20 @@
         ],
         "type": "object"
       },
+      "ApiResponseDirectionsResponse": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/DirectionsResponse"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "type": "object"
+      },
       "ApiResponseDriverRouteDetailResponse": {
         "properties": {
           "data": {
@@ -619,6 +633,135 @@
           "address",
           "lat",
           "lon"
+        ],
+        "type": "object"
+      },
+      "DirectionsDestination": {
+        "properties": {
+          "lat": {
+            "format": "double",
+            "type": "number"
+          },
+          "lon": {
+            "format": "double",
+            "type": "number"
+          },
+          "stopId": {
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "lat",
+          "lon",
+          "stopId"
+        ],
+        "type": "object"
+      },
+      "DirectionsInstruction": {
+        "properties": {
+          "distanceMeters": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "durationSeconds": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "exitNumber": {
+            "format": "int32",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "location": {
+            "$ref": "#/components/schemas/DirectionsPoint"
+          },
+          "maneuver": {
+            "enum": [
+              "DEPART",
+              "ARRIVE",
+              "STRAIGHT",
+              "SLIGHT_LEFT",
+              "SLIGHT_RIGHT",
+              "LEFT",
+              "RIGHT",
+              "SHARP_LEFT",
+              "SHARP_RIGHT",
+              "UTURN",
+              "KEEP_LEFT",
+              "KEEP_RIGHT",
+              "ROUNDABOUT"
+            ],
+            "type": "string"
+          },
+          "roadName": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "distanceMeters",
+          "durationSeconds",
+          "exitNumber",
+          "location",
+          "maneuver",
+          "roadName"
+        ],
+        "type": "object"
+      },
+      "DirectionsPoint": {
+        "properties": {
+          "lat": {
+            "format": "double",
+            "type": "number"
+          },
+          "lon": {
+            "format": "double",
+            "type": "number"
+          }
+        },
+        "required": [
+          "lat",
+          "lon"
+        ],
+        "type": "object"
+      },
+      "DirectionsResponse": {
+        "properties": {
+          "destination": {
+            "$ref": "#/components/schemas/DirectionsDestination"
+          },
+          "distanceMeters": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "durationSeconds": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "polyline": {
+            "type": "string"
+          },
+          "steps": {
+            "items": {
+              "$ref": "#/components/schemas/DirectionsInstruction"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "destination",
+          "distanceMeters",
+          "durationSeconds",
+          "polyline",
+          "steps"
         ],
         "type": "object"
       },
@@ -3190,6 +3333,68 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiResponseDriverRouteDetailResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "driver-route-controller"
+        ]
+      }
+    },
+    "/api/v1/driver/routes/{routeId}/directions": {
+      "get": {
+        "operationId": "getDirections",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "routeId",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "lat",
+            "required": true,
+            "schema": {
+              "format": "double",
+              "maximum": 90.0,
+              "minimum": -90.0,
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "lon",
+            "required": true,
+            "schema": {
+              "format": "double",
+              "maximum": 180.0,
+              "minimum": -180.0,
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "toStopId",
+            "required": false,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseDirectionsResponse"
                 }
               }
             },

@@ -308,6 +308,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/driver/routes/{routeId}/directions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getDirections"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/driver/routes/{routeId}/stops/{stopId}/status": {
         parameters: {
             query?: never;
@@ -686,6 +702,10 @@ export interface components {
             data: components["schemas"]["AuthTokenResponse"];
             message?: string;
         };
+        ApiResponseDirectionsResponse: {
+            data: components["schemas"]["DirectionsResponse"];
+            message?: string;
+        };
         ApiResponseDriverRouteDetailResponse: {
             data: components["schemas"]["DriverRouteDetailResponse"];
             message?: string;
@@ -833,6 +853,41 @@ export interface components {
             lat: number;
             /** Format: double */
             lon: number;
+        };
+        DirectionsDestination: {
+            /** Format: double */
+            lat: number;
+            /** Format: double */
+            lon: number;
+            /** Format: int64 */
+            stopId: number | null;
+        };
+        DirectionsInstruction: {
+            /** Format: int32 */
+            distanceMeters: number;
+            /** Format: int32 */
+            durationSeconds: number;
+            /** Format: int32 */
+            exitNumber: number | null;
+            location: components["schemas"]["DirectionsPoint"];
+            /** @enum {string} */
+            maneuver: "DEPART" | "ARRIVE" | "STRAIGHT" | "SLIGHT_LEFT" | "SLIGHT_RIGHT" | "LEFT" | "RIGHT" | "SHARP_LEFT" | "SHARP_RIGHT" | "UTURN" | "KEEP_LEFT" | "KEEP_RIGHT" | "ROUNDABOUT";
+            roadName: string | null;
+        };
+        DirectionsPoint: {
+            /** Format: double */
+            lat: number;
+            /** Format: double */
+            lon: number;
+        };
+        DirectionsResponse: {
+            destination: components["schemas"]["DirectionsDestination"];
+            /** Format: int32 */
+            distanceMeters: number;
+            /** Format: int32 */
+            durationSeconds: number;
+            polyline: string;
+            steps: components["schemas"]["DirectionsInstruction"][];
         };
         Driver: {
             fullName: string | null;
@@ -1798,6 +1853,32 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ApiResponseDriverRouteDetailResponse"];
+                };
+            };
+        };
+    };
+    getDirections: {
+        parameters: {
+            query: {
+                lat: number;
+                lon: number;
+                toStopId?: number;
+            };
+            header?: never;
+            path: {
+                routeId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponseDirectionsResponse"];
                 };
             };
         };

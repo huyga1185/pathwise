@@ -130,7 +130,6 @@ class _RouteDetailScreenState extends ConsumerState<RouteDetailScreen> with Rout
     final pending = route.stops.where((stop) => stop.status == DriverStopResponseStatusEnum.PENDING).toList();
     final done = route.stops.where((stop) => stop.status != DriverStopResponseStatusEnum.PENDING).toList();
     final next = pending.isEmpty ? null : pending.first;
-    final platform = Theme.of(context).platform;
     const gap = SizedBox(height: PwSpacing.space6);
 
     return [
@@ -155,7 +154,7 @@ class _RouteDetailScreenState extends ConsumerState<RouteDetailScreen> with Rout
               child: PwButton(
                 label: Vi.directions,
                 block: true,
-                onPressed: () => unawaited(_open(directionsUri(next.lat, next.lon, platform))),
+                onPressed: () => context.push('/routes/${route.routeId}/navigate?stopId=${next.id}'),
               ),
             ),
             const SizedBox(width: PwSpacing.space2),

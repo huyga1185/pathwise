@@ -154,6 +154,7 @@ Hai số này phải nằm xa dưới timeout đọc của app (10 s).
    ```bash
    ROUTING_MATRIX_OSRM_BASEURL=http://10.0.0.5:5000
    ROUTING_MATRIX_OSRM_MAXTABLESIZE=200          # bằng OSRM_MAX_TABLE_SIZE của máy routing (F-41)
+   # Dẫn đường trong app (T33) dùng cùng OSRM; chỉ đặt ROUTING_DIRECTIONS_OSRM_BASEURL khi muốn server khác.
    ROUTING_GEOCODING_NOMINATIM_BASEURL=http://10.0.0.5:8088
    ROUTING_GEOCODING_NOMINATIM_RATELIMIT_ENABLED=false
    ```

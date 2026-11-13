@@ -23,6 +23,7 @@ import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.matchesPattern;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -43,7 +44,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         "rate-limit.rules.forgot-password-ip.limit=3",
         "rate-limit.rules.forgot-password-email.limit=2",
         "rate-limit.rules.change-password-otp-user.limit=2",
-        "rate-limit.rules.create-invitation-store.limit=2"})
+        "rate-limit.rules.create-invitation-store.limit=2",
+        "rate-limit.rules.directions-user.limit=2"})
 class RateLimitIntegrationTest extends AbstractIntegrationTest {
     private static final String AUTH = "/api/v1/auth";
 
@@ -160,6 +162,19 @@ class RateLimitIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
+    void directions_whenDriverLimitExceeded_return429ForThatDriverOnly() throws Exception {
+        // The limit is checked before the route is looked up: an unknown route still counts.
+        TestStore store = users.createStore();
+        directions(store.driver().bearer()).andExpect(status().isNotFound());
+        directions(store.driver().bearer()).andExpect(status().isNotFound());
+
+        directions(store.driver().bearer()).andExpect(status().isTooManyRequests())
+                .andExpect(jsonPath("$.code").value("RATE_LIMITED"));
+        TestStore other = users.createStore();
+        directions(other.driver().bearer()).andExpect(status().isNotFound());
+    }
+
+    @Test
     void check_whenCounting_keyHasTtlAndNoEmailInIt() throws Exception {
         String email = newEmail();
         forgotPassword(newIp(), email).andExpect(status().isNoContent());
@@ -191,6 +206,11 @@ class RateLimitIntegrationTest extends AbstractIntegrationTest {
         return mockMvc.perform(post(AUTH + "/password/change/otp").header(HttpHeaders.AUTHORIZATION, bearer)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"currentPassword\":\"" + currentPassword + "\"}"));
+    }
+
+    private ResultActions directions(String bearer) throws Exception {
+        return mockMvc.perform(get("/api/v1/driver/routes/999999/directions?lat=16.05&lon=108.2")
+                .header(HttpHeaders.AUTHORIZATION, bearer));
     }
 
     private ResultActions invite(String bearer, String email) throws Exception {

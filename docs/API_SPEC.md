@@ -5,11 +5,10 @@
 > Cột "Hiện trạng" ở mọi bảng: ✅ khớp spec và có test · 🟡 có nhưng còn lệch (ghi rõ lệch gì) · ❌ chưa có. Lịch sử triển khai theo task nằm ở `CURRENT_STATE.md` §5, không ghi ở đây.
 > Lần rà soát contract gần nhất: T44 (2026-10-29, P-32).
 
-## 0. Lệch hiện tại so với spec (cập nhật 2026-11-10, sau T32)
+## 0. Lệch hiện tại so với spec (cập nhật 2026-11-13, sau T33)
 
 - `GET /admin/users` chưa trả `storeId`, `status`.
 - §7: chưa có `routes` (T28).
-- §8: chưa có `directions` (T33).
 - Tài liệu OpenAPI sinh tự động (`/v3/api-docs` ở dev/staging; CI xuất artifact `api-contract` gồm `openapi.json` và dữ liệu mẫu) dùng để sinh code client; endpoint (method + path) được kiểm tự động khớp spec (`ApiSpecContractIntegrationTest`). Từ T46 (P-48): mã thành công đúng như spec (201, 202, 204); field response luôn có mặt là `required`, field có thể `null` có kiểu kèm `null`; field của request PATCH gửi `null` để xoá có kiểu kèm `null`. Response thật được kiểm khớp schema đó (`OpenApiNullabilityIntegrationTest`, trên `docs/ux/samples` và các response tài khoản). OpenAPI chưa mô tả response lỗi (dùng §1 và §9). Spec này vẫn là hợp đồng; hướng dẫn cho client ở `docs/ux/UX_BRIEF.md`.
 - Endpoint vận hành ngoài `/api/v1`, giữ có chủ đích: `GET /actuator/health` (kèm `/liveness`, `/readiness`), Public, chỉ trả `status` và tên các `groups` (T05, `ARCHITECTURE.md` §12.1). Mọi endpoint actuator khác tắt.
 
@@ -336,7 +335,7 @@ Người gọi phải có `role=DRIVER` hoặc `canDrive=true` (D-21); người 
 | `PATCH /driver/routes/{routeId}/stops/{stopId}/status` | R | `{status: DELIVERED\|FAILED\|SKIPPED, failureReason?}` | 200 `{stop: DriverStop, routeStatus, planStatus}` | 400 · 404 · 422 `INVALID_STOP_TRANSITION` · 422 `FAILURE_REASON_REQUIRED` · 422 `PLAN_NOT_ACTIVE` | ✅ |
 | `POST /driver/location` | R | `{points:[{lat, lon, accuracyMeters?, headingDegrees?, speedMps?, recordedAt}]}`, 1–100 điểm (D-26), thứ tự tuỳ ý | 204. MVP chỉ giữ điểm có `recordedAt` mới nhất (xem dưới). | 400 | ✅ |
 | `PUT /driver/location/sharing` | R | `{routeId, state: SHARING\|DECLINED\|NO_PERMISSION\|GPS_OFF}` (P-53) | 204 | 400 · 404 · 422 `PLAN_NOT_ACTIVE` | ✅ |
-| `GET /driver/routes/{routeId}/directions` | R | — | `DirectionsResponse` (Should) | 404 · 502 | ❌ T33 |
+| `GET /driver/routes/{routeId}/directions` | R | query `lat`, `lon` (vị trí hiện tại, bắt buộc), `toStopId?` (P-57) | `Directions`: đường từ vị trí hiện tại tới điểm đích (Should, FR-D05) | 400 · 404 · 422 `PLAN_NOT_ACTIVE` · 429 `RATE_LIMITED` · 502 `ROUTING_PROVIDER_ERROR` | ✅ T33 |
 
 **Vị trí (T32):**
 - `POST /driver/location`: mã validation `POINTS_REQUIRED`, `TOO_MANY_POINTS` (> 100), `POINT_REQUIRED`, `LATITUDE_REQUIRED`, `LONGITUDE_REQUIRED`, `INVALID_LATITUDE`, `INVALID_LONGITUDE`, `INVALID_ACCURACY` (< 0), `INVALID_HEADING` (ngoài `[0, 360)`), `INVALID_SPEED` (< 0), `RECORDED_AT_REQUIRED` (trên `points[i].<field>`). Lô hợp lệ luôn 204, kể cả khi không điểm nào được giữ: điểm có `recordedAt` muộn hơn giờ server quá 2 phút bị bỏ (đồng hồ máy chạy nhanh); điểm cũ hơn 10 phút không lưu; điểm không mới hơn điểm đang lưu không ghi đè. Gửi được khi không có route đang chạy (dispatcher chỉ đọc qua route của plan đang giao).
@@ -354,15 +353,28 @@ Người gọi phải có `role=DRIVER` hoặc `canDrive=true` (D-21); người 
 { "id": 101, "sequence": 1, "label": "ĐH-1024", "recipientName": "Chị Lan", "recipientPhone": "+84905…",
   "address": "…", "lat": 16.06, "lon": 108.22, "plannedArrival": "…",
   "timeWindow": { "start": "09:00", "end": "11:00" }, "note": "…", "status": "PENDING", "failureReason": null }
-// DirectionsResponse (Should; hình dạng sẽ chốt lại ở T33, xem IMPLEMENTATION_PLAN)
-{ "legs": [ { "fromStopId": null, "toStopId": 101, "distanceMeters": 2100, "durationSeconds": 360,
-              "geometry": "<polyline6>",
-              "steps": [ { "maneuver": "turn", "modifier": "left", "roadName": "Nguyễn Văn Linh",
-                           "distanceMeters": 400, "durationSeconds": 60, "location": [108.21, 16.055] } ] } ] }
+// Directions (T33, P-57): đường lái xe từ vị trí hiện tại tới một điểm, không phụ thuộc nhà cung cấp
+{ "destination": { "stopId": 101, "lat": 16.06, "lon": 108.22 },   // stopId null: điểm kết thúc của tuyến (route.end)
+  "distanceMeters": 2100, "durationSeconds": 360,
+  "polyline": "…",               // Encoded Polyline Algorithm, độ chính xác 6 chữ số thập phân (1e-6), thứ tự [lat, lon]
+  "steps": [
+    { "maneuver": "DEPART", "exitNumber": null, "roadName": "Lê Duẩn",
+      "distanceMeters": 400, "durationSeconds": 60, "location": { "lat": 16.0544, "lon": 108.2022 } },
+    { "maneuver": "LEFT", "exitNumber": null, "roadName": "Nguyễn Văn Linh",
+      "distanceMeters": 1700, "durationSeconds": 300, "location": { "lat": 16.0571, "lon": 108.2051 } },
+    { "maneuver": "ARRIVE", "exitNumber": null, "roadName": null,
+      "distanceMeters": 0, "durationSeconds": 0, "location": { "lat": 16.06, "lon": 108.22 } } ] }
 ```
 
 - `timezone` (T47) là bản chụp timezone của cửa hàng lúc lưu plan, như `PlanDetail.timezone`: app hiện `plannedStart`, `plannedArrival` theo timezone này, không theo máy. Tài xế không đọc được `GET /store`.
-- Dẫn đường (D-07): client tự dựng deep link Google Maps hoặc Apple Maps theo nền tảng từ `lat`/`lon` của stop; server không trả URL (P-32).
+- Dẫn đường (D-07): client tự dựng deep link Google Maps hoặc Apple Maps theo nền tảng từ `lat`/`lon` của stop; server không trả URL (P-32). Đây cũng là đường lùi khi `GET …/directions` lỗi.
+- **`GET /driver/routes/{routeId}/directions`** (T33, P-57): app gọi khi mở màn dẫn đường và mỗi lần tài xế đi lệch đường; không cache vì điểm đầu là vị trí hiện tại.
+  - `lat`, `lon`: vị trí hiện tại của máy, bắt buộc. Thiếu hoặc không phải số → 400 `MALFORMED_REQUEST` (như `q` của tìm địa chỉ); ngoài khoảng → 400 `VALIDATION_ERROR`, mã `INVALID_LATITUDE`/`INVALID_LONGITUDE` trên field `lat`/`lon`. `toStopId` không phải số → `MALFORMED_REQUEST`.
+  - `toStopId`: điểm đích, phải là stop của route này (khác → 404), kể cả stop đã kết thúc. Không gửi → stop `PENDING` đầu tiên theo `sequence`; hết stop `PENDING` → điểm kết thúc của route (`destination.stopId = null`).
+  - Route tìm như `GET /driver/routes/{routeId}` (404 như ở đó); plan `COMPLETED`, hoặc đã publish rồi huỷ → 422 `PLAN_NOT_ACTIVE`.
+  - Mỗi bước: `maneuver` xảy ra tại `location` (đầu bước), `distanceMeters`/`durationSeconds` là đoạn đi sau thao tác đó tới bước kế tiếp. Bước đầu luôn `DEPART`, bước cuối luôn `ARRIVE` (0 m). `roadName` là tên đường sau thao tác, `null` khi không có tên và với `ARRIVE`. `exitNumber` chỉ có với `ROUNDABOUT` (lối ra thứ mấy, từ 1; `null` khi không biết).
+  - `maneuver`: `DEPART`, `ARRIVE`, `STRAIGHT`, `SLIGHT_LEFT`, `SLIGHT_RIGHT`, `LEFT`, `RIGHT`, `SHARP_LEFT`, `SHARP_RIGHT`, `UTURN`, `KEEP_LEFT`, `KEEP_RIGHT` (rẽ nhánh, nhập làn, lên/xuống đường dẫn), `ROUNDABOUT`. Câu chỉ dẫn do client dựng từ enum (tiếng Việt ở client). Client sinh từ OpenAPI không đọc được giá trị lạ, nên **thêm giá trị mới là thay đổi phá vỡ contract** với app cũ.
+  - Giới hạn 30 request mỗi 5 phút cho mỗi tài xế (rule `directions-user`) → 429 `RATE_LIMITED`. Nhà cung cấp lỗi, quá thời gian, hoặc không có đường (ví dụ vị trí nằm ngoài vùng dữ liệu bản đồ `ROUTING_BBOX`) → 502 `ROUTING_PROVIDER_ERROR`; app mở Google/Apple Maps thay thế.
 - `PATCH …/status` của tài xế trả `routeStatus` (cùng nghĩa với `status` của route ở trên) và `planStatus` để app biết route/plan đã chuyển `IN_PROGRESS` hay `COMPLETED` (BR-11). Cập nhật trạng thái stop không tăng `version` của plan (§1). Chỉ đi từ `PENDING`; stop đã kết thúc không đổi được nữa (P-34).
   - Route tìm được như `GET` (P-36, T48): route của plan **đã publish rồi bị huỷ** trả 422 `PLAN_NOT_ACTIVE` thay vì 404, để app biết plan đã huỷ. Route của plan chưa từng publish, của tài xế khác hay store khác, và stop không thuộc route đó → 404 `NOT_FOUND`.
   - Thứ tự kiểm tra: 404 → `INVALID_STOP_TRANSITION` (gửi `PENDING`) → **idempotent**: stop đã ở đúng trạng thái gửi lên → 200, không đổi gì (kể cả `failureReason`), kể cả khi plan đã `COMPLETED`, để app gửi lại được khi mất response → `PLAN_NOT_ACTIVE` (plan `COMPLETED`, `CANCELLED`) → `INVALID_STOP_TRANSITION` (stop đã kết thúc với trạng thái khác) → `FAILURE_REASON_REQUIRED` (`FAILED` mà `failureReason` trống hoặc toàn khoảng trắng).

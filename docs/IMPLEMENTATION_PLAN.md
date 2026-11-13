@@ -471,6 +471,11 @@ T42 cũ (Docker, compose, README) đã được gộp vào T05 và T07 trong M0 
 - **Phạm vi:** `DirectionsProvider` dùng OSRM route (`steps=true`, `polyline6`); `GET /driver/routes/{routeId}/directions`; cache theo `routeId` và version của plan.
 - **Acceptance criteria:** parse response mẫu; route có n stop → n+1 leg (về depot); provider lỗi → 502 (app fallback sang deep link).
 - **Ghi chú từ T44:** `DirectionsResponse` ở API_SPEC §8 đang theo OSRM (`geometry` polyline6, `maneuver`/`modifier` theo từ vựng OSRM). Trước khi làm, chốt một dạng trung tính với provider (ghi rõ độ chính xác polyline, enum maneuver riêng), để đổi provider sau này không phải đổi contract; đây là quyết định cần chủ dự án duyệt.
+- **Phát sinh khi làm (2026-11-13), P-57:** chủ dự án chọn contract trung tính (enum riêng + polyline6), tính đường **từ vị trí hiện tại** và app **dẫn đường trực tiếp** (client ở `docs/client/PLAN.md` M05). Phạm vi mới thay phạm vi cũ:
+  - `routing.directions`: `DirectionsProvider.directions(from, to)` → `Directions` (khoảng cách, thời gian, polyline6, bước với `Maneuver` của PathWise); `OsrmDirectionsProvider` (`/route/v1/driving`, `overview=full`, `geometries=polyline6`, `steps=true`, timeout như matrix, đổi `type`/`modifier` của OSRM sang enum; `code` khác `Ok`, `NoRoute`, HTTP lỗi → `ROUTING_PROVIDER_ERROR`); chọn bằng `routing.directions.provider`, base URL `routing.directions.osrm.base-url` (mặc định bằng của matrix, cùng server tự host ở `compose.routing.yaml`).
+  - `GET /driver/routes/{routeId}/directions?lat&lon[&toStopId]` trong `DriverRouteController`: tìm route như `GET /driver/routes/{id}` trong transaction chỉ đọc, gọi provider **ngoài** transaction; plan `COMPLETED`/huỷ sau publish → 422 `PLAN_NOT_ACTIVE`; rate limit `directions-user` 30/5 phút. **Không cache** (điểm đầu là vị trí hiện tại), bỏ phần "cache theo `routeId` và version".
+  - Acceptance mới: parse response OSRM mẫu (cả vòng xoay, rẽ nhánh, đường không tên) ra đúng enum; đích mặc định là stop `PENDING` đầu tiên, `toStopId` lạ → 404, hết stop → điểm kết thúc; tenant isolation; 422 khi plan đã xong; 429 khi vượt giới hạn; provider lỗi → 502; không gọi provider bên trong transaction.
+  - Ước lượng: 1,5 ngày (không đổi).
 
 ### T28. Chỉnh tay route sau optimize
 - **Ước lượng:** 1,5 ngày · **FR:** P08 · **Quyết định:** D-24
