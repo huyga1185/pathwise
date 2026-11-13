@@ -50,7 +50,7 @@ class PlanDetailAssembler {
                 .collect(Collectors.groupingBy(stop -> stop.getRoute().getId()));
         JobResponse activeJob = plan.getActiveJobId() == null ? null
                 : jobService.findJob(storeId, plan.getActiveJobId()).orElse(null);
-        DropReason dropReason = plan.getOptimizedAt() == null ? DropReason.NOT_OPTIMIZED : DropReason.INFEASIBLE;
+        boolean optimized = plan.getOptimizedAt() != null;
 
         List<PlanRouteResponse> routeResponses = routes.stream()
                 .sorted(Comparator.comparing(PlanRoute::getId))
@@ -60,7 +60,7 @@ class PlanDetailAssembler {
         List<PlanStopResponse> unassigned = plan.getStops().stream()
                 .filter(stop -> stop.getRoute() == null)
                 .sorted(Comparator.comparing(PlanStop::getId))
-                .map(stop -> planMapper.toStopResponse(stop, dropReason))
+                .map(stop -> planMapper.toStopResponse(stop, dropReason(optimized, stop)))
                 .toList();
         return new PlanDetailResponse(plan.getId(),
                 plan.getName(),
@@ -76,7 +76,16 @@ class PlanDetailAssembler {
                 plan.getTotalDistanceMeters(),
                 plan.getTotalDurationSeconds(),
                 routeResponses,
-                unassigned);
+                unassigned,
+                PlanViolations.of(plan, stopsByRoute));
+    }
+
+    /**
+     * Why an unassigned stop has no route (P-13, P-58).
+     */
+    private static DropReason dropReason(boolean optimized, PlanStop stop) {
+        if (!optimized) return DropReason.NOT_OPTIMIZED;
+        return stop.isManuallyUnassigned() ? DropReason.MANUAL : DropReason.INFEASIBLE;
     }
 
     private PlanRouteResponse toRoute(RoutePlan plan, PlanRoute route, StoreMember driver, FleetVehicle vehicle, List<PlanStop> stops) {

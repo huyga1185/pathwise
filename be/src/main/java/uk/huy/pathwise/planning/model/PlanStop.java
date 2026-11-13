@@ -97,6 +97,10 @@ public class PlanStop {
     @Column(name = "planned_arrival")
     private Instant plannedArrival;
 
+    // Taken off its route by the dispatcher (T28, P-58); false again once the plan is optimized or edited.
+    @Column(name = "manually_unassigned", nullable = false)
+    private boolean manuallyUnassigned;
+
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
     private StopStatus status;

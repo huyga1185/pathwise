@@ -58,6 +58,8 @@ class PlanOptimizationService {
             stop.setRoute(null);
             stop.setSequence(null);
             stop.setPlannedArrival(null);
+            // A new result replaces every manual edit (P-58).
+            stop.setManuallyUnassigned(false);
         }
         int totalDistance = 0;
         int totalDuration = 0;

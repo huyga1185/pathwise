@@ -8,7 +8,6 @@
 ## 0. Lệch hiện tại so với spec (cập nhật 2026-11-13, sau T33)
 
 - `GET /admin/users` chưa trả `storeId`, `status`.
-- §7: chưa có `routes` (T28).
 - Tài liệu OpenAPI sinh tự động (`/v3/api-docs` ở dev/staging; CI xuất artifact `api-contract` gồm `openapi.json` và dữ liệu mẫu) dùng để sinh code client; endpoint (method + path) được kiểm tự động khớp spec (`ApiSpecContractIntegrationTest`). Từ T46 (P-48): mã thành công đúng như spec (201, 202, 204); field response luôn có mặt là `required`, field có thể `null` có kiểu kèm `null`; field của request PATCH gửi `null` để xoá có kiểu kèm `null`. Response thật được kiểm khớp schema đó (`OpenApiNullabilityIntegrationTest`, trên `docs/ux/samples` và các response tài khoản). OpenAPI chưa mô tả response lỗi (dùng §1 và §9). Spec này vẫn là hợp đồng; hướng dẫn cho client ở `docs/ux/UX_BRIEF.md`.
 - Endpoint vận hành ngoài `/api/v1`, giữ có chủ đích: `GET /actuator/health` (kèm `/liveness`, `/readiness`), Public, chỉ trả `status` và tên các `groups` (T05, `ARCHITECTURE.md` §12.1). Mọi endpoint actuator khác tắt.
 
@@ -200,7 +199,7 @@ Ghi chú:
 | `POST /plans/{id}/publish` | O, D | `{version}` | 200 `PlanDetail` (PUBLISHED) | 404 · 409 `PLAN_MODIFIED`/`PLAN_BUSY` · 422 `PLAN_NOT_EDITABLE` · 422 `PLAN_NOT_OPTIMIZED` · 422 `INVALID_ASSIGNMENT` · 422 `SHIFT_OVERLAP` | ✅ |
 | `POST /plans/{id}/cancel` | O, D | `{version}` | 200 `PlanDetail` (CANCELLED) | 404 · 409 `PLAN_MODIFIED`/`PLAN_BUSY` · 422 `PLAN_NOT_CANCELLABLE` | ✅ |
 | `GET /plans/{id}/driver-locations` | O, D | — | `DriverLocation[]` (xem dưới, P-53): mỗi route có stop một phần tử, theo thứ tự `routes`; plan không PUBLISHED/IN_PROGRESS → `[]` | 404 | ✅ |
-| `PUT /plans/{id}/routes` | O, D | `{version, routes:[{routeId, stopIds:[...]}], unassignedStopIds:[...]}`. Chỉnh tay sau optimize: chuyển stop giữa route, đổi thứ tự, bỏ ra ngoài; tính lại ETA và quãng đường bằng matrix, không giải lại (Should, D-24, P-58). | 200 `PlanDetail` (có `violations[]`) | 400 · 404 · 409 `PLAN_MODIFIED`/`PLAN_BUSY` · 422 `PLAN_NOT_EDITABLE` · 422 `PLAN_NOT_OPTIMIZED` · 502 `ROUTING_PROVIDER_ERROR` | ❌ T28 |
+| `PUT /plans/{id}/routes` | O, D | `{version, routes:[{routeId, stopIds:[...]}], unassignedStopIds:[...]}`. Chỉnh tay sau optimize: chuyển stop giữa route, đổi thứ tự, bỏ ra ngoài; tính lại ETA và quãng đường bằng matrix, không giải lại (Should, D-24, P-58). | 200 `PlanDetail` (có `violations[]`) | 400 · 404 · 409 `PLAN_MODIFIED`/`PLAN_BUSY` · 422 `PLAN_NOT_EDITABLE` · 422 `PLAN_NOT_OPTIMIZED` · 502 `ROUTING_PROVIDER_ERROR` | ✅ T28 |
 
 **Vị trí tài xế (T32, P-15, D-26, P-53):** dispatcher polling cùng nhịp với `GET /plans/{id}` khi plan đang giao.
 
