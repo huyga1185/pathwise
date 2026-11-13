@@ -15,9 +15,14 @@ COPY web/ ./
 # Lint and tests run in CI; the build still type-checks. No VITE_* here: the image is configured at runtime.
 RUN pnpm build
 
-FROM caddy:2.10.2-alpine AS runtime
+FROM caddy:2.11.7-alpine AS runtime
+# Alpine fixes released after the base image (the image workflow fails on fixed CRITICAL vulnerabilities).
+RUN apk upgrade --no-cache
 COPY deploy/caddy/Caddyfile /etc/caddy/Caddyfile
-RUN PATHWISE_DOMAIN=localhost caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
+# Validation provisions a local CA for localhost: keep its data and keys out of the image.
+RUN PATHWISE_DOMAIN=localhost XDG_DATA_HOME=/tmp/caddy-validate XDG_CONFIG_HOME=/tmp/caddy-validate \
+    caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile \
+    && rm -r /tmp/caddy-validate
 COPY deploy/caddy/write-config.sh /usr/local/bin/pathwise-write-config
 COPY --from=build /src/web/dist/ /srv/app/
 ENV PATHWISE_UPSTREAM=app:8080 \
