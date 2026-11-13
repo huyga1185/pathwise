@@ -68,6 +68,16 @@ jobs:
     pool-size: 2
     queue-capacity: 50
 
+# Nightly deletion of stale rows (T53, P-59), after the 02:30 backup. One instance at a time (Redis lock with TTL).
+housekeeping:
+  cron: "0 30 3 * * *"
+  zone: Asia/Ho_Chi_Minh
+  lock-ttl: 30m
+  retention:
+    refresh-tokens: 30d
+    jobs: 30d
+    invitations: 90d
+
 # Web origins allowed to call the API from a browser (ARCHITECTURE.md §6.4); env CORS_ALLOWED_ORIGINS, comma separated.
 # None by default: only same-origin pages and mobile apps (which send no Origin) can call the API.
 cors:

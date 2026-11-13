@@ -51,7 +51,7 @@ OWNER của store = user có `role='OWNER' AND store_id=?` (đúng 1, BR-03, ki�
 
 ### 2.3 `refresh_tokens` — Keep + index (V2, đã tạo ở T13)
 
-Giữ nguyên cột (timestamp đổi sang `DATETIME(6)`). Thêm `idx_refresh_tokens_user_state (user_id, state)`. `family_id` = session id công khai (P-07). Trạng thái `EXPIRED` được gán khi phát hiện token hết hạn lúc rotate (T10). Không có job dọn dẹp trong MVP (Could).
+Giữ nguyên cột (timestamp đổi sang `DATETIME(6)`). Thêm `idx_refresh_tokens_user_state (user_id, state)`. `family_id` = session id công khai (P-07). Trạng thái `EXPIRED` được gán khi phát hiện token hết hạn lúc rotate (T10). Dòng cũ bị job dọn dữ liệu xoá (T53, §6).
 
 ### 2.4 `store_invitations` — New (V3, đã tạo ở T16)
 
@@ -203,6 +203,7 @@ Index `(status, created_at)`, `(store_id, target_id)`. Tên ràng buộc trong V
 | `geocode:nominatim:next-slot` | thời điểm (ms, đồng hồ Redis) slot trống kế tiếp; Lua `ReserveThrottleSlot.lua` đặt slot theo thứ tự đến (P-11) | hết khi slot cuối đã đặt kết thúc (`chờ + 1000 / per-second` ms) | routing |
 | `driver:location:{storeId}:{driverId}` | hash: `t` = `recordedAt` (epoch ms), `v` = JSON `{lat, lon, accuracyMeters, headingDegrees, speedMps, recordedAt}`; Lua `SaveLatestLocation.lua` chỉ ghi khi điểm mới hơn (T32) | 10 phút tính từ `recordedAt` | planning |
 | `driver:sharing:{storeId}:{driverId}` | JSON `{routeId, state, updatedAt}`, `state` là `SHARING`/`DECLINED`/`NO_PERMISSION`/`GPS_OFF` (P-53, T32) | 12 giờ | planning |
+| `housekeeping:lock` | token ngẫu nhiên của lần chạy giữ khoá; `SET NX`, nhả bằng Lua so token (chỉ xoá khoá của mình) (T53) | `housekeeping.lock-ttl` (30 phút) | core |
 | `directions:route:{routeId}:{planVersion}` (Should) | JSON geometry/steps | 24 h | planning |
 
 Key OTP dùng **userId** (T12), không dùng email. OTP bị xoá khi đúng (dùng một lần) hoặc khi sai đủ `otp.max-attempts` (mặc định 3) lần.
@@ -228,3 +229,15 @@ Task phát sinh cần migration mới lấy số tiếp theo **sau khi** cập n
 - V2 thêm các cột NOT NULL (`status`...) mà không đặt giá trị mặc định cho dữ liệu cũ. Nếu bảng `users` còn dữ liệu thì migration fail, coi như tín hiệu nhắc phải reset DB.
 - Testcontainers và CI luôn bắt đầu từ DB trống nên không bị ảnh hưởng.
 - ADMIN đầu tiên được tạo bằng script seed thủ công. T13 cung cấp file `be/db/seed-admin.example.sql`, không chạy tự động.
+
+## 6. Thời gian giữ dữ liệu (T53, P-59)
+
+Job `core.housekeeping` chạy mỗi đêm (`housekeeping.cron`, mặc định 03:30 giờ Việt Nam, sau backup 02:30), giữ khoá Redis `housekeeping:lock` để chỉ một instance chạy. Mỗi module tự xoá bảng của mình qua một `RetentionTask` (ARCHITECTURE §8.6); số ngày ở `housekeeping.retention.<tên>`:
+
+| Tên | Bảng | Xoá khi | Mặc định | Giữ lại |
+|---|---|---|---|---|
+| `refresh-tokens` | `refresh_tokens` | `expires_at` quá hạn giữ, hoặc `REVOKED` và `updated_at` quá hạn giữ | 30 ngày | token còn hạn hoặc mới hết hạn/thu hồi (phát hiện dùng lại token cũ, P-07) |
+| `jobs` | `background_jobs` | `SUCCEEDED`/`FAILED` và `finished_at` quá hạn giữ | 30 ngày | job `QUEUED`/`RUNNING`; job còn là `route_plans.active_job_id` của một plan |
+| `invitations` | `store_invitations` | chưa `ACCEPTED` và (`expires_at` quá hạn giữ, hoặc `REVOKED` và `updated_at` quá hạn giữ) | 90 ngày | lời mời `ACCEPTED` (lịch sử ai mời ai); lời mời còn dùng được |
+
+Task thiếu cấu hình số ngày thì bị bỏ qua (log cảnh báo); một task lỗi không chặn task khác. Log mỗi lần chạy: số dòng đã xoá theo tên.

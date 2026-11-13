@@ -147,6 +147,7 @@ Ghi chú:
 - `PATCH /store/members/{userId}`: OWNER chỉ đổi được `canDrive`; đổi `role`/`status` của OWNER → 422 `CANNOT_MODIFY_OWNER`. Giá trị enum ngoài danh sách → 400 `MALFORMED_REQUEST`.
 - Lời mời hết hạn sau 7 ngày (D-27). Lời mời PENDING đã quá `expiresAt` được trả với `status: EXPIRED` (lọc `status=EXPIRED` cũng tính chúng). Mời lại cùng email → lời mời PENDING cũ thành `REVOKED`. Email đã thuộc một tài khoản bất kỳ → 409 `EMAIL_EXISTED` (D-02).
 - `POST /store/invitations`: gửi email lỗi vẫn 201; OWNER mời lại để gửi mã mới.
+- Lời mời chưa nhận đã hết hạn hoặc bị huỷ quá 90 ngày bị xoá (T53, DATA_MODEL §6): không còn trong `GET /store/invitations`. Lời mời `ACCEPTED` giữ lại.
 - `POST /invitations/accept`: mọi mã không dùng được (không tồn tại, đã dùng, đã huỷ, hết hạn) → 404 `INVITATION_INVALID`; `phoneNumber` sai → 400 `INVALID_PHONE_NUMBER`, lời mời vẫn PENDING. Ở endpoint này chuỗi `phoneNumber` rỗng được coi là không có số (F-43).
 
 ## 5. Fleet — `/api/v1/vehicles`
@@ -180,6 +181,7 @@ Ghi chú:
 ```
 
 - `startedAt`, `finishedAt` là `null` khi chưa tới bước đó.
+- Job đã kết thúc quá 30 ngày bị xoá (T53, DATA_MODEL §6), trừ job còn là job hiện tại của plan: `GET /jobs/{id}` của job đó → 404.
 - Plan về `processingStatus = IDLE` ngay trước khi job ghi trạng thái cuối, nên với job chạy nền có thể có một khoảng rất ngắn plan đã `IDLE` mà job vẫn `RUNNING` (F-45). Client theo dõi job thì polling `GET /jobs/{id}` tới khi `status` là `SUCCEEDED` hoặc `FAILED`; client theo dõi plan thì dừng khi `processingStatus = IDLE`.
 - `errorCode` khi `FAILED`: `ROUTING_PROVIDER_ERROR`, `GEOCODING_PROVIDER_ERROR`, `INTERRUPTED` (app khởi động lại khi job còn `QUEUED`/`RUNNING`), `JOB_QUEUE_FULL` (hàng đợi job nền đầy, thử lại sau) (P-30), `PLAN_MODIFIED` (plan đổi trong lúc optimize), `NO_SOLUTION` (solver không tìm được lời giải nào, P-33) hoặc `INTERNAL_ERROR`. Job lỗi thì plan quay về `processingStatus = IDLE` và kết quả tối ưu cũ giữ nguyên.
 

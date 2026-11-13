@@ -524,6 +524,7 @@ Làm **A trước B**. A giữ an toàn dữ liệu và VPS (2 GB, chạy cả r
 - **Ước lượng:** 0,5 ngày · **Phụ thuộc:** —
 - **Phạm vi:** job theo lịch (Spring `@Scheduled`, khoá Redis có TTL để chỉ một instance chạy): xoá refresh token hết hạn hoặc đã thu hồi quá 30 ngày, job nền đã kết thúc quá 30 ngày, lời mời hết hạn quá 90 ngày; số ngày cấu hình được; log số dòng đã xoá. Thay mục "job dọn refresh token hết hạn" ở §10.
 - **Acceptance:** integration test: dữ liệu quá hạn bị xoá, dữ liệu còn hiệu lực giữ nguyên; hai instance chạy cùng lúc chỉ một lần xoá.
+- **Phát sinh khi làm (2026-11-14):** khung chung ở `core.housekeeping` (khoá Redis, lịch 03:30 sau backup), mỗi module tự xoá bảng của mình qua interface `RetentionTask` (ARCHITECTURE §7.1) để `core` không phụ thuộc module nghiệp vụ. Lời mời `ACCEPTED` không xoá (lịch sử ai mời ai); lời mời `REVOKED` cũng xoá sau 90 ngày; job còn là `active_job_id` của plan được giữ (FK). Không thêm endpoint chạy tay: test gọi `HousekeepingService.run()`. Quy tắc giữ ở DATA_MODEL §6.
 
 #### T54. Giám sát tối thiểu và cảnh báo
 - **Ước lượng:** 1 ngày · **Phụ thuộc:** T52 (trạng thái backup)
@@ -566,7 +567,7 @@ ADMIN **không xem nội dung** của cửa hàng (plan, xe, điểm giao, ngư�
 
 ## 10. Sau MVP (Could, chưa lên lịch)
 
-Giai đoạn C của M5: nhập điểm giao từ CSV/Excel, sao chép plan hôm trước, báo cáo ngày và xuất CSV (P-59) · Google provider (I-03) · realtime push (I-04) · optimize bất đồng bộ (FR-X03) · job dọn refresh token hết hạn (thành T53) · lịch sử vị trí · gợi ý địa điểm (I-01, cần phê duyệt) · thanh toán QR (I-02, cần phê duyệt).
+Giai đoạn C của M5: nhập điểm giao từ CSV/Excel, sao chép plan hôm trước, báo cáo ngày và xuất CSV (P-59) · Google provider (I-03) · realtime push (I-04) · optimize bất đồng bộ (FR-X03) · lịch sử vị trí · gợi ý địa điểm (I-01, cần phê duyệt) · thanh toán QR (I-02, cần phê duyệt).
 
 ## 11. Task đầu tiên: T00
 
