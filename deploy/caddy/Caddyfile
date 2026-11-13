@@ -1,0 +1,48 @@
+# PathWise behind Caddy (W08, P-47, P-56): the web app at /app/ and the API at /api/ on one origin, with automatic
+# HTTPS. Used by the web image (compose.web.yaml) and by a Caddy installed on the host (docs/DEPLOYMENT.md §8).
+#   PATHWISE_DOMAIN    site address, e.g. pathwise.example.com (localhost for a local test)
+#   PATHWISE_UPSTREAM  the app: app:8080 in compose (default), 127.0.0.1:8080 for a Caddy on the host
+#   PATHWISE_WEB_ROOT  directory holding app/ (the web build): /srv in the image
+# Caddy sets X-Forwarded-For/-Proto itself and ignores the client's; the app trusts them from private addresses only.
+
+{$PATHWISE_DOMAIN} {
+	encode zstd gzip
+
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		X-Frame-Options "DENY"
+		-Server
+	}
+
+	# The API, and Swagger on staging (prod answers 404 itself). Actuator is not exposed.
+	@backend path /api/* /swagger-ui* /v3/api-docs*
+	handle @backend {
+		reverse_proxy {$PATHWISE_UPSTREAM:app:8080}
+	}
+
+	# The landing page comes later (P-47); until then / opens the web app. (redir: matcher first, then target.)
+	redir / /app/ 302
+	redir /app /app/ 308
+
+	handle /app/* {
+		root * {$PATHWISE_WEB_ROOT:/srv}
+		# Hashed file names never change: cache for a year. index.html, config.js and icons: revalidate.
+		@hashed path /app/assets/*
+		header @hashed Cache-Control "public, max-age=31536000, immutable"
+		@unhashed not path /app/assets/*
+		header @unhashed Cache-Control "no-cache"
+		# Routes of the web app fall back to index.html; a missing asset stays 404.
+		@route {
+			not path /app/assets/*
+			not file
+		}
+		rewrite @route /app/index.html
+		file_server
+	}
+
+	handle {
+		respond 404
+	}
+}

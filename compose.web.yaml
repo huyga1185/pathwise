@@ -1,0 +1,29 @@
+# Web app and HTTPS in a container (W08, P-56): Caddy serves the dispatcher web app at /app/, proxies /api/ to the app
+# and gets certificates for PATHWISE_DOMAIN by itself. With the VPS stack (docs/DEPLOYMENT.md §8):
+#   docker compose -f compose.prod.yaml -f compose.web.yaml up -d          # add -f compose.routing.yaml if used
+# Instead of this file, a Caddy installed on the host can use deploy/caddy/Caddyfile with the web tarball of the
+# GitHub release. Variables come from .env (see .env.prod.example).
+# With ufw-docker, open 80/443 for this container with `ufw-docker allow` (plain `ufw allow` does not reach containers).
+
+services:
+  web:
+    image: ${WEB_IMAGE:-ghcr.io/huyga1185/pathwise-web}:${APP_IMAGE_TAG:?set in .env, e.g. 0.1.0 or develop}
+    restart: unless-stopped
+    environment:
+      PATHWISE_DOMAIN: ${PATHWISE_DOMAIN:?set in .env, e.g. pathwise.example.com}
+      PATHWISE_MAPTILER_KEY: ${MAPTILER_KEY:-}
+      PATHWISE_BASEMAP: ${WEB_BASEMAP:-maptiler}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp" # HTTP/3
+    volumes:
+      # Certificates and ACME account: keep them, or Let's Encrypt rate limits hit on every recreate.
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - app
+
+volumes:
+  caddy-data:
+  caddy-config:

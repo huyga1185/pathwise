@@ -131,6 +131,10 @@ jobs:
         run: pnpm test
       - name: Build
         run: pnpm build
+      # The web image of the deployment (W08, P-56): Dockerfile and Caddyfile (validated inside the build) still work.
+      - name: Build image
+        working-directory: .
+        run: docker build -f web/Dockerfile -t pathwise-web:ci .
 
   # Driver app (M00): the Flutter version of mobile/pubspec.yaml; generated files must match their sources.
   mobile:
