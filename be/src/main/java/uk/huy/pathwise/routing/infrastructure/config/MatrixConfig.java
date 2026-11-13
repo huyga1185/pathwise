@@ -5,6 +5,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.web.client.RestClient;
+import uk.huy.pathwise.core.observability.FailureLog;
+import uk.huy.pathwise.routing.infrastructure.failure.FailureLoggingMatrixProvider;
 import uk.huy.pathwise.routing.infrastructure.osrm.OsrmMatrixProvider;
 import uk.huy.pathwise.routing.matrix.MatrixProvider;
 
@@ -15,11 +17,12 @@ import uk.huy.pathwise.routing.matrix.MatrixProvider;
 @EnableConfigurationProperties(MatrixProperties.class)
 public class MatrixConfig {
     @Bean
-    MatrixProvider matrixProvider(MatrixProperties properties, RestClient.Builder restClientBuilder) {
-        return switch (properties.provider()) {
+    MatrixProvider matrixProvider(MatrixProperties properties, RestClient.Builder restClientBuilder, FailureLog failureLog) {
+        MatrixProvider provider = switch (properties.provider()) {
             case "osrm" -> osrm(properties.osrm(), restClientBuilder);
             default -> throw new IllegalStateException("Unknown routing.matrix.provider: " + properties.provider());
         };
+        return new FailureLoggingMatrixProvider(provider, properties.provider(), failureLog);
     }
 
     private static MatrixProvider osrm(MatrixProperties.Osrm osrm, RestClient.Builder restClientBuilder) {

@@ -5,6 +5,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.web.client.RestClient;
+import uk.huy.pathwise.core.observability.FailureLog;
+import uk.huy.pathwise.routing.infrastructure.failure.FailureLoggingDirectionsProvider;
 import uk.huy.pathwise.routing.directions.DirectionsProvider;
 import uk.huy.pathwise.routing.infrastructure.osrm.OsrmDirectionsProvider;
 
@@ -15,11 +17,13 @@ import uk.huy.pathwise.routing.infrastructure.osrm.OsrmDirectionsProvider;
 @EnableConfigurationProperties(DirectionsProperties.class)
 public class DirectionsConfig {
     @Bean
-    DirectionsProvider directionsProvider(DirectionsProperties properties, RestClient.Builder restClientBuilder) {
-        return switch (properties.provider()) {
+    DirectionsProvider directionsProvider(DirectionsProperties properties, RestClient.Builder restClientBuilder,
+                                          FailureLog failureLog) {
+        DirectionsProvider provider = switch (properties.provider()) {
             case "osrm" -> osrm(properties.osrm(), restClientBuilder);
             default -> throw new IllegalStateException("Unknown routing.directions.provider: " + properties.provider());
         };
+        return new FailureLoggingDirectionsProvider(provider, properties.provider(), failureLog);
     }
 
     private static DirectionsProvider osrm(DirectionsProperties.Osrm osrm, RestClient.Builder restClientBuilder) {

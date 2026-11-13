@@ -9,7 +9,7 @@
 
 - `GET /admin/users` chưa trả `storeId`, `status`.
 - Tài liệu OpenAPI sinh tự động (`/v3/api-docs` ở dev/staging; CI xuất artifact `api-contract` gồm `openapi.json` và dữ liệu mẫu) dùng để sinh code client; endpoint (method + path) được kiểm tự động khớp spec (`ApiSpecContractIntegrationTest`). Từ T46 (P-48): mã thành công đúng như spec (201, 202, 204); field response luôn có mặt là `required`, field có thể `null` có kiểu kèm `null`; field của request PATCH gửi `null` để xoá có kiểu kèm `null`. Response thật được kiểm khớp schema đó (`OpenApiNullabilityIntegrationTest`, trên `docs/ux/samples` và các response tài khoản). OpenAPI chưa mô tả response lỗi (dùng §1 và §9). Spec này vẫn là hợp đồng; hướng dẫn cho client ở `docs/ux/UX_BRIEF.md`.
-- Endpoint vận hành ngoài `/api/v1`, giữ có chủ đích: `GET /actuator/health` (kèm `/liveness`, `/readiness`), Public, chỉ trả `status` và tên các `groups` (T05, `ARCHITECTURE.md` §12.1). Mọi endpoint actuator khác tắt.
+- Endpoint vận hành ngoài `/api/v1`, giữ có chủ đích: `GET /actuator/health` (kèm `/liveness`, `/readiness`), Public, chỉ trả `status` và tên các `groups` (T05, `ARCHITECTURE.md` §12.1). Mọi endpoint actuator khác tắt. Caddy chỉ mở `/actuator/health` (không mở `/liveness`, `/readiness`) ra internet cho dịch vụ uptime bên ngoài (T54, DEPLOYMENT §9).
 
 ## 1. Quy ước chung
 

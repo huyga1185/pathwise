@@ -5,7 +5,7 @@
 > - Prod: `ghcr.io/huyga1185/pathwise:x.y.z` (khi push tag `vx.y.z`), profile `prod`.
 > - Web dispatcher kèm Caddy: `ghcr.io/huyga1185/pathwise-web` với cùng tag (W08, P-56).
 >
-> Mỗi môi trường là một thư mục riêng trên VPS, chứa `compose.prod.yaml`, `.env` và tuỳ chọn `compose.backup.yaml` (backup tự động, §5, nên có), `compose.web.yaml` (Caddy trong container, §8.1), `compose.routing.yaml` (§7).
+> Mỗi môi trường là một thư mục riêng trên VPS, chứa `compose.prod.yaml`, `.env` và tuỳ chọn `compose.backup.yaml` (backup tự động, §5, nên có), `compose.web.yaml` (Caddy trong container, §8.1), `compose.routing.yaml` (§7). Giám sát và cảnh báo: §9.
 
 ## 1. Chuẩn bị VPS (một lần)
 
@@ -289,3 +289,66 @@ Dùng khi VPS đã có Caddy (nhiều site). Web lấy từ tarball đính kèm 
    tar -xzf pathwise-web-<tag>.tar.gz --strip-components=1 -C /var/www/pathwise
    cp /tmp/pathwise-config.js /var/www/pathwise/app/config.js
    ```
+
+## 9. Giám sát và cảnh báo (T54)
+
+Hai lớp, không cần Prometheus/Grafana:
+
+| Lớp | Bắt được | Không bắt được |
+|---|---|---|
+| Uptime bên ngoài (§9.1) | VPS tắt, mất mạng, Caddy/app chết, DB/Redis chết (health 503), chứng chỉ hết hạn | đĩa sắp đầy, backup lỗi |
+| Script trên VPS (§9.2) | đĩa, RAM, container dừng/unhealthy/tự khởi động lại, health, backup và bản chép lên S3 | VPS tắt hẳn, SMTP chết (không gửi được email) |
+
+### 9.1 Uptime bên ngoài
+
+`https://<domain>/actuator/health` công khai qua Caddy, trả `{"status":"UP",…}` hoặc 503 khi DB/Redis lỗi; không có chi tiết nào khác.
+
+1. Đăng ký gói miễn phí của UptimeRobot (https://uptimerobot.com) hoặc Better Stack (https://betterstack.com/uptime).
+2. Tạo monitor **HTTP(s) – Keyword**: URL `https://<domain>/actuator/health`, keyword `"status":"UP"`, chu kỳ 5 phút, báo khi keyword **không** có.
+3. Thêm monitor HTTP thường cho `https://<domain>/app/` (web và Caddy), và bật cảnh báo chứng chỉ nếu dịch vụ có.
+4. Kênh cảnh báo: email (khác hộp thư của SMTP gửi đi nếu được), thêm app điện thoại của dịch vụ nếu muốn.
+5. Thử: `docker compose -f compose.prod.yaml stop app`, chờ báo, rồi `start app`.
+
+### 9.2 Script `deploy/monitor/pathwise-monitor.sh`
+
+Cron trên host chạy mỗi 5 phút, gửi email qua SMTP của app (`SPRING_MAIL_*` trong `.env`, bằng `curl`). Mỗi sự cố báo **một lần** khi bắt đầu, nhắc lại sau `MONITOR_REMIND_HOURS` (mặc định 6 giờ) nếu còn, và báo khi đã hết. Kiểm tra:
+
+- đĩa của thư mục môi trường và của Docker > `MONITOR_DISK_PERCENT` (85 %);
+- RAM khả dụng < `MONITOR_MEM_AVAILABLE_PERCENT` (10 %);
+- container của project: dừng với mã thoát khác 0 (kèm hết RAM nếu bị OOM kill), đang restart, unhealthy, hoặc đã tự khởi động lại kể từ lần trước; service trong `MONITOR_SERVICES` (`mariadb redis app`) không chạy. Container chạy một lần rồi thoát 0 (`routing-data`, `osrm-prepare`) là bình thường;
+- `http://127.0.0.1:${APP_PORT}/actuator/health` không `UP`;
+- có `compose.backup.yaml` hoặc `./backups/status`: `last-error` có mặt, bản thành công gần nhất cũ hơn `MONITOR_BACKUP_MAX_AGE_HOURS` (26 giờ); có `BACKUP_S3_BUCKET`: `last-offsite-error`, lần chép thành công gần nhất cũ hơn `MONITOR_OFFSITE_MAX_AGE_HOURS` (3 giờ).
+
+Cài (cần `bash`, `curl`, `docker`, `flock`; có sẵn trên Ubuntu/Debian):
+
+```bash
+cd /opt/pathwise-prod
+mkdir -p monitor
+curl -fsSLo monitor/pathwise-monitor.sh https://raw.githubusercontent.com/huyga1185/pathwise/<tag>/deploy/monitor/pathwise-monitor.sh
+chmod 700 monitor/pathwise-monitor.sh
+# Thêm vào .env: MONITOR_ALERT_EMAIL=ban@example.com  (các biến khác xem đầu script và .env.prod.example)
+./monitor/pathwise-monitor.sh --test-email /opt/pathwise-prod   # phải nhận được email
+./monitor/pathwise-monitor.sh --dry-run /opt/pathwise-prod      # in sự cố hiện có, không gửi; "OK" là sạch
+echo '*/5 * * * * root /opt/pathwise-prod/monitor/pathwise-monitor.sh /opt/pathwise-prod >> /var/log/pathwise-monitor.log 2>&1' \
+  | sudo tee /etc/cron.d/pathwise-monitor
+```
+
+Script chạy bằng root vì `.env` là `chmod 600` và cần quyền Docker; nó chỉ đọc `.env` (không chạy file này) và chỉ ghi vào `.monitor/` (trạng thái các sự cố đang mở) và log ở trên. Log chỉ có dòng khi gửi cảnh báo hoặc gửi lỗi. Mỗi môi trường (prod, staging) một dòng cron với thư mục riêng; `MONITOR_NAME` đặt tên trong tiêu đề email (mặc định là tên thư mục).
+
+Khi nhận email: làm theo lệnh gợi ý trong email (`docker logs`, `docker stats`, log của `backup`). Đĩa đầy thường do image cũ (`docker image prune`), backup (`BACKUP_KEEP_*`) hoặc dữ liệu Nominatim. Gửi lỗi thì script ghi `alert email failed` vào log và thử lại ở lần sau.
+
+### 9.3 Lỗi trong log của app
+
+Mỗi lần gửi email lỗi, OSRM/Nominatim lỗi, hoặc job nền kết thúc `FAILED`, app ghi một dòng cố định (T54, ARCHITECTURE §10):
+
+```
+WARN … failure source=ROUTING operation=osrm.table reason=unreachable message="OSRM table request failed"
+WARN … failure source=JOB operation=OPTIMIZE_PLAN reason=ROUTING_PROVIDER_ERROR jobId=42
+```
+
+```bash
+docker compose -f compose.prod.yaml logs --since 24h app | grep 'failure source='                  # mọi lỗi trong 24 giờ
+docker compose -f compose.prod.yaml logs --since 24h app | grep -o 'failure source=[A-Z]*' | sort | uniq -c
+```
+
+`source`: `EMAIL` (SMTP; `authentication_failed` là sai tài khoản SMTP), `ROUTING` (OSRM; `unreachable` là không kết nối được, xem §7), `GEOCODING` (Nominatim), `JOB` (`reason` là mã lỗi của job, ví dụ `INTERRUPTED` sau khi app khởi động lại).
