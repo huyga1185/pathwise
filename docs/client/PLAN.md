@@ -13,7 +13,8 @@ W00 ─┬─ W01 ─┬─ W02
      │       ├─ W03
      │       └─ W04 ── W05 ── W06 ── W07 ── W08 (sau khi chốt deploy)
      │                         ├─ W09 (cần T32)
-     │                         └─ W10 (cần T28)
+     │                         ├─ W10 (cần T28)
+     │                         └─ W11 (cần T55–T60, M5)
      └─ M00 ── M01 ── M02 ── M03 ── M04 (cần T32) ── M05 (cần T33)
 ```
 
@@ -34,6 +35,7 @@ W00 ─┬─ W01 ─┬─ W02
 | M03 | M02 | W* |
 | W09 | W07, T32 | M04 (cùng branch T32) |
 | W10 | W06, T28 | — (cùng branch T28) |
+| W11 | W07, T55 (từng màn theo T56–T58, T60) | — |
 | M04 | M03, T32 | W09 (cùng branch T32) |
 | M05 | M04, T33 | — (cùng branch T33) |
 
@@ -188,6 +190,17 @@ File nóng của client (không hai task song song cùng sửa): `web/package.js
   - Nháp không còn khớp plan (người khác sửa, tối ưu lại) tự bỏ khi render, không qua effect (luật `react-hooks/set-state-in-effect`). Câu báo của chế độ chỉnh tay là state riêng (`messageFor` chỉ đọc mã lỗi).
   - ESLint cấm `@dnd-kit/*` ngoài `src/platform/dnd` (như thư viện bản đồ).
 - **Acceptance:** test `SortableBoard` riêng (kéo bằng bàn phím đổi thứ tự và chuyển cột, câu đọc); test màn kết quả với fixture: bật chỉnh, chuyển điểm sang tuyến khác bằng menu → tải tính lại, "Lưu" gửi đúng body (`version`, mọi tuyến, `unassignedStopIds`), hiện vi phạm từ response; "Huỷ" bỏ nháp; giao việc khi có vi phạm hiện hộp xác nhận có danh sách; `MANUAL` hiện "Đã bỏ ra"; lỗi 409 tải lại. `pnpm lint/typecheck/test/build` xanh; E2E: chỉnh tay một điểm rồi giao việc.
+
+### W11. Khu quản trị cho ADMIN (M5 giai đoạn B, P-59)
+- **Ước lượng:** 3 ngày · **Màn:** Quản trị — tổng quan, cửa hàng, chi tiết cửa hàng, người dùng, nhật ký (artboard mới, vẽ vào prototype trước rồi làm, như W10) · **Quyết định:** P-59
+- **Phạm vi:**
+  - Route `/admin/*` chỉ cho ADMIN (role khác → về `/plans`); ADMIN đăng nhập vào thẳng `/admin` (hiện ADMIN vào web không có màn nào). Đầu trang có điều hướng riêng: Tổng quan, Cửa hàng, Người dùng, Nhật ký.
+  - **Tổng quan** (T60): thẻ số nghiệp vụ (cửa hàng mới, hoạt động 7/30 ngày, đang khoá; user theo vai trò; plan publish/hoàn thành; điểm giao và tỉ lệ giao được; lần tối ưu và tỉ lệ lỗi), biểu đồ theo ngày (chọn 7/30/90 ngày) và khối kỹ thuật (request/phút, tỉ lệ 4xx/5xx, p95, job lỗi, lỗi OSRM/Nominatim/SMTP, rate limit, heap JVM, dung lượng DB, tuổi backup gần nhất) có ghi chú "tính từ lúc app khởi động lúc …". Biểu đồ dùng thư viện ngoài cho đẹp (chủ dự án duyệt, P-59) nhưng **sau port `platform/charts`**: component trung tính (`TimeSeriesChart`, `BarChart`…) nhận dữ liệu, nhãn và token màu; feature không import thư viện, ESLint cấm import ngoài `platform/charts`; đổi thư viện chỉ sửa thư mục đó, test của feature không phụ thuộc thư viện. Đề xuất **Recharts** (React, SVG, đổi màu theo token sáng/tối được); chốt thư viện và phiên bản (≥ 2 tuần) khi bắt đầu W11.
+  - **Cửa hàng** (T55): bảng có tìm, lọc trạng thái, phân trang; **chi tiết cửa hàng**: số tổng 30 ngày, thành viên, nút "Khoá (chỉ đọc)"/"Mở khoá" có hộp nhập lý do (T56), "Chuyển chủ cửa hàng" (T57), nhật ký của cửa hàng (T58). Không có nội dung plan/xe/điểm giao (P-59).
+  - **Người dùng** (T55): bảng lọc theo cửa hàng, vai trò, trạng thái; hành động: khoá/mở, buộc đăng xuất (T56), gửi lại email xác thực, gửi email đặt lại mật khẩu (T57); mọi hành động có hộp xác nhận.
+  - **Nhật ký** (T58): bảng lọc theo cửa hàng, người làm, hành động, khoảng ngày.
+  - Phía cửa hàng: khi store READ_ONLY, băng "Cửa hàng đang tạm khoá: {lý do}" trên mọi màn, các nút ghi khoá; mã lỗi khoá có câu ở UX_BRIEF §6. App tài xế: băng tương tự, báo kết quả vẫn được (P-59). OWNER có màn "Nhật ký" trong Cửa hàng (T58).
+- **Acceptance:** test từng màn với fixture từ API; ADMIN thấy `/admin`, role khác bị chuyển; khoá cửa hàng hiện băng và khoá nút; E2E: ADMIN khoá rồi mở khoá một cửa hàng; `pnpm lint/typecheck/test/build` xanh.
 
 ### W08. Đóng gói và deploy web
 - **Ước lượng:** 0,5–1 ngày · **Điều kiện:** chủ dự án chốt reverse proxy và domain (đang để sau, xem P-47)

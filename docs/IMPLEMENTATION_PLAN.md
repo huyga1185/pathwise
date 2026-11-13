@@ -33,6 +33,7 @@ M1 Track A (auth)       T10─T11─T12─T13─T17─┬─T14─T15
 M2 Track A                                       T20─T24─T29─T25─T26─T27
 M3                                                          T30─T31  T40 T41
 M4                                                                     T43  (T32 T33 T28 nếu kịp)
+M5 (vận hành, P-59)  A: T50─T51─T52─T53─T54   B: T59─T55─T56─T57─T58─T60 + W11 (web)
 ```
 
 Bảng dependency (→ nghĩa là "phải xong trước"):
@@ -486,11 +487,86 @@ T42 cũ (Docker, compose, README) đã được gộp vào T05 và T07 trong M0 
   - Acceptance chốt: chuyển stop làm vượt tải → 200, `violations` có `CAPACITY_EXCEEDED` với `excess`; đổi thứ tự làm trễ time window → `TIME_WINDOW_MISSED`; route về muộn hơn ca → `SHIFT_EXCEEDED`; ETA/quãng đường tính lại đúng với matrix giả; stop không thuộc plan, lặp hay thiếu → 400 với đúng field (thay "422" của bản cũ); plan PUBLISHED → 422; version cũ → 409; matrix lỗi → 502 và không đổi gì; tenant isolation; optimize lại xoá `MANUAL`; matrix không được gọi trong transaction.
 - **Ghi chú từ T44:** hình dạng `violations[]` chưa có trong API_SPEC, chốt khi làm task này (đề xuất mỗi phần tử có `code`, `routeId`, `stopId?` và dữ liệu đo được như vượt bao nhiêu). `PUT /plans/{id}` tạo lại route nên `routeId` đổi sau mỗi lần sửa draft; request của task này dùng `routeId` lấy từ `PlanDetail` mới nhất.
 
-## 9. Sau MVP (Could, chưa lên lịch)
+## 9. Phase M5: Vận hành và quản trị (chủ dự án duyệt 2026-11-14, P-59)
 
-Google provider (I-03) · realtime push (I-04) · optimize bất đồng bộ (FR-X03) · job dọn refresh token hết hạn · lịch sử vị trí · gợi ý địa điểm (I-01, cần phê duyệt) · thanh toán QR (I-02, cần phê duyệt).
+Làm **A trước B**. A giữ an toàn dữ liệu và VPS (2 GB, chạy cả routing); B cho ADMIN thực quyền và trang thông số. Giai đoạn C (nhập điểm giao từ CSV/Excel, sao chép plan hôm trước, báo cáo ngày) để mốc sau. Mỗi task backend có ước lượng riêng; web của B là W11 (`docs/client/PLAN.md`).
 
-## 10. Task đầu tiên: T00
+| Task | Phụ thuộc | Song song được với |
+|---|---|---|
+| T50 | — | T51, T52 |
+| T51, T52, T53, T54 | — | nhau |
+| T59 | — | A |
+| T55 | T59 | T53, T54 |
+| T56, T57, T58 | T55 | nhau |
+| T60 | T55 | T56–T58 |
+| W11 | T55 (danh sách), T56–T58, T60 theo từng màn | — |
+
+### Giai đoạn A: an toàn vận hành
+
+#### T50. Giờ trong ngày không đổi theo múi giờ JVM (F-54)
+- **Ước lượng:** 0,5–1 ngày · **Phụ thuộc:** —
+- **Phạm vi:** `LocalTime` (ca `shift_start`/`shift_end` của route, time window `tw_start`/`tw_end` của stop) đọc/ghi không qua đổi múi giờ (kiểu JDBC/Hibernate không đổi zone cho `TIME`, hoặc converter); Flyway migration chuyển dữ liệu đã lưu lệch về giờ thật (lệch phụ thuộc múi giờ JVM lúc ghi: ghi lại cách xác định và giả định trong DATA_MODEL); test chạy với JVM ở hai múi giờ khác nhau (`-Duser.timezone`).
+- **Acceptance:** ca 08:00 nằm trong DB là `08:00:00` (đọc bằng SQL); app chạy JVM UTC hay +07 đều đọc 08:00; dữ liệu cũ sau migration đúng giờ; mọi test cũ xanh.
+
+#### T51. Giới hạn log Docker
+- **Ước lượng:** 0,25 ngày · **Phụ thuộc:** —
+- **Phạm vi:** mọi service trong `compose.yaml`, `compose.prod.yaml`, `compose.routing.yaml`, `compose.web.yaml` có `logging: {driver: json-file, options: {max-size, max-file}}` (mặc định 10 MB × 3, chỉnh bằng biến); DEPLOYMENT ghi cách xem log cũ và dung lượng tối đa.
+- **Acceptance:** `docker compose config` của mọi tổ hợp có `logging`; CI xanh.
+
+#### T52. Backup MariaDB tự động, đẩy ra ngoài VPS
+- **Ước lượng:** 1 ngày · **Phụ thuộc:** —
+- **Phạm vi:** service `backup` trong file compose riêng (`compose.backup.yaml`, ghép bằng `-f`): mỗi đêm `mariadb-dump` nén, giữ 7 bản ngày + 4 bản tuần trên VPS, đẩy lên dịch vụ tương thích S3 (Cloudflare R2, Backblaze B2…) khi có biến `BACKUP_S3_*` (trống thì chỉ giữ trên VPS), mã hoá file bằng khoá trong `.env` (tuỳ chọn); script khôi phục và hướng dẫn tập khôi phục định kỳ vào DB tạm; log thành công/thất bại để T54 cảnh báo.
+- **Acceptance:** chạy tay một lần: file xuất hiện trên VPS và trên S3 giả (MinIO trong test thủ công); khôi phục vào DB tạm và đếm bảng khớp; xoay vòng giữ đúng số bản.
+
+#### T53. Dọn dữ liệu cũ
+- **Ước lượng:** 0,5 ngày · **Phụ thuộc:** —
+- **Phạm vi:** job theo lịch (Spring `@Scheduled`, khoá Redis có TTL để chỉ một instance chạy): xoá refresh token hết hạn hoặc đã thu hồi quá 30 ngày, job nền đã kết thúc quá 30 ngày, lời mời hết hạn quá 90 ngày; số ngày cấu hình được; log số dòng đã xoá. Thay mục "job dọn refresh token hết hạn" ở §10.
+- **Acceptance:** integration test: dữ liệu quá hạn bị xoá, dữ liệu còn hiệu lực giữ nguyên; hai instance chạy cùng lúc chỉ một lần xoá.
+
+#### T54. Giám sát tối thiểu và cảnh báo
+- **Ước lượng:** 1 ngày · **Phụ thuộc:** T52 (trạng thái backup)
+- **Phạm vi:** không thêm Prometheus/Grafana (VPS 2 GB). (1) Health công khai đủ cho dịch vụ uptime bên ngoài (UptimeRobot/BetterStack, gói miễn phí) qua Caddy; hướng dẫn đăng ký. (2) Script cron trên host (trong repo, `deploy/monitor/`): đĩa > 85 %, RAM khả dụng thấp, container restart hoặc unhealthy, backup đêm qua thất bại → gửi email qua SMTP của app. (3) App log có cấu trúc khi gửi SMTP lỗi, OSRM/Nominatim lỗi, job lỗi, để T60 đếm.
+- **Acceptance:** chạy script với ngưỡng thấp gửi được email (Mailpit ở dev); dừng container app thì script báo; DEPLOYMENT có mục giám sát.
+
+### Giai đoạn B: ADMIN có thực quyền
+
+ADMIN **không xem nội dung** của cửa hàng (plan, xe, điểm giao, người nhận): chỉ số tổng và nhật ký (BR-01, P-59). Mọi endpoint ở `/api/v1/admin/**`, quyền **AD**; mọi hành động ghi audit log (T58).
+
+#### T59. Tạo ADMIN không qua SQL
+- **Ước lượng:** 0,5 ngày · **Phụ thuộc:** —
+- **Phạm vi:** khi khởi động, nếu chưa có ADMIN nào và có biến `BOOTSTRAP_ADMIN_EMAIL` (+ mật khẩu lấy từ biến hoặc sinh ngẫu nhiên gửi qua email đặt lại mật khẩu) thì tạo một ADMIN đã xác thực; đã có ADMIN thì bỏ qua và log cảnh báo nếu biến còn đặt; không log mật khẩu. DEPLOYMENT hướng dẫn.
+- **Acceptance:** lần đầu tạo đúng một ADMIN; khởi động lại không tạo thêm; ADMIN đăng nhập được.
+
+#### T55. Danh sách và chi tiết cửa hàng; sửa danh sách user
+- **Ước lượng:** 1 ngày · **Phụ thuộc:** T59
+- **Phạm vi:** `GET /admin/stores` (phân trang, tìm theo tên/email chủ, lọc trạng thái, sort whitelist): tên, chủ (email), ngày tạo, trạng thái (ACTIVE/READ_ONLY), số thành viên theo vai trò, số xe, số plan, lần hoạt động gần nhất; `GET /admin/stores/{id}`: thêm số liệu 30 ngày (plan, điểm giao, tỉ lệ giao được), thành viên (email, vai trò, trạng thái; không số điện thoại); `GET /admin/users` trả đủ `storeId`, `status` (đóng lệch ở API_SPEC §0), lọc theo store/vai trò/trạng thái. Truy vấn tổng hợp, không trả nội dung plan.
+- **Acceptance:** số liệu đúng trên dữ liệu test; OWNER/DISPATCHER/DRIVER → 403; không field nội dung plan/điểm giao nào trong response.
+
+#### T56. Khoá cửa hàng (chỉ đọc), khoá user, buộc đăng xuất
+- **Ước lượng:** 1–1,5 ngày · **Phụ thuộc:** T55
+- **Phạm vi:** `POST /admin/stores/{id}/lock {reason}` / `unlock`: store **READ_ONLY** (P-59): thành viên vẫn đăng nhập và đọc; mọi request ghi của store (tạo/sửa/xoá xe, thành viên, lời mời, plan; geocode, optimize, publish, huỷ) → mã mới `STORE_READ_ONLY` (chủ dự án duyệt tên mã 2026-11-14; HTTP status chốt ở task, ghi API_SPEC); tài xế **vẫn báo kết quả và gửi vị trí** để giao nốt plan đang chạy; web/app hiện băng "Cửa hàng đang tạm khoá: {lý do}". `POST /admin/users/{id}/disable` / `enable` (ADMIN không khoá được chính mình hay ADMIN khác cuối cùng); `POST /admin/users/{id}/sessions/revoke` (thu hồi mọi refresh token). Kiểm tra chặn ghi đặt ở một chỗ (filter hoặc aspect theo endpoint), có test cho từng nhóm endpoint ghi.
+- **Acceptance:** store khoá: đọc 200, ghi → mã khoá, tài xế báo kết quả 200; mở khoá ghi lại được; user bị khoá không refresh được, lần đăng nhập sau 403 `ACCOUNT_DISABLED`; audit log có đủ.
+
+#### T57. Hỗ trợ tài khoản
+- **Ước lượng:** 1 ngày · **Phụ thuộc:** T55
+- **Phạm vi:** `POST /admin/users/{id}/verification-email` (gửi lại OTP xác thực, theo rate limit), `POST /admin/users/{id}/password-reset-email` (gửi email đặt lại mật khẩu như quên mật khẩu; ADMIN không thấy, không đặt mật khẩu), `POST /admin/stores/{id}/owner {userId}` (chuyển OWNER cho một thành viên ACTIVE đã xác thực; OWNER cũ thành DISPATCHER; khi chủ cũ mất email). Email báo cho người liên quan.
+- **Acceptance:** email đúng người nhận (FakeEmailSender); chuyển chủ: đúng vai trò hai người, token cũ của họ hết hiệu lực vai trò (refresh lại ra vai trò mới); không chuyển cho user của store khác (404).
+
+#### T58. Nhật ký thao tác (audit log)
+- **Ước lượng:** 1–1,5 ngày · **Phụ thuộc:** T55 (dùng ở T56, T57; làm trước hoặc cùng T56)
+- **Phạm vi:** bảng `audit_events` (migration mới, DATA_MODEL §4): thời điểm, người làm (userId, vai trò), storeId, hành động (enum), đối tượng (loại, id), chi tiết nhỏ (JSON, không dữ liệu cá nhân ngoài email), requestId, IP. Ghi: mọi hành động ADMIN; trong store: đổi vai trò/khoá thành viên, thu hồi lời mời, publish, huỷ plan, chỉnh tay tuyến. `GET /admin/audit` (lọc store, người, hành động, khoảng ngày); `GET /store/audit` cho OWNER (chỉ store mình, không thấy IP của ADMIN). Giữ 1 năm (T53 dọn).
+- **Acceptance:** mỗi hành động trên ghi đúng một dòng trong cùng transaction với thay đổi; OWNER không thấy store khác; ghi không làm hỏng thao tác khi chi tiết quá lớn (cắt).
+
+#### T60. Thông số nền tảng cho ADMIN
+- **Ước lượng:** 1,5 ngày · **Phụ thuộc:** T55
+- **Phạm vi:** `GET /admin/metrics/business?from&to` (theo ngày, múi giờ Asia/Ho_Chi_Minh): cửa hàng mới, cửa hàng hoạt động (có plan publish) 7/30 ngày, cửa hàng bị khoá, user theo vai trò, plan tạo/publish/hoàn thành, điểm giao và tỉ lệ giao được/không được/bỏ qua, số lần tối ưu và tỉ lệ lỗi. `GET /admin/metrics/technical`: từ Micrometer trong app (không cần Prometheus): request/phút, tỉ lệ 4xx/5xx, p95 thời gian phản hồi theo nhóm endpoint, job đang chạy/lỗi 24 giờ, lỗi OSRM/Nominatim/SMTP 24 giờ, số lần bị rate limit, heap JVM, số kết nối DB, dung lượng DB (bảng lớn nhất), tuổi bản backup gần nhất (T52). Số kỹ thuật là của instance đang chạy (reset khi khởi động lại, ghi rõ); số nghiệp vụ tính từ DB, cache Redis ngắn (có TTL).
+- **Acceptance:** số nghiệp vụ đúng trên dữ liệu test; số kỹ thuật tăng sau khi gọi API và gây lỗi giả; chỉ ADMIN; response < 1 s với 100 store.
+
+## 10. Sau MVP (Could, chưa lên lịch)
+
+Giai đoạn C của M5: nhập điểm giao từ CSV/Excel, sao chép plan hôm trước, báo cáo ngày và xuất CSV (P-59) · Google provider (I-03) · realtime push (I-04) · optimize bất đồng bộ (FR-X03) · job dọn refresh token hết hạn (thành T53) · lịch sử vị trí · gợi ý địa điểm (I-01, cần phê duyệt) · thanh toán QR (I-02, cần phê duyệt).
+
+## 11. Task đầu tiên: T00
 
 T00 phải làm trước vì:
 

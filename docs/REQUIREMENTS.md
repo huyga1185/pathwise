@@ -36,7 +36,13 @@ Mỗi user thuộc tối đa 1 store và có đúng 1 role (D-02). OWNER hoặc 
 | FR-A07 | Quên mật khẩu: OTP qua email → đặt mật khẩu mới → thu hồi mọi session. Không tiết lộ email có tồn tại hay không. | Must | ✅ (T14) |
 | FR-A08 | Đổi mật khẩu khi đã đăng nhập: mật khẩu cũ + OTP qua email; thu hồi mọi session khác. | Must | ✅ (T15) |
 | FR-A09 | Xem/cập nhật hồ sơ của chính mình (họ tên, số điện thoại VN). | Must | ✅ (`GET/PATCH /users/me`, T44) |
-| FR-A10 | ADMIN xem danh sách user (phân trang, sort whitelist). | Should | ✅ |
+| FR-A10 | ADMIN xem danh sách user (phân trang, sort whitelist). | Should | ✅ (thiếu `storeId`, `status`: T55) |
+| FR-A11 | ADMIN xem danh sách và chi tiết cửa hàng (số tổng, không nội dung plan/xe/điểm giao). | Should (M5, P-59) | ❌ T55 |
+| FR-A12 | ADMIN khoá cửa hàng ở chế độ chỉ đọc (tài xế vẫn giao nốt), mở khoá; khoá/mở user; buộc đăng xuất. | Should (M5) | ❌ T56 |
+| FR-A13 | ADMIN hỗ trợ tài khoản: gửi lại email xác thực, email đặt lại mật khẩu, chuyển chủ cửa hàng. | Should (M5) | ❌ T57 |
+| FR-A14 | Audit log: hành động của ADMIN và hành động nhạy cảm trong cửa hàng; ADMIN xem toàn bộ, OWNER xem của cửa hàng mình. | Should (M5) | ❌ T58 |
+| FR-A15 | Tạo ADMIN đầu tiên bằng biến môi trường lúc khởi động, không qua SQL. | Should (M5) | ❌ T59 |
+| FR-A16 | ADMIN xem thông số nền tảng: nghiệp vụ (cửa hàng, user, plan, điểm giao, tối ưu) và kỹ thuật (request, lỗi, thời gian phản hồi, job, provider, JVM, DB, backup). | Should (M5) | ❌ T60 |
 
 ### 3.2 Cửa hàng & thành viên (D-02, D-03, D-16)
 
@@ -117,6 +123,7 @@ Mỗi user thuộc tối đa 1 store và có đúng 1 role (D-02). OWNER hoặc 
 | NFR-03 Độ tin cậy | Lỗi provider ngoài (OSRM/Nominatim) trả lỗi rõ ràng (`502/503` + code), không 500 chung chung; có timeout cho HTTP client. | Bắt buộc |
 | NFR-04 Kiểm thử | Build xanh; unit test cho solver/state machine/token; integration test (Testcontainers) cho luồng auth, tenant isolation, plan lifecycle. | Bắt buộc |
 | NFR-05 Vận hành | Chạy toàn bộ stack bằng `docker compose --profile app up` (image multi-stage); dev chạy hạ tầng bằng compose và app từ IDE; cấu hình qua biến môi trường; CI build, test, quét chất lượng và push image lên GHCR; deploy thủ công theo runbook (D-30 → D-34). | Bắt buộc |
+| NFR-08 Vận hành tối thiểu (M5, P-59) | Log Docker có giới hạn dung lượng; backup DB tự động hằng đêm, giữ 7 ngày + 4 tuần, có bản ngoài VPS (S3 tương thích) và đã tập khôi phục; dữ liệu hết hạn được dọn theo lịch; cảnh báo qua email khi app không phản hồi, đĩa > 85 %, RAM thấp, container lỗi, backup thất bại. | Should (M5) |
 | NFR-06 Quan sát | Log có cấu trúc tối thiểu (userId, storeId, requestId); không log secret/OTP/token. | Should |
 | NFR-07 Ngôn ngữ | Email gửi người dùng bằng tiếng Việt. | Should (đề xuất, chưa phê duyệt) |
 
