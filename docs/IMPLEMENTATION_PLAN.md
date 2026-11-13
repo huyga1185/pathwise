@@ -507,6 +507,7 @@ Làm **A trước B**. A giữ an toàn dữ liệu và VPS (2 GB, chạy cả r
 - **Ước lượng:** 0,5–1 ngày · **Phụ thuộc:** —
 - **Phạm vi:** `LocalTime` (ca `shift_start`/`shift_end` của route, time window `tw_start`/`tw_end` của stop) đọc/ghi không qua đổi múi giờ (kiểu JDBC/Hibernate không đổi zone cho `TIME`, hoặc converter); Flyway migration chuyển dữ liệu đã lưu lệch về giờ thật (lệch phụ thuộc múi giờ JVM lúc ghi: ghi lại cách xác định và giả định trong DATA_MODEL); test chạy với JVM ở hai múi giờ khác nhau (`-Duser.timezone`).
 - **Acceptance:** ca 08:00 nằm trong DB là `08:00:00` (đọc bằng SQL); app chạy JVM UTC hay +07 đều đọc 08:00; dữ liệu cũ sau migration đúng giờ; mọi test cũ xanh.
+- **Phát sinh khi làm (2026-11-14):** không làm migration chuyển dữ liệu: image app không đặt múi giờ nên JVM trong container chạy UTC, dữ liệu staging/prod vốn đúng và một migration dời giờ sẽ làm hỏng nó; chỉ DB dev ghi bởi app chạy từ IDE (JVM +07) bị lệch 8 giờ, README hướng dẫn tạo lại hoặc chạy câu SQL sửa (dời 8 giờ, quay vòng trong ngày). Cách sửa: `@JdbcType(LocalTimeJdbcType.class)` trên bốn cột giờ (bind `LocalTime` thẳng qua driver), giữ `hibernate.jdbc.time_zone: UTC` cho `Instant`. Test ép JVM `Asia/Ho_Chi_Minh` để CI (UTC) cũng bắt lỗi.
 
 #### T51. Giới hạn log Docker
 - **Ước lượng:** 0,25 ngày · **Phụ thuộc:** —
