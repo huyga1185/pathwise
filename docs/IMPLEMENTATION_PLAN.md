@@ -518,6 +518,7 @@ Làm **A trước B**. A giữ an toàn dữ liệu và VPS (2 GB, chạy cả r
 - **Ước lượng:** 1 ngày · **Phụ thuộc:** —
 - **Phạm vi:** service `backup` trong file compose riêng (`compose.backup.yaml`, ghép bằng `-f`): mỗi đêm `mariadb-dump` nén, giữ 7 bản ngày + 4 bản tuần trên VPS, đẩy lên dịch vụ tương thích S3 (Cloudflare R2, Backblaze B2…) khi có biến `BACKUP_S3_*` (trống thì chỉ giữ trên VPS), mã hoá file bằng khoá trong `.env` (tuỳ chọn); script khôi phục và hướng dẫn tập khôi phục định kỳ vào DB tạm; log thành công/thất bại để T54 cảnh báo.
 - **Acceptance:** chạy tay một lần: file xuất hiện trên VPS và trên S3 giả (MinIO trong test thủ công); khôi phục vào DB tạm và đếm bảng khớp; xoay vòng giữ đúng số bản.
+- **Phát sinh khi làm (2026-11-14):** không build image riêng (VPS chỉ kéo image): `backup` dùng `mariadb:11.8` (có `mariadb-dump`, `openssl`, tzdata), `backup-offsite` dùng `rclone/rclone:1.71.2` với remote khai báo bằng biến môi trường; script trong `command` như `compose.routing.yaml`. Chép lên bucket bằng `rclone copy` (không xoá; luật hết hạn đặt trên bucket) để kẻ chiếm VPS không xoá được bản ngoài. Thêm `BACKUP_WEEKLY_DAY`, `.sha256` cho mỗi file. S3 giả dùng `rclone serve s3` vì image `minio/minio` không còn kéo được từ Docker Hub. Khôi phục là các lệnh trong DEPLOYMENT §5.3–5.4, không phải script riêng.
 
 #### T53. Dọn dữ liệu cũ
 - **Ước lượng:** 0,5 ngày · **Phụ thuộc:** —
