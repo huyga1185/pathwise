@@ -263,6 +263,14 @@ File nóng của client (không hai task song song cùng sửa): `web/package.js
   - Lối vào: "Chỉ đường" ở điểm tiếp theo của chi tiết tuyến và ở màn báo kết quả mở màn dẫn đường (trước đây mở thẳng Google/Apple Maps; giờ nút mở bản đồ ngoài nằm trong màn dẫn đường).
   - Giữ màn hình sáng khi màn dẫn đường đang mở, tắt khi rời màn: port `ScreenAwake` (`platform/screen_awake.dart`, bọc `wakelock_plus`; test dùng bản giả).
   - Dependency: `flutter_map` (P-44), `latlong2` (kiểu toạ độ trong API của `flutter_map`), `wakelock_plus` (chủ dự án duyệt, P-57).
+- **Phát sinh khi làm (2026-11-13):**
+  - `geolocator` trên Android chỉ giữ một luồng vị trí (gọi lần hai nhận lại luồng cũ với cấu hình cũ), nên `GeolocatorLocationSource` gom mọi người nghe vào một luồng: mở với cấu hình dày nhất đang cần (`watch(precise: true)` của dẫn đường: khoảng 1 điểm/giây, 2 m; chia sẻ: 15 s/10 m) và thông báo của người nghe chia sẻ nếu có, mở lại khi tập người nghe đổi. Nguồn vị trí truyền vào constructor để test (`test/platform/location_test.dart`); `FakeLocationSource` nhận nhiều người nghe.
+  - `GeoPoint`, giải mã polyline6 và chiếu vị trí nằm ở `shared/geo.dart` (cả `platform/map` lẫn `features/navigation` dùng, không cho `platform` phụ thuộc `features`).
+  - `basemapProvider` ở composition root (`basemapFor(config, debug: kDebugMode)`); test override bằng `blankBasemap()` để không tải tile.
+  - Tên schema lồng của `DirectionsResponse` là `DirectionsDestination`, `DirectionsInstruction`, `DirectionsPoint`: `Step` trùng widget `Step` của Material trong client Dart sinh ra.
+  - `wakelock_plus` ghim `1.8.0`: từ 1.8.1 cần `dbus` 0.8, `geolocator_linux` còn đòi 0.7.
+  - Nút "Chỉ đường" mở màn dẫn đường; Google/Apple Maps nằm trong màn ("Mở Google Maps"/"Mở Apple Maps"), có cả khi đang chờ GPS, lỗi hay thiếu quyền (đích lấy từ tuyến đã tải). Test cũ của "Chỉ đường" viết lại theo luồng này.
+  - Kết quả: 122 test (thêm 24: hình học, tiến độ, câu chỉ dẫn, định dạng, gom luồng vị trí, 9 widget test màn dẫn đường), `flutter analyze` sạch. Chưa kiểm trên máy thật và iOS.
 - **Acceptance:** unit test giải mã polyline6 với chuỗi mẫu, chiếu vị trí và chọn bước hiện tại, phát hiện lệch đường (3 điểm, ngưỡng theo độ chính xác, không gọi lại trong 20 s), tới nơi; câu chỉ dẫn cho mọi `maneuver`; widget test màn dẫn đường với `DirectionsSource` và `LocationSource` giả (đang dẫn, lệch đường → gọi lại, tới nơi → "Báo kết quả", lỗi 502 → "Mở Google Maps", không có quyền vị trí); `flutter analyze`, `flutter test` xanh; APK debug build được. Kiểm trên máy thật khi có (ghi vào báo cáo nếu chưa).
 
 ## 4. Sau MVP (chưa lên lịch)

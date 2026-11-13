@@ -24,6 +24,10 @@ dependencies:
   url_launcher: ^6.3.3
   timezone: ^0.11.2
   geolocator: ^14.1.2
+  flutter_map: ^8.3.2
+  latlong2: ^0.10.1
+  # 1.8.1+ needs dbus 0.8, which geolocator_linux (dbus 0.7) does not allow.
+  wakelock_plus: 1.8.0
 
 dev_dependencies:
   flutter_test:

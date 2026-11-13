@@ -1,6 +1,7 @@
 import 'package:pathwise_api/src/model/accept_invitation_request.dart';
 import 'package:pathwise_api/src/model/admin_get_user_response.dart';
 import 'package:pathwise_api/src/model/api_response_auth_token_response.dart';
+import 'package:pathwise_api/src/model/api_response_directions_response.dart';
 import 'package:pathwise_api/src/model/api_response_driver_route_detail_response.dart';
 import 'package:pathwise_api/src/model/api_response_driver_stop_update_response.dart';
 import 'package:pathwise_api/src/model/api_response_get_user_response.dart';
@@ -30,6 +31,10 @@ import 'package:pathwise_api/src/model/create_invitation_request.dart';
 import 'package:pathwise_api/src/model/create_vehicle_request.dart';
 import 'package:pathwise_api/src/model/depot_request.dart';
 import 'package:pathwise_api/src/model/depot_response.dart';
+import 'package:pathwise_api/src/model/directions_destination.dart';
+import 'package:pathwise_api/src/model/directions_instruction.dart';
+import 'package:pathwise_api/src/model/directions_point.dart';
+import 'package:pathwise_api/src/model/directions_response.dart';
 import 'package:pathwise_api/src/model/driver.dart';
 import 'package:pathwise_api/src/model/driver_location_response.dart';
 import 'package:pathwise_api/src/model/driver_position.dart';
@@ -107,6 +112,8 @@ final _regMap = RegExp(r'^Map<String,(.*)>$');
           return AdminGetUserResponse.fromJson(value as Map<String, dynamic>) as ReturnType;
         case 'ApiResponseAuthTokenResponse':
           return ApiResponseAuthTokenResponse.fromJson(value as Map<String, dynamic>) as ReturnType;
+        case 'ApiResponseDirectionsResponse':
+          return ApiResponseDirectionsResponse.fromJson(value as Map<String, dynamic>) as ReturnType;
         case 'ApiResponseDriverRouteDetailResponse':
           return ApiResponseDriverRouteDetailResponse.fromJson(value as Map<String, dynamic>) as ReturnType;
         case 'ApiResponseDriverStopUpdateResponse':
@@ -165,6 +172,14 @@ final _regMap = RegExp(r'^Map<String,(.*)>$');
           return DepotRequest.fromJson(value as Map<String, dynamic>) as ReturnType;
         case 'DepotResponse':
           return DepotResponse.fromJson(value as Map<String, dynamic>) as ReturnType;
+        case 'DirectionsDestination':
+          return DirectionsDestination.fromJson(value as Map<String, dynamic>) as ReturnType;
+        case 'DirectionsInstruction':
+          return DirectionsInstruction.fromJson(value as Map<String, dynamic>) as ReturnType;
+        case 'DirectionsPoint':
+          return DirectionsPoint.fromJson(value as Map<String, dynamic>) as ReturnType;
+        case 'DirectionsResponse':
+          return DirectionsResponse.fromJson(value as Map<String, dynamic>) as ReturnType;
         case 'Driver':
           return Driver.fromJson(value as Map<String, dynamic>) as ReturnType;
         case 'DriverLocationResponse':

@@ -2,14 +2,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pathwise_driver/app/app.dart';
 import 'package:pathwise_driver/app/providers.dart';
+import 'package:pathwise_driver/features/navigation/directions_source.dart';
 import 'package:pathwise_driver/platform/clock.dart';
 import 'package:pathwise_driver/platform/launcher.dart';
 import 'package:pathwise_driver/platform/location.dart';
+import 'package:pathwise_driver/platform/map/basemap.dart';
 import 'package:pathwise_driver/platform/preferences.dart';
 import 'package:pathwise_driver/platform/token_store.dart';
 
 import 'fake_api.dart';
 import 'location.dart';
+import 'navigation.dart';
 
 /// 2026-12-01 09:00 in Đà Nẵng: the day of the plan in docs/ux/samples.
 final sampleNow = DateTime.utc(2026, 12, 1, 2);
@@ -48,6 +51,8 @@ Future<MemoryTokenStore> pumpApp(
   Launcher? launcher,
   Preferences? preferences,
   LocationSource? location,
+  DirectionsSource? directions,
+  FakeScreenAwake? screenAwake,
 }) async {
   final store = MemoryTokenStore(refreshToken: refreshToken);
   await tester.pumpWidget(
@@ -58,6 +63,9 @@ Future<MemoryTokenStore> pumpApp(
         launcherProvider.overrideWithValue(launcher ?? FakeLauncher()),
         preferencesProvider.overrideWithValue(preferences ?? notSharing()),
         locationSourceProvider.overrideWithValue(location ?? FakeLocationSource()),
+        directionsSourceProvider.overrideWithValue(directions ?? FakeDirectionsSource()),
+        screenAwakeProvider.overrideWithValue(screenAwake ?? FakeScreenAwake()),
+        basemapProvider.overrideWithValue(blankBasemap()),
       ],
       child: const PathwiseApp(),
     ),

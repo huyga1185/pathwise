@@ -65,3 +65,20 @@ DateTime _parseDay(String day) {
 String _ymd(int year, int month, int day) => '$year-${_two(month)}-${_two(day)}';
 
 String _two(int value) => value.toString().padLeft(2, '0');
+
+/// A driving distance: "80 m" (to 10 m) below a kilometre, "1,2 km" from there (Vietnamese decimal comma).
+String formatDistance(double meters) {
+  if (meters < 1000) return '${(meters / 10).round() * 10} m';
+  final km = meters / 1000;
+  final text = km < 10 ? km.toStringAsFixed(1).replaceAll('.', ',') : km.round().toString();
+  return '$text km';
+}
+
+/// A remaining drive time: "1 phút" at least, "45 phút", "1 giờ 20 phút".
+String formatDuration(int seconds) {
+  final minutes = (seconds / 60).ceil().clamp(1, 1 << 30);
+  if (minutes < 60) return '$minutes phút';
+  final hours = minutes ~/ 60;
+  final rest = minutes % 60;
+  return rest == 0 ? '$hours giờ' : '$hours giờ $rest phút';
+}

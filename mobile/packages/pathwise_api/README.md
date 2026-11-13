@@ -85,6 +85,7 @@ Class | Method | HTTP request | Description
 [*AuthControllerApi*](doc/AuthControllerApi.md) | [**verifyResetOtp**](doc/AuthControllerApi.md#verifyresetotp) | **POST** /api/v1/auth/password/reset/verify | 
 [*DriverLocationControllerApi*](doc/DriverLocationControllerApi.md) | [**recordLocations**](doc/DriverLocationControllerApi.md#recordlocations) | **POST** /api/v1/driver/location | 
 [*DriverLocationControllerApi*](doc/DriverLocationControllerApi.md) | [**updateSharing**](doc/DriverLocationControllerApi.md#updatesharing) | **PUT** /api/v1/driver/location/sharing | 
+[*DriverRouteControllerApi*](doc/DriverRouteControllerApi.md) | [**getDirections**](doc/DriverRouteControllerApi.md#getdirections) | **GET** /api/v1/driver/routes/{routeId}/directions | 
 [*DriverRouteControllerApi*](doc/DriverRouteControllerApi.md) | [**getRoute**](doc/DriverRouteControllerApi.md#getroute) | **GET** /api/v1/driver/routes/{routeId} | 
 [*DriverRouteControllerApi*](doc/DriverRouteControllerApi.md) | [**listRoutes**](doc/DriverRouteControllerApi.md#listroutes) | **GET** /api/v1/driver/routes | 
 [*DriverRouteControllerApi*](doc/DriverRouteControllerApi.md) | [**updateStopStatus**](doc/DriverRouteControllerApi.md#updatestopstatus) | **PATCH** /api/v1/driver/routes/{routeId}/stops/{stopId}/status | 
@@ -123,6 +124,7 @@ Class | Method | HTTP request | Description
  - [AcceptInvitationRequest](doc/AcceptInvitationRequest.md)
  - [AdminGetUserResponse](doc/AdminGetUserResponse.md)
  - [ApiResponseAuthTokenResponse](doc/ApiResponseAuthTokenResponse.md)
+ - [ApiResponseDirectionsResponse](doc/ApiResponseDirectionsResponse.md)
  - [ApiResponseDriverRouteDetailResponse](doc/ApiResponseDriverRouteDetailResponse.md)
  - [ApiResponseDriverStopUpdateResponse](doc/ApiResponseDriverStopUpdateResponse.md)
  - [ApiResponseGetUserResponse](doc/ApiResponseGetUserResponse.md)
@@ -152,6 +154,10 @@ Class | Method | HTTP request | Description
  - [CreateVehicleRequest](doc/CreateVehicleRequest.md)
  - [DepotRequest](doc/DepotRequest.md)
  - [DepotResponse](doc/DepotResponse.md)
+ - [DirectionsDestination](doc/DirectionsDestination.md)
+ - [DirectionsInstruction](doc/DirectionsInstruction.md)
+ - [DirectionsPoint](doc/DirectionsPoint.md)
+ - [DirectionsResponse](doc/DirectionsResponse.md)
  - [Driver](doc/Driver.md)
  - [DriverLocationResponse](doc/DriverLocationResponse.md)
  - [DriverPosition](doc/DriverPosition.md)

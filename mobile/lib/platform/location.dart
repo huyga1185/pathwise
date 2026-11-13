@@ -45,7 +45,8 @@ class LocationUnavailable implements Exception {
 
 /// Location port (ARCHITECTURE §2.1): permission, GPS on/off, the phone's settings, and positions that keep coming
 /// while the app is in the background (Android: a foreground service with a notification that stays). Tests use a
-/// fake; only this file knows `geolocator` (P-54).
+/// fake; only this file knows `geolocator` (P-54). Several screens can watch at once (sharing, M04; turn-by-turn
+/// directions, M05): each gets every position.
 abstract interface class LocationSource {
   /// The current access, without asking.
   Future<LocationAccess> check();
@@ -54,8 +55,9 @@ abstract interface class LocationSource {
   Future<LocationAccess> request();
 
   /// Positions until the subscription is cancelled; errors with [LocationUnavailable]. [title] and [text] are the
-  /// Android notification shown while it runs.
-  Stream<LocationFix> watch({required String title, required String text});
+  /// Android notification shown while it runs. [precise]: about one position a second, for turn-by-turn directions;
+  /// otherwise one every 15 s or 10 m, enough for sharing and lighter on the battery.
+  Stream<LocationFix> watch({required String title, required String text, bool precise = false});
 
   /// The app's page in the phone's settings (permission refused for good).
   Future<bool> openAppSettings();
@@ -64,12 +66,31 @@ abstract interface class LocationSource {
   Future<bool> openLocationSettings();
 }
 
-class GeolocatorLocationSource implements LocationSource {
-  const GeolocatorLocationSource();
+/// Positions with one settings: [precise] or not, and the Android notification.
+typedef PositionStreamFactory = Stream<LocationFix> Function({
+  required bool precise,
+  required String title,
+  required String text,
+});
 
-  /// One point at least every 15 s, or every 10 m, whichever comes first (FR-D04: sent every 15–30 s).
+/// `geolocator` keeps one stream of positions per app on Android: asking for a second one returns the first, with its
+/// settings. So every watcher listens to one shared stream, opened with the finest settings any watcher needs (and the
+/// notification of a sharing watcher if there is one), and reopened when that changes.
+class GeolocatorLocationSource implements LocationSource {
+  GeolocatorLocationSource({PositionStreamFactory? positions}) : _positions = positions ?? _geolocatorPositions;
+
+  final PositionStreamFactory _positions;
+  final _watchers = <_Watcher>[];
+  StreamSubscription<LocationFix>? _subscription;
+  ({bool precise, String title, String text})? _settings;
+
+  /// Sharing: one point at least every 15 s, or every 10 m, whichever comes first (FR-D04: sent every 15–30 s).
   static const _interval = Duration(seconds: 15);
   static const _distanceMeters = 10;
+
+  /// Directions: about one point a second.
+  static const _preciseInterval = Duration(seconds: 1);
+  static const _preciseDistanceMeters = 2;
 
   /// Slower than this (about 2 km/h) the driver is standing: no direction.
   static const _movingMps = 0.5;
@@ -92,11 +113,64 @@ class GeolocatorLocationSource implements LocationSource {
   }
 
   @override
-  Stream<LocationFix> watch({required String title, required String text}) {
+  Stream<LocationFix> watch({required String title, required String text, bool precise = false}) {
+    late final _Watcher watcher;
+    final controller = StreamController<LocationFix>(
+      onListen: () {
+        _watchers.add(watcher);
+        _reopen();
+      },
+      onCancel: () {
+        _watchers.remove(watcher);
+        _reopen();
+      },
+    );
+    watcher = _Watcher(controller, precise: precise, title: title, text: text);
+    return controller.stream;
+  }
+
+  /// Opens, reopens or closes the shared stream for the current watchers.
+  void _reopen() {
+    if (_watchers.isEmpty) {
+      unawaited(_subscription?.cancel());
+      _subscription = null;
+      _settings = null;
+      return;
+    }
+    final notification = _watchers.firstWhere((watcher) => !watcher.precise, orElse: () => _watchers.first);
+    final settings = (
+      precise: _watchers.any((watcher) => watcher.precise),
+      title: notification.title,
+      text: notification.text,
+    );
+    if (_subscription != null && settings == _settings) return;
+    // Cancelling makes geolocator drop its cached stream, so the next one gets the new settings.
+    unawaited(_subscription?.cancel());
+    _settings = settings;
+    _subscription = _positions(precise: settings.precise, title: settings.title, text: settings.text).listen(
+      (fix) {
+        for (final watcher in List.of(_watchers)) {
+          watcher.controller.add(fix);
+        }
+      },
+      onError: (Object error, StackTrace stackTrace) {
+        for (final watcher in List.of(_watchers)) {
+          watcher.controller.addError(error, stackTrace);
+        }
+      },
+    );
+  }
+
+  static Stream<LocationFix> _geolocatorPositions({
+    required bool precise,
+    required String title,
+    required String text,
+  }) {
+    final distance = precise ? _preciseDistanceMeters : _distanceMeters;
     final LocationSettings settings = switch (defaultTargetPlatform) {
       TargetPlatform.android => AndroidSettings(
-        distanceFilter: _distanceMeters,
-        intervalDuration: _interval,
+        distanceFilter: distance,
+        intervalDuration: precise ? _preciseInterval : _interval,
         foregroundNotificationConfig: ForegroundNotificationConfig(
           notificationTitle: title,
           notificationText: text,
@@ -106,13 +180,14 @@ class GeolocatorLocationSource implements LocationSource {
         ),
       ),
       TargetPlatform.iOS || TargetPlatform.macOS => AppleSettings(
-        distanceFilter: _distanceMeters,
+        accuracy: precise ? LocationAccuracy.bestForNavigation : LocationAccuracy.best,
+        distanceFilter: distance,
         activityType: ActivityType.automotiveNavigation,
         pauseLocationUpdatesAutomatically: false,
         showBackgroundLocationIndicator: true,
         allowBackgroundLocationUpdates: true,
       ),
-      _ => const LocationSettings(distanceFilter: _distanceMeters),
+      _ => LocationSettings(distanceFilter: distance),
     };
     return Geolocator.getPositionStream(locationSettings: settings)
         .handleError(
@@ -141,4 +216,13 @@ class GeolocatorLocationSource implements LocationSource {
 
   @override
   Future<bool> openLocationSettings() => Geolocator.openLocationSettings();
+}
+
+class _Watcher {
+  _Watcher(this.controller, {required this.precise, required this.title, required this.text});
+
+  final StreamController<LocationFix> controller;
+  final bool precise;
+  final String title;
+  final String text;
 }

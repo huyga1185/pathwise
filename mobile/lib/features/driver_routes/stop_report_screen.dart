@@ -201,11 +201,10 @@ class _StopReportScreenState extends ConsumerState<StopReportScreen> with RouteP
       if (window != null) Vi.receiveWindow(formatTimeWindow(window.start, window.end)),
     ].join(' · ');
     final phone = stop.recipientPhone;
-    final platform = Theme.of(context).platform;
     final directions = PwButton(
       label: Vi.directions,
       block: true,
-      onPressed: () => unawaited(_open(directionsUri(stop.lat, stop.lon, platform))),
+      onPressed: () => context.push('/routes/${route.routeId}/navigate?stopId=${stop.id}'),
     );
     final error = _error;
     final unsent = _unsent;

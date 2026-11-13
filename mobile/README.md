@@ -28,7 +28,7 @@ Biến `--dart-define` (`lib/platform/config.dart`):
 |---|---|---|
 | `API_BASE` | `http://10.0.2.2:8080` | Origin của API (đường dẫn đã có `/api/v1`). Bản release chỉ gọi được `https://`. |
 | `WEB_BASE` | `API_BASE` + `/app` | Web dispatcher, nơi app mở "Quên mật khẩu" và "Nhập mã mời". Khi dev web chạy Vite riêng: `http://10.0.2.2:5173/app`. |
-| `BASEMAP`, `MAPTILER_KEY` | `maptiler`, rỗng | Bản đồ (chưa dùng trong app). |
+| `BASEMAP`, `MAPTILER_KEY` | `maptiler`, rỗng | Bản đồ của màn dẫn đường (M05). Không có key: bản debug dùng tile OSM, bản release không có nền (đường đi vẫn hiện). Key giới hạn theo package `uk.huy.pathwise.pathwise_driver` trong MapTiler. |
 
 Tài khoản tài xế: OWNER mời tài xế trên web (`/members`), tài xế nhận lời mời bằng mã trong email (Mailpit `http://localhost:8025` khi dev), rồi dispatcher giao việc một plan có tuyến cho tài xế đó.
 

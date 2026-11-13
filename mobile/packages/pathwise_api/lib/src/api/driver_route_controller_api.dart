@@ -9,6 +9,7 @@ import 'dart:convert';
 import 'package:pathwise_api/src/deserialize.dart';
 import 'package:dio/dio.dart';
 
+import 'package:pathwise_api/src/model/api_response_directions_response.dart';
 import 'package:pathwise_api/src/model/api_response_driver_route_detail_response.dart';
 import 'package:pathwise_api/src/model/api_response_driver_stop_update_response.dart';
 import 'package:pathwise_api/src/model/api_response_list_driver_route_summary_response.dart';
@@ -19,6 +20,96 @@ class DriverRouteControllerApi {
   final Dio _dio;
 
   const DriverRouteControllerApi(this._dio);
+
+  /// getDirections
+  /// 
+  ///
+  /// Parameters:
+  /// * [routeId] 
+  /// * [lat] 
+  /// * [lon] 
+  /// * [toStopId] 
+  /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
+  /// * [headers] - Can be used to add additional headers to the request
+  /// * [extras] - Can be used to add flags to the request
+  /// * [validateStatus] - A [ValidateStatus] callback that can be used to determine request success based on the HTTP status of the response
+  /// * [onSendProgress] - A [ProgressCallback] that can be used to get the send progress
+  /// * [onReceiveProgress] - A [ProgressCallback] that can be used to get the receive progress
+  ///
+  /// Returns a [Future] containing a [Response] with a [ApiResponseDirectionsResponse] as data
+  /// Throws [DioException] if API call or serialization fails
+  Future<Response<ApiResponseDirectionsResponse>> getDirections({ 
+    required int routeId,
+    required double lat,
+    required double lon,
+    int? toStopId,
+    CancelToken? cancelToken,
+    Map<String, dynamic>? headers,
+    Map<String, dynamic>? extra,
+    ValidateStatus? validateStatus,
+    ProgressCallback? onSendProgress,
+    ProgressCallback? onReceiveProgress,
+  }) async {
+    final _path = r'/api/v1/driver/routes/{routeId}/directions'.replaceAll('{' r'routeId' '}', routeId.toString());
+    final _options = Options(
+      method: r'GET',
+      headers: <String, dynamic>{
+        ...?headers,
+      },
+      extra: <String, dynamic>{
+        'secure': <Map<String, String>>[
+          {
+            'type': 'http',
+            'scheme': 'bearer',
+            'name': 'bearer',
+          },
+        ],
+        ...?extra,
+      },
+      validateStatus: validateStatus,
+    );
+
+    final _queryParameters = <String, dynamic>{
+      r'lat': lat,
+      r'lon': lon,
+      if (toStopId != null) r'toStopId': toStopId,
+    };
+
+    final _response = await _dio.request<Object>(
+      _path,
+      options: _options,
+      queryParameters: _queryParameters,
+      cancelToken: cancelToken,
+      onSendProgress: onSendProgress,
+      onReceiveProgress: onReceiveProgress,
+    );
+
+    ApiResponseDirectionsResponse? _responseData;
+
+    try {
+final rawData = _response.data;
+_responseData = rawData == null ? null : deserialize<ApiResponseDirectionsResponse, ApiResponseDirectionsResponse>(rawData, 'ApiResponseDirectionsResponse', growable: true);
+    } catch (error, stackTrace) {
+      throw DioException(
+        requestOptions: _response.requestOptions,
+        response: _response,
+        type: DioExceptionType.unknown,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+
+    return Response<ApiResponseDirectionsResponse>(
+      data: _responseData,
+      headers: _response.headers,
+      isRedirect: _response.isRedirect,
+      requestOptions: _response.requestOptions,
+      redirects: _response.redirects,
+      statusCode: _response.statusCode,
+      statusMessage: _response.statusMessage,
+      extra: _response.extra,
+    );
+  }
 
   /// getRoute
   /// 

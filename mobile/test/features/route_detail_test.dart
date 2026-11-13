@@ -40,27 +40,37 @@ void main() {
     expect(find.text('Xuất phát và quay về: Kho 45 Lê Lợi, Hải Châu, Đà Nẵng.'), findsOneWidget);
   });
 
-  testWidgets('"Chỉ đường" mở Google Maps trên Android, "Gọi" mở trình gọi số E.164', (tester) async {
+  testWidgets('"Gọi" mở trình gọi số E.164; "Chỉ đường" mở màn dẫn đường tới điểm tiếp theo', (tester) async {
     final launcher = FakeLauncher();
     await openRoute(tester, sampleRoute(), launcher: launcher);
 
-    await tester.tap(find.text('Chỉ đường'));
     await tester.tap(find.text('Gọi 0905 123 008'));
     await tester.pumpAndSettle();
+    expect(launcher.opened.map((uri) => uri.toString()), ['tel:+84905123008']);
 
-    expect(launcher.opened.map((uri) => uri.toString()), [
-      'https://www.google.com/maps/dir/?api=1&destination=16.048,108.196',
-      'tel:+84905123008',
-    ]);
+    await openDirections(tester);
+    expect(find.text('Đang lấy vị trí của bạn…'), findsOneWidget);
   });
 
-  testWidgets('"Chỉ đường" mở Apple Maps trên iOS', (tester) async {
+  testWidgets('chưa có đường: "Mở Google Maps" tới điểm tiếp theo trên Android', (tester) async {
+    final launcher = FakeLauncher();
+    await openRoute(tester, sampleRoute(), launcher: launcher);
+    await openDirections(tester);
+
+    await tester.tap(find.text('Mở Google Maps'));
+    await tester.pump();
+
+    expect(launcher.opened.single.toString(), 'https://www.google.com/maps/dir/?api=1&destination=16.048,108.196');
+  });
+
+  testWidgets('chưa có đường: "Mở Apple Maps" trên iOS', (tester) async {
     debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
     final launcher = FakeLauncher();
     await openRoute(tester, sampleRoute(), launcher: launcher);
+    await openDirections(tester);
 
-    await tester.tap(find.text('Chỉ đường'));
-    await tester.pumpAndSettle();
+    await tester.tap(find.text('Mở Apple Maps'));
+    await tester.pump();
 
     expect(launcher.opened.single.toString(), 'https://maps.apple.com/?daddr=16.048,108.196');
     debugDefaultTargetPlatformOverride = null;
@@ -68,9 +78,11 @@ void main() {
 
   testWidgets('máy không mở được ứng dụng thì báo', (tester) async {
     await openRoute(tester, sampleRoute(), launcher: FakeLauncher()..succeeds = false);
+    await openDirections(tester);
 
-    await tester.tap(find.text('Chỉ đường'));
-    await tester.pumpAndSettle();
+    await tester.tap(find.text('Mở Google Maps'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
 
     expect(find.text('Không mở được ứng dụng trên máy.'), findsOneWidget);
   });
@@ -128,4 +140,11 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Tuyến của tôi'), findsOneWidget);
   });
+}
+
+/// Taps "Chỉ đường" and waits for the directions screen (its spinner never settles).
+Future<void> openDirections(WidgetTester tester) async {
+  await tester.tap(find.text('Chỉ đường'));
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 500));
 }
