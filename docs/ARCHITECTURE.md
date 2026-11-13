@@ -345,6 +345,7 @@ Cách dùng:
 - `.env.example` liệt kê mọi biến môi trường (không chứa secret thật). File `.env` được gitignore.
 - `compose.prod.yaml`: dùng cho VPS, gồm `app` (image từ `ghcr.io`, không build tại chỗ), `mariadb`, `redis`, không có mailpit, dùng SMTP thật qua env. App kết nối DB bằng user riêng (không phải root); chỉ cổng app được publish, ở `127.0.0.1`. HTTPS và web dispatcher qua Caddy (W08, P-56): `compose.web.yaml` (container `web`, image `pathwise-web`) hoặc Caddy trên host với `deploy/caddy/Caddyfile`; cookie `Secure` yêu cầu HTTPS.
 - Mọi service trong mọi file compose có `logging` chung (`x-logging`: `json-file`, `LOG_MAX_SIZE` × `LOG_MAX_FILE`, mặc định 10 MB × 3; T51, P-59) để log không làm đầy đĩa VPS.
+- `compose.backup.yaml` (T52, P-59): `backup` (image `mariadb:11.8`, dump hằng đêm, nén, mã hoá tuỳ chọn, xoay vòng ngày/tuần, file trạng thái) và `backup-offsite` (image `rclone/rclone`, chép lên bucket S3 tương thích khi có cấu hình). Không build image riêng: script nằm trong `command` như `compose.routing.yaml`.
 
 ### 12.3 GitHub Actions
 

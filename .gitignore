@@ -1,3 +1,6 @@
 be/src/main/resources/application-dev.yaml
 .env
 __pycache__/
+
+# Database backups written by compose.backup.yaml (T52)
+/backups/

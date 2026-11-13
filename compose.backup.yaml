@@ -1,0 +1,129 @@
+# Automatic MariaDB backups (T52, P-59; runbook docs/DEPLOYMENT.md §5). With the VPS stack:
+#   docker compose -f compose.prod.yaml -f compose.backup.yaml up -d
+#
+# backup: every night at BACKUP_TIME (Asia/Ho_Chi_Minh) dumps the database, compressed, into ./backups/daily, keeps the
+#   newest BACKUP_KEEP_DAILY files there and, on BACKUP_WEEKLY_DAY (Sunday), a copy in ./backups/weekly
+#   (BACKUP_KEEP_WEEKLY kept). With
+#   BACKUP_PASSPHRASE set, files are encrypted (AES-256, openssl). ./backups/status holds the last success and the
+#   last error for the monitoring of T54. One backup right now:
+#     docker compose -f compose.prod.yaml -f compose.backup.yaml run --rm -e BACKUP_ONCE=true backup
+# backup-offsite: every hour copies ./backups to an S3-compatible bucket (Cloudflare R2, Backblaze B2, MinIO…) when
+#   BACKUP_S3_BUCKET is set; otherwise it does nothing and backups stay on the VPS only. It only copies, never
+#   deletes: set an expiry rule on the bucket (e.g. 60 days).
+
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: ${LOG_MAX_SIZE:-10m}
+    max-file: "${LOG_MAX_FILE:-3}"
+
+services:
+  backup:
+    logging: *logging
+    image: mariadb:11.8 # same client as the server (D-35)
+    restart: unless-stopped
+    entrypoint: ["bash", "-c"]
+    command:
+      - |
+        set -uo pipefail
+        mkdir -p /backups/daily /backups/weekly /backups/status
+        run() {
+          local stamp file tmp
+          stamp=$$(date +%Y%m%d-%H%M%S)
+          file="pathwise-$${stamp}.sql.gz"
+          tmp="/backups/daily/.$${file}.part"
+          echo "backup $${stamp}: dumping $${MARIADB_DATABASE}"
+          if ! mariadb-dump -h mariadb -uroot -p"$${MARIADB_ROOT_PASSWORD}" --single-transaction --routines \
+                --triggers --databases "$${MARIADB_DATABASE}" | gzip > "$${tmp}" || ! gzip -t "$${tmp}"; then
+            rm -f "$${tmp}"
+            echo "$$(date -Iseconds) dump failed" > /backups/status/last-error
+            echo "backup $${stamp}: FAILED"
+            return 1
+          fi
+          if [ -n "$${BACKUP_PASSPHRASE:-}" ]; then
+            if ! openssl enc -aes-256-cbc -pbkdf2 -salt -pass env:BACKUP_PASSPHRASE -in "$${tmp}" -out "$${tmp}.enc"; then
+              rm -f "$${tmp}" "$${tmp}.enc"
+              echo "$$(date -Iseconds) encryption failed" > /backups/status/last-error
+              return 1
+            fi
+            rm -f "$${tmp}"
+            tmp="$${tmp}.enc"
+            file="$${file}.enc"
+          fi
+          mv "$${tmp}" "/backups/daily/$${file}"
+          (cd /backups/daily && sha256sum "$${file}" > "$${file}.sha256")
+          # Once a week (BACKUP_WEEKLY_DAY, 1 = Monday … 7 = Sunday): also a weekly copy.
+          if [ "$$(date +%u)" = "$${BACKUP_WEEKLY_DAY}" ]; then
+            cp "/backups/daily/$${file}" "/backups/daily/$${file}.sha256" /backups/weekly/
+          fi
+          prune /backups/daily "$${BACKUP_KEEP_DAILY}"
+          prune /backups/weekly "$${BACKUP_KEEP_WEEKLY}"
+          echo "$$(date -Iseconds) $${file} $$(stat -c %s "/backups/daily/$${file}")" > /backups/status/last-success
+          rm -f /backups/status/last-error
+          echo "backup $${stamp}: ok, $${file}"
+        }
+        # Keeps the newest $$2 backups of directory $$1 (with their checksums).
+        prune() {
+          ls -1t "$$1"/pathwise-*.sql.gz* 2>/dev/null | grep -v '\.sha256$$' | tail -n +"$$(( $$2 + 1 ))" \
+            | while read -r old; do rm -f "$${old}" "$${old}.sha256"; done
+        }
+        if [ "$${BACKUP_ONCE:-false}" = true ]; then run; exit $$?; fi
+        while true; do
+          now=$$(date +%s)
+          next=$$(date -d "today $${BACKUP_TIME}" +%s)
+          [ "$${next}" -le "$${now}" ] && next=$$(date -d "tomorrow $${BACKUP_TIME}" +%s)
+          echo "next backup at $$(date -d "@$${next}")"
+          sleep $$(( next - now ))
+          run || true
+        done
+    environment:
+      TZ: Asia/Ho_Chi_Minh
+      MARIADB_DATABASE: ${MARIADB_DATABASE:-pathwise}
+      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD:?set in .env}
+      BACKUP_TIME: ${BACKUP_TIME:-02:30}
+      BACKUP_KEEP_DAILY: ${BACKUP_KEEP_DAILY:-7}
+      BACKUP_KEEP_WEEKLY: ${BACKUP_KEEP_WEEKLY:-4}
+      BACKUP_WEEKLY_DAY: ${BACKUP_WEEKLY_DAY:-7}
+      # Empty: not encrypted. Losing it makes the encrypted backups useless: keep a copy outside the VPS.
+      BACKUP_PASSPHRASE: ${BACKUP_PASSPHRASE:-}
+    volumes:
+      - ./backups:/backups
+    depends_on:
+      mariadb:
+        condition: service_healthy
+
+  backup-offsite:
+    logging: *logging
+    image: rclone/rclone:1.71.2
+    restart: unless-stopped
+    entrypoint: ["sh", "-c"]
+    command:
+      - |
+        mkdir -p /backups/status
+        if [ -z "$${BACKUP_S3_BUCKET}" ]; then
+          echo "BACKUP_S3_BUCKET not set: backups stay on the VPS only"
+          exec sleep infinity
+        fi
+        while true; do
+          if rclone copy /backups offsite:"$${BACKUP_S3_BUCKET}/$${BACKUP_S3_PREFIX}" --include "/daily/**" --include "/weekly/**" \
+               --s3-no-check-bucket --log-level NOTICE; then
+            date -Iseconds > /backups/status/last-offsite-success
+            rm -f /backups/status/last-offsite-error
+          else
+            date -Iseconds > /backups/status/last-offsite-error
+          fi
+          sleep "$${BACKUP_S3_EVERY}"
+        done
+    environment:
+      BACKUP_S3_BUCKET: ${BACKUP_S3_BUCKET:-}
+      BACKUP_S3_PREFIX: ${BACKUP_S3_PREFIX:-pathwise}
+      BACKUP_S3_EVERY: ${BACKUP_S3_EVERY:-3600}
+      # rclone remote "offsite" from the environment (https://rclone.org/s3/).
+      RCLONE_CONFIG_OFFSITE_TYPE: s3
+      RCLONE_CONFIG_OFFSITE_PROVIDER: ${BACKUP_S3_PROVIDER:-Other}
+      RCLONE_CONFIG_OFFSITE_ENDPOINT: ${BACKUP_S3_ENDPOINT:-}
+      RCLONE_CONFIG_OFFSITE_REGION: ${BACKUP_S3_REGION:-auto}
+      RCLONE_CONFIG_OFFSITE_ACCESS_KEY_ID: ${BACKUP_S3_ACCESS_KEY_ID:-}
+      RCLONE_CONFIG_OFFSITE_SECRET_ACCESS_KEY: ${BACKUP_S3_SECRET_ACCESS_KEY:-}
+    volumes:
+      - ./backups:/backups
