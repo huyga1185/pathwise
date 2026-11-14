@@ -78,6 +78,10 @@
       RUNNING: ['ĐANG CHẠY', 'info'],
       SUCCEEDED: ['XONG', 'success'],
       FAILED: ['LỖI', 'danger']
+    },
+    store: {
+      ACTIVE: ['HOẠT ĐỘNG', 'success'],
+      READ_ONLY: ['TẠM KHOÁ', 'signal']
     }
   };
   function statusInfo(kind, status) {

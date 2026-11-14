@@ -1,7 +1,7 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http } from 'msw';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi as vitest } from 'vitest';
 import type { Schemas } from '@/data/types';
 import { renderApp } from '@/test/renderApp';
 import { sample } from '@/test/samples';
@@ -19,6 +19,10 @@ function formHandlers() {
     ...signedInHandlers(),
   ];
 }
+
+afterEach(() => {
+  vitest.restoreAllMocks();
+});
 
 const stop = (over: Partial<Schemas['ImportedStopResponse']> = {}): Schemas['ImportedStopResponse'] => ({
   label: 'ĐH-1',
@@ -145,7 +149,53 @@ describe('Nhập điểm giao từ file', () => {
   });
 });
 
+describe('Nhập điểm giao từ file: đóng khi đang đọc', () => {
+  it('đóng hộp thoại khi file đang đọc thì lần mở sau không hiện kết quả cũ', async () => {
+    // A delayed multipart request through MSW aborts in jsdom (its File), so this one request is answered by a
+    // stubbed fetch that waits; every other request goes through as usual.
+    let release: () => void = () => {};
+    const realFetch = globalThis.fetch;
+    vitest.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
+      const url = input instanceof Request ? input.url : String(input);
+      if (!url.endsWith('/plans/import')) return realFetch(input, init);
+      await new Promise<void>((resolve) => (release = resolve));
+      return new Response(JSON.stringify({ data: imported }), { headers: { 'Content-Type': 'application/json' } });
+    });
+    server.use(...formHandlers());
+    renderApp('/plans/new');
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole('button', { name: 'Nhập từ file' }));
+    let dialog = await screen.findByRole('dialog', { name: 'Nhập điểm giao từ file' });
+    await user.upload(within(dialog).getByLabelText('File điểm giao (.xlsx hoặc .csv)'), file());
+    expect(await within(dialog).findByRole('button', { name: 'Đang đọc file…' })).toBeInTheDocument();
+    await user.click(within(dialog).getByRole('button', { name: 'Quay lại' }));
+    release();
+
+    await user.click(screen.getByRole('button', { name: 'Nhập từ file' }));
+    dialog = await screen.findByRole('dialog', { name: 'Nhập điểm giao từ file' });
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(within(dialog).queryByText('diem-giao.xlsx')).not.toBeInTheDocument();
+    expect(within(dialog).getByRole('button', { name: 'Chọn file' })).toBeEnabled();
+  });
+});
+
 describe('Sao chép kế hoạch', () => {
+  it('không đọc được kế hoạch gốc thì báo lỗi thay vì đang tải mãi', async () => {
+    server.use(
+      http.get(`${API}/plans`, () => ok(sample<{ data: unknown }>('plan-list').data)),
+      http.get(`${API}/plans/83`, () => fail(500, 'INTERNAL_ERROR')),
+      http.get(`${API}/store`, () => ok(storeSample())),
+      ...signedInHandlers(),
+    );
+    renderApp('/plans');
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole('button', { name: 'Sao chép Giao sáng 01/12' }));
+    const dialog = await screen.findByRole('dialog');
+    expect(await within(dialog).findByText(/Đã có lỗi xảy ra/)).toBeInTheDocument();
+    expect(within(dialog).queryByText('Đang tải…')).not.toBeInTheDocument();
+    expect(within(dialog).getByRole('button', { name: 'Sao chép' })).toBeDisabled();
+  });
+
   it('từ danh sách: chọn chỉ điểm chưa giao được, gửi đúng body, mở kế hoạch mới và báo phân công bị bỏ', async () => {
     let body: unknown;
     const copy = { ...geocoded(), id: 91, name: 'Giao lại', planDate: '2026-12-02' };
