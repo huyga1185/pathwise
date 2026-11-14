@@ -305,6 +305,17 @@ Dùng khi VPS đã có Caddy (nhiều site). Web lấy từ tarball đính kèm 
    cp /tmp/pathwise-config.js /var/www/pathwise/app/config.js
    ```
 
+### 8.3 Domain đi qua Cloudflare (proxy, đám mây cam)
+
+Khi bản ghi DNS bật proxy của Cloudflare, Caddy nhận kết nối từ máy của Cloudflare chứ không từ người dùng. Không khai báo gì thì app lưu IP của Cloudflare cho phiên đăng nhập, nhật ký, và rate limit theo IP (đăng nhập, đăng ký, quên mật khẩu) gộp mọi người dùng vào vài IP của Cloudflare (F-59).
+
+1. Trong `.env` (Caddy trong container) đặt `TRUSTED_PROXIES` là các dải IP của Cloudflare, cách nhau bằng dấu cách. Dòng mẫu có sẵn trong `.env.prod.example` (lấy từ https://www.cloudflare.com/ips/ ngày 2026-11-14); Cloudflare hiếm khi đổi, nhưng kiểm lại ở trang đó khi cập nhật.
+   Caddy trên host: thêm `PATHWISE_TRUSTED_PROXIES=<các dải>` vào `Environment=` của service (§8.2 bước 3).
+2. Tạo lại container web (`docker compose -f compose.prod.yaml -f compose.web.yaml up -d web`) hoặc `systemctl restart caddy`. Image web cần có `Caddyfile` mới (bản sau F-59).
+3. Kiểm tra: đăng nhập web từ máy của mình rồi xem danh sách thiết bị ở Hồ sơ (`GET /api/v1/auth/sessions`): cột IP phải là IP công khai của mình, không phải `162.158.x.x`, `172.64.x.x`, `104.x.x.x`…
+
+Caddy chỉ tin header `CF-Connecting-IP` (rồi `X-Forwarded-For`) của request đến từ các dải này; request đến thẳng VPS mà không qua Cloudflare vẫn dùng IP của bên kết nối, nên không giả được IP bằng header. Muốn chặn hẳn truy cập thẳng vào VPS thì chỉ mở cổng 80/443 cho các dải của Cloudflare (lưu ý: Let's Encrypt cần tới được cổng 80/443; với Cloudflare proxy, dùng chế độ SSL "Full (strict)").
+
 ## 9. Giám sát và cảnh báo (T54)
 
 Hai lớp, không cần Prometheus/Grafana:

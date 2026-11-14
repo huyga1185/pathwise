@@ -3,7 +3,19 @@
 #   PATHWISE_DOMAIN    site address, e.g. pathwise.example.com (localhost for a local test)
 #   PATHWISE_UPSTREAM  the app: app:8080 in compose (default), 127.0.0.1:8080 for a Caddy on the host
 #   PATHWISE_WEB_ROOT  directory holding app/ (the web build): /srv in the image
-# Caddy sets X-Forwarded-For/-Proto itself and ignores the client's; the app trusts them from private addresses only.
+#   PATHWISE_TRUSTED_PROXIES  proxies in front of Caddy whose client IP header is believed, space separated CIDRs:
+#                      the Cloudflare ranges when the domain is proxied by Cloudflare (docs/DEPLOYMENT.md §8.3). Empty
+#                      (default): no proxy, the peer of Caddy is the client.
+# Caddy sends the app one X-Forwarded-For, the client IP it worked out (F-59): CF-Connecting-IP or X-Forwarded-For of a
+# trusted proxy, otherwise the peer address, so a client cannot choose it. The app trusts it from private addresses only.
+
+{
+	servers {
+		trusted_proxies static {$PATHWISE_TRUSTED_PROXIES:}
+		client_ip_headers CF-Connecting-IP X-Forwarded-For
+		trusted_proxies_strict
+	}
+}
 
 {$PATHWISE_DOMAIN} {
 	encode zstd gzip
@@ -20,7 +32,9 @@
 	# {"status":"UP"} or 503, no details. The rest of Actuator is not exposed.
 	@backend path /api/* /swagger-ui* /v3/api-docs* /actuator/health
 	handle @backend {
-		reverse_proxy {$PATHWISE_UPSTREAM:app:8080}
+		reverse_proxy {$PATHWISE_UPSTREAM:app:8080} {
+			header_up X-Forwarded-For {client_ip}
+		}
 	}
 
 	# The landing page comes later (P-47); until then / opens the web app. (redir: matcher first, then target.)
