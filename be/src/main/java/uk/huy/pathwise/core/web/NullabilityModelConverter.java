@@ -6,6 +6,10 @@ import io.swagger.v3.core.converter.ModelConverterContext;
 import io.swagger.v3.core.util.Json;
 import io.swagger.v3.oas.models.media.JsonSchema;
 import io.swagger.v3.oas.models.media.Schema;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.groups.Default;
 import org.jspecify.annotations.Nullable;
 import uk.huy.pathwise.core.validation.MergePatch;
 
@@ -14,6 +18,7 @@ import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Field;
 import java.lang.reflect.RecordComponent;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -48,6 +53,7 @@ class NullabilityModelConverter implements ModelConverter {
         Class<?> raw = Json.mapper().constructType(type.getType()).getRawClass();
         if (raw.isRecord() && isResponse(raw)) describeResponse(raw, model);
         else if (MergePatch.class.isAssignableFrom(raw)) describeMergePatch(raw, model);
+        else if (raw.isRecord()) dropGroupOnlyRequired(raw, model);
         return resolved;
     }
 
@@ -62,6 +68,39 @@ class NullabilityModelConverter implements ModelConverter {
             if (current.getSimpleName().endsWith(RESPONSE_SUFFIX)) return true;
         }
         return false;
+    }
+
+    /**
+     * A request field whose "required" constraint only applies to a validation group other than {@link Default} is
+     * not required by every endpoint that takes the record ({@code PlanDraftRequest.version}: {@code PUT} only, F-51).
+     */
+    private static void dropGroupOnlyRequired(Class<?> type, Schema<?> schema) {
+        if (schema.getRequired() == null) return;
+        List<String> required = new ArrayList<>(schema.getRequired());
+        for (RecordComponent component : type.getRecordComponents()) {
+            Class<?>[] groups = requiredGroups(component);
+            if (groups != null && groups.length > 0 && !Arrays.asList(groups).contains(Default.class))
+                required.remove(component.getName());
+        }
+        schema.setRequired(required.isEmpty() ? null : required);
+    }
+
+    /**
+     * @return the groups of the component's {@code @NotNull}, {@code @NotBlank} or {@code @NotEmpty}, null without one
+     */
+    private static Class<?> @Nullable [] requiredGroups(RecordComponent component) {
+        Field field;
+        try {
+            field = component.getDeclaringRecord().getDeclaredField(component.getName());
+        } catch (NoSuchFieldException e) {
+            return null;
+        }
+        NotNull notNull = field.getAnnotation(NotNull.class);
+        if (notNull != null) return notNull.groups();
+        NotBlank notBlank = field.getAnnotation(NotBlank.class);
+        if (notBlank != null) return notBlank.groups();
+        NotEmpty notEmpty = field.getAnnotation(NotEmpty.class);
+        return notEmpty == null ? null : notEmpty.groups();
     }
 
     private static void describeResponse(Class<?> type, Schema<?> schema) {

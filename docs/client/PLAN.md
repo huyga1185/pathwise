@@ -137,7 +137,7 @@ File nóng của client (không hai task song song cùng sửa): `web/package.js
   - Cột số lượng của bảng điểm giao theo đơn vị của các xe đã chọn (prototype chỉ có "Thùng" vì xe mẫu tính thùng); `ORDER` không có cột (D-36).
   - Form chờ danh sách tài xế/xe/cửa hàng tải xong mới dựng (ô chọn nhận giá trị lúc mount); khi sửa, tài xế/xe trong plan mà đã bị vô hiệu hoá/tắt vẫn có trong ô chọn để không mất giá trị (server sẽ báo `INVALID_ASSIGNMENT` nếu cần).
   - Thêm `todayIn(timeZone)` (`shared/format`), `TrashIcon`, `data/queryKeys` cho plan; câu lỗi `INVALID_DEMAND`, `INVALID_MAX_DISTANCE`, `INVALID_SERVICE_TIME`, `DRIVER_REQUIRED`, `VEHICLE_REQUIRED` ghi vào UX_BRIEF §6.2.
-  - Phát hiện F-51 (OpenAPI ghi `PlanDraftRequest.version` bắt buộc cho cả `POST`; client không gửi `version` khi tạo).
+  - Phát hiện F-51 (OpenAPI ghi `PlanDraftRequest.version` bắt buộc cho cả `POST`; client không gửi `version` khi tạo). Đã sửa ở branch `fix/open-issues` (2026-11-14): `version` không còn `required`, `planApi.create` hết ép kiểu.
 
 ### W06. Tối ưu, kết quả, giao việc, theo dõi
 - **Ước lượng:** 2 ngày · **Màn:** Soạn plan — sau khi tối ưu, Xác nhận giao việc, Theo dõi tiến độ

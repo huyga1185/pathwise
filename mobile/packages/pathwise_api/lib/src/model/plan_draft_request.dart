@@ -31,7 +31,7 @@ class PlanDraftRequest {
 
      this.stops,
 
-    required  this.version,
+     this.version,
   });
 
   @JsonKey(
@@ -97,12 +97,12 @@ class PlanDraftRequest {
   @JsonKey(
     
     name: r'version',
-    required: true,
+    required: false,
     includeIfNull: false,
   )
 
 
-  final int version;
+  final int? version;
 
 
 

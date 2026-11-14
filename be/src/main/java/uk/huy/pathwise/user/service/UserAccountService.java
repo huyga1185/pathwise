@@ -39,7 +39,6 @@ public interface UserAccountService {
      */
     boolean matchesPassword(long id, String rawPassword);
     void updateUserEmail(long id, String newEmail);
-    void deleteUser(long id);
     AuthenticationResult authenticate(String email, String password);
     Optional<UserIdentity> findUserById(long id);
 

@@ -102,6 +102,9 @@ class OpenApiNullabilityIntegrationTest extends AbstractIntegrationTest {
         assertThat(types(property(schema("UpdateProfileRequest"), "fullName"))).contains("null");
         assertThat(types(property(schema("PatchStopRequest"), "label"))).doesNotContain("null");
         assertThat(property(schema("PatchStopRequest"), "timeWindow")).containsKey("anyOf");
+
+        // A constraint of another validation group only binds some endpoints: version is PUT only (F-51).
+        assertThat(list(schema("PlanDraftRequest").get("required"))).containsExactlyInAnyOrder("name", "planDate");
     }
 
     @Test
