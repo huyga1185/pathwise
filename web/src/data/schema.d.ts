@@ -740,6 +740,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/plans/{id}/copy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["copyPlan"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/plans/{id}/driver-locations": {
         parameters: {
             query?: never;
@@ -1182,6 +1198,10 @@ export interface components {
             data: components["schemas"]["PageResponseStoreAuditEventResponse"];
             message?: string;
         };
+        ApiResponsePlanCopyResponse: {
+            data: components["schemas"]["PlanCopyResponse"];
+            message?: string;
+        };
         ApiResponsePlanDetailResponse: {
             data: components["schemas"]["PlanDetailResponse"];
             message?: string;
@@ -1285,6 +1305,13 @@ export interface components {
         ChangePasswordRequest: {
             newPassword: string;
             otp: string;
+        };
+        CopyPlanRequest: {
+            name?: string;
+            /** Format: date */
+            planDate: string;
+            /** @enum {string} */
+            stops: "ALL" | "NOT_DELIVERED";
         };
         CreateInvitationRequest: {
             /** Format: email */
@@ -1766,6 +1793,10 @@ export interface components {
             /** Format: double */
             lon: number;
         };
+        PlanCopyResponse: {
+            plan: components["schemas"]["PlanDetailResponse"];
+            skippedAssignments: components["schemas"]["SkippedAssignmentResponse"][];
+        };
         PlanDetailResponse: {
             activeJob: components["schemas"]["JobResponse"] | null;
             depot: components["schemas"]["LocationResponse"];
@@ -1977,6 +2008,14 @@ export interface components {
             lastUsedAt: string;
             sessionId: string;
             userAgent: string | null;
+        };
+        SkippedAssignmentResponse: {
+            /** Format: int64 */
+            driverId: number;
+            /** @enum {string} */
+            reason: "DRIVER_UNAVAILABLE" | "VEHICLE_INACTIVE";
+            /** Format: int64 */
+            vehicleId: number;
         };
         StoreAuditEventResponse: {
             /** @enum {string} */
@@ -3308,6 +3347,32 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ApiResponsePlanDetailResponse"];
+                };
+            };
+        };
+    };
+    copyPlan: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CopyPlanRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponsePlanCopyResponse"];
                 };
             };
         };

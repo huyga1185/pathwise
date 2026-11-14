@@ -114,6 +114,7 @@ Class | Method | HTTP request | Description
 [*PasswordResetLinkControllerApi*](doc/PasswordResetLinkControllerApi.md) | [**resetPassword1**](doc/PasswordResetLinkControllerApi.md#resetpassword1) | **POST** /api/v1/auth/password/reset-link | 
 [*PasswordResetLinkControllerApi*](doc/PasswordResetLinkControllerApi.md) | [**sendOtp**](doc/PasswordResetLinkControllerApi.md#sendotp) | **POST** /api/v1/auth/password/reset-link/otp | 
 [*PlanControllerApi*](doc/PlanControllerApi.md) | [**cancelPlan**](doc/PlanControllerApi.md#cancelplan) | **POST** /api/v1/plans/{id}/cancel | 
+[*PlanControllerApi*](doc/PlanControllerApi.md) | [**copyPlan**](doc/PlanControllerApi.md#copyplan) | **POST** /api/v1/plans/{id}/copy | 
 [*PlanControllerApi*](doc/PlanControllerApi.md) | [**createPlan**](doc/PlanControllerApi.md#createplan) | **POST** /api/v1/plans | 
 [*PlanControllerApi*](doc/PlanControllerApi.md) | [**driverLocations**](doc/PlanControllerApi.md#driverlocations) | **GET** /api/v1/plans/{id}/driver-locations | 
 [*PlanControllerApi*](doc/PlanControllerApi.md) | [**geocodePlan**](doc/PlanControllerApi.md#geocodeplan) | **POST** /api/v1/plans/{id}/geocode | 
@@ -177,6 +178,7 @@ Class | Method | HTTP request | Description
  - [ApiResponsePageResponseAuditEventResponse](doc/ApiResponsePageResponseAuditEventResponse.md)
  - [ApiResponsePageResponsePlanSummaryResponse](doc/ApiResponsePageResponsePlanSummaryResponse.md)
  - [ApiResponsePageResponseStoreAuditEventResponse](doc/ApiResponsePageResponseStoreAuditEventResponse.md)
+ - [ApiResponsePlanCopyResponse](doc/ApiResponsePlanCopyResponse.md)
  - [ApiResponsePlanDetailResponse](doc/ApiResponsePlanDetailResponse.md)
  - [ApiResponsePlanImportResponse](doc/ApiResponsePlanImportResponse.md)
  - [ApiResponseRegisterResponse](doc/ApiResponseRegisterResponse.md)
@@ -191,6 +193,7 @@ Class | Method | HTTP request | Description
  - [AuthUserResponse](doc/AuthUserResponse.md)
  - [BusinessMetricsResponse](doc/BusinessMetricsResponse.md)
  - [ChangePasswordRequest](doc/ChangePasswordRequest.md)
+ - [CopyPlanRequest](doc/CopyPlanRequest.md)
  - [CreateInvitationRequest](doc/CreateInvitationRequest.md)
  - [CreateVehicleRequest](doc/CreateVehicleRequest.md)
  - [Database](doc/Database.md)
@@ -238,6 +241,7 @@ Class | Method | HTTP request | Description
  - [PageResponseStoreAuditEventResponse](doc/PageResponseStoreAuditEventResponse.md)
  - [PatchStopRequest](doc/PatchStopRequest.md)
  - [PlaceResponse](doc/PlaceResponse.md)
+ - [PlanCopyResponse](doc/PlanCopyResponse.md)
  - [PlanDetailResponse](doc/PlanDetailResponse.md)
  - [PlanDraftRequest](doc/PlanDraftRequest.md)
  - [PlanImportResponse](doc/PlanImportResponse.md)
@@ -258,6 +262,7 @@ Class | Method | HTTP request | Description
  - [ResetTokenResponse](doc/ResetTokenResponse.md)
  - [RouteStops](doc/RouteStops.md)
  - [SessionResponse](doc/SessionResponse.md)
+ - [SkippedAssignmentResponse](doc/SkippedAssignmentResponse.md)
  - [StoreAuditEventResponse](doc/StoreAuditEventResponse.md)
  - [StorePeriodStatsResponse](doc/StorePeriodStatsResponse.md)
  - [StoreResponse](doc/StoreResponse.md)

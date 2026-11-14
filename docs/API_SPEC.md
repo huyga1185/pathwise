@@ -5,7 +5,7 @@
 > Cột "Hiện trạng" ở mọi bảng: ✅ khớp spec và có test · 🟡 có nhưng còn lệch (ghi rõ lệch gì) · ❌ chưa có. Lịch sử triển khai theo task nằm ở `CURRENT_STATE.md` §5, không ghi ở đây.
 > Lần rà soát contract gần nhất: T44 (2026-10-29, P-32).
 
-## 0. Lệch hiện tại so với spec (cập nhật 2026-11-14, sau T61)
+## 0. Lệch hiện tại so với spec (cập nhật 2026-11-14, sau T62)
 
 - Không còn lệch nào đã biết giữa endpoint và spec (`GET /admin/users` đủ `storeId`, `status` từ T55).
 - Request không phải `multipart/form-data` gửi tới endpoint nhận file, hoặc `Content-Type` không được hỗ trợ, trả 400 `MALFORMED_REQUEST` (T61; trước đó rơi vào handler chung).
@@ -315,6 +315,7 @@ Ghi chú:
 | `POST /plans/{id}/cancel` | O, D | `{version}` | 200 `PlanDetail` (CANCELLED) | 404 · 409 `PLAN_MODIFIED`/`PLAN_BUSY` · 422 `PLAN_NOT_CANCELLABLE` | ✅ |
 | `GET /plans/{id}/driver-locations` | O, D | — | `DriverLocation[]` (xem dưới, P-53): mỗi route có stop một phần tử, theo thứ tự `routes`; plan không PUBLISHED/IN_PROGRESS → `[]` | 404 | ✅ |
 | `PUT /plans/{id}/routes` | O, D | `{version, routes:[{routeId, stopIds:[...]}], unassignedStopIds:[...]}`. Chỉnh tay sau optimize: chuyển stop giữa route, đổi thứ tự, bỏ ra ngoài; tính lại ETA và quãng đường bằng matrix, không giải lại (Should, D-24, P-58). | 200 `PlanDetail` (có `violations[]`) | 400 · 404 · 409 `PLAN_MODIFIED`/`PLAN_BUSY` · 422 `PLAN_NOT_EDITABLE` · 422 `PLAN_NOT_OPTIMIZED` · 502 `ROUTING_PROVIDER_ERROR` | ✅ T28 |
+| `POST /plans/{id}/copy` | O, D | `{planDate, name?, stops: ALL\|NOT_DELIVERED}` (T62, P-67, P-68) | 201 `PlanCopy` `{plan: PlanDetail (DRAFT mới), skippedAssignments: [{driverId, vehicleId, reason}]}` | 400 · 404 · 422 `NOTHING_TO_COPY` · 423 `STORE_READ_ONLY` | ✅ T62 |
 | `POST /plans/import` | O, D | `multipart/form-data`, phần `file`: `.xlsx` (sheet đầu) hoặc `.csv`, ≤ 1 MB, ≤ 100 dòng (T61, P-67, P-68) | 200 `PlanImport` (xem dưới). **Không lưu gì.** | 400 `MALFORMED_REQUEST` (thiếu `file`, không phải multipart) · 413 `IMPORT_FILE_TOO_LARGE` · 422 `INVALID_IMPORT_FILE` · 422 `PLAN_TOO_LARGE` · 423 `STORE_READ_ONLY` · 429 `RATE_LIMITED` | ✅ T61 |
 | `GET /plans/import/template.xlsx` | O, D | — | 200 file mẫu Excel (`Content-Disposition: attachment`), một dòng tiêu đề và một dòng ví dụ, mọi ô là chữ | — | ✅ T61 |
 | `GET /plans/import/template.csv` | O, D | — | 200 file mẫu CSV UTF-8 có BOM, cùng nội dung | — | ✅ T61 |
@@ -411,6 +412,12 @@ Ghi chú:
 - không gửi toạ độ, `address: null` → giữ toạ độ hiện tại, thành `PROVIDED`;
 - địa chỉ và toạ độ không đổi → giữ nguyên kết quả geocode (kể cả `FAILED`);
 - stop không còn địa chỉ lẫn toạ độ → 400, detail `{field: "address", code: "ADDRESS_OR_COORDINATES_REQUIRED"}`.
+
+**Sao chép plan (`POST /plans/{id}/copy`, T62, P-67, P-68):**
+- Chép từ plan ở **mọi trạng thái** (kể cả CANCELLED) sang một plan **DRAFT mới** chưa tối ưu, `version` 0; plan cũ không đổi. `planDate` bắt buộc (`PLAN_DATE_REQUIRED`); `name` tuỳ chọn (≤ 150, `INVALID_PLAN_NAME_LENGTH`), trống thì "{tên cũ} (bản sao)" (tên cũ cắt bớt cho vừa 150 ký tự); `stops` bắt buộc (`COPY_SCOPE_REQUIRED`), giá trị khác `ALL`/`NOT_DELIVERED` → 400 `MALFORMED_REQUEST`.
+- `ALL`: mọi stop. `NOT_DELIVERED`: stop `FAILED`, `SKIPPED` và stop còn `PENDING` (bỏ stop `DELIVERED`); không còn stop nào → 422 `NOTHING_TO_COPY`. `ALL` của plan không có stop vẫn tạo được draft rỗng.
+- Mỗi stop chép: nhãn, người nhận, số điện thoại, địa chỉ, toạ độ **cùng `geocodeStatus`, `geocodeError` và tên địa chỉ provider** (không geocode lại; stop `FAILED` giữ `FAILED` để sửa), demand, thời gian phục vụ, time window, ghi chú. Stop còn `PENDING` geocode thì plan mới `GEOCODING` và chạy job như khi lưu draft. Không chép: route, thứ tự, ETA, trạng thái giao (về `PENDING`), lý do thất bại.
+- Depot: snapshot của plan cũ; timezone: của cửa hàng lúc chép. Phân công (theo thứ tự `routes` của plan cũ) chỉ chép khi tài xế còn là thành viên ACTIVE giao được (BR-07) và xe còn dùng; capacity theo xe hiện tại; ca và quãng đường tối đa giữ nguyên. Phân công bị bỏ nằm trong `skippedAssignments` với `reason` `DRIVER_UNAVAILABLE` (xét trước) hoặc `VEHICLE_INACTIVE`. Không kiểm tra trùng ca lúc chép (kiểm ở publish, D-23).
 
 **Nhập điểm giao từ file (`POST /plans/import`, T61, P-67, P-68):**
 - Chỉ đọc file, không ghi DB. Client thêm các dòng không lỗi vào draft rồi lưu bằng `POST /plans` / `PUT /plans/{id}` như thường (geocode, validation và giới hạn 100 stop của draft áp dụng lúc lưu).
@@ -546,7 +553,7 @@ Người gọi phải có `role=DRIVER` hoặc `canDrive=true` (D-21); người 
 | Không tìm thấy | `NOT_FOUND`, `INVITATION_INVALID` | 404 |
 | Method | `METHOD_NOT_ALLOWED` | 405 |
 | Xung đột | `EMAIL_EXISTED`, `EMAIL_ALREADY_VERIFIED`, `VEHICLE_NAME_EXISTED`, `PLAN_MODIFIED`, `PLAN_BUSY`, `CONFLICT` | 409 |
-| Nghiệp vụ | `CANNOT_MODIFY_OWNER`, `CANNOT_MODIFY_SELF`, `INVITATION_NOT_PENDING`, `STORE_DEPOT_REQUIRED`, `INVALID_ASSIGNMENT`, `PLAN_TOO_LARGE`, `INVALID_IMPORT_FILE` (T61), `PLAN_NOT_EDITABLE`, `NOTHING_TO_GEOCODE`, `PLAN_INCOMPLETE`, `STOPS_NOT_GEOCODED`, `PLAN_NOT_OPTIMIZED`, `PLAN_NOT_CANCELLABLE`, `PLAN_NOT_ACTIVE`, `SHIFT_OVERLAP`, `INVALID_STOP_TRANSITION`, `FAILURE_REASON_REQUIRED` | 422 |
+| Nghiệp vụ | `CANNOT_MODIFY_OWNER`, `CANNOT_MODIFY_SELF`, `INVITATION_NOT_PENDING`, `STORE_DEPOT_REQUIRED`, `INVALID_ASSIGNMENT`, `PLAN_TOO_LARGE`, `INVALID_IMPORT_FILE` (T61), `NOTHING_TO_COPY` (T62), `PLAN_NOT_EDITABLE`, `NOTHING_TO_GEOCODE`, `PLAN_INCOMPLETE`, `STOPS_NOT_GEOCODED`, `PLAN_NOT_OPTIMIZED`, `PLAN_NOT_CANCELLABLE`, `PLAN_NOT_ACTIVE`, `SHIFT_OVERLAP`, `INVALID_STOP_TRANSITION`, `FAILURE_REASON_REQUIRED` | 422 |
 | Giới hạn | `OTP_COOLDOWN`, `RATE_LIMITED` | 429 |
 | Provider | `GEOCODING_PROVIDER_ERROR`, `ROUTING_PROVIDER_ERROR` | 502 |
 | Provider / hạ tầng | `GEOCODING_BUSY`, `SERVICE_UNAVAILABLE` | 503 |

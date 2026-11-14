@@ -157,6 +157,7 @@ Web (W11) hiện người làm (email; hành động của ADMIN mà OWNER xem h
 | `PLAN_BUSY` | Plan đang được xử lý, vui lòng chờ. | plan |
 | `PLAN_MODIFIED` | Plan vừa được người khác thay đổi. Tải lại để xem bản mới. | plan |
 | `NOTHING_TO_GEOCODE` | Không còn địa chỉ nào cần tìm toạ độ. | geocode |
+| `NOTHING_TO_COPY` | Mọi điểm giao của kế hoạch này đã giao xong, không còn điểm nào để chép. | sao chép kế hoạch (T62) |
 | `PLAN_INCOMPLETE` | Plan cần ít nhất một điểm giao và một phân công. | optimize |
 | `STOPS_NOT_GEOCODED` | Còn điểm giao chưa có toạ độ. | optimize |
 | `PLAN_NOT_OPTIMIZED` | Cần tối ưu lộ trình trước khi giao việc. | publish |
@@ -188,6 +189,7 @@ Job thất bại có `errorCode` riêng: `NO_SOLUTION` ("Không tìm được l�
 - **Chuyển chủ cửa hàng (`POST /admin/stores/{id}/owner`, T57):** trên `userId`: `USER_ID_REQUIRED` ("Vui lòng chọn thành viên."), `NEW_OWNER_NOT_ACTIVE` ("Chỉ chuyển được cho thành viên đang hoạt động, đã xác thực email."), `ALREADY_OWNER` ("Người này đã là chủ cửa hàng.").
 - **Trang đặt lại mật khẩu từ link (T57):** `RESET_TOKEN_REQUIRED` là lỗi client (link thiếu token): hiện như `INVALID_RESET_TOKEN` của trang này ("Link đã hết hạn hoặc đã được dùng…", SCREENS). `OTP_REQUIRED`, `INVALID_OTP_LENGTH`, `PASSWORD_REQUIRED`, `INVALID_PASSWORD_LENGTH` như các form OTP và mật khẩu khác.
 
+- **Sao chép kế hoạch (`POST /plans/{id}/copy`, T62):** `COPY_SCOPE_REQUIRED` trên `stops` ("Vui lòng chọn điểm giao cần chép."); `PLAN_DATE_REQUIRED`, `INVALID_PLAN_NAME_LENGTH` như form kế hoạch. Phân công không chép được (`skippedAssignments[].reason`, không phải lỗi): `DRIVER_UNAVAILABLE` "Tài xế {tên} không còn nhận tuyến được", `VEHICLE_INACTIVE` "Xe {tên} đã tắt".
 - **Nhập điểm giao từ file (`POST /plans/import`, T61):** trong `INVALID_IMPORT_FILE`, `details[0]` trên `file`: `UNSUPPORTED_FILE_TYPE` ("Chỉ nhận file .xlsx hoặc .csv."), `UNREADABLE_FILE` ("File bị hỏng hoặc không đúng định dạng."), `NO_ROWS` ("File không có dòng điểm giao nào."), `LABEL_COLUMN_REQUIRED` ("File thiếu cột "Nhãn / mã đơn". Tải file mẫu để xem các cột."). Lỗi từng dòng (`rows[].errors`) dùng đúng các mã của stop ở trên, hiện ở cột tương ứng của bảng xem trước (tên cột theo file mẫu: `label` → "Nhãn / mã đơn", `demands` → cột KG/Thùng/Kiện…); thêm `INVALID_TIME_FORMAT` ("Giờ không đúng dạng, ví dụ 09:00.").
 
 ### 6.3 Vi phạm sau khi chỉnh tay (`PlanDetail.violations`, T28)

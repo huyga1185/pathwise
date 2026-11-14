@@ -682,6 +682,20 @@
         ],
         "type": "object"
       },
+      "ApiResponsePlanCopyResponse": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/PlanCopyResponse"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "type": "object"
+      },
       "ApiResponsePlanDetailResponse": {
         "properties": {
           "data": {
@@ -1057,6 +1071,31 @@
         "required": [
           "newPassword",
           "otp"
+        ],
+        "type": "object"
+      },
+      "CopyPlanRequest": {
+        "properties": {
+          "name": {
+            "maxLength": 150,
+            "minLength": 0,
+            "type": "string"
+          },
+          "planDate": {
+            "format": "date",
+            "type": "string"
+          },
+          "stops": {
+            "enum": [
+              "ALL",
+              "NOT_DELIVERED"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "planDate",
+          "stops"
         ],
         "type": "object"
       },
@@ -2799,6 +2838,24 @@
         ],
         "type": "object"
       },
+      "PlanCopyResponse": {
+        "properties": {
+          "plan": {
+            "$ref": "#/components/schemas/PlanDetailResponse"
+          },
+          "skippedAssignments": {
+            "items": {
+              "$ref": "#/components/schemas/SkippedAssignmentResponse"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "plan",
+          "skippedAssignments"
+        ],
+        "type": "object"
+      },
       "PlanDetailResponse": {
         "properties": {
           "activeJob": {
@@ -3637,6 +3694,31 @@
           "lastUsedAt",
           "sessionId",
           "userAgent"
+        ],
+        "type": "object"
+      },
+      "SkippedAssignmentResponse": {
+        "properties": {
+          "driverId": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "reason": {
+            "enum": [
+              "DRIVER_UNAVAILABLE",
+              "VEHICLE_INACTIVE"
+            ],
+            "type": "string"
+          },
+          "vehicleId": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "driverId",
+          "reason",
+          "vehicleId"
         ],
         "type": "object"
       },
@@ -6088,6 +6170,47 @@
               }
             },
             "description": "OK"
+          }
+        },
+        "tags": [
+          "plan-controller"
+        ]
+      }
+    },
+    "/api/v1/plans/{id}/copy": {
+      "post": {
+        "operationId": "copyPlan",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CopyPlanRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponsePlanCopyResponse"
+                }
+              }
+            },
+            "description": "Created"
           }
         },
         "tags": [

@@ -599,6 +599,7 @@ Dành cho OWNER và DISPATCHER (quyền **O, D**), lọc theo `actor.storeId()`;
   - Chép mỗi stop: nhãn, người nhận, số điện thoại, địa chỉ, **toạ độ cùng `geocodeStatus` và tên địa chỉ provider** (không geocode lại; stop `FAILED`/`PENDING` geocode thì giữ trạng thái đó để dispatcher sửa), demand, thời gian phục vụ, time window, ghi chú. Không chép: kết quả tối ưu, trạng thái giao, lý do thất bại.
   - Chép depot của plan cũ (snapshot) và timezone hiện tại của cửa hàng. Chép phân công (tài xế, xe, ca, quãng đường tối đa) **chỉ khi** tài xế còn `ACTIVE` và giao được, xe còn dùng; capacity lấy theo xe hiện tại. Phân công bị bỏ trả trong `skippedAssignments: [{driverId, vehicleId, reason: DRIVER_UNAVAILABLE | VEHICLE_INACTIVE}]` để web báo.
   - Không kiểm tra chồng ca lúc chép (vẫn kiểm ở publish, D-23).
+- **Phát sinh khi làm (2026-11-14):** response là `PlanCopy` `{plan: PlanDetail, skippedAssignments}` (bọc `PlanDetail` vì nó không có chỗ cho phân công bị bỏ). Mã field mới `COPY_SCOPE_REQUIRED`. `ALL` của plan không có stop vẫn tạo draft rỗng (`NOTHING_TO_COPY` chỉ cho `NOT_DELIVERED`). Bỏ phân công vì tài xế được xét trước vì xe.
 - **Acceptance:** chép ALL và NOT_DELIVERED đúng tập stop; toạ độ và trạng thái geocode giữ nguyên, không tạo job geocode khi mọi stop đã có toạ độ; phân công của tài xế bị khoá/xe đã tắt bị bỏ và báo; plan cũ không đổi; plan của cửa hàng khác → 404 (tenant isolation); `READ_ONLY` → 423. API_SPEC §7, UX_BRIEF §6 (`NOTHING_TO_COPY`), docs client.
 
 #### T63. Báo cáo và xuất CSV

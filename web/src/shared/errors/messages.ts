@@ -34,6 +34,7 @@ export const errorMessages: Record<string, string> = {
   PLAN_BUSY: 'Plan đang được xử lý, vui lòng chờ.',
   PLAN_MODIFIED: 'Plan vừa được người khác thay đổi. Tải lại để xem bản mới.',
   NOTHING_TO_GEOCODE: 'Không còn địa chỉ nào cần tìm toạ độ.',
+  NOTHING_TO_COPY: 'Mọi điểm giao của kế hoạch này đã giao xong, không còn điểm nào để chép.',
   PLAN_INCOMPLETE: 'Plan cần ít nhất một điểm giao và một phân công.',
   STOPS_NOT_GEOCODED: 'Còn điểm giao chưa có toạ độ.',
   PLAN_NOT_OPTIMIZED: 'Cần tối ưu lộ trình trước khi giao việc.',

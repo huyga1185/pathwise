@@ -83,6 +83,8 @@ public enum ErrorCode {
     // LABEL_COLUMN_REQUIRED on "file").
     INVALID_IMPORT_FILE(422),
     // T61: the uploaded file is over 1 MB.
-    IMPORT_FILE_TOO_LARGE(413);
+    IMPORT_FILE_TOO_LARGE(413),
+    // T62: copying only the stops not delivered leaves no stop.
+    NOTHING_TO_COPY(422);
     private final int httpCode;
 }

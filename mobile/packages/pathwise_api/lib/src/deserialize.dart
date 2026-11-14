@@ -29,6 +29,7 @@ import 'package:pathwise_api/src/model/api_response_page_response_admin_store_su
 import 'package:pathwise_api/src/model/api_response_page_response_audit_event_response.dart';
 import 'package:pathwise_api/src/model/api_response_page_response_plan_summary_response.dart';
 import 'package:pathwise_api/src/model/api_response_page_response_store_audit_event_response.dart';
+import 'package:pathwise_api/src/model/api_response_plan_copy_response.dart';
 import 'package:pathwise_api/src/model/api_response_plan_detail_response.dart';
 import 'package:pathwise_api/src/model/api_response_plan_import_response.dart';
 import 'package:pathwise_api/src/model/api_response_register_response.dart';
@@ -43,6 +44,7 @@ import 'package:pathwise_api/src/model/auth_token_response.dart';
 import 'package:pathwise_api/src/model/auth_user_response.dart';
 import 'package:pathwise_api/src/model/business_metrics_response.dart';
 import 'package:pathwise_api/src/model/change_password_request.dart';
+import 'package:pathwise_api/src/model/copy_plan_request.dart';
 import 'package:pathwise_api/src/model/create_invitation_request.dart';
 import 'package:pathwise_api/src/model/create_vehicle_request.dart';
 import 'package:pathwise_api/src/model/database.dart';
@@ -90,6 +92,7 @@ import 'package:pathwise_api/src/model/page_response_plan_summary_response.dart'
 import 'package:pathwise_api/src/model/page_response_store_audit_event_response.dart';
 import 'package:pathwise_api/src/model/patch_stop_request.dart';
 import 'package:pathwise_api/src/model/place_response.dart';
+import 'package:pathwise_api/src/model/plan_copy_response.dart';
 import 'package:pathwise_api/src/model/plan_detail_response.dart';
 import 'package:pathwise_api/src/model/plan_draft_request.dart';
 import 'package:pathwise_api/src/model/plan_import_response.dart';
@@ -110,6 +113,7 @@ import 'package:pathwise_api/src/model/reset_password_request.dart';
 import 'package:pathwise_api/src/model/reset_token_response.dart';
 import 'package:pathwise_api/src/model/route_stops.dart';
 import 'package:pathwise_api/src/model/session_response.dart';
+import 'package:pathwise_api/src/model/skipped_assignment_response.dart';
 import 'package:pathwise_api/src/model/store_audit_event_response.dart';
 import 'package:pathwise_api/src/model/store_period_stats_response.dart';
 import 'package:pathwise_api/src/model/store_response.dart';
@@ -213,6 +217,8 @@ final _regMap = RegExp(r'^Map<String,(.*)>$');
           return ApiResponsePageResponsePlanSummaryResponse.fromJson(value as Map<String, dynamic>) as ReturnType;
         case 'ApiResponsePageResponseStoreAuditEventResponse':
           return ApiResponsePageResponseStoreAuditEventResponse.fromJson(value as Map<String, dynamic>) as ReturnType;
+        case 'ApiResponsePlanCopyResponse':
+          return ApiResponsePlanCopyResponse.fromJson(value as Map<String, dynamic>) as ReturnType;
         case 'ApiResponsePlanDetailResponse':
           return ApiResponsePlanDetailResponse.fromJson(value as Map<String, dynamic>) as ReturnType;
         case 'ApiResponsePlanImportResponse':
@@ -241,6 +247,8 @@ final _regMap = RegExp(r'^Map<String,(.*)>$');
           return BusinessMetricsResponse.fromJson(value as Map<String, dynamic>) as ReturnType;
         case 'ChangePasswordRequest':
           return ChangePasswordRequest.fromJson(value as Map<String, dynamic>) as ReturnType;
+        case 'CopyPlanRequest':
+          return CopyPlanRequest.fromJson(value as Map<String, dynamic>) as ReturnType;
         case 'CreateInvitationRequest':
           return CreateInvitationRequest.fromJson(value as Map<String, dynamic>) as ReturnType;
         case 'CreateVehicleRequest':
@@ -335,6 +343,8 @@ final _regMap = RegExp(r'^Map<String,(.*)>$');
           return PatchStopRequest.fromJson(value as Map<String, dynamic>) as ReturnType;
         case 'PlaceResponse':
           return PlaceResponse.fromJson(value as Map<String, dynamic>) as ReturnType;
+        case 'PlanCopyResponse':
+          return PlanCopyResponse.fromJson(value as Map<String, dynamic>) as ReturnType;
         case 'PlanDetailResponse':
           return PlanDetailResponse.fromJson(value as Map<String, dynamic>) as ReturnType;
         case 'PlanDraftRequest':
@@ -375,6 +385,8 @@ final _regMap = RegExp(r'^Map<String,(.*)>$');
           return RouteStops.fromJson(value as Map<String, dynamic>) as ReturnType;
         case 'SessionResponse':
           return SessionResponse.fromJson(value as Map<String, dynamic>) as ReturnType;
+        case 'SkippedAssignmentResponse':
+          return SkippedAssignmentResponse.fromJson(value as Map<String, dynamic>) as ReturnType;
         case 'StoreAuditEventResponse':
           return StoreAuditEventResponse.fromJson(value as Map<String, dynamic>) as ReturnType;
         case 'StorePeriodStatsResponse':
