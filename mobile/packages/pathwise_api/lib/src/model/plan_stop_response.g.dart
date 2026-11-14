@@ -116,6 +116,7 @@ Map<String, dynamic> _$PlanStopResponseToJson(
 const _$PlanStopResponseDropReasonEnumEnumMap = {
   PlanStopResponseDropReasonEnum.NOT_OPTIMIZED: 'NOT_OPTIMIZED',
   PlanStopResponseDropReasonEnum.INFEASIBLE: 'INFEASIBLE',
+  PlanStopResponseDropReasonEnum.MANUAL: 'MANUAL',
 };
 
 const _$PlanStopResponseGeocodeErrorEnumEnumMap = {

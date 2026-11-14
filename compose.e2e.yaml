@@ -5,8 +5,17 @@
 # The backend's map clients point at a stub (web/e2e/stub/server.mjs): the run calls no real third-party service.
 # Mail goes to this project's Mailpit only.
 
+# Docker keeps container logs without limit by default: a small VPS fills its disk (T51, P-59). Each container keeps
+# at most LOG_MAX_FILE files of LOG_MAX_SIZE (30 MB by default); older lines are dropped.
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: ${LOG_MAX_SIZE:-10m}
+    max-file: "${LOG_MAX_FILE:-3}"
+
 services:
   map-stub:
+    logging: *logging
     image: node:22-alpine
     command: ["node", "/stub/server.mjs"]
     volumes:
@@ -18,6 +27,7 @@ services:
       retries: 20
 
   app:
+    logging: *logging
     # Only the values below: a developer's .env must not leak in (it may point at a real SMTP server).
     env_file: !reset []
     environment:
@@ -41,6 +51,12 @@ services:
       ROUTING_MATRIX_OSRM_BASEURL: http://map-stub:8090
       # A short solver run keeps the E2E fast (the default is 10 s, NFR-02).
       ROUTING_SOLVER_TIMELIMIT: 2s
+      # First ADMIN of the stack (T59), for the ADMIN area E2E (W11).
+      BOOTSTRAP_ADMIN_EMAIL: admin@pathwise.test
+      BOOTSTRAP_ADMIN_PASSWORD: matkhau-admin-e2e
+      # Every spec registers a store from the same IP; the production limit (5 an hour) stops a second local run on the
+      # same stack. Map keys with "-" cannot be set by plain variables, hence JSON.
+      SPRING_APPLICATION_JSON: '{"rate-limit":{"rules":{"register-ip":{"limit":100}}}}'
     depends_on:
       map-stub:
         condition: service_healthy

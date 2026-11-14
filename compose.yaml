@@ -3,8 +3,17 @@
 #   docker compose --profile app up -d --build -> full stack, app built from be/Dockerfile
 # Variables come from .env (copy .env.example).
 
+# Docker keeps container logs without limit by default: a small VPS fills its disk (T51, P-59). Each container keeps
+# at most LOG_MAX_FILE files of LOG_MAX_SIZE (30 MB by default); older lines are dropped.
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: ${LOG_MAX_SIZE:-10m}
+    max-file: "${LOG_MAX_FILE:-3}"
+
 services:
   mariadb:
+    logging: *logging
     image: mariadb:11.8 # D-35
     environment:
       MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD:?set MARIADB_ROOT_PASSWORD in .env}
@@ -20,6 +29,7 @@ services:
       retries: 20
 
   redis:
+    logging: *logging
     image: redis:7.4
     # Every key has a TTL, so losing data is acceptable; AOF only avoids surprises on restart.
     command: ["redis-server", "--appendonly", "yes"]
@@ -34,12 +44,14 @@ services:
       retries: 20
 
   mailpit:
+    logging: *logging
     image: axllent/mailpit:v1.31
     ports:
       - "${MAILPIT_SMTP_PORT:-1025}:1025"
       - "${MAILPIT_UI_PORT:-8025}:8025"
 
   app:
+    logging: *logging
     profiles: ["app"]
     build:
       context: ./be

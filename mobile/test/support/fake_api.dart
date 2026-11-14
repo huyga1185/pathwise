@@ -67,6 +67,9 @@ Map<String, Object?> meOf(Map<String, Object?> user) => {
   'phoneNumber': null,
   'storeId': user['storeId'] ?? 182,
   'status': 'ACTIVE',
+  // T56: state of the user's store, for the lock banner.
+  'storeStatus': 'ACTIVE',
+  'storeLockReason': null,
 };
 
 Map<String, Object?> tokens({String access = 'access-1', String refresh = 'refresh-2', Object? user}) => {

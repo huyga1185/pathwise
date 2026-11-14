@@ -7,6 +7,8 @@
     "role": "DRIVER",
     "storeId": 182,
     "status": "ACTIVE",
-    "canDrive": true
+    "canDrive": true,
+    "storeStatus": "ACTIVE",
+    "storeLockReason": null
   }
 }

@@ -1,3 +1,4 @@
+import { useStoreReadOnly } from '@/data/meQuery';
 import { useMemo, useState, type ReactNode } from 'react';
 import { useFieldArray, useForm, useWatch, type FieldPath, type UseFormRegister } from 'react-hook-form';
 import { Link, useNavigate, useParams } from 'react-router';
@@ -22,6 +23,8 @@ import {
   emptyAssignment,
   emptyStop,
   formPath,
+  importedToRow,
+  isBlankStop,
   MAX_ASSIGNMENTS,
   MAX_STOPS,
   newPlanValues,
@@ -31,6 +34,7 @@ import {
   type DemandUnit,
   type PlanFormValues,
 } from './planForm';
+import { ImportDialog } from './ImportDialog';
 import './plans.css';
 
 const f = vi.planForm;
@@ -88,12 +92,15 @@ function EditPlan({ id }: { id: number }) {
 
 function PlanForm({ plan }: { plan: PlanDetail | null }) {
   const navigate = useNavigate();
+  const { readOnly } = useStoreReadOnly();
   const planApi = usePlanApi();
   const store = useStoreQuery();
   const members = useAssignableMembers();
   const vehicles = useActiveVehicles();
   const [failure, setFailure] = useState<unknown>(null);
   const [modified, setModified] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [imported, setImported] = useState<number | null>(null);
   const live = usePlan(plan?.id ?? 0, plan !== null);
   const timeZone = store.data?.timezone ?? 'Asia/Ho_Chi_Minh';
   const {
@@ -103,6 +110,7 @@ function PlanForm({ plan }: { plan: PlanDetail | null }) {
     setError,
     clearErrors,
     reset,
+    getValues,
     formState: { errors, isSubmitting },
   } = useForm<PlanFormValues>({
     defaultValues: plan ? planToValues(plan) : newPlanValues(todayIn(timeZone)),
@@ -189,7 +197,7 @@ function PlanForm({ plan }: { plan: PlanDetail | null }) {
             {plan ? f.editTitle(plan.name) : f.createTitle}
           </h1>
         </div>
-        <FormActions plan={plan} disabled={noDepot || busy} busy={isSubmitting} />
+        <FormActions plan={plan} disabled={noDepot || busy || readOnly} busy={isSubmitting} />
       </div>
 
       {noDepot || (failure instanceof ApiError && failure.code === 'STORE_DEPOT_REQUIRED') ? (
@@ -474,12 +482,33 @@ function PlanForm({ plan }: { plan: PlanDetail | null }) {
           <Button variant="quiet" disabled={stops.fields.length >= MAX_STOPS} onClick={() => stops.append(emptyStop())}>
             {f.addStop}
           </Button>
+          {!readOnly ? (
+            <Button variant="secondary" onClick={() => setImporting(true)}>
+              {vi.planImport.open}
+            </Button>
+          ) : null}
           <span className="pw-muted">{f.addressTip}</span>
         </div>
+        {imported !== null ? (
+          <p role="status" className="pw-import-added">
+            {vi.planImport.added(imported)}
+          </p>
+        ) : null}
+        <ImportDialog
+          open={importing}
+          keptStops={(watchedStops ?? []).filter((row) => !isBlankStop(row)).length}
+          onClose={() => setImporting(false)}
+          onAdd={(rows) => {
+            // Blank rows (the first row of a new plan) give way to the file's stops.
+            const kept = getValues('stops').filter((row) => !isBlankStop(row));
+            stops.replace([...kept, ...rows.map((row) => importedToRow(row.stop))]);
+            setImported(rows.length);
+          }}
+        />
       </section>
 
       <div className="pw-plan-footer">
-        <FormActions plan={plan} disabled={noDepot || busy} busy={isSubmitting} />
+        <FormActions plan={plan} disabled={noDepot || busy || readOnly} busy={isSubmitting} />
       </div>
 
       <Dialog

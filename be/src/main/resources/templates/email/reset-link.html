@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<!--/* Password reset link sent by an ADMIN (T57, P-63). Variables: link, validHours, to, appName, appUrl, companyName, companyUrl, companyAddress (the last five are added by EmailNotificationService). The link does not contain the email. */-->
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8" />
+    <title>Đặt lại mật khẩu</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #333; background-color: #fff;">
+<div style="margin: 0 auto; width: 100%; max-width: 600px; padding-bottom: 10px; line-height: 1.8;">
+    <div style="border-bottom: 1px solid #eee; padding-bottom: 10px;">
+        <a style="font-size: 1.4em; color: #000; text-decoration: none; font-weight: 600;"
+           th:href="${appUrl}" th:text="${appName}">PathWise</a>
+    </div>
+    <p>Xin chào <strong th:text="${to}">ban@example.com</strong>,</p>
+    <p>
+        Quản trị viên <span th:text="${appName}">PathWise</span> đã gửi cho bạn link đặt lại mật khẩu theo yêu cầu hỗ trợ.
+        Mở link, bấm "Gửi mã" để nhận mã xác nhận qua email này, rồi đặt mật khẩu mới.
+    </p>
+    <p style="text-align: center;">
+        <a th:href="${link}" style="display: inline-block; background: #00bc88; color: #fff; padding: 10px 20px; border-radius: 4px; text-decoration: none; font-weight: 600;">Đặt mật khẩu mới</a>
+    </p>
+    <p style="font-size: 0.9em;">
+        Link mở được trong <strong th:text="${validHours}">24</strong> giờ và hết hiệu lực khi bạn đã đặt mật khẩu mới.
+        Quản trị viên không biết và không đặt được mật khẩu của bạn.
+        <br /><br />
+        <strong>Không chuyển tiếp email này cho ai.</strong>
+        Nếu bạn không nhờ hỗ trợ, hãy bỏ qua email: mật khẩu hiện tại vẫn giữ nguyên.
+    </p>
+    <p>Trân trọng,<br /><strong th:text="${companyName}">PathWise</strong></p>
+    <hr style="border: none; border-top: 0.5px solid #ccc;" />
+    <div style="color: #999; font-size: 0.8em; line-height: 1.4;">
+        <p>Email này được gửi tự động, vui lòng không trả lời.</p>
+        <p><span th:text="${companyName}">PathWise</span> · <span th:text="${companyAddress}">Địa chỉ</span> ·
+            <a th:href="${companyUrl}" th:text="${companyUrl}">https://example.com</a></p>
+    </div>
+</div>
+</body>
+</html>

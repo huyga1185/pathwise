@@ -5,6 +5,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import uk.huy.pathwise.audit.dto.AuditEntry;
+import uk.huy.pathwise.audit.model.AuditAction;
+import uk.huy.pathwise.audit.model.AuditTargetType;
+import uk.huy.pathwise.audit.service.AuditLog;
 import uk.huy.pathwise.core.exception.AppException;
 import uk.huy.pathwise.core.exception.ErrorCode;
 import uk.huy.pathwise.shared.identity.UserIdentity;
@@ -17,7 +21,9 @@ import uk.huy.pathwise.store.infrastructure.mapper.StoreMapper;
 import uk.huy.pathwise.user.dto.StoreUser;
 import uk.huy.pathwise.user.service.StoreUserService;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Members of the caller's store (FR-S04, FR-S05, FR-S06). The store always comes from the access token; a user of
@@ -30,6 +36,7 @@ public class MemberService {
     private final StoreUserService storeUserService;
     private final StoreMapper storeMapper;
     private final ApplicationEventPublisher eventPublisher;
+    private final AuditLog auditLog;
 
     /**
      * @param role       only members with this role, if set
@@ -72,7 +79,24 @@ public class MemberService {
             eventPublisher.publishEvent(new MemberDisabledEvent(storeId, userId));
             log.info("Member disabled. storeId={}, userId={}", storeId, userId);
         }
+        Map<String, Object> changes = changes(member, updated);
+        if (!changes.isEmpty()) {
+            auditLog.record(new AuditEntry(actor, storeId, AuditAction.MEMBER_UPDATED, AuditTargetType.USER, userId,
+                    Map.of("email", updated.email(), "changes", changes)));
+        }
         return storeMapper.toMemberResponse(updated);
+    }
+
+    /**
+     * @return {@code field → {from, to}} for each of role, status and canDrive that changed (T58)
+     */
+    private static Map<String, Object> changes(StoreUser before, StoreUser after) {
+        Map<String, Object> changes = new LinkedHashMap<>();
+        if (before.role() != after.role()) changes.put("role", Map.of("from", before.role(), "to", after.role()));
+        if (before.status() != after.status()) changes.put("status", Map.of("from", before.status(), "to", after.status()));
+        if (before.canDrive() != after.canDrive())
+            changes.put("canDrive", Map.of("from", before.canDrive(), "to", after.canDrive()));
+        return changes;
     }
 
     /**

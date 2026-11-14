@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<!--/* Former OWNER after an ADMIN transferred a store (T57, P-63). Variables: storeName, to, appName, appUrl, companyName, companyUrl, companyAddress. The new owner is not named. */-->
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8" />
+    <title>Quyền chủ cửa hàng đã được chuyển</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #333; background-color: #fff;">
+<div style="margin: 0 auto; width: 100%; max-width: 600px; padding-bottom: 10px; line-height: 1.8;">
+    <div style="border-bottom: 1px solid #eee; padding-bottom: 10px;">
+        <a style="font-size: 1.4em; color: #000; text-decoration: none; font-weight: 600;"
+           th:href="${appUrl}" th:text="${appName}">PathWise</a>
+    </div>
+    <p>Xin chào <strong th:text="${to}">ban@example.com</strong>,</p>
+    <p>
+        Theo yêu cầu hỗ trợ, quản trị viên <span th:text="${appName}">PathWise</span> đã chuyển quyền chủ cửa hàng
+        <strong th:text="${storeName}">Cửa hàng An</strong> cho một thành viên khác. Tài khoản của bạn giờ là điều phối viên
+        của cửa hàng và đã được đăng xuất khỏi mọi thiết bị.
+    </p>
+    <p style="font-size: 0.9em;"><strong>Nếu không phải bạn yêu cầu, hãy liên hệ hỗ trợ ngay.</strong></p>
+    <p>Trân trọng,<br /><strong th:text="${companyName}">PathWise</strong></p>
+    <hr style="border: none; border-top: 0.5px solid #ccc;" />
+    <div style="color: #999; font-size: 0.8em; line-height: 1.4;">
+        <p>Email này được gửi tự động, vui lòng không trả lời.</p>
+        <p><span th:text="${companyName}">PathWise</span> · <span th:text="${companyAddress}">Địa chỉ</span> ·
+            <a th:href="${companyUrl}" th:text="${companyUrl}">https://example.com</a></p>
+    </div>
+</div>
+</body>
+</html>

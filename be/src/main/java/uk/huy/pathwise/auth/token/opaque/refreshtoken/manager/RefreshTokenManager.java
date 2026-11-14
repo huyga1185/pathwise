@@ -2,7 +2,6 @@ package uk.huy.pathwise.auth.token.opaque.refreshtoken.manager;
 
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NonNull;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import uk.huy.pathwise.core.security.Hasher;
@@ -18,6 +17,8 @@ import uk.huy.pathwise.auth.token.opaque.refreshtoken.model.RefreshTokenState;
 import uk.huy.pathwise.auth.token.opaque.refreshtoken.repository.RefreshTokenRepository;
 import uk.huy.pathwise.auth.model.ClientDetail;
 
+import uk.huy.pathwise.auth.infrastructure.config.TokenProperties;
+
 import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
@@ -31,11 +32,11 @@ public class RefreshTokenManager {
     private final OpaqueTokenGenerator opaqueTokenGenerator;
 
     public RefreshTokenManager(RefreshTokenRepository refreshTokenRepository,
-                               @Value("${token.expiration-time:14d}") Duration expirationTime,
+                               TokenProperties tokenProperties,
                                Hasher hasher,
                                OpaqueTokenGenerator opaqueTokenGenerator) {
         this.refreshTokenRepository = refreshTokenRepository;
-        this.expirationTime = expirationTime;
+        this.expirationTime = tokenProperties.expirationTime();
         this.hasher = hasher;
         this.opaqueTokenGenerator = opaqueTokenGenerator;
     }

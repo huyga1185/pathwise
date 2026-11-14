@@ -1,5 +1,7 @@
 package uk.huy.pathwise.core.ratelimit;
 
+import org.springframework.beans.factory.ObjectProvider;
+import uk.huy.pathwise.core.observability.OpsMetrics;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -19,6 +21,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -27,12 +30,16 @@ class RedisRateLimiterTest {
     private StringRedisTemplate redisTemplate;
     @Mock
     private Hasher hasher;
+    @Mock
+    private ObjectProvider<OpsMetrics> metricsProvider;
+    @Mock
+    private OpsMetrics opsMetrics;
 
     private final RateLimitProperties properties = new RateLimitProperties(
             Map.of("log-in-email", new RateLimitProperties.Limit(2, Duration.ofMinutes(15))));
 
     private RedisRateLimiter rateLimiter() {
-        return new RedisRateLimiter(redisTemplate, properties, hasher);
+        return new RedisRateLimiter(redisTemplate, properties, hasher, metricsProvider);
     }
 
     @Test
@@ -50,6 +57,17 @@ class RedisRateLimiterTest {
 
         assertThat(rateLimiter().tryAcquire("log-in-email", "a@pathwise.test"))
                 .isEqualTo(new RateLimitDecision.Limited(Duration.ofMillis(120_500)));
+    }
+
+    @Test
+    void tryAcquire_whenOverLimit_countItForTheAdminMetrics() {
+        when(hasher.hashString("a@pathwise.test")).thenReturn("hash");
+        when(metricsProvider.getIfAvailable()).thenReturn(opsMetrics);
+        stubScript(List.of(3L, 120_500L));
+
+        rateLimiter().tryAcquire("log-in-email", "a@pathwise.test");
+
+        verify(opsMetrics).recordRateLimited();
     }
 
     @Test

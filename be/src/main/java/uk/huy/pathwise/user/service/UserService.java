@@ -12,6 +12,7 @@ import uk.huy.pathwise.core.pagination.PageResponse;
 import uk.huy.pathwise.core.pagination.PaginationValidator;
 import uk.huy.pathwise.shared.identity.UserRole;
 import uk.huy.pathwise.shared.identity.UserStatus;
+import uk.huy.pathwise.shared.store.StoreState;
 import uk.huy.pathwise.user.dto.AuthenticationResult;
 import uk.huy.pathwise.user.dto.AccountState;
 import uk.huy.pathwise.user.dto.StoreUser;
@@ -34,11 +35,12 @@ import java.util.Set;
 
 @Service
 @AllArgsConstructor
-public class UserService implements UserAccountService, UserProfileService, StoreUserService {
+public class UserService implements UserAccountService, UserProfileService, StoreUserService, UserStatusCommand {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final UserMapper userMapper;
     private final PhoneNumberProcessor phoneNumberProcessor;
+    private final StoreStateLookup storeStateLookup;
     private static final Set<String> USER_SORT_WHITELIST = Set.of("id", "email", "createdAt", "updatedAt");
 
     private User getUserById (long id) {
@@ -77,6 +79,28 @@ public class UserService implements UserAccountService, UserProfileService, Stor
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public boolean adminExists() {
+        return userRepository.existsByRole(UserRole.ADMIN);
+    }
+
+    @Override
+    @Transactional
+    public UserIdentity createAdmin(String email, String rawPassword, String fullName) {
+        String normalizedEmail = normalizeEmail(email);
+        checkUserEmailExisted(normalizedEmail);
+        User user = User.builder()
+                .email(normalizedEmail)
+                .password(passwordEncoder.encode(rawPassword))
+                .fullName(fullName)
+                .role(UserRole.ADMIN)
+                .status(UserStatus.ACTIVE)
+                .emailVerifiedAt(Instant.now())
+                .build();
+        return userMapper.toUserIdentity(userRepository.save(user));
+    }
+
+    @Override
     @Transactional
     public GetUserResponse updateUser(UserIdentity identity, UpdateProfileRequest request) {
         if (identity == null) throw new NullPointerException("Identity is null");
@@ -84,7 +108,7 @@ public class UserService implements UserAccountService, UserProfileService, Stor
         User user = getUserById(identity.id());
         if (request.has("fullName")) user.setFullName(request.getFullName() == null ? null : request.getFullName().trim());
         if (request.has("phoneNumber")) user.setPhoneNumber(toE164(request.getPhoneNumber()));
-        return userMapper.toGetUserResponse(userRepository.save(user));
+        return toResponse(userRepository.save(user));
     }
 
     @Override
@@ -109,13 +133,6 @@ public class UserService implements UserAccountService, UserProfileService, Stor
         User user = getUserById(id);
         user.setEmail(normalizedEmail);
         userRepository.save(user);
-    }
-
-    @Override
-    @Transactional
-    public void deleteUser(long id) {
-        User user = getUserById(id);
-        userRepository.delete(user);
     }
 
     @Override
@@ -227,13 +244,38 @@ public class UserService implements UserAccountService, UserProfileService, Stor
     public GetUserResponse getUser(UserIdentity identity) {
         if (identity == null) throw new NullPointerException("Identity is null");
         User user = getUserById(identity.id());
-        return userMapper.toGetUserResponse(user);
+        return toResponse(user);
     }
 
     @Override
-    public PageResponse<AdminGetUserResponse> getListUser(Pageable pageable) {
+    @Transactional(readOnly = true)
+    public PageResponse<AdminGetUserResponse> getListUser(Long storeId, UserRole role, UserStatus status, Pageable pageable) {
         PaginationValidator.validateSort(pageable, USER_SORT_WHITELIST);
-        Page<User> users = userRepository.findAll(pageable);
+        Page<User> users = userRepository.search(storeId, role, status, pageable);
         return PageResponse.from(users.map(userMapper::toAdminGetUserResponse));
+    }
+
+    /**
+     * The user with the state of their store (T56), for the lock banner of the clients.
+     */
+    private GetUserResponse toResponse(User user) {
+        StoreState storeState = user.getStoreId() == null ? null : storeStateLookup.findState(user.getStoreId()).orElse(null);
+        return userMapper.toGetUserResponse(user, storeState);
+    }
+
+    @Override
+    @Transactional
+    public AdminGetUserResponse disable(long userId) {
+        User user = getUserById(userId);
+        user.setStatus(UserStatus.DISABLED);
+        return userMapper.toAdminGetUserResponse(userRepository.save(user));
+    }
+
+    @Override
+    @Transactional
+    public AdminGetUserResponse enable(long userId) {
+        User user = getUserById(userId);
+        user.setStatus(user.getEmailVerifiedAt() == null ? UserStatus.PENDING_VERIFICATION : UserStatus.ACTIVE);
+        return userMapper.toAdminGetUserResponse(userRepository.save(user));
     }
 }

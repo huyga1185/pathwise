@@ -26,6 +26,7 @@ PlanDetailResponse _$PlanDetailResponseFromJson(Map<String, dynamic> json) =>
           'totalDurationSeconds',
           'unassignedStops',
           'version',
+          'violations',
         ],
       );
       final val = PlanDetailResponse(
@@ -81,6 +82,12 @@ PlanDetailResponse _$PlanDetailResponseFromJson(Map<String, dynamic> json) =>
               .toList(),
         ),
         version: $checkedConvert('version', (v) => (v as num).toInt()),
+        violations: $checkedConvert(
+          'violations',
+          (v) => (v as List<dynamic>)
+              .map((e) => ViolationResponse.fromJson(e as Map<String, dynamic>))
+              .toList(),
+        ),
       );
       return val;
     });
@@ -105,6 +112,7 @@ Map<String, dynamic> _$PlanDetailResponseToJson(
   'totalDurationSeconds': instance.totalDurationSeconds,
   'unassignedStops': instance.unassignedStops.map((e) => e.toJson()).toList(),
   'version': instance.version,
+  'violations': instance.violations.map((e) => e.toJson()).toList(),
 };
 
 const _$PlanDetailResponseProcessingStatusEnumEnumMap = {

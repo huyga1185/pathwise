@@ -1,6 +1,7 @@
 package uk.huy.pathwise.core.exception;
 
 import lombok.extern.slf4j.Slf4j;
+import org.hibernate.exception.ConstraintViolationException;
 import org.springframework.core.env.Environment;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpHeaders;
@@ -8,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authorization.AuthorizationDeniedException;
+import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingRequestCookieException;
@@ -16,10 +18,15 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.multipart.MultipartException;
+import org.springframework.web.multipart.support.MissingServletRequestPartException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 import uk.huy.pathwise.core.ratelimit.RateLimitedException;
 
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Maps every exception raised inside Spring MVC to the error format of API_SPEC §1.
@@ -29,6 +36,7 @@ import java.util.List;
 @RestControllerAdvice
 @Slf4j
 public class GlobalExceptionHandler {
+    private static final Pattern CONSTRAINT = Pattern.compile("(?:for key|constraint) [`'\"]?([\\w.]+)");
     private final ErrorResponseFactory errors;
 
     public GlobalExceptionHandler(Environment env) {
@@ -71,9 +79,20 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler({HttpMessageNotReadableException.class,
             MissingServletRequestParameterException.class,
-            MethodArgumentTypeMismatchException.class})
+            MethodArgumentTypeMismatchException.class,
+            MissingServletRequestPartException.class,
+            MultipartException.class,
+            HttpMediaTypeNotSupportedException.class})
     public ResponseEntity<ErrorResponse> handleMalformedRequest(Exception e) {
         return errors.response(ErrorCode.MALFORMED_REQUEST, null, e);
+    }
+
+    /**
+     * Over {@code spring.servlet.multipart.max-file-size}; the only upload is the stop import (T61).
+     */
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ErrorResponse> handleMaxUploadSize(MaxUploadSizeExceededException e) {
+        return errors.response(ErrorCode.IMPORT_FILE_TOO_LARGE, null, null);
     }
 
     /**
@@ -102,8 +121,22 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<ErrorResponse> handleDataIntegrityViolation(DataIntegrityViolationException e) {
-        log.warn("Data integrity violation: {}", e.getMostSpecificCause().getMessage());
+        // Only the constraint: MariaDB's message quotes the duplicate value, which can be an email (F-46).
+        log.warn("Data integrity violation: constraint={}", constraintOf(e));
         return errors.response(ErrorCode.CONFLICT, null, e);
+    }
+
+    /**
+     * The constraint name of a violation ({@code uk_users_email} in "Duplicate entry '…' for key 'uk_users_email'"), or
+     * the exception type when the database message has none. Never the rest of the message.
+     */
+    static String constraintOf(DataIntegrityViolationException e) {
+        if (e.getCause() instanceof ConstraintViolationException violation && violation.getConstraintName() != null)
+            return violation.getConstraintName();
+        String message = e.getMostSpecificCause().getMessage();
+        Matcher key = message == null ? null : CONSTRAINT.matcher(message);
+        if (key != null && key.find()) return key.group(1);
+        return e.getMostSpecificCause().getClass().getSimpleName();
     }
 
     @ExceptionHandler(ExternalServiceException.class)

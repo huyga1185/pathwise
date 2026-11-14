@@ -7,5 +7,7 @@ public enum DropReason {
     /** The plan has no valid optimization result. */
     NOT_OPTIMIZED,
     /** The solver could not fit the stop into any route. */
-    INFEASIBLE
+    INFEASIBLE,
+    /** The dispatcher took the stop off its route after optimizing (T28, P-58). */
+    MANUAL
 }

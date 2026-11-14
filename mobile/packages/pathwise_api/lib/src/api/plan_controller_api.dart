@@ -12,10 +12,13 @@ import 'package:dio/dio.dart';
 import 'package:pathwise_api/src/model/api_response_job_response.dart';
 import 'package:pathwise_api/src/model/api_response_list_driver_location_response.dart';
 import 'package:pathwise_api/src/model/api_response_page_response_plan_summary_response.dart';
+import 'package:pathwise_api/src/model/api_response_plan_copy_response.dart';
 import 'package:pathwise_api/src/model/api_response_plan_detail_response.dart';
+import 'package:pathwise_api/src/model/copy_plan_request.dart';
 import 'package:pathwise_api/src/model/patch_stop_request.dart';
 import 'package:pathwise_api/src/model/plan_draft_request.dart';
 import 'package:pathwise_api/src/model/plan_version_request.dart';
+import 'package:pathwise_api/src/model/replace_routes_request.dart';
 
 class PlanControllerApi {
 
@@ -109,6 +112,103 @@ _responseData = rawData == null ? null : deserialize<ApiResponsePlanDetailRespon
     }
 
     return Response<ApiResponsePlanDetailResponse>(
+      data: _responseData,
+      headers: _response.headers,
+      isRedirect: _response.isRedirect,
+      requestOptions: _response.requestOptions,
+      redirects: _response.redirects,
+      statusCode: _response.statusCode,
+      statusMessage: _response.statusMessage,
+      extra: _response.extra,
+    );
+  }
+
+  /// copyPlan
+  /// 
+  ///
+  /// Parameters:
+  /// * [id] 
+  /// * [copyPlanRequest] 
+  /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
+  /// * [headers] - Can be used to add additional headers to the request
+  /// * [extras] - Can be used to add flags to the request
+  /// * [validateStatus] - A [ValidateStatus] callback that can be used to determine request success based on the HTTP status of the response
+  /// * [onSendProgress] - A [ProgressCallback] that can be used to get the send progress
+  /// * [onReceiveProgress] - A [ProgressCallback] that can be used to get the receive progress
+  ///
+  /// Returns a [Future] containing a [Response] with a [ApiResponsePlanCopyResponse] as data
+  /// Throws [DioException] if API call or serialization fails
+  Future<Response<ApiResponsePlanCopyResponse>> copyPlan({ 
+    required int id,
+    required CopyPlanRequest copyPlanRequest,
+    CancelToken? cancelToken,
+    Map<String, dynamic>? headers,
+    Map<String, dynamic>? extra,
+    ValidateStatus? validateStatus,
+    ProgressCallback? onSendProgress,
+    ProgressCallback? onReceiveProgress,
+  }) async {
+    final _path = r'/api/v1/plans/{id}/copy'.replaceAll('{' r'id' '}', id.toString());
+    final _options = Options(
+      method: r'POST',
+      headers: <String, dynamic>{
+        ...?headers,
+      },
+      extra: <String, dynamic>{
+        'secure': <Map<String, String>>[
+          {
+            'type': 'http',
+            'scheme': 'bearer',
+            'name': 'bearer',
+          },
+        ],
+        ...?extra,
+      },
+      contentType: 'application/json',
+      validateStatus: validateStatus,
+    );
+
+    dynamic _bodyData;
+
+    try {
+_bodyData=jsonEncode(copyPlanRequest);
+    } catch(error, stackTrace) {
+      throw DioException(
+         requestOptions: _options.compose(
+          _dio.options,
+          _path,
+        ),
+        type: DioExceptionType.unknown,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+
+    final _response = await _dio.request<Object>(
+      _path,
+      data: _bodyData,
+      options: _options,
+      cancelToken: cancelToken,
+      onSendProgress: onSendProgress,
+      onReceiveProgress: onReceiveProgress,
+    );
+
+    ApiResponsePlanCopyResponse? _responseData;
+
+    try {
+final rawData = _response.data;
+_responseData = rawData == null ? null : deserialize<ApiResponsePlanCopyResponse, ApiResponsePlanCopyResponse>(rawData, 'ApiResponsePlanCopyResponse', growable: true);
+    } catch (error, stackTrace) {
+      throw DioException(
+        requestOptions: _response.requestOptions,
+        response: _response,
+        type: DioExceptionType.unknown,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+
+    return Response<ApiResponsePlanCopyResponse>(
       data: _responseData,
       headers: _response.headers,
       isRedirect: _response.isRedirect,
@@ -902,6 +1002,103 @@ _responseData = rawData == null ? null : deserialize<ApiResponsePlanDetailRespon
 
     try {
 _bodyData=jsonEncode(planDraftRequest);
+    } catch(error, stackTrace) {
+      throw DioException(
+         requestOptions: _options.compose(
+          _dio.options,
+          _path,
+        ),
+        type: DioExceptionType.unknown,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+
+    final _response = await _dio.request<Object>(
+      _path,
+      data: _bodyData,
+      options: _options,
+      cancelToken: cancelToken,
+      onSendProgress: onSendProgress,
+      onReceiveProgress: onReceiveProgress,
+    );
+
+    ApiResponsePlanDetailResponse? _responseData;
+
+    try {
+final rawData = _response.data;
+_responseData = rawData == null ? null : deserialize<ApiResponsePlanDetailResponse, ApiResponsePlanDetailResponse>(rawData, 'ApiResponsePlanDetailResponse', growable: true);
+    } catch (error, stackTrace) {
+      throw DioException(
+        requestOptions: _response.requestOptions,
+        response: _response,
+        type: DioExceptionType.unknown,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+
+    return Response<ApiResponsePlanDetailResponse>(
+      data: _responseData,
+      headers: _response.headers,
+      isRedirect: _response.isRedirect,
+      requestOptions: _response.requestOptions,
+      redirects: _response.redirects,
+      statusCode: _response.statusCode,
+      statusMessage: _response.statusMessage,
+      extra: _response.extra,
+    );
+  }
+
+  /// replaceRoutes
+  /// 
+  ///
+  /// Parameters:
+  /// * [id] 
+  /// * [replaceRoutesRequest] 
+  /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
+  /// * [headers] - Can be used to add additional headers to the request
+  /// * [extras] - Can be used to add flags to the request
+  /// * [validateStatus] - A [ValidateStatus] callback that can be used to determine request success based on the HTTP status of the response
+  /// * [onSendProgress] - A [ProgressCallback] that can be used to get the send progress
+  /// * [onReceiveProgress] - A [ProgressCallback] that can be used to get the receive progress
+  ///
+  /// Returns a [Future] containing a [Response] with a [ApiResponsePlanDetailResponse] as data
+  /// Throws [DioException] if API call or serialization fails
+  Future<Response<ApiResponsePlanDetailResponse>> replaceRoutes({ 
+    required int id,
+    required ReplaceRoutesRequest replaceRoutesRequest,
+    CancelToken? cancelToken,
+    Map<String, dynamic>? headers,
+    Map<String, dynamic>? extra,
+    ValidateStatus? validateStatus,
+    ProgressCallback? onSendProgress,
+    ProgressCallback? onReceiveProgress,
+  }) async {
+    final _path = r'/api/v1/plans/{id}/routes'.replaceAll('{' r'id' '}', id.toString());
+    final _options = Options(
+      method: r'PUT',
+      headers: <String, dynamic>{
+        ...?headers,
+      },
+      extra: <String, dynamic>{
+        'secure': <Map<String, String>>[
+          {
+            'type': 'http',
+            'scheme': 'bearer',
+            'name': 'bearer',
+          },
+        ],
+        ...?extra,
+      },
+      contentType: 'application/json',
+      validateStatus: validateStatus,
+    );
+
+    dynamic _bodyData;
+
+    try {
+_bodyData=jsonEncode(replaceRoutesRequest);
     } catch(error, stackTrace) {
       throw DioException(
          requestOptions: _options.compose(

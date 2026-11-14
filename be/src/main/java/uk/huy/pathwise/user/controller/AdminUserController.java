@@ -8,9 +8,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import uk.huy.pathwise.core.pagination.PageResponse;
 import uk.huy.pathwise.core.apiresponse.ApiResponse;
+import uk.huy.pathwise.shared.identity.UserRole;
+import uk.huy.pathwise.shared.identity.UserStatus;
 import uk.huy.pathwise.user.dto.response.AdminGetUserResponse;
 import uk.huy.pathwise.user.service.UserProfileService;
 
@@ -22,7 +25,11 @@ public class AdminUserController {
 
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ApiResponse<PageResponse<AdminGetUserResponse>>> getListUser(@ParameterObject @PageableDefault(sort = "id") Pageable pageable) {
-        return ResponseEntity.ok().body(new ApiResponse<>(null, userService.getListUser(pageable)));
+    public ResponseEntity<ApiResponse<PageResponse<AdminGetUserResponse>>> getListUser(
+            @RequestParam(required = false) Long storeId,
+            @RequestParam(required = false) UserRole role,
+            @RequestParam(required = false) UserStatus status,
+            @ParameterObject @PageableDefault(sort = "id") Pageable pageable) {
+        return ResponseEntity.ok().body(new ApiResponse<>(null, userService.getListUser(storeId, role, status, pageable)));
     }
 }

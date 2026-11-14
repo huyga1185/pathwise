@@ -48,16 +48,21 @@ Please follow the [installation procedure](#installation--usage) and then run th
 import 'package:pathwise_api/pathwise_api.dart';
 
 
-final api = PathwiseApi().getAdminUserControllerApi();
+final api = PathwiseApi().getAdminAuditControllerApi();
+final int storeId = 789; // int | 
+final int actorId = 789; // int | 
+final String action = action_example; // String | 
+final String from = 2013-10-20; // String | 
+final String to = 2013-10-20; // String | 
 final int page = 56; // int | Zero-based page index (0..N)
 final int size = 56; // int | The size of the page to be returned
 final List<String> sort = ; // List<String> | Sorting criteria in the format: property,(asc|desc). Default sort order is ascending. Multiple sort criteria are supported.
 
 try {
-    final response = await api.getListUser(page, size, sort);
+    final response = await api.listEvents1(storeId, actorId, action, from, to, page, size, sort);
     print(response);
 } catch on DioException (e) {
-    print("Exception when calling AdminUserControllerApi->getListUser: $e\n");
+    print("Exception when calling AdminAuditControllerApi->listEvents1: $e\n");
 }
 
 ```
@@ -68,6 +73,19 @@ All URIs are relative to *http://localhost*
 
 Class | Method | HTTP request | Description
 ------------ | ------------- | ------------- | -------------
+[*AdminAuditControllerApi*](doc/AdminAuditControllerApi.md) | [**listEvents1**](doc/AdminAuditControllerApi.md#listevents1) | **GET** /api/v1/admin/audit | 
+[*AdminMetricsControllerApi*](doc/AdminMetricsControllerApi.md) | [**business**](doc/AdminMetricsControllerApi.md#business) | **GET** /api/v1/admin/metrics/business | 
+[*AdminMetricsControllerApi*](doc/AdminMetricsControllerApi.md) | [**technical**](doc/AdminMetricsControllerApi.md#technical) | **GET** /api/v1/admin/metrics/technical | 
+[*AdminStoreControllerApi*](doc/AdminStoreControllerApi.md) | [**getStore1**](doc/AdminStoreControllerApi.md#getstore1) | **GET** /api/v1/admin/stores/{id} | 
+[*AdminStoreControllerApi*](doc/AdminStoreControllerApi.md) | [**listStores**](doc/AdminStoreControllerApi.md#liststores) | **GET** /api/v1/admin/stores | 
+[*AdminStoreControllerApi*](doc/AdminStoreControllerApi.md) | [**lock**](doc/AdminStoreControllerApi.md#lock) | **POST** /api/v1/admin/stores/{id}/lock | 
+[*AdminStoreControllerApi*](doc/AdminStoreControllerApi.md) | [**transferOwner**](doc/AdminStoreControllerApi.md#transferowner) | **POST** /api/v1/admin/stores/{id}/owner | 
+[*AdminStoreControllerApi*](doc/AdminStoreControllerApi.md) | [**unlock**](doc/AdminStoreControllerApi.md#unlock) | **POST** /api/v1/admin/stores/{id}/unlock | 
+[*AdminUserActionControllerApi*](doc/AdminUserActionControllerApi.md) | [**disable**](doc/AdminUserActionControllerApi.md#disable) | **POST** /api/v1/admin/users/{id}/disable | 
+[*AdminUserActionControllerApi*](doc/AdminUserActionControllerApi.md) | [**enable**](doc/AdminUserActionControllerApi.md#enable) | **POST** /api/v1/admin/users/{id}/enable | 
+[*AdminUserActionControllerApi*](doc/AdminUserActionControllerApi.md) | [**revokeSessions**](doc/AdminUserActionControllerApi.md#revokesessions) | **POST** /api/v1/admin/users/{id}/sessions/revoke | 
+[*AdminUserActionControllerApi*](doc/AdminUserActionControllerApi.md) | [**sendPasswordResetLink**](doc/AdminUserActionControllerApi.md#sendpasswordresetlink) | **POST** /api/v1/admin/users/{id}/password-reset-email | 
+[*AdminUserActionControllerApi*](doc/AdminUserActionControllerApi.md) | [**sendVerificationEmail**](doc/AdminUserActionControllerApi.md#sendverificationemail) | **POST** /api/v1/admin/users/{id}/verification-email | 
 [*AdminUserControllerApi*](doc/AdminUserControllerApi.md) | [**getListUser**](doc/AdminUserControllerApi.md#getlistuser) | **GET** /api/v1/admin/users | 
 [*AuthControllerApi*](doc/AuthControllerApi.md) | [**changePassword**](doc/AuthControllerApi.md#changepassword) | **PUT** /api/v1/auth/password | 
 [*AuthControllerApi*](doc/AuthControllerApi.md) | [**forgotPassword**](doc/AuthControllerApi.md#forgotpassword) | **POST** /api/v1/auth/password/forgot | 
@@ -85,6 +103,7 @@ Class | Method | HTTP request | Description
 [*AuthControllerApi*](doc/AuthControllerApi.md) | [**verifyResetOtp**](doc/AuthControllerApi.md#verifyresetotp) | **POST** /api/v1/auth/password/reset/verify | 
 [*DriverLocationControllerApi*](doc/DriverLocationControllerApi.md) | [**recordLocations**](doc/DriverLocationControllerApi.md#recordlocations) | **POST** /api/v1/driver/location | 
 [*DriverLocationControllerApi*](doc/DriverLocationControllerApi.md) | [**updateSharing**](doc/DriverLocationControllerApi.md#updatesharing) | **PUT** /api/v1/driver/location/sharing | 
+[*DriverRouteControllerApi*](doc/DriverRouteControllerApi.md) | [**getDirections**](doc/DriverRouteControllerApi.md#getdirections) | **GET** /api/v1/driver/routes/{routeId}/directions | 
 [*DriverRouteControllerApi*](doc/DriverRouteControllerApi.md) | [**getRoute**](doc/DriverRouteControllerApi.md#getroute) | **GET** /api/v1/driver/routes/{routeId} | 
 [*DriverRouteControllerApi*](doc/DriverRouteControllerApi.md) | [**listRoutes**](doc/DriverRouteControllerApi.md#listroutes) | **GET** /api/v1/driver/routes | 
 [*DriverRouteControllerApi*](doc/DriverRouteControllerApi.md) | [**updateStopStatus**](doc/DriverRouteControllerApi.md#updatestopstatus) | **PATCH** /api/v1/driver/routes/{routeId}/stops/{stopId}/status | 
@@ -92,7 +111,10 @@ Class | Method | HTTP request | Description
 [*InvitationControllerApi*](doc/InvitationControllerApi.md) | [**acceptInvitation**](doc/InvitationControllerApi.md#acceptinvitation) | **POST** /api/v1/invitations/accept | 
 [*InvitationControllerApi*](doc/InvitationControllerApi.md) | [**previewInvitation**](doc/InvitationControllerApi.md#previewinvitation) | **GET** /api/v1/invitations/{code} | 
 [*JobControllerApi*](doc/JobControllerApi.md) | [**getJob**](doc/JobControllerApi.md#getjob) | **GET** /api/v1/jobs/{id} | 
+[*PasswordResetLinkControllerApi*](doc/PasswordResetLinkControllerApi.md) | [**resetPassword1**](doc/PasswordResetLinkControllerApi.md#resetpassword1) | **POST** /api/v1/auth/password/reset-link | 
+[*PasswordResetLinkControllerApi*](doc/PasswordResetLinkControllerApi.md) | [**sendOtp**](doc/PasswordResetLinkControllerApi.md#sendotp) | **POST** /api/v1/auth/password/reset-link/otp | 
 [*PlanControllerApi*](doc/PlanControllerApi.md) | [**cancelPlan**](doc/PlanControllerApi.md#cancelplan) | **POST** /api/v1/plans/{id}/cancel | 
+[*PlanControllerApi*](doc/PlanControllerApi.md) | [**copyPlan**](doc/PlanControllerApi.md#copyplan) | **POST** /api/v1/plans/{id}/copy | 
 [*PlanControllerApi*](doc/PlanControllerApi.md) | [**createPlan**](doc/PlanControllerApi.md#createplan) | **POST** /api/v1/plans | 
 [*PlanControllerApi*](doc/PlanControllerApi.md) | [**driverLocations**](doc/PlanControllerApi.md#driverlocations) | **GET** /api/v1/plans/{id}/driver-locations | 
 [*PlanControllerApi*](doc/PlanControllerApi.md) | [**geocodePlan**](doc/PlanControllerApi.md#geocodeplan) | **POST** /api/v1/plans/{id}/geocode | 
@@ -102,6 +124,13 @@ Class | Method | HTTP request | Description
 [*PlanControllerApi*](doc/PlanControllerApi.md) | [**patchStop**](doc/PlanControllerApi.md#patchstop) | **PATCH** /api/v1/plans/{id}/stops/{stopId} | 
 [*PlanControllerApi*](doc/PlanControllerApi.md) | [**publishPlan**](doc/PlanControllerApi.md#publishplan) | **POST** /api/v1/plans/{id}/publish | 
 [*PlanControllerApi*](doc/PlanControllerApi.md) | [**replacePlan**](doc/PlanControllerApi.md#replaceplan) | **PUT** /api/v1/plans/{id} | 
+[*PlanControllerApi*](doc/PlanControllerApi.md) | [**replaceRoutes**](doc/PlanControllerApi.md#replaceroutes) | **PUT** /api/v1/plans/{id}/routes | 
+[*PlanImportControllerApi*](doc/PlanImportControllerApi.md) | [**csvTemplate**](doc/PlanImportControllerApi.md#csvtemplate) | **GET** /api/v1/plans/import/template.csv | 
+[*PlanImportControllerApi*](doc/PlanImportControllerApi.md) | [**importStops**](doc/PlanImportControllerApi.md#importstops) | **POST** /api/v1/plans/import | 
+[*PlanImportControllerApi*](doc/PlanImportControllerApi.md) | [**xlsxTemplate**](doc/PlanImportControllerApi.md#xlsxtemplate) | **GET** /api/v1/plans/import/template.xlsx | 
+[*ReportControllerApi*](doc/ReportControllerApi.md) | [**stopsCsv**](doc/ReportControllerApi.md#stopscsv) | **GET** /api/v1/reports/stops.csv | 
+[*ReportControllerApi*](doc/ReportControllerApi.md) | [**summary**](doc/ReportControllerApi.md#summary) | **GET** /api/v1/reports/summary | 
+[*StoreAuditControllerApi*](doc/StoreAuditControllerApi.md) | [**listEvents**](doc/StoreAuditControllerApi.md#listevents) | **GET** /api/v1/store/audit | 
 [*StoreControllerApi*](doc/StoreControllerApi.md) | [**getStore**](doc/StoreControllerApi.md#getstore) | **GET** /api/v1/store | 
 [*StoreControllerApi*](doc/StoreControllerApi.md) | [**updateStore**](doc/StoreControllerApi.md#updatestore) | **PUT** /api/v1/store | 
 [*StoreInvitationControllerApi*](doc/StoreInvitationControllerApi.md) | [**createInvitation**](doc/StoreInvitationControllerApi.md#createinvitation) | **POST** /api/v1/store/invitations | 
@@ -122,7 +151,16 @@ Class | Method | HTTP request | Description
 
  - [AcceptInvitationRequest](doc/AcceptInvitationRequest.md)
  - [AdminGetUserResponse](doc/AdminGetUserResponse.md)
+ - [AdminMemberResponse](doc/AdminMemberResponse.md)
+ - [AdminStoreDetailResponse](doc/AdminStoreDetailResponse.md)
+ - [AdminStoreStateResponse](doc/AdminStoreStateResponse.md)
+ - [AdminStoreSummaryResponse](doc/AdminStoreSummaryResponse.md)
+ - [ApiResponseAdminGetUserResponse](doc/ApiResponseAdminGetUserResponse.md)
+ - [ApiResponseAdminStoreDetailResponse](doc/ApiResponseAdminStoreDetailResponse.md)
+ - [ApiResponseAdminStoreStateResponse](doc/ApiResponseAdminStoreStateResponse.md)
  - [ApiResponseAuthTokenResponse](doc/ApiResponseAuthTokenResponse.md)
+ - [ApiResponseBusinessMetricsResponse](doc/ApiResponseBusinessMetricsResponse.md)
+ - [ApiResponseDirectionsResponse](doc/ApiResponseDirectionsResponse.md)
  - [ApiResponseDriverRouteDetailResponse](doc/ApiResponseDriverRouteDetailResponse.md)
  - [ApiResponseDriverStopUpdateResponse](doc/ApiResponseDriverStopUpdateResponse.md)
  - [ApiResponseGetUserResponse](doc/ApiResponseGetUserResponse.md)
@@ -138,20 +176,37 @@ Class | Method | HTTP request | Description
  - [ApiResponseListVehicleResponse](doc/ApiResponseListVehicleResponse.md)
  - [ApiResponseMemberResponse](doc/ApiResponseMemberResponse.md)
  - [ApiResponsePageResponseAdminGetUserResponse](doc/ApiResponsePageResponseAdminGetUserResponse.md)
+ - [ApiResponsePageResponseAdminStoreSummaryResponse](doc/ApiResponsePageResponseAdminStoreSummaryResponse.md)
+ - [ApiResponsePageResponseAuditEventResponse](doc/ApiResponsePageResponseAuditEventResponse.md)
  - [ApiResponsePageResponsePlanSummaryResponse](doc/ApiResponsePageResponsePlanSummaryResponse.md)
+ - [ApiResponsePageResponseStoreAuditEventResponse](doc/ApiResponsePageResponseStoreAuditEventResponse.md)
+ - [ApiResponsePlanCopyResponse](doc/ApiResponsePlanCopyResponse.md)
  - [ApiResponsePlanDetailResponse](doc/ApiResponsePlanDetailResponse.md)
+ - [ApiResponsePlanImportResponse](doc/ApiResponsePlanImportResponse.md)
  - [ApiResponseRegisterResponse](doc/ApiResponseRegisterResponse.md)
  - [ApiResponseResetTokenResponse](doc/ApiResponseResetTokenResponse.md)
+ - [ApiResponseStoreReportResponse](doc/ApiResponseStoreReportResponse.md)
  - [ApiResponseStoreResponse](doc/ApiResponseStoreResponse.md)
+ - [ApiResponseTechnicalMetricsResponse](doc/ApiResponseTechnicalMetricsResponse.md)
+ - [ApiResponseTransferOwnerResponse](doc/ApiResponseTransferOwnerResponse.md)
  - [ApiResponseVehicleResponse](doc/ApiResponseVehicleResponse.md)
  - [AssignmentRequest](doc/AssignmentRequest.md)
+ - [AuditEventResponse](doc/AuditEventResponse.md)
  - [AuthTokenResponse](doc/AuthTokenResponse.md)
  - [AuthUserResponse](doc/AuthUserResponse.md)
+ - [BusinessMetricsResponse](doc/BusinessMetricsResponse.md)
  - [ChangePasswordRequest](doc/ChangePasswordRequest.md)
+ - [CopyPlanRequest](doc/CopyPlanRequest.md)
  - [CreateInvitationRequest](doc/CreateInvitationRequest.md)
  - [CreateVehicleRequest](doc/CreateVehicleRequest.md)
+ - [Database](doc/Database.md)
+ - [Day](doc/Day.md)
  - [DepotRequest](doc/DepotRequest.md)
  - [DepotResponse](doc/DepotResponse.md)
+ - [DirectionsDestination](doc/DirectionsDestination.md)
+ - [DirectionsInstruction](doc/DirectionsInstruction.md)
+ - [DirectionsPoint](doc/DirectionsPoint.md)
+ - [DirectionsResponse](doc/DirectionsResponse.md)
  - [Driver](doc/Driver.md)
  - [DriverLocationResponse](doc/DriverLocationResponse.md)
  - [DriverPosition](doc/DriverPosition.md)
@@ -160,23 +215,39 @@ Class | Method | HTTP request | Description
  - [DriverSharing](doc/DriverSharing.md)
  - [DriverStopResponse](doc/DriverStopResponse.md)
  - [DriverStopUpdateResponse](doc/DriverStopUpdateResponse.md)
+ - [Failures](doc/Failures.md)
+ - [FieldErrorDetail](doc/FieldErrorDetail.md)
  - [ForgotPasswordRequest](doc/ForgotPasswordRequest.md)
  - [GeocodingSummaryResponse](doc/GeocodingSummaryResponse.md)
  - [GetUserResponse](doc/GetUserResponse.md)
+ - [Group](doc/Group.md)
+ - [Http](doc/Http.md)
+ - [ImportedRowResponse](doc/ImportedRowResponse.md)
+ - [ImportedStopResponse](doc/ImportedStopResponse.md)
  - [InvitationPreviewResponse](doc/InvitationPreviewResponse.md)
  - [InvitationResponse](doc/InvitationResponse.md)
  - [JobResponse](doc/JobResponse.md)
+ - [Jobs](doc/Jobs.md)
+ - [Jvm](doc/Jvm.md)
  - [LocationBatchRequest](doc/LocationBatchRequest.md)
  - [LocationPointRequest](doc/LocationPointRequest.md)
  - [LocationResponse](doc/LocationResponse.md)
+ - [LockStoreRequest](doc/LockStoreRequest.md)
  - [LogInRequest](doc/LogInRequest.md)
+ - [MemberCountsResponse](doc/MemberCountsResponse.md)
  - [MemberResponse](doc/MemberResponse.md)
+ - [Now](doc/Now.md)
  - [PageResponseAdminGetUserResponse](doc/PageResponseAdminGetUserResponse.md)
+ - [PageResponseAdminStoreSummaryResponse](doc/PageResponseAdminStoreSummaryResponse.md)
+ - [PageResponseAuditEventResponse](doc/PageResponseAuditEventResponse.md)
  - [PageResponsePlanSummaryResponse](doc/PageResponsePlanSummaryResponse.md)
+ - [PageResponseStoreAuditEventResponse](doc/PageResponseStoreAuditEventResponse.md)
  - [PatchStopRequest](doc/PatchStopRequest.md)
  - [PlaceResponse](doc/PlaceResponse.md)
+ - [PlanCopyResponse](doc/PlanCopyResponse.md)
  - [PlanDetailResponse](doc/PlanDetailResponse.md)
  - [PlanDraftRequest](doc/PlanDraftRequest.md)
+ - [PlanImportResponse](doc/PlanImportResponse.md)
  - [PlanRouteResponse](doc/PlanRouteResponse.md)
  - [PlanStopRequest](doc/PlanStopRequest.md)
  - [PlanStopResponse](doc/PlanStopResponse.md)
@@ -185,14 +256,32 @@ Class | Method | HTTP request | Description
  - [RefreshTokenRequest](doc/RefreshTokenRequest.md)
  - [RegisterRequest](doc/RegisterRequest.md)
  - [RegisterResponse](doc/RegisterResponse.md)
+ - [ReplaceRoutesRequest](doc/ReplaceRoutesRequest.md)
+ - [ReportDay](doc/ReportDay.md)
+ - [ReportDriver](doc/ReportDriver.md)
+ - [ReportFailureReason](doc/ReportFailureReason.md)
+ - [ReportPlanCounts](doc/ReportPlanCounts.md)
+ - [ReportStopCounts](doc/ReportStopCounts.md)
  - [RequestPasswordChangeOtpRequest](doc/RequestPasswordChangeOtpRequest.md)
  - [ResendVerificationRequest](doc/ResendVerificationRequest.md)
+ - [ResetLinkOtpRequest](doc/ResetLinkOtpRequest.md)
+ - [ResetPasswordByLinkRequest](doc/ResetPasswordByLinkRequest.md)
  - [ResetPasswordRequest](doc/ResetPasswordRequest.md)
  - [ResetTokenResponse](doc/ResetTokenResponse.md)
+ - [RouteStops](doc/RouteStops.md)
  - [SessionResponse](doc/SessionResponse.md)
+ - [SkippedAssignmentResponse](doc/SkippedAssignmentResponse.md)
+ - [StoreAuditEventResponse](doc/StoreAuditEventResponse.md)
+ - [StorePeriodStatsResponse](doc/StorePeriodStatsResponse.md)
+ - [StoreReportResponse](doc/StoreReportResponse.md)
  - [StoreResponse](doc/StoreResponse.md)
+ - [Table](doc/Table.md)
+ - [TechnicalMetricsResponse](doc/TechnicalMetricsResponse.md)
  - [TimeWindowRequest](doc/TimeWindowRequest.md)
  - [TimeWindowResponse](doc/TimeWindowResponse.md)
+ - [Totals](doc/Totals.md)
+ - [TransferOwnerRequest](doc/TransferOwnerRequest.md)
+ - [TransferOwnerResponse](doc/TransferOwnerResponse.md)
  - [UpdateCanDriveRequest](doc/UpdateCanDriveRequest.md)
  - [UpdateLocationSharingRequest](doc/UpdateLocationSharingRequest.md)
  - [UpdateMemberRequest](doc/UpdateMemberRequest.md)
@@ -204,6 +293,7 @@ Class | Method | HTTP request | Description
  - [VehicleResponse](doc/VehicleResponse.md)
  - [VerifyEmailRequest](doc/VerifyEmailRequest.md)
  - [VerifyResetOtpRequest](doc/VerifyResetOtpRequest.md)
+ - [ViolationResponse](doc/ViolationResponse.md)
 
 
 ## Documentation For Authorization

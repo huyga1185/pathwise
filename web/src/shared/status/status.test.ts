@@ -32,13 +32,14 @@ const ALL: Record<StatusKind, string[]> = {
   plan: ['DRAFT', 'PUBLISHED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'],
   route: ['PENDING', 'IN_PROGRESS', 'COMPLETED'],
   stop: ['PENDING', 'DELIVERED', 'FAILED', 'SKIPPED'],
-  dropReason: ['NOT_OPTIMIZED', 'INFEASIBLE'],
+  dropReason: ['NOT_OPTIMIZED', 'INFEASIBLE', 'MANUAL'],
   geocode: ['PENDING', 'FAILED'],
   processing: ['GEOCODING', 'OPTIMIZING'],
   invitation: ['PENDING', 'ACCEPTED', 'REVOKED', 'EXPIRED'],
   member: ['PENDING_VERIFICATION', 'ACTIVE', 'DISABLED'],
   vehicle: ['ACTIVE', 'INACTIVE'],
   job: ['QUEUED', 'RUNNING', 'SUCCEEDED', 'FAILED'],
+  store: ['ACTIVE', 'READ_ONLY'],
 };
 
 describe('statusInfo', () => {

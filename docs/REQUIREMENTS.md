@@ -36,7 +36,13 @@ Mỗi user thuộc tối đa 1 store và có đúng 1 role (D-02). OWNER hoặc 
 | FR-A07 | Quên mật khẩu: OTP qua email → đặt mật khẩu mới → thu hồi mọi session. Không tiết lộ email có tồn tại hay không. | Must | ✅ (T14) |
 | FR-A08 | Đổi mật khẩu khi đã đăng nhập: mật khẩu cũ + OTP qua email; thu hồi mọi session khác. | Must | ✅ (T15) |
 | FR-A09 | Xem/cập nhật hồ sơ của chính mình (họ tên, số điện thoại VN). | Must | ✅ (`GET/PATCH /users/me`, T44) |
-| FR-A10 | ADMIN xem danh sách user (phân trang, sort whitelist). | Should | ✅ |
+| FR-A10 | ADMIN xem danh sách user (phân trang, sort whitelist). | Should | ✅ (lọc theo store/vai trò/trạng thái, đủ `storeId`, `status` từ T55) |
+| FR-A11 | ADMIN xem danh sách và chi tiết cửa hàng (số tổng, không nội dung plan/xe/điểm giao). | Should (M5, P-59) | ✅ T55 |
+| FR-A12 | ADMIN khoá cửa hàng ở chế độ chỉ đọc (tài xế vẫn giao nốt), mở khoá; khoá/mở user; buộc đăng xuất. | Should (M5) | ✅ T56 (băng trên web/app làm ở W11) |
+| FR-A13 | ADMIN hỗ trợ tài khoản: gửi lại email xác thực, email đặt lại mật khẩu, chuyển chủ cửa hàng. | Should (M5) | ✅ T57 (màn ở W11) |
+| FR-A14 | Audit log: hành động của ADMIN và hành động nhạy cảm trong cửa hàng; ADMIN xem toàn bộ, OWNER xem của cửa hàng mình. | Should (M5) | ✅ T58 (hành động ADMIN của T56, T57 thêm khi làm các task đó) |
+| FR-A15 | Tạo ADMIN đầu tiên bằng biến môi trường lúc khởi động, không qua SQL. | Should (M5) | ✅ T59 |
+| FR-A16 | ADMIN xem thông số nền tảng: nghiệp vụ (cửa hàng, user, plan, điểm giao, tối ưu) và kỹ thuật (request, lỗi, thời gian phản hồi, job, provider, JVM, DB, backup). | Should (M5) | ✅ T60 (trừ backup: theo dõi bằng script T54, P-64; màn ở W11) |
 
 ### 3.2 Cửa hàng & thành viên (D-02, D-03, D-16)
 
@@ -68,6 +74,9 @@ Mỗi user thuộc tối đa 1 store và có đúng 1 role (D-02). OWNER hoặc 
 | FR-P06 | Huỷ plan (DRAFT hoặc PUBLISHED). | Must | ✅ (T26) |
 | FR-P07 | Xem danh sách plan theo ngày/trạng thái và chi tiết plan với tiến độ từng stop. | Must | ✅ (T24): `GET /plans`, `GET /plans/{id}`; trạng thái stop đổi từ T26/T31 |
 | FR-P08 | Chỉnh tay sau tối ưu: chuyển stop giữa route, đổi thứ tự; hệ thống tính lại ETA/quãng đường và cảnh báo vi phạm ràng buộc. Endpoint có sẵn trong API contract (D-24). | Should | ❌ |
+| FR-P10 | Nhập điểm giao cho một plan từ file Excel (`.xlsx`) hoặc CSV theo file mẫu: server đọc file, trả từng dòng kèm lỗi theo cột, không lưu; dispatcher xem trước rồi thêm dòng hợp lệ vào plan. Không phải danh mục đơn hàng (D-04). | Should (M5 C, P-67) | ❌ T61, W12 |
+| FR-P11 | Sao chép plan sang ngày khác: tất cả điểm giao hoặc chỉ điểm chưa giao được, giữ toạ độ, chép phân công còn hợp lệ; plan mới là DRAFT. | Should (M5 C, P-67) | ❌ T62, W12 |
+| FR-P12 | Báo cáo của cửa hàng theo ngày hoặc khoảng ≤ 31 ngày (kế hoạch, kết quả điểm giao, theo tài xế, lý do thất bại) và xuất CSV từng điểm giao. | Should (M5 C, P-67) | ❌ T63, W12 |
 
 ### 3.5 Tài xế (D-06, D-07, D-08)
 
@@ -90,7 +99,7 @@ Mỗi user thuộc tối đa 1 store và có đúng 1 role (D-02). OWNER hoặc 
 | FR-X03 | Tối ưu bất đồng bộ (job) cho plan lớn. | Could |
 | FR-X04 | Gợi ý địa điểm đã dùng. | Idea (I-01) |
 | FR-X05 | Thanh toán QR tại điểm giao + xác thực thanh toán. | Idea (I-02) |
-| FR-X06 | Danh mục đơn hàng lâu dài, import CSV. | Không có kế hoạch (trái D-04) |
+| FR-X06 | Danh mục đơn hàng lâu dài (lưu đơn ngoài plan). Nhập file vào **một** plan là FR-P10, không thuộc mục này. | Không có kế hoạch (trái D-04) |
 
 ## 4. Business rules & invariants
 
@@ -117,6 +126,7 @@ Mỗi user thuộc tối đa 1 store và có đúng 1 role (D-02). OWNER hoặc 
 | NFR-03 Độ tin cậy | Lỗi provider ngoài (OSRM/Nominatim) trả lỗi rõ ràng (`502/503` + code), không 500 chung chung; có timeout cho HTTP client. | Bắt buộc |
 | NFR-04 Kiểm thử | Build xanh; unit test cho solver/state machine/token; integration test (Testcontainers) cho luồng auth, tenant isolation, plan lifecycle. | Bắt buộc |
 | NFR-05 Vận hành | Chạy toàn bộ stack bằng `docker compose --profile app up` (image multi-stage); dev chạy hạ tầng bằng compose và app từ IDE; cấu hình qua biến môi trường; CI build, test, quét chất lượng và push image lên GHCR; deploy thủ công theo runbook (D-30 → D-34). | Bắt buộc |
+| NFR-08 Vận hành tối thiểu (M5, P-59) | Log Docker có giới hạn dung lượng; backup DB tự động hằng đêm, giữ 7 ngày + 4 tuần, có bản ngoài VPS (S3 tương thích) và đã tập khôi phục; dữ liệu hết hạn được dọn theo lịch; cảnh báo qua email khi app không phản hồi, đĩa > 85 %, RAM thấp, container lỗi, backup thất bại. Đã làm: T51 (log), T52 (backup), T53 (dọn dữ liệu), T54 (giám sát). | Should (M5) |
 | NFR-06 Quan sát | Log có cấu trúc tối thiểu (userId, storeId, requestId); không log secret/OTP/token. | Should |
 | NFR-07 Ngôn ngữ | Email gửi người dùng bằng tiếng Việt. | Should (đề xuất, chưa phê duyệt) |
 

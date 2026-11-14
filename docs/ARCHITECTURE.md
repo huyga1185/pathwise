@@ -38,16 +38,18 @@ Package gốc `uk.huy.pathwise`. Mỗi module là một package cấp 1.
 
 | Module | Trách nhiệm | Trạng thái |
 |---|---|---|
-| `core` | Hạ tầng dùng chung, không chứa nghiệp vụ: envelope response, `ErrorCode`/`AppException`/handler, pagination, `StateStore`, `core.security` (`Hasher` SHA-256, `OpaqueTokenGenerator`; P-28), `core.phonenumber` (chuẩn hoá và validate số VN, P-29), rate limiter, cấu hình web/JSON. | Có — mở rộng |
-| `shared` | Kiểu dữ liệu chia sẻ giữa module: `UserIdentity`, `UserRole`, `UserStatus`, principal `AuthenticatedUser` (P-25). Chỉ record/enum, **không** bean. | Có — sửa |
-| `user` | Tài khoản người dùng: entity `User`, mật khẩu, hồ sơ, trạng thái. | Có — mở rộng |
-| `auth` | Xác thực: đăng ký (orchestrate user + store), đăng nhập, token (access/refresh/OTP token), OTP, session, đổi/quên mật khẩu, security filter chain. | Có — sửa |
+| `core` | Hạ tầng dùng chung, không chứa nghiệp vụ: envelope response, `ErrorCode`/`AppException`/handler, pagination, `StateStore`, `core.security` (`Hasher` SHA-256, `OpaqueTokenGenerator`; P-28), `core.phonenumber` (chuẩn hoá và validate số VN, P-29), rate limiter, `core.housekeeping` (dọn dữ liệu cũ theo lịch, §7.1; T53), `core.observability` (`FailureLog`, §10; T54; `OpsMetrics`, `RollingCounter`, `RequestMetricsFilter`, T60), cấu hình web/JSON. | Có — mở rộng |
+| `shared` | Kiểu dữ liệu chia sẻ giữa module: `UserIdentity`, `UserRole`, `UserStatus`, principal `AuthenticatedUser` (P-25). Chỉ record/enum, **không** bean. `shared.store`: `StoreStatus`, `StoreState` (T56). | Có — sửa |
+| `user` | Tài khoản người dùng: entity `User`, mật khẩu, hồ sơ, trạng thái. Port `StoreStateLookup` (implement ở `store`) để `GET /users/me` trả trạng thái cửa hàng mà không phụ thuộc `store` (P-62); `UserStatusCommand` (khoá/mở cho admin). | Có — mở rộng |
+| `auth` | Xác thực: đăng ký (orchestrate user + store), đăng nhập, token (access/refresh/OTP token), OTP, session, đổi/quên mật khẩu, security filter chain. API công khai cho admin: `SessionRevoker` (thu hồi mọi phiên của một user, T56), `AccountSupport` (gửi lại email xác thực, gửi link đặt lại mật khẩu; T57). Link đặt lại mật khẩu: `auth.resetlink` (`RedisResetLinkStore`, `auth.reset-link.ttl` 24 giờ) và `PasswordResetLinkController` công khai (P-63). | Có — sửa |
 | `notification` | Gửi email theo template (chuyển từ `auth.email.infrastructure` sang, để `store` gửi được lời mời mà không phụ thuộc `auth`). API công khai: `EmailNotificationService.send(templateName, to, variables)`, lỗi gửi là `EmailDeliveryException`. | Có (T12) |
-| `store` | Store, thành viên, lời mời. API công khai: `StoreProvisioningService.createStore(name)` (cho đăng ký, tham gia transaction của bên gọi), `StoreMemberQuery.findActiveMember(storeId, userId)` và `findMembers(storeId, ids)` (mọi trạng thái, để hiển thị), `StoreQuery.findStore(storeId)` → `StoreProfile` (depot, timezone), event `MemberDisabledEvent` (P-27, auth nghe để thu hồi session). Đọc và ghi user qua `StoreUserService` của `user`. | Có (T13, T16) |
-| `job` | Job chạy nền dùng chung (D-19, §8.4): bảng `background_jobs`, executor inline/async, khôi phục lúc khởi động, `GET /api/v1/jobs/{id}`. API công khai: `JobService` (`createJob`, `findJob`), interface `JobHandler` cho module sở hữu target implement, record `JobRef`, `JobResponse`. Không biết nghiệp vụ của target (P-31). | Có (T24 entity, T29) |
+| `store` | Store, thành viên, lời mời. API công khai: `StoreProvisioningService.createStore(name)` (cho đăng ký, tham gia transaction của bên gọi), `StoreMemberQuery.findActiveMember(storeId, userId)` và `findMembers(storeId, ids)` (mọi trạng thái, để hiển thị), `StoreQuery.findStore(storeId)` → `StoreProfile` (depot, timezone), event `MemberDisabledEvent` (P-27, auth nghe để thu hồi session). Đọc và ghi user qua `StoreUserService` của `user`. Khoá chỉ đọc (T56, P-62): `StoreLockCommand` (cho admin), implement port `user.service.StoreStateLookup`, và `StoreReadOnlyInterceptor` chặn mọi request ghi của thành viên khi cửa hàng `READ_ONLY` (trừ handler `@AllowedWhenStoreReadOnly`). Chuyển chủ (T57): `StoreOwnershipCommand` (khoá dòng store, đổi vai trò qua `StoreUserService`, email sau commit). | Có (T13, T16, T56, T57) |
+| `job` | Job chạy nền dùng chung (D-19, §8.4): bảng `background_jobs`, executor inline/async, khôi phục lúc khởi động, `GET /api/v1/jobs/{id}`. API công khai: `JobService` (`createJob`, `findJob`), interface `JobHandler` cho module sở hữu target implement, record `JobRef`, `JobResponse`. Không biết nghiệp vụ của target (P-31). `JobStatsQuery` cho admin (T60). | Có (T24 entity, T29) |
 | `fleet` | Xe. API công khai: `VehicleQuery.findActive(storeId, vehicleId)`, `listActive(storeId)`, `findAll(storeId, ids)` (cả xe đã tắt, để hiển thị) trả `FleetVehicle`. | Có (T20) |
-| `routing` | Adapter định tuyến **không có DB**: `GeocodingProvider`, `MatrixProvider`, `SolverProvider`, (Should) `DirectionsProvider`; endpoint geocoding search. Thay cho `routeoptimizer` (đã xoá ở T27). | Có — geocoding (T21), matrix (T22), solver (T23) |
-| `planning` | Route plan, route, stop; geocode nền, optimize, publish, trạng thái; API cho dispatcher **và** API cho driver; vị trí tài xế. | Có — draft CRUD (T24), geocode nền (T29); T25+ |
+| `routing` | Adapter định tuyến **không có DB**: `GeocodingProvider`, `MatrixProvider`, `SolverProvider`, `DirectionsProvider`; endpoint geocoding search. Thay cho `routeoptimizer` (đã xoá ở T27). | Có — geocoding (T21), matrix (T22), solver (T23), directions (T33) |
+| `planning` | Route plan, route, stop; geocode nền, optimize, publish, trạng thái; API cho dispatcher **và** API cho driver; vị trí tài xế. Nhập điểm giao từ file (T61, P-67): `PlanImportService` chỉ đọc file và kiểm bằng validation của `PlanStopRequest`; `planning.infrastructure.sheet` bọc thư viện đọc file sau interface `SheetReader` (`XlsxSheetReader` dùng Apache POI, giải nén thử trước, tối đa 10 MB; `CsvSheetReader` tự viết, UTF-8 hoặc Windows-1258) và `ImportTemplateWriter` (file mẫu); cột ở `model.ImportColumn`. Sao chép plan: `PlanCopyService` (T62). Báo cáo cửa hàng: `ReportController` (`/api/v1/reports`), `StoreReportService` đọc plan theo `planDate` (T63). | Có — draft CRUD (T24), geocode nền (T29); T25+ |
+| `admin` | Khu quản trị nền tảng cho ADMIN (P-59, P-60): `/api/v1/admin/stores` (T55), sau này khoá, hỗ trợ, audit, thông số (T56–T58, T60). Không có bảng riêng ở T55; `GET /admin/audit` (T58) đọc qua `AuditQuery`; `GET /admin/metrics/*` (T60): số nghiệp vụ ghép từ `StoreDirectoryQuery`, `UserDirectoryQuery`, `PlanStatsQuery`, `JobStatsQuery` (cache `RedisMetricsCacheStore` 60 s), số kỹ thuật từ `core.observability.OpsMetrics` và `DatabaseStatsReader` (`information_schema`, Hikari); ghép số liệu từ `StoreDirectoryQuery` (store), `UserDirectoryQuery` (user), `VehicleQuery.countActiveByStore` (fleet), `PlanStatsQuery` (planning). Chỉ số tổng và tài khoản thành viên, không nội dung cửa hàng. | Có (T55) |
+| `audit` | Nhật ký thao tác (T58, P-61): bảng `audit_events`. API công khai: `AuditLog.record(AuditEntry)` (gọi trong transaction của thao tác; tự thêm thời điểm, requestId từ MDC, IP từ request; cắt `details` quá 2000 ký tự), `AuditQuery.search(AuditFilter, Pageable)`; enum `AuditAction` (chỉ thêm), `AuditTargetType`. Không biết nghiệp vụ của module gọi; dọn sau 1 năm (`AuditRetention`). | Có (T58) |
 
 ### 2.1 Quy tắc phụ thuộc giữa module (bắt buộc)
 
@@ -55,12 +57,14 @@ Package gốc `uk.huy.pathwise`. Mỗi module là một package cấp 1.
 core, shared  ←  mọi module
 user          →  (core, shared)
 notification  →  (core)
-store         →  user, notification
+store         →  user, notification, audit
 auth          →  user, store, notification
 fleet         →  (core, shared)
 routing       →  (core)
 job           →  (core, shared)
-planning      →  store, fleet, routing, job
+audit         →  (core, shared)                (P-61)
+planning      →  store, fleet, routing, job, audit
+admin         →  store, user, fleet, planning, audit, auth, job   (P-60, P-61, P-62, P-65)
 ```
 
 - **Không có vòng phụ thuộc.** `user` không biết `auth`/`store`; `routing` không biết `planning`.
@@ -156,12 +160,17 @@ Session = refresh token family (`family_id`). Đăng xuất = revoke family. "Đ
 
 Race đã biết (F-29): request refresh đồng thời trong grace 3 s có thể dẫn tới đăng xuất ở lần refresh sau. Chấp nhận trong MVP; client nên serialize refresh (một refresh tại một thời điểm).
 
+### 6.2a ADMIN đầu tiên (T59)
+
+`auth.service.AdminBootstrapService` chạy ở `ApplicationReadyEvent`: có `bootstrap.admin.email` (`BOOTSTRAP_ADMIN_EMAIL`) và chưa có ADMIN nào (`UserAccountService.adminExists`, tính cả ADMIN bị khoá) thì tạo một ADMIN đã xác thực qua `UserAccountService.createAdmin`. Không có mật khẩu thì dùng mật khẩu ngẫu nhiên (`OpaqueTokenGenerator`) và gửi OTP `RESET_PASSWORD` sau khi đã tạo (ngoài transaction). Cấu hình sai chỉ log lỗi, không dừng app; không bao giờ log mật khẩu. Nhiều instance cùng khởi động: unique email chặn bản thứ hai (`EMAIL_EXISTED`, log rồi bỏ qua).
+
 ### 6.3 Authorization (P-08)
 
 Hai lớp, **cả hai bắt buộc**:
 
 1. **Role** — `@PreAuthorize` ở controller.
 2. **Tenant + ownership** — ở service: mọi truy vấn dữ liệu store dùng `actor.storeId()`; DRIVER chỉ truy cập route có `driver_id = actor.id()`. Không tìm thấy trong store của actor → **404** (không tiết lộ tồn tại).
+3. **Cửa hàng bị khoá** (T56, P-62) — trước handler: `StoreReadOnlyInterceptor` trả 423 `STORE_READ_ONLY` cho mọi request ghi của thành viên cửa hàng `READ_ONLY`; endpoint được phép ghi khi khoá phải gắn `@AllowedWhenStoreReadOnly` (tài khoản cá nhân, việc của tài xế). Endpoint ghi mới **mặc định bị chặn**.
 
 | Hành động | ADMIN | OWNER | DISPATCHER | DRIVER |
 |---|---|---|---|---|
@@ -203,6 +212,13 @@ ADMIN không có `storeId` và **không** truy cập API của store trong MVP.
   - Refresh token: giữ pessimistic lock khi rotate.
   - Đăng ký/mời trùng email: dựa vào unique constraint; `DataIntegrityViolationException` → 409 `EMAIL_EXISTED`.
   - OTP: atomic trong Lua; reset token: GETDEL.
+
+### 7.1 Dọn dữ liệu cũ (`core.housekeeping`, T53, P-59)
+
+- `HousekeepingScheduler` (`@Scheduled`, `housekeeping.cron`/`zone`) gọi `HousekeepingService.run()`: lấy khoá Redis `housekeeping:lock` (`HousekeepingLock`, TTL `housekeeping.lock-ttl`) nên nhiều instance chỉ một lần chạy; không lấy được thì bỏ lượt.
+- `core` không biết bảng của module nào. Mỗi module sở hữu bảng implement `core.housekeeping.RetentionTask` (`name()`, `purge(cutoff)`, transaction riêng trong task) và xoá bằng repository của mình: `auth` (`RefreshTokenRetention`), `job` (`JobRetention`), `store` (`InvitationRetention`). `cutoff = now − housekeeping.retention.<name>`; quy tắc giữ ở DATA_MODEL §6.
+- Ngoại lệ có chủ đích: câu xoá của `JobRetention` đọc `route_plans.active_job_id` (`NOT EXISTS`) vì cột này có FK tới `background_jobs`; không có điều kiện đó, một job còn được plan trỏ tới làm cả lệnh xoá lỗi. Chỉ là điều kiện SQL, `job` không dùng entity hay repository của `planning`.
+- Task mới (ví dụ `audit_events` của T58) chỉ cần thêm một bean `RetentionTask` và một dòng `housekeeping.retention`.
 
 ## 8. Routing, geocoding, optimization
 
@@ -273,6 +289,7 @@ DRAFT ──optimize(job)──▶ DRAFT có kết quả ──publish──▶ 
 |---|---|---|
 | `GeocodingProvider.search(query, limit)` | Nominatim (`countrycodes=vn`) với `CachingGeocodingProvider` (Redis 24 giờ) bọc ngoài và rate limiter dùng chung (P-11). Cấu hình `routing.geocoding.nominatim.base-url`, `.user-agent`, `.connect-timeout`, `.read-timeout`, `routing.geocoding.nominatim.rate-limit.enabled`, `.per-second`, `.max-wait` (D-25), `routing.geocoding.cache-ttl`. Redis lỗi thì fail-closed (500), không coi là cache miss, vì rate limiter cũng cần Redis. Rate limiter (`RedisRequestThrottle`) đặt slot bằng Lua `ReserveThrottleSlot.lua`: một round trip atomic trả về thời gian phải chờ tới slot của mình, theo thứ tự đến và theo đồng hồ Redis, nên không polling và không tranh slot; chờ quá `max-wait` thì không đặt slot (trade-off kỹ thuật như Lua verify OTP: logic gắn với Redis, chỉ test bằng Testcontainers). | Google (I-03) |
 | `MatrixProvider.matrix(points)` → `TravelMatrix(distanceMeters, durationSeconds)` (int) | OSRM table `annotations=distance,duration`. Cấu hình `routing.matrix.provider`, `routing.matrix.osrm.base-url`, `.user-agent`, `.profile`, `.max-table-size`, `.connect-timeout`, `.read-timeout`. Ô `null` (không có đường) hay response thiếu → 502 `ROUTING_PROVIDER_ERROR`. Server OSRM giới hạn số điểm (`--max-table-size`): quá `max-table-size` điểm thì app chia thành khối `max-table-size / 2` và lấy từng cặp khối bằng `sources`/`destinations` (F-41), nên giá trị cấu hình phải khớp server. | Google Distance Matrix (I-03) |
+| `DirectionsProvider.directions(from, to)` → `Directions` (khoảng cách, thời gian, `polyline` mã hoá độ chính xác 6, bước với `Maneuver` của PathWise) | OSRM route `overview=full`, `geometries=polyline6`, `steps=true`; `type`/`modifier` của OSRM đổi sang enum (P-57). Cấu hình `routing.directions.provider`, `routing.directions.osrm.base-url` (mặc định bằng của matrix), `.user-agent`, `.profile`, `.connect-timeout`, `.read-timeout`. `code` khác `Ok` (kể cả `NoRoute`), không đúng một route một chặng có bước, hay số đo hỏng → 502 `ROUTING_PROVIDER_ERROR`. Gọi bởi `DriverDirectionsService` ngoài transaction, không cache, rate limit `directions-user` (T33). | Google Directions (I-03) |
 | `SolverProvider.solve(VrpProblem)` → `VrpSolution` | OR-Tools (`OrToolsVrpSolver`, T23). Cấu hình `routing.solver.provider`, `routing.solver.time-limit`. | — |
 | `DirectionsProvider.route(coords)` (Should) | OSRM route `steps=true&overview=full&geometries=polyline6`, cache theo route và version | — |
 
@@ -291,8 +308,10 @@ Chọn implementation bằng property (`routing.geocoding.provider=nominatim`), 
 
 - Secret chỉ qua biến môi trường (`SPRING_DATASOURCE_PASSWORD`, `SPRING_MAIL_PASSWORD`, `TOKEN_JWT_ACCESS_TOKEN_SECRET`...). `application-dev.yaml` gitignored; cung cấp `application-dev.example.yaml` không có secret (T05).
 - JWT secret ≥ 256 bit, Base64.
-- `ClientDetailFilter` chỉ đọc `request.getRemoteAddr()`. Profile `staging`/`prod` bật `server.forward-headers-strategy=native`: Tomcat áp `X-Forwarded-For`/`-Proto` chỉ khi request tới từ proxy ở dải IP nội bộ (`server.tomcat.remoteip.internal-proxies`), nên client không giả được IP (T41, P-38).
+- `ClientDetailFilter` chỉ đọc `request.getRemoteAddr()`. Profile `staging`/`prod` bật `server.forward-headers-strategy=native`: Tomcat áp `X-Forwarded-For`/`-Proto` chỉ khi request tới từ proxy ở dải IP nội bộ (`server.tomcat.remoteip.internal-proxies`), nên client không giả được IP (T41, P-38). Caddy (W08) gửi app đúng một `X-Forwarded-For` là IP client nó tính được: chỉ tin `CF-Connecting-IP`/`X-Forwarded-For` của proxy trong `PATHWISE_TRUSTED_PROXIES` (Cloudflare khi domain đi qua Cloudflare), không thì là địa chỉ bên kết nối (F-59, DEPLOYMENT §8.3).
 - Log: SLF4J, không `System.out`; MDC `requestId` (`core.web.LogContextFilter`, chạy trước security chain, UUID tự sinh, trả trong header `X-Request-Id`), `userId`, `storeId` (`JwtAuthFilter` sau khi xác thực); pattern ở `logging.pattern.level`. Job nền chạy ở thread khác nên không có MDC của request. **Cấm log** mật khẩu, OTP, token, ticket, refresh token, secret.
+- Lỗi vận hành (T54, P-59) báo qua `core.observability.FailureLog` (một chỗ, để T60 thêm bộ đếm Micrometer sau interface này): một dòng cố định `failure source=<EMAIL|ROUTING|GEOCODING|JOB> operation=<…> reason=<…> [key=value…]` trên logger `uk.huy.pathwise.failure`, WARN (ERROR kèm stack trace khi lỗi không lường trước). Nơi báo: `DefaultEmailSender` (`smtp.send`, reason `send_failed`/`authentication_failed`/`invalid_message`, chỉ giữ tên lớp của nguyên nhân vì thông báo của SMTP có thể chứa email người nhận); decorator `routing.infrastructure.failure.FailureLogging*Provider` bọc provider trong `MatrixConfig`/`DirectionsConfig`/`GeocodingConfig` (`osrm.table`, `osrm.route`, `nominatim.search`; reason `unreachable`/`http_<status>`/`bad_response`; `GEOCODING_BUSY` là giới hạn của ta nên không báo; geocoding đặt dưới cache và không ghi địa chỉ tìm); `JobExecutor`/`JobRecovery` (operation là loại job, reason là `errorCode`, kèm `jobId`). Không truyền dữ liệu cá nhân vào `FailureLog`.
+- Thông số kỹ thuật (T60, P-65): `core.observability.OpsMetrics` giữ trong bộ nhớ các bộ đếm cuộn theo phút 24 giờ (`RollingCounter`): request và 4xx/5xx (`RequestMetricsFilter`, chạy ngay sau `LogContextFilter`, nhóm theo đoạn đầu sau `/api/v1`), lỗi theo `FailureSource` (do `LoggingFailureLog` đếm), số lần bị rate limit (`RedisRateLimiter`); thời gian phản hồi theo nhóm là timer Micrometer `pathwise.http.requests` có p95 cửa sổ khoảng 1 giờ. Về 0 khi app khởi động lại; nhiều instance thì mỗi instance một số. Các bean phụ thuộc `OpsMetrics` qua `ObjectProvider` để slice `@WebMvcTest` vẫn chạy.
 - Security headers: mặc định của Spring Security cộng `Referrer-Policy: no-referrer` (P-38).
 
 ## 11. Chiến lược kiểm thử
@@ -301,7 +320,7 @@ Chọn implementation bằng property (`routing.geocoding.provider=nominatim`), 
 |---|---|---|
 | Unit | JUnit 5 + Mockito + AssertJ | Service (business rule, quyền), manager token/OTP, solver (ma trận nhỏ cố định, kiểm tra capacity/time window/drop), state machine plan/stop, mapper có logic. |
 | Web slice | `@WebMvcTest` + `@Import(SecurityConfig.class)` + `@MockitoBean AccessTokenManager` (stub token → `AccessTokenVerification.Authenticated(new AuthenticatedUser(...))`, gửi header `Authorization: Bearer …` để đi qua filter thật). Mẫu: `GeocodingControllerTest`, `ErrorHandlingWebMvcTest`. Controller có DTO dùng custom validator thì `@Import` thêm bean mà validator cần (ví dụ `PhoneNumberProcessor`), nếu không validator lỗi và test có thể pass sai lý do (500). | Mỗi controller: validation → 400 + code, chưa đăng nhập → 401, sai role → 403, happy path, cookie/header web vs mobile. |
-| Integration | `@SpringBootTest` + **Testcontainers** MariaDB + Redis (P-21); `EmailSender` thay bằng fake lưu email để đọc OTP; `GeocodingProvider` thay bằng `FakeGeocodingProvider` (`@Primary` trong `AbstractIntegrationTest`, T29); `MatrixProvider` thay bằng `FakeMatrixProvider` (khoảng cách đường thẳng, 10 m/s; T25); solver OR-Tools thật với `routing.solver.time-limit: 1s` ở profile test; chờ job async bằng Awaitility | Luồng auth đầy đủ, Lua OTP, Flyway migrate, tenant isolation, plan lifecycle end-to-end, optimistic lock. |
+| Integration | `@SpringBootTest` + **Testcontainers** MariaDB + Redis (P-21), qua `support.AbstractIntegrationTest` (`@Import` `TestcontainersConfiguration`, `FakeServicesConfiguration`; F-35); `EmailSender` thay bằng fake lưu email để đọc OTP; `GeocodingProvider` thay bằng `FakeGeocodingProvider` (`@Primary` trong `AbstractIntegrationTest`, T29); `MatrixProvider` thay bằng `FakeMatrixProvider` (khoảng cách đường thẳng, 10 m/s; T25); `DirectionsProvider` thay bằng `FakeDirectionsProvider` (đường thẳng, ghi lại lần gọi và việc có đang trong transaction không; T33); solver OR-Tools thật với `routing.solver.time-limit: 1s` ở profile test; chờ job async bằng Awaitility | Luồng auth đầy đủ, Lua OTP, Flyway migrate, tenant isolation, plan lifecycle end-to-end, optimistic lock. |
 | Hợp đồng provider | `MockRestServiceServer` | Parse response/lỗi Nominatim, OSRM (đã có, giữ). |
 
 Quy tắc:
@@ -343,6 +362,9 @@ Cách dùng:
 - Thêm `--profile routing`: chạy kèm OSRM và Nominatim local. App trỏ tới chúng qua `ROUTING_GEOCODING_NOMINATIM_BASE_URL`, `ROUTING_MATRIX_OSRM_BASE_URL`, và đặt `...RATE_LIMIT_ENABLED=false`.
 - `.env.example` liệt kê mọi biến môi trường (không chứa secret thật). File `.env` được gitignore.
 - `compose.prod.yaml`: dùng cho VPS, gồm `app` (image từ `ghcr.io`, không build tại chỗ), `mariadb`, `redis`, không có mailpit, dùng SMTP thật qua env. App kết nối DB bằng user riêng (không phải root); chỉ cổng app được publish, ở `127.0.0.1`. HTTPS và web dispatcher qua Caddy (W08, P-56): `compose.web.yaml` (container `web`, image `pathwise-web`) hoặc Caddy trên host với `deploy/caddy/Caddyfile`; cookie `Secure` yêu cầu HTTPS.
+- Mọi service trong mọi file compose có `logging` chung (`x-logging`: `json-file`, `LOG_MAX_SIZE` × `LOG_MAX_FILE`, mặc định 10 MB × 3; T51, P-59) để log không làm đầy đĩa VPS.
+- `compose.backup.yaml` (T52, P-59): `backup` (image `mariadb:11.8`, dump hằng đêm, nén, mã hoá tuỳ chọn, xoay vòng ngày/tuần, file trạng thái) và `backup-offsite` (image `rclone/rclone`, chép lên bucket S3 tương thích khi có cấu hình). Không build image riêng: script nằm trong `command` như `compose.routing.yaml`.
+- Giám sát (T54, P-59): không có service giám sát trong compose. Health công khai `/actuator/health` qua Caddy cho uptime bên ngoài; script host `deploy/monitor/pathwise-monitor.sh` chạy bằng cron (đĩa, RAM, container, health, file trạng thái backup) và gửi email qua SMTP của app bằng `curl` (DEPLOYMENT §9).
 
 ### 12.3 GitHub Actions
 
@@ -352,7 +374,7 @@ Cách dùng:
 | `quality.yml` | `pull_request` | `actions/dependency-review-action` (chặn dependency mới có lỗ hổng high trở lên); `gitleaks` quét secret. |
 | `image.yml` | `push` lên `develop`; tag `v*` | Build image multi-stage (Buildx, cache GHA), quét bằng **Trivy** (fail khi có lỗ hổng CRITICAL đã có bản sửa), push lên `ghcr.io/<owner>/pathwise`; matrix build thêm `ghcr.io/<owner>/pathwise-web` (`web/Dockerfile`, W08) cùng tag. Tag cho `develop`: `develop`, `develop-<shortsha>`. Tag cho `v*`: `x.y.z`, `x.y`, `latest`. Dùng `GITHUB_TOKEN` với quyền `packages: write`, không cần secret khác. |
 | `release.yml` | GitHub Release được publish | Build web, đính `pathwise-web-<tag>.tar.gz` (`app/` + `Caddyfile`) vào release cho Caddy trên host (W08, P-56). Quyền `contents: write`. |
-| `dependabot.yml` | theo lịch hằng tuần | Ecosystem `maven`, `github-actions`, `docker`. Gộp PR: Maven minor/patch thành một PR, GitHub Actions thành một PR. Không đề xuất đổi phiên bản Java của Docker image (bỏ qua major `eclipse-temurin` và image `maven`). |
+| `dependabot.yml` | theo lịch hằng tuần | Ecosystem `maven`, `github-actions`, `docker`, `npm` (`/web`), `pub` (`/mobile`; gói sinh `packages/pathwise_api` không theo dõi). Gộp PR: Maven, web, mobile minor/patch mỗi ecosystem một PR, GitHub Actions thành một PR; web và mobile `cooldown` 14 ngày. Không đề xuất đổi phiên bản Java của Docker image (bỏ qua major `eclipse-temurin` và image `maven`). |
 
 - **Thay đổi chỉ đụng docs** (`docs/**`, `*.md`, `LICENSE`): job `ci` và `dependency-review` bị skip (composite action `.github/actions/detect-code-changes`; job skip vẫn đạt check bắt buộc `ci`, còn lọc ở trigger thì check không bao giờ báo và PR bị kẹt); `image` lọc bằng `paths-ignore` ở trigger (không phải check bắt buộc, tag `v*` luôn build). `gitleaks` luôn chạy. Không xác định được thay đổi thì vẫn chạy đủ.
 - Không có workflow deploy (D-31). Chủ dự án deploy thủ công theo `docs/DEPLOYMENT.md`: `docker compose -f compose.prod.yaml pull && up -d`.

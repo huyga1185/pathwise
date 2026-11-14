@@ -26,6 +26,20 @@ final driverRouteProvider = FutureProvider.autoDispose.family<DriverRouteDetailR
   return response.data!.data;
 }, retry: _noRetry);
 
+/// Why the caller's store is locked by an ADMIN (`GET /users/me`, T56), or null when it is not. A locked store still
+/// lets the driver report results and send the location (P-59): the route screen only shows a banner. An error is
+/// treated as not locked: the banner is information, never a reason to stop delivering.
+final storeLockProvider = FutureProvider.autoDispose<String?>((ref) async {
+  try {
+    final response = await guard(() => ref.watch(apiClientProvider).api.getUserControllerApi().getUserProfile());
+    final user = response.data!.data;
+    if (user.storeStatus != GetUserResponseStoreStatusEnum.READ_ONLY) return null;
+    return user.storeLockReason ?? '';
+  } on Object {
+    return null;
+  }
+}, retry: _noRetry);
+
 /// The three results a driver reports; none can be undone (P-34).
 enum StopResult {
   delivered('DELIVERED'),

@@ -5,6 +5,8 @@ import { LogoMark } from './icons';
 export interface NavItem {
   to: string;
   label: string;
+  /** Active only on this exact path, not on its children ("/admin"). */
+  end?: boolean;
 }
 
 export interface AppHeaderProps {
@@ -42,6 +44,7 @@ export function AppHeader({
             <NavLink
               key={item.to}
               to={item.to}
+              end={item.end}
               className={({ isActive }) => (isActive ? 'pw-nav-link pw-nav-link-active' : 'pw-nav-link')}
             >
               {item.label}

@@ -7,6 +7,10 @@ import 'package:pathwise_api/src/auth/api_key_auth.dart';
 import 'package:pathwise_api/src/auth/basic_auth.dart';
 import 'package:pathwise_api/src/auth/bearer_auth.dart';
 import 'package:pathwise_api/src/auth/oauth.dart';
+import 'package:pathwise_api/src/api/admin_audit_controller_api.dart';
+import 'package:pathwise_api/src/api/admin_metrics_controller_api.dart';
+import 'package:pathwise_api/src/api/admin_store_controller_api.dart';
+import 'package:pathwise_api/src/api/admin_user_action_controller_api.dart';
 import 'package:pathwise_api/src/api/admin_user_controller_api.dart';
 import 'package:pathwise_api/src/api/auth_controller_api.dart';
 import 'package:pathwise_api/src/api/driver_location_controller_api.dart';
@@ -14,7 +18,11 @@ import 'package:pathwise_api/src/api/driver_route_controller_api.dart';
 import 'package:pathwise_api/src/api/geocoding_controller_api.dart';
 import 'package:pathwise_api/src/api/invitation_controller_api.dart';
 import 'package:pathwise_api/src/api/job_controller_api.dart';
+import 'package:pathwise_api/src/api/password_reset_link_controller_api.dart';
 import 'package:pathwise_api/src/api/plan_controller_api.dart';
+import 'package:pathwise_api/src/api/plan_import_controller_api.dart';
+import 'package:pathwise_api/src/api/report_controller_api.dart';
+import 'package:pathwise_api/src/api/store_audit_controller_api.dart';
 import 'package:pathwise_api/src/api/store_controller_api.dart';
 import 'package:pathwise_api/src/api/store_invitation_controller_api.dart';
 import 'package:pathwise_api/src/api/store_member_controller_api.dart';
@@ -72,6 +80,30 @@ class PathwiseApi {
     }
   }
 
+  /// Get AdminAuditControllerApi instance, base route and serializer can be overridden by a given but be careful,
+  /// by doing that all interceptors will not be executed
+  AdminAuditControllerApi getAdminAuditControllerApi() {
+    return AdminAuditControllerApi(dio);
+  }
+
+  /// Get AdminMetricsControllerApi instance, base route and serializer can be overridden by a given but be careful,
+  /// by doing that all interceptors will not be executed
+  AdminMetricsControllerApi getAdminMetricsControllerApi() {
+    return AdminMetricsControllerApi(dio);
+  }
+
+  /// Get AdminStoreControllerApi instance, base route and serializer can be overridden by a given but be careful,
+  /// by doing that all interceptors will not be executed
+  AdminStoreControllerApi getAdminStoreControllerApi() {
+    return AdminStoreControllerApi(dio);
+  }
+
+  /// Get AdminUserActionControllerApi instance, base route and serializer can be overridden by a given but be careful,
+  /// by doing that all interceptors will not be executed
+  AdminUserActionControllerApi getAdminUserActionControllerApi() {
+    return AdminUserActionControllerApi(dio);
+  }
+
   /// Get AdminUserControllerApi instance, base route and serializer can be overridden by a given but be careful,
   /// by doing that all interceptors will not be executed
   AdminUserControllerApi getAdminUserControllerApi() {
@@ -114,10 +146,34 @@ class PathwiseApi {
     return JobControllerApi(dio);
   }
 
+  /// Get PasswordResetLinkControllerApi instance, base route and serializer can be overridden by a given but be careful,
+  /// by doing that all interceptors will not be executed
+  PasswordResetLinkControllerApi getPasswordResetLinkControllerApi() {
+    return PasswordResetLinkControllerApi(dio);
+  }
+
   /// Get PlanControllerApi instance, base route and serializer can be overridden by a given but be careful,
   /// by doing that all interceptors will not be executed
   PlanControllerApi getPlanControllerApi() {
     return PlanControllerApi(dio);
+  }
+
+  /// Get PlanImportControllerApi instance, base route and serializer can be overridden by a given but be careful,
+  /// by doing that all interceptors will not be executed
+  PlanImportControllerApi getPlanImportControllerApi() {
+    return PlanImportControllerApi(dio);
+  }
+
+  /// Get ReportControllerApi instance, base route and serializer can be overridden by a given but be careful,
+  /// by doing that all interceptors will not be executed
+  ReportControllerApi getReportControllerApi() {
+    return ReportControllerApi(dio);
+  }
+
+  /// Get StoreAuditControllerApi instance, base route and serializer can be overridden by a given but be careful,
+  /// by doing that all interceptors will not be executed
+  StoreAuditControllerApi getStoreAuditControllerApi() {
+    return StoreAuditControllerApi(dio);
   }
 
   /// Get StoreControllerApi instance, base route and serializer can be overridden by a given but be careful,

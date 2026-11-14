@@ -5,13 +5,12 @@
 > Cột "Hiện trạng" ở mọi bảng: ✅ khớp spec và có test · 🟡 có nhưng còn lệch (ghi rõ lệch gì) · ❌ chưa có. Lịch sử triển khai theo task nằm ở `CURRENT_STATE.md` §5, không ghi ở đây.
 > Lần rà soát contract gần nhất: T44 (2026-10-29, P-32).
 
-## 0. Lệch hiện tại so với spec (cập nhật 2026-11-10, sau T32)
+## 0. Lệch hiện tại so với spec (cập nhật 2026-11-14, sau T63)
 
-- `GET /admin/users` chưa trả `storeId`, `status`.
-- §7: chưa có `routes` (T28).
-- §8: chưa có `directions` (T33).
+- Không còn lệch nào đã biết giữa endpoint và spec (`GET /admin/users` đủ `storeId`, `status` từ T55).
+- Request không phải `multipart/form-data` gửi tới endpoint nhận file, hoặc `Content-Type` không được hỗ trợ, trả 400 `MALFORMED_REQUEST` (T61; trước đó rơi vào handler chung).
 - Tài liệu OpenAPI sinh tự động (`/v3/api-docs` ở dev/staging; CI xuất artifact `api-contract` gồm `openapi.json` và dữ liệu mẫu) dùng để sinh code client; endpoint (method + path) được kiểm tự động khớp spec (`ApiSpecContractIntegrationTest`). Từ T46 (P-48): mã thành công đúng như spec (201, 202, 204); field response luôn có mặt là `required`, field có thể `null` có kiểu kèm `null`; field của request PATCH gửi `null` để xoá có kiểu kèm `null`. Response thật được kiểm khớp schema đó (`OpenApiNullabilityIntegrationTest`, trên `docs/ux/samples` và các response tài khoản). OpenAPI chưa mô tả response lỗi (dùng §1 và §9). Spec này vẫn là hợp đồng; hướng dẫn cho client ở `docs/ux/UX_BRIEF.md`.
-- Endpoint vận hành ngoài `/api/v1`, giữ có chủ đích: `GET /actuator/health` (kèm `/liveness`, `/readiness`), Public, chỉ trả `status` và tên các `groups` (T05, `ARCHITECTURE.md` §12.1). Mọi endpoint actuator khác tắt.
+- Endpoint vận hành ngoài `/api/v1`, giữ có chủ đích: `GET /actuator/health` (kèm `/liveness`, `/readiness`), Public, chỉ trả `status` và tên các `groups` (T05, `ARCHITECTURE.md` §12.1). Mọi endpoint actuator khác tắt. Caddy chỉ mở `/actuator/health` (không mở `/liveness`, `/readiness`) ra internet cho dịch vụ uptime bên ngoài (T54, DEPLOYMENT §9).
 
 ## 1. Quy ước chung
 
@@ -46,8 +45,14 @@
 - 404: tài nguyên trên path không tồn tại hoặc thuộc store khác → `NOT_FOUND`. Mã 404 riêng chỉ dùng khi client phải xử lý khác đi (P-24), hiện chỉ có `INVITATION_INVALID` (P-32).
 - Mã HTTP chuẩn: JSON hỏng hoặc giá trị enum lạ → 400 `MALFORMED_REQUEST`; path không tồn tại → 404 `NOT_FOUND`; sai method → 405 `METHOD_NOT_ALLOWED`; vi phạm ràng buộc DB không có mã riêng → 409 `CONFLICT`.
 
+**Cửa hàng bị khoá** (T56, P-59, P-62)
+- Khi cửa hàng `READ_ONLY` (ADMIN khoá, §3a), mọi request ghi (POST, PUT, PATCH, DELETE) của thành viên → **423 `STORE_READ_ONLY`**, kiểm trước cả validation và quyền theo đối tượng. Đọc vẫn bình thường.
+- Vẫn ghi được: tài khoản cá nhân (`/auth/*`: đăng xuất, phiên, đổi mật khẩu; `PATCH /users/me`) và việc của tài xế để giao nốt (`PATCH /driver/routes/{routeId}/stops/{stopId}/status`, `POST /driver/location`, `PUT /driver/location/sharing`).
+- `POST /invitations/accept` (công khai) cho lời mời của cửa hàng bị khoá → 423; mã mời vẫn dùng được sau khi mở khoá.
+- Client biết trạng thái qua `GET /users/me` (`storeStatus`, `storeLockReason`) để hiện băng "Cửa hàng đang tạm khoá: {lý do}".
+
 **Rate limit** (P-16, P-37)
-- Áp dụng cho `POST /auth/log-in` (theo IP và email), `/auth/register` (IP), `/auth/email/verify/resend` và `/auth/password/forgot` (IP và email), `/auth/password/change/otp` (user), `POST /store/invitations` (store). Fixed window; ngưỡng ở `rate-limit.rules.*`, mặc định ghi ở P-37. Mọi request đều được đếm, kể cả thành công, và được đếm trước khi xử lý.
+- Áp dụng cho `POST /auth/log-in` (theo IP và email), `/auth/register` (IP), `/auth/email/verify/resend` và `/auth/password/forgot` (IP và email), `/auth/password/change/otp` (user), `POST /store/invitations` (store), `POST /plans/import` (user, T61). Fixed window; ngưỡng ở `rate-limit.rules.*`, mặc định ghi ở P-37. Mọi request đều được đếm, kể cả thành công, và được đếm trước khi xử lý.
 - Vượt ngưỡng → 429 `RATE_LIMITED`, header `Retry-After` = số giây tới khi hết window (làm tròn lên). `/email/verify/resend`, `/password/forgot` vẫn trả 429 với email không tồn tại, nên không lộ email nào đã đăng ký.
 - Không kiểm được giới hạn (Redis lỗi) → 503 `SERVICE_UNAVAILABLE` (fail-closed); client thử lại sau.
 
@@ -75,6 +80,8 @@
 | `POST /password/forgot` | P | `{email}` | 204 (khi không bị giới hạn); gửi OTP `RESET_PASSWORD` nếu email ACTIVE | 429 `RATE_LIMITED` | ✅ |
 | `POST /password/reset/verify` | P | `{email, otp}` | 200 `{resetToken, expiresAt}` | 400 `INVALID_OTP` | ✅ |
 | `POST /password/reset` | P | `{resetToken, newPassword}` | 204; revoke **mọi** session | 400 `INVALID_RESET_TOKEN` (P-26) | ✅ |
+| `POST /password/reset-link/otp` | P | `{token}` (token trong link ADMIN gửi, T57) | 204; gửi OTP `RESET_PASSWORD` về email của tài khoản (không trả email); link vẫn dùng được | 400 `INVALID_RESET_TOKEN` (link sai, hết hạn, đã dùng, tài khoản không còn ACTIVE) · 429 `OTP_COOLDOWN` · 429 `RATE_LIMITED` | ✅ (T57) |
+| `POST /password/reset-link` | P | `{token, otp, newPassword}` (8–72) | 204; đổi mật khẩu, revoke **mọi** session, link hết hiệu lực | 400 `INVALID_RESET_TOKEN` · 400 `INVALID_OTP` (link vẫn dùng được) | ✅ (T57) |
 | `POST /password/change/otp` | A | `{currentPassword}` | 204; gửi OTP `CHANGE_PASSWORD` | 400 `INVALID_CURRENT_PASSWORD` · 429 `OTP_COOLDOWN` · 429 `RATE_LIMITED` | ✅ |
 | `PUT /password` | A | `{otp, newPassword}` | 204; revoke mọi session **khác** | 400 `INVALID_OTP` | ✅ |
 
@@ -100,6 +107,7 @@ Ghi chú:
 - `DELETE /sessions/{sessionId}`: session của chính user. Nếu là session hiện tại thì xử lý **như `/log-out`** (204, `no-store`, web xoá cookie); client bỏ token như sau khi log-out. Session của user khác, không tồn tại, đã thu hồi hoặc hết hạn → 404.
 - `POST /sessions/revoke-others`: access token cấp trước khi có claim `sid` thì thu hồi mọi session.
 - `resetToken` là chuỗi opaque, hạn 10 phút, dùng một lần (lần thử đầu tiên tiêu thụ token, kể cả khi sai). `/password/reset` đổi mật khẩu và thu hồi mọi session trong một transaction.
+- **Link đặt lại mật khẩu do ADMIN gửi** (T57, P-63): email chứa `{app-url}/app/reset-password?token=…` (token 43 ký tự, **không chứa email**), mở được trong 24 giờ (`auth.reset-link.ttl`), mỗi user chỉ một link còn hiệu lực (link mới thay link cũ). Có link vẫn phải nhập OTP gửi về chính email đó (`/reset-link/otp`, hạn 5 phút, chờ 60 s giữa hai lần) mới đổi được mật khẩu. Trang không bao giờ biết email.
 - `/password/change/otp`: sai mật khẩu hiện tại → 400 và không gửi email; gửi email lỗi → 500 `INTERNAL_ERROR` (cooldown đã được xoá nên gọi lại được ngay). `PUT /password`: OTP gắn userId của người gọi; session hiện tại vẫn refresh được.
 - OTP: 6 chữ số; sai quá 3 lần → OTP huỷ, phải xin mã mới.
 
@@ -109,13 +117,115 @@ Ghi chú:
 |---|---|---|---|---|---|
 | `GET /users/me` | A | — | `User` | — | ✅ |
 | `PATCH /users/me` | A | merge patch `{fullName?, phoneNumber?}`; `null` xoá giá trị | 200 `User` | 400 (`FULL_NAME_REQUIRED` khi chuỗi trắng, `INVALID_FULL_NAME_LENGTH` ≤ 100, `PHONE_NUMBER_*`) | ✅ |
-| `GET /admin/users` | AD | paging; sort `id`, `email`, `createdAt`, `updatedAt` | Page `{id, email, phoneNumber, role, storeId, status, createdAt, updatedAt}` | 400 `INVALID_SORT_FIELD` | 🟡 chưa trả `storeId`, `status` |
+| `GET /admin/users` | AD | `storeId?`, `role?` (`ADMIN\|OWNER\|DISPATCHER\|DRIVER`), `status?` (`PENDING_VERIFICATION\|ACTIVE\|DISABLED`), paging; sort `id` (mặc định), `email`, `createdAt`, `updatedAt` | Page `{id, email, phoneNumber, role, storeId, status, createdAt, updatedAt}`; `storeId` là `null` với ADMIN | 400 `INVALID_SORT_FIELD` · 400 `MALFORMED_REQUEST` (giá trị enum sai) | ✅ (lọc và `storeId`, `status` từ T55) |
+| `POST /admin/users/{id}/disable` | AD | — | 200 `{id, email, phoneNumber, role, storeId, status: DISABLED, createdAt, updatedAt}`; thu hồi mọi phiên; ghi `USER_DISABLED` | 404 · 422 `CANNOT_MODIFY_SELF` (tự khoá mình, nên luôn còn ADMIN) | ✅ (T56) |
+| `POST /admin/users/{id}/enable` | AD | — | 200 như trên; `status` về `ACTIVE`, hoặc `PENDING_VERIFICATION` nếu email chưa từng xác thực; ghi `USER_ENABLED` | 404 | ✅ (T56) |
+| `POST /admin/users/{id}/sessions/revoke` | AD | — | 204; mọi refresh token bị thu hồi (buộc đăng xuất; access token cũ hết hạn trong ≤ 15 phút); ghi `USER_SESSIONS_REVOKED` | 404 | ✅ (T56) |
+| `POST /admin/users/{id}/verification-email` | AD | — | 204; gửi lại OTP `VERIFY_EMAIL` cho tài khoản chờ xác thực (đếm chung giới hạn gửi lại theo email); ghi `VERIFICATION_EMAIL_SENT` | 404 · 409 `EMAIL_ALREADY_VERIFIED` · 403 `ACCOUNT_DISABLED` · 429 `OTP_COOLDOWN`, `RATE_LIMITED` · 500 khi gửi email lỗi | ✅ (T57) |
+| `POST /admin/users/{id}/password-reset-email` | AD | — | 204, không trả gì (ADMIN không thấy link, mã hay mật khẩu); gửi email link đặt lại mật khẩu (§2, P-63); ghi `PASSWORD_RESET_LINK_SENT` | 404 · 403 `ACCOUNT_DISABLED` · 403 `EMAIL_NOT_VERIFIED` (tài khoản chờ xác thực: dùng `verification-email`) · 429 `RATE_LIMITED` (đếm chung với Quên mật khẩu theo email) · 500 khi gửi email lỗi (link bị huỷ) | ✅ (T57) |
 
 ```jsonc
 // User
 { "id": 12, "email": "a@b.vn", "fullName": "An", "phoneNumber": "+84905123456", "role": "OWNER", "storeId": 3,
-  "status": "ACTIVE", "canDrive": false }   // canDrive luôn true với DRIVER (D-21)
+  "status": "ACTIVE", "canDrive": false,     // canDrive luôn true với DRIVER (D-21)
+  "storeStatus": "ACTIVE", "storeLockReason": null }   // T56: trạng thái cửa hàng của user; cả hai null với ADMIN
 ```
+
+## 3a. Quản trị (ADMIN) — `/api/v1/admin/stores`, `/api/v1/admin/audit`, `/api/v1/admin/metrics`
+
+Module `admin` (P-60). ADMIN chỉ thấy **số tổng và tài khoản thành viên**, không thấy nội dung của cửa hàng: không depot, plan, xe, điểm giao, người nhận, tên hay số điện thoại của thành viên (P-59, BR-01).
+
+| Method & path | Quyền | Request | Response | Lỗi chính | Hiện trạng |
+|---|---|---|---|---|---|
+| `GET /admin/stores` | AD | `q?` (chứa trong tên cửa hàng **hoặc** email OWNER, không phân biệt hoa thường; `%`, `_` khớp đúng ký tự), `status?` (`ACTIVE\|READ_ONLY`), paging; sort `id` (mặc định), `name`, `createdAt` | Page `AdminStoreSummary` | 400 `INVALID_SORT_FIELD` · 400 `MALFORMED_REQUEST` | ✅ (T55) |
+| `GET /admin/stores/{id}` | AD | — | `AdminStoreDetail`; ghi nhật ký `STORE_VIEWED` (T58, P-61) | 404 `NOT_FOUND` | ✅ (T55) |
+| `POST /admin/stores/{id}/lock` | AD | `{reason}` (bắt buộc, cắt khoảng trắng, ≤ 500) | 200 `{id, status: READ_ONLY, lockReason, lockedAt}`; khoá lại thì thay lý do; ghi `STORE_LOCKED` | 400 `LOCK_REASON_REQUIRED`, `INVALID_LOCK_REASON_LENGTH` · 404 | ✅ (T56) |
+| `POST /admin/stores/{id}/unlock` | AD | — | 200 `{id, status: ACTIVE, lockReason: null, lockedAt: null}`; cửa hàng đang ACTIVE thì không đổi, không ghi nhật ký; ghi `STORE_UNLOCKED` | 404 | ✅ (T56) |
+| `POST /admin/stores/{id}/owner` | AD | `{userId}` (thành viên ACTIVE của cửa hàng) | 200 `{storeId, ownerId, ownerEmail, ownerCanDrive, previousOwnerId, previousOwnerEmail}`; OWNER cũ thành DISPATCHER và bị đăng xuất mọi nơi; DRIVER thành OWNER thì `canDrive = true`; email báo cả chủ mới và chủ cũ (thư cho chủ cũ không nêu chủ mới); ghi `STORE_OWNER_TRANSFERRED` (P-63) | 404 (cửa hàng không có, user không thuộc cửa hàng) · 400 `VALIDATION_ERROR` trên `userId`: `USER_ID_REQUIRED`, `NEW_OWNER_NOT_ACTIVE`, `ALREADY_OWNER` | ✅ (T57) |
+| `GET /admin/audit` | AD | `storeId?`, `actorId?`, `action?` (`AuditAction`), `from?`, `to?` (`YYYY-MM-DD`, cả hai ngày tính, giờ Asia/Ho_Chi_Minh), paging; sort `occurredAt` (mặc định, mới nhất trước), `id` | Page `AuditEvent` | 400 `INVALID_SORT_FIELD` · 400 `MALFORMED_REQUEST` | ✅ (T58) |
+| `GET /admin/metrics/business` | AD | `from?`, `to?` (`YYYY-MM-DD`, cả hai ngày tính, giờ Asia/Ho_Chi_Minh; mặc định 30 ngày tới hôm nay; tối đa 92 ngày) | `BusinessMetrics` (cache ~60 s, `computedAt`) | 400 `VALIDATION_ERROR` trên `from`: `INVALID_DATE_RANGE`, `DATE_RANGE_TOO_LONG` | ✅ (T60) |
+| `GET /admin/metrics/technical` | AD | — | `TechnicalMetrics` (số của instance đang chạy) | — | ✅ (T60) |
+
+```jsonc
+// AdminStoreSummary
+{ "id": 3, "name": "Tiệm Hoa", "ownerEmail": "chu@tiem.vn", "status": "ACTIVE", "createdAt": "2026-11-01T02:00:00Z",
+  "memberCounts": { "owners": 1, "dispatchers": 2, "drivers": 5 },
+  "vehicles": 4, "plans": 37, "lastActivityAt": "2026-11-14T09:12:30.123456Z" }   // null khi chưa có plan
+
+// AdminStoreDetail = AdminStoreSummary, thêm:
+{ "lockReason": null, "lockedAt": null,            // có giá trị khi READ_ONLY (T56)
+  "timezone": "Asia/Ho_Chi_Minh",
+  "last30Days": { "since": "2026-10-15T09:20:00Z", "plansCreated": 22, "plansPublished": 20, "plansCompleted": 19,
+                  "stopsDelivered": 410, "stopsFailed": 12, "stopsSkipped": 3, "deliveredRate": 0.9647 },  // null khi chưa có kết quả
+  "members": [ { "id": 12, "email": "chu@tiem.vn", "role": "OWNER", "status": "ACTIVE", "createdAt": "2026-11-01T02:00:00Z" } ] }
+```
+
+Ghi chú:
+- `memberCounts` đếm thành viên mọi trạng thái; `members` liệt kê theo id, mọi trạng thái. `vehicles` chỉ đếm xe đang dùng (`active`). `plans` đếm plan mọi trạng thái.
+- `lastActivityAt` (P-60): mốc mới nhất giữa plan được tạo hoặc sửa (`route_plans.updated_at`) và tài xế báo kết quả điểm giao (`status_updated_at`).
+- `last30Days`: từ `since` (= lúc gọi − 30 ngày) tới nay. Plan đếm theo thời điểm tạo, publish, hoàn thành; điểm giao đếm theo lúc tài xế báo kết quả. `deliveredRate` = delivered / (delivered + failed + skipped), làm tròn 4 chữ số.
+- Store không tồn tại → 404. OWNER, DISPATCHER, DRIVER → 403.
+
+**Thông số nền tảng (T60, P-64, FR-A16).** Chỉ số tổng, không nội dung cửa hàng.
+
+```jsonc
+// BusinessMetrics: từ DB, theo ngày ở `timezone`
+{ "from": "2026-10-16", "to": "2026-11-14", "timezone": "Asia/Ho_Chi_Minh", "computedAt": "2026-11-14T03:00:00Z",
+  "now": { "stores": 12, "activeStores7d": 8, "activeStores30d": 10, "lockedStores": 1,   // hoạt động = có plan publish
+           "admins": 1, "owners": 12, "dispatchers": 9, "drivers": 40 },                 // user mọi trạng thái
+  "totals": { "newStores": 3, "plansCreated": 210, "plansPublished": 200, "plansCompleted": 190,
+              "stopsDelivered": 4100, "stopsFailed": 120, "stopsSkipped": 30,
+              "deliveredRate": 0.9647, "failedRate": 0.0282, "skippedRate": 0.0071,          // 0–1; null khi chưa có kết quả
+              "optimizations": 260, "optimizationsFailed": 4, "optimizationFailureRate": 0.0154 },
+  "days": [ { "date": "2026-10-16", "newStores": 0, "plansCreated": 7, "plansPublished": 7, "plansCompleted": 6,
+              "stopsDelivered": 140, "stopsFailed": 4, "stopsSkipped": 1, "optimizations": 9, "optimizationsFailed": 0 } ] }  // đủ mọi ngày, kể cả 0
+
+// TechnicalMetrics: request, lỗi, rate limit là của instance này từ `startedAt` (về 0 khi app khởi động lại)
+{ "startedAt": "2026-11-14T01:00:00Z", "uptimeSeconds": 7200, "measuredAt": "2026-11-14T03:00:00Z",
+  "http": { "requestsPerMinute": 12.4,      // trung bình 15 phút gần nhất
+            "requestsLastHour": 744, "clientErrorRate": 0.012, "serverErrorRate": 0.0,   // trên request của 60 phút; null khi chưa có
+            "groups": [ { "group": "plans", "requestsLastHour": 320, "p95Millis": 85.3 } ] },  // group = đoạn đầu sau /api/v1; p95 khoảng 1 giờ gần nhất
+  "jobs": { "unfinished": 0, "failedLast24h": 1 },                 // từ DB
+  "failuresLast24h": { "email": 0, "routing": 1, "geocoding": 0, "job": 1 },   // FailureLog (T54)
+  "rateLimitedLast24h": 3,
+  "jvm": { "heapUsedBytes": 180000000, "heapMaxBytes": 402653184 },
+  "database": { "activeConnections": 1, "idleConnections": 9, "maxConnections": 10, "sizeBytes": 52428800,
+                "largestTables": [ { "name": "route_plan_stops", "bytes": 20971520, "rows": 41000 } ] } }   // 5 bảng lớn nhất; rows là ước lượng
+```
+
+- Không có tuổi bản backup: script giám sát T54 đã cảnh báo backup cũ (chủ dự án chọn, P-64).
+- Số lần tối ưu lấy từ job; job được giữ 100 ngày (T53, P-64) nên biểu đồ 90 ngày đủ dữ liệu.
+
+**Nhật ký thao tác (T58, P-61, FR-A14).** Mỗi thao tác dưới ghi đúng một dòng, trong cùng transaction với thay đổi (thao tác lỗi thì không có dòng nào); giữ 1 năm (DATA_MODEL §6).
+
+| `action` | Ai làm | `targetType` | `details` |
+|---|---|---|---|
+| `MEMBER_UPDATED` | OWNER, `PATCH /store/members/{userId}` khi có field thật sự đổi | `USER` | `{email, changes: {role?\|status?\|canDrive?: {from, to}}}` |
+| `INVITATION_REVOKED` | OWNER, `POST /store/invitations/{id}/revoke` | `INVITATION` | `{email, role}` |
+| `PLAN_PUBLISHED` | OWNER/DISPATCHER, `POST /plans/{id}/publish` | `PLAN` | `{}` |
+| `PLAN_CANCELLED` | OWNER/DISPATCHER, `POST /plans/{id}/cancel` | `PLAN` | `{from}` (trạng thái trước khi huỷ) |
+| `PLAN_ROUTES_EDITED` | OWNER/DISPATCHER, `PUT /plans/{id}/routes` | `PLAN` | `{violations}` (số vi phạm sau khi chỉnh) |
+| `STORE_VIEWED` | ADMIN, `GET /admin/stores/{id}` (danh sách thì không) | `STORE` | `{}` |
+| `STORE_LOCKED` | ADMIN, `POST /admin/stores/{id}/lock` | `STORE` | `{reason}` |
+| `STORE_UNLOCKED` | ADMIN, `POST /admin/stores/{id}/unlock` | `STORE` | `{reason}` (lý do của lần khoá vừa gỡ) |
+| `USER_DISABLED` | ADMIN, `POST /admin/users/{id}/disable` | `USER` | `{email}` |
+| `USER_ENABLED` | ADMIN, `POST /admin/users/{id}/enable` | `USER` | `{email, status}` |
+| `USER_SESSIONS_REVOKED` | ADMIN, `POST /admin/users/{id}/sessions/revoke` | `USER` | `{email}` |
+| `VERIFICATION_EMAIL_SENT` | ADMIN, `POST /admin/users/{id}/verification-email` | `USER` | `{email}` |
+| `PASSWORD_RESET_LINK_SENT` | ADMIN, `POST /admin/users/{id}/password-reset-email` | `USER` | `{email}` |
+| `STORE_OWNER_TRANSFERRED` | ADMIN, `POST /admin/stores/{id}/owner` | `USER` (chủ mới) | `{from, to}` (email chủ cũ, chủ mới) |
+
+```jsonc
+// AuditEvent
+{ "id": 91, "occurredAt": "2026-11-14T03:12:45.123456Z", "actorId": 12, "actorEmail": "chu@tiem.vn", "actorRole": "OWNER",
+  "storeId": 3, "action": "MEMBER_UPDATED", "targetType": "USER", "targetId": 15,
+  "details": { "email": "taixe@tiem.vn", "changes": { "status": { "from": "ACTIVE", "to": "DISABLED" } } },
+  "requestId": "6f1c…", "ip": "203.0.113.7" }   // requestId, ip null ngoài HTTP request
+```
+
+- `details` không chứa dữ liệu cá nhân ngoài email; quá 2000 ký tự thì thành `{"truncated": "<đầu chuỗi JSON>"}` và thao tác vẫn thành công.
+- Hành động trên user ghi kèm `storeId` của user đó, nên OWNER thấy ADMIN đã làm gì với thành viên của mình.
+- Danh sách `action` chỉ được thêm; client gặp giá trị lạ thì hiện mã.
 
 ## 4. Store — `/api/v1/store`, `/api/v1/invitations`
 
@@ -131,8 +241,9 @@ Store luôn là store của actor (không có `storeId` trong path).
 | `POST /store/invitations` | O | `{email, role: DISPATCHER\|DRIVER}` | 201 `Invitation`; gửi email mã mời | 409 `EMAIL_EXISTED` · 429 `RATE_LIMITED` | ✅ |
 | `GET /store/invitations` | O | query `status?` | `[Invitation]` | — | ✅ |
 | `POST /store/invitations/{id}/revoke` | O | — | 204; lời mời thành `REVOKED`, vẫn có trong danh sách | 404 · 422 `INVITATION_NOT_PENDING` | ✅ |
+| `GET /store/audit` | O | `actorId?`, `action?`, `from?`, `to?` (`YYYY-MM-DD`, cả hai ngày tính, theo `timezone` của cửa hàng), paging; sort `occurredAt` (mặc định, mới nhất trước), `id` | Page `StoreAuditEvent` = `AuditEvent` bỏ `storeId`; `ip` là `null` với hành động của ADMIN (P-59) | 400 `INVALID_SORT_FIELD` · 400 `MALFORMED_REQUEST` | ✅ (T58) |
 | `GET /invitations/{code}` | P | — | `{storeName, email, role, expiresAt}` | 404 `INVITATION_INVALID` | ✅ |
-| `POST /invitations/accept` | P | `{code, password, fullName, phoneNumber?}` | 204 (user ACTIVE, email đã xác thực; sau đó log-in) | 404 `INVITATION_INVALID` · 409 `EMAIL_EXISTED` · 400 `INVALID_PHONE_NUMBER` | ✅ |
+| `POST /invitations/accept` | P | `{code, password, fullName, phoneNumber?}` | 204 (user ACTIVE, email đã xác thực; sau đó log-in) | 404 `INVITATION_INVALID` · 409 `EMAIL_EXISTED` · 400 `INVALID_PHONE_NUMBER` · 423 `STORE_READ_ONLY` (cửa hàng bị khoá, T56) | ✅ |
 
 ```jsonc
 // Store
@@ -149,6 +260,7 @@ Ghi chú:
 - `PATCH /store/members/{userId}`: OWNER chỉ đổi được `canDrive`; đổi `role`/`status` của OWNER → 422 `CANNOT_MODIFY_OWNER`. Giá trị enum ngoài danh sách → 400 `MALFORMED_REQUEST`.
 - Lời mời hết hạn sau 7 ngày (D-27). Lời mời PENDING đã quá `expiresAt` được trả với `status: EXPIRED` (lọc `status=EXPIRED` cũng tính chúng). Mời lại cùng email → lời mời PENDING cũ thành `REVOKED`. Email đã thuộc một tài khoản bất kỳ → 409 `EMAIL_EXISTED` (D-02).
 - `POST /store/invitations`: gửi email lỗi vẫn 201; OWNER mời lại để gửi mã mới.
+- Lời mời chưa nhận đã hết hạn hoặc bị huỷ quá 90 ngày bị xoá (T53, DATA_MODEL §6): không còn trong `GET /store/invitations`. Lời mời `ACCEPTED` giữ lại.
 - `POST /invitations/accept`: mọi mã không dùng được (không tồn tại, đã dùng, đã huỷ, hết hạn) → 404 `INVITATION_INVALID`; `phoneNumber` sai → 400 `INVALID_PHONE_NUMBER`, lời mời vẫn PENDING. Ở endpoint này chuỗi `phoneNumber` rỗng được coi là không có số (F-43).
 
 ## 5. Fleet — `/api/v1/vehicles`
@@ -182,6 +294,7 @@ Ghi chú:
 ```
 
 - `startedAt`, `finishedAt` là `null` khi chưa tới bước đó.
+- Job đã kết thúc quá 100 ngày bị xoá (T53; 100 ngày từ T60, DATA_MODEL §6), trừ job còn là job hiện tại của plan: `GET /jobs/{id}` của job đó → 404.
 - Plan về `processingStatus = IDLE` ngay trước khi job ghi trạng thái cuối, nên với job chạy nền có thể có một khoảng rất ngắn plan đã `IDLE` mà job vẫn `RUNNING` (F-45). Client theo dõi job thì polling `GET /jobs/{id}` tới khi `status` là `SUCCEEDED` hoặc `FAILED`; client theo dõi plan thì dừng khi `processingStatus = IDLE`.
 - `errorCode` khi `FAILED`: `ROUTING_PROVIDER_ERROR`, `GEOCODING_PROVIDER_ERROR`, `INTERRUPTED` (app khởi động lại khi job còn `QUEUED`/`RUNNING`), `JOB_QUEUE_FULL` (hàng đợi job nền đầy, thử lại sau) (P-30), `PLAN_MODIFIED` (plan đổi trong lúc optimize), `NO_SOLUTION` (solver không tìm được lời giải nào, P-33) hoặc `INTERNAL_ERROR`. Job lỗi thì plan quay về `processingStatus = IDLE` và kết quả tối ưu cũ giữ nguyên.
 
@@ -201,7 +314,11 @@ Ghi chú:
 | `POST /plans/{id}/publish` | O, D | `{version}` | 200 `PlanDetail` (PUBLISHED) | 404 · 409 `PLAN_MODIFIED`/`PLAN_BUSY` · 422 `PLAN_NOT_EDITABLE` · 422 `PLAN_NOT_OPTIMIZED` · 422 `INVALID_ASSIGNMENT` · 422 `SHIFT_OVERLAP` | ✅ |
 | `POST /plans/{id}/cancel` | O, D | `{version}` | 200 `PlanDetail` (CANCELLED) | 404 · 409 `PLAN_MODIFIED`/`PLAN_BUSY` · 422 `PLAN_NOT_CANCELLABLE` | ✅ |
 | `GET /plans/{id}/driver-locations` | O, D | — | `DriverLocation[]` (xem dưới, P-53): mỗi route có stop một phần tử, theo thứ tự `routes`; plan không PUBLISHED/IN_PROGRESS → `[]` | 404 | ✅ |
-| `PUT /plans/{id}/routes` | O, D | `{version, routes:[{routeId, stopIds:[...]}], unassignedStopIds:[...]}`. Chỉnh tay, tính lại ETA và quãng đường (Should, D-24). | 200 `PlanDetail`, có `violations[]` (hình dạng chốt ở T28) | 409 · 422 | ❌ T28 |
+| `PUT /plans/{id}/routes` | O, D | `{version, routes:[{routeId, stopIds:[...]}], unassignedStopIds:[...]}`. Chỉnh tay sau optimize: chuyển stop giữa route, đổi thứ tự, bỏ ra ngoài; tính lại ETA và quãng đường bằng matrix, không giải lại (Should, D-24, P-58). | 200 `PlanDetail` (có `violations[]`) | 400 · 404 · 409 `PLAN_MODIFIED`/`PLAN_BUSY` · 422 `PLAN_NOT_EDITABLE` · 422 `PLAN_NOT_OPTIMIZED` · 502 `ROUTING_PROVIDER_ERROR` | ✅ T28 |
+| `POST /plans/{id}/copy` | O, D | `{planDate, name?, stops: ALL\|NOT_DELIVERED}` (T62, P-67, P-68) | 201 `PlanCopy` `{plan: PlanDetail (DRAFT mới), skippedAssignments: [{driverId, vehicleId, reason}]}` | 400 · 404 · 422 `NOTHING_TO_COPY` · 423 `STORE_READ_ONLY` | ✅ T62 |
+| `POST /plans/import` | O, D | `multipart/form-data`, phần `file`: `.xlsx` (sheet đầu) hoặc `.csv`, ≤ 1 MB, ≤ 100 dòng (T61, P-67, P-68) | 200 `PlanImport` (xem dưới). **Không lưu gì.** | 400 `MALFORMED_REQUEST` (thiếu `file`, không phải multipart) · 413 `IMPORT_FILE_TOO_LARGE` · 422 `INVALID_IMPORT_FILE` · 422 `PLAN_TOO_LARGE` · 423 `STORE_READ_ONLY` · 429 `RATE_LIMITED` | ✅ T61 |
+| `GET /plans/import/template.xlsx` | O, D | — | 200 file mẫu Excel (`Content-Disposition: attachment`), một dòng tiêu đề và một dòng ví dụ, mọi ô là chữ | — | ✅ T61 |
+| `GET /plans/import/template.csv` | O, D | — | 200 file mẫu CSV UTF-8 có BOM, cùng nội dung | — | ✅ T61 |
 
 **Vị trí tài xế (T32, P-15, D-26, P-53):** dispatcher polling cùng nhịp với `GET /plans/{id}` khi plan đang giao.
 
@@ -238,6 +355,10 @@ Ghi chú:
     // MVP: start/end của route = depot của plan. Sau này có thể thêm "start"/"end" riêng cho từng route (D-20).
   ]
 }
+// Violation (một phần tử của PlanDetail.violations, T28, P-58)
+{ "code": "CAPACITY_EXCEEDED|TIME_WINDOW_MISSED|SHIFT_EXCEEDED|MAX_DISTANCE_EXCEEDED",
+  "routeId": 11, "stopId": 101,   // stopId chỉ có với TIME_WINDOW_MISSED, null với code khác
+  "excess": 3 }                   // vượt bao nhiêu: theo capacityUnit của xe (CAPACITY), giây (TIME_WINDOW: tới muộn hơn time window end; SHIFT: về muộn hơn shiftEnd), mét (MAX_DISTANCE)
 // PlanSummary (một phần tử của GET /plans)
 { "id": 7, "name": "…", "planDate": "2026-10-22", "status": "DRAFT", "processingStatus": "IDLE", "version": 3,
   "stopCount": 30, "routeCount": 2, "optimizedAt": "…|null", "totalDistanceMeters": 52340, "totalDurationSeconds": 9800,
@@ -258,7 +379,8 @@ Ghi chú:
       "plannedStart": "…", "plannedEnd": "…", "load": 31,   // theo capacityUnit của xe (D-36); null khi chưa optimize
       "stops": [ PlanStop, … ] }                            // theo sequence
   ],
-  "unassignedStops": [ PlanStop, … ]   // stop chưa gán route: plan chưa optimize, hoặc solver đã bỏ (P-13); theo id
+  "unassignedStops": [ PlanStop, … ],  // stop chưa gán route: plan chưa optimize, solver đã bỏ (P-13), hoặc dispatcher bỏ ra (T28); theo id
+  "violations": [ Violation, … ]       // ràng buộc bị vi phạm sau khi chỉnh tay (T28, P-58); rỗng khi không có
 }
 // PlanStop (cùng một dạng trong routes[].stops và unassignedStops)
 { "id": 101, "sequence": 1, "label": "ĐH-1024", "recipientName": "Chị Lan", "recipientPhone": "+84905…",
@@ -267,13 +389,14 @@ Ghi chú:
   "geocodedDisplayName": "…|null", "demands": { "BOX": 3 }, "serviceTimeSeconds": 300,
   "timeWindow": { "start": "09:00", "end": "11:00" } | null, "note": "…", "plannedArrival": "…|null",
   "status": "PENDING|DELIVERED|FAILED|SKIPPED", "failureReason": null,
-  "dropReason": "NOT_OPTIMIZED|INFEASIBLE|null" }   // null trong route
+  "dropReason": "NOT_OPTIMIZED|INFEASIBLE|MANUAL|null" }   // null trong route
 ```
 
 `PlanDetail`:
 - `routes` theo id. `PUT` tạo lại mọi route từ `assignments`, nên id route đổi sau mỗi `PUT`; client tải lại `PlanDetail` sau khi `PUT`.
 - `routes[].driver` (`fullName`, `role`) và `routes[].vehicle.name` là giá trị hiện tại, kể cả khi thành viên đã bị vô hiệu hoá hay xe đã tắt; `vehicle.capacity`, `vehicle.capacityUnit` là snapshot lúc phân công.
-- `PlanStop.demands` chỉ có các loại khác 0. `dropReason`: `NOT_OPTIMIZED` khi plan chưa có kết quả tối ưu, `INFEASIBLE` khi solver không xếp được.
+- `PlanStop.demands` chỉ có các loại khác 0. `dropReason`: `NOT_OPTIMIZED` khi plan chưa có kết quả tối ưu, `INFEASIBLE` khi solver không xếp được, `MANUAL` khi dispatcher bỏ ra khỏi route bằng `PUT /plans/{id}/routes` (T28).
+- `violations` (T28, P-58): luôn có mặt, rỗng khi không có vi phạm; tính từ route đang lưu mỗi lần đọc (không lưu riêng), rỗng khi plan chưa tối ưu. Kết quả của optimize không vi phạm; vi phạm chỉ xuất hiện sau khi chỉnh tay. Thứ tự: theo `routes`, rồi theo `sequence` của stop.
 
 **Lưu draft (`POST`, `PUT`):**
 - Không có `depot` thì snapshot depot hiện tại của store; store chưa có depot → 422 `STORE_DEPOT_REQUIRED`. `depot` trong request phải có `lat`, `lon`. Timezone luôn snapshot từ store mỗi lần lưu.
@@ -289,6 +412,34 @@ Ghi chú:
 - không gửi toạ độ, `address: null` → giữ toạ độ hiện tại, thành `PROVIDED`;
 - địa chỉ và toạ độ không đổi → giữ nguyên kết quả geocode (kể cả `FAILED`);
 - stop không còn địa chỉ lẫn toạ độ → 400, detail `{field: "address", code: "ADDRESS_OR_COORDINATES_REQUIRED"}`.
+
+**Sao chép plan (`POST /plans/{id}/copy`, T62, P-67, P-68):**
+- Chép từ plan ở **mọi trạng thái** (kể cả CANCELLED) sang một plan **DRAFT mới** chưa tối ưu, `version` 0; plan cũ không đổi. `planDate` bắt buộc (`PLAN_DATE_REQUIRED`); `name` tuỳ chọn (≤ 150, `INVALID_PLAN_NAME_LENGTH`), trống thì "{tên cũ} (bản sao)" (tên cũ cắt bớt cho vừa 150 ký tự); `stops` bắt buộc (`COPY_SCOPE_REQUIRED`), giá trị khác `ALL`/`NOT_DELIVERED` → 400 `MALFORMED_REQUEST`.
+- `ALL`: mọi stop. `NOT_DELIVERED`: stop `FAILED`, `SKIPPED` và stop còn `PENDING` (bỏ stop `DELIVERED`); không còn stop nào → 422 `NOTHING_TO_COPY`. `ALL` của plan không có stop vẫn tạo được draft rỗng.
+- Mỗi stop chép: nhãn, người nhận, số điện thoại, địa chỉ, toạ độ **cùng `geocodeStatus`, `geocodeError` và tên địa chỉ provider** (không geocode lại; stop `FAILED` giữ `FAILED` để sửa), demand, thời gian phục vụ, time window, ghi chú. Stop còn `PENDING` geocode thì plan mới `GEOCODING` và chạy job như khi lưu draft. Không chép: route, thứ tự, ETA, trạng thái giao (về `PENDING`), lý do thất bại.
+- Depot: snapshot của plan cũ; timezone: của cửa hàng lúc chép. Phân công (theo thứ tự `routes` của plan cũ) chỉ chép khi tài xế còn là thành viên ACTIVE giao được (BR-07) và xe còn dùng; capacity theo xe hiện tại; ca và quãng đường tối đa giữ nguyên. Phân công bị bỏ nằm trong `skippedAssignments` với `reason` `DRIVER_UNAVAILABLE` (xét trước) hoặc `VEHICLE_INACTIVE`. Không kiểm tra trùng ca lúc chép (kiểm ở publish, D-23).
+
+**Nhập điểm giao từ file (`POST /plans/import`, T61, P-67, P-68):**
+- Chỉ đọc file, không ghi DB. Client thêm các dòng không lỗi vào draft rồi lưu bằng `POST /plans` / `PUT /plans/{id}` như thường (geocode, validation và giới hạn 100 stop của draft áp dụng lúc lưu).
+- Định dạng theo **đuôi tên file** (không phân biệt hoa thường): `.xlsx` (Excel 2007+, sheet đầu tiên; công thức không được tính lại, lấy giá trị Excel đã lưu; ô số và ô giờ đọc theo kiểu ô) hoặc `.csv` (UTF-8 có/không BOM; không phải UTF-8 hợp lệ thì đọc Windows-1258; dấu phân cách `,`, `;` hoặc tab, chọn theo dòng đầu; ô có ngoặc kép theo RFC 4180). `.xls` cũ và đuôi khác → `INVALID_IMPORT_FILE`.
+- Dòng đầu tiên không trống là tiêu đề. Tiêu đề so khớp không phân biệt hoa thường, dấu, khoảng trắng và ký tự khác chữ/số; thứ tự cột tuỳ ý. Cột (tên trong file mẫu → field): `Nhãn / mã đơn` (cũng nhận `Nhãn`, `Mã đơn`; **bắt buộc có cột**) → `label`, `Người nhận` → `recipientName`, `Số điện thoại` (`SĐT`, `Điện thoại`) → `recipientPhone`, `Địa chỉ` → `address`, `Vĩ độ` (`lat`) → `lat`, `Kinh độ` (`lon`, `lng`) → `lon`, `KG` / `Thùng` / `Kiện` → `demands.KG` / `.BOX` / `.PACKAGE` (số nguyên), `Phút phục vụ` → `serviceTimeSeconds` (phút × 60, 0–1440 phút), `Giao từ` / `Giao đến` → `timeWindow.start` / `.end` (`HH:mm`, `H:mm`, `9h30`, hoặc ô giờ của Excel), `Ghi chú` → `note`. Tiêu đề không khớp cột nào, hoặc lặp lại một cột đã có, nằm trong `ignoredColumns`. Số thập phân nhận cả `16.06` và `16,06`.
+- Dòng trống bị bỏ qua. Không có dòng dữ liệu → `INVALID_IMPORT_FILE` (`NO_ROWS`); hơn 100 dòng dữ liệu → 422 `PLAN_TOO_LARGE`.
+- `INVALID_IMPORT_FILE` có `details` `[{field: "file", code}]`, `code` là `UNSUPPORTED_FILE_TYPE`, `UNREADABLE_FILE` (file hỏng, không đúng định dạng của đuôi, hoặc `.xlsx` giải nén ra quá 10 MB), `NO_ROWS`, `LABEL_COLUMN_REQUIRED`.
+- Lỗi theo dòng dùng **cùng mã validation** với stop của `PlanDraftRequest` (§6.2 UX_BRIEF), `field` là tên field của stop; mỗi field một lỗi. Thêm mã `INVALID_TIME_FORMAT` (ô giờ không đọc được) trên `timeWindow.start`/`.end`. Ô số không đọc được là `INVALID_LATITUDE`, `INVALID_LONGITUDE`, `INVALID_DEMAND`, `INVALID_SERVICE_TIME`.
+- Rate limit 30 lần/giờ/user (`plan-import-user`), đếm trước khi đọc file.
+
+```jsonc
+// PlanImport
+{ "rows": [
+    { "row": 2,                                   // số dòng trong file (1 là dòng tiêu đề)
+      "stop": { "label": "ĐH-1", "recipientName": "Chị Lan", "recipientPhone": "+84905123456",   // E.164 khi hợp lệ, không thì như trong file
+                "address": "12 Lê Duẩn, Đà Nẵng", "lat": null, "lon": null, "demands": { "BOX": 2 },
+                "serviceTimeSeconds": 300, "timeWindow": { "start": "09:00", "end": "11:30" }, "note": null },
+      "errors": [] },                             // [{field, code}], rỗng = thêm được
+    { "row": 3, "stop": { "label": null, … }, "errors": [ { "field": "label", "code": "STOP_LABEL_REQUIRED" } ] } ],
+  "validCount": 1, "errorCount": 1,
+  "ignoredColumns": ["Cột lạ"] }
+```
 
 **Thứ tự kiểm tra** của `PUT`, `PATCH`, `POST /geocode`: 404 → `PLAN_NOT_EDITABLE` → `PLAN_BUSY` → `PLAN_MODIFIED`. Mỗi lần sửa thành công tăng `version` đúng 1.
 
@@ -312,16 +463,45 @@ Ghi chú:
 
 **Vòng đời plan và stop (P-34):** `DRAFT → PUBLISHED → IN_PROGRESS → COMPLETED`, và `DRAFT | PUBLISHED → CANCELLED`. Plan PUBLISHED chuyển thẳng sang COMPLETED nếu lần cập nhật đầu tiên đã kết thúc mọi stop. Stop đi một chiều `PENDING → DELIVERED | FAILED | SKIPPED`. **Không có đảo ngược**: stop đã kết thúc và plan COMPLETED/CANCELLED không đổi được nữa; không có endpoint đặt lại stop về PENDING. Giao lại thì tạo stop trong một plan mới.
 
+**Chỉnh tay route (`PUT /plans/{id}/routes`, T28, D-24, P-58):**
+- Chỉ plan DRAFT đã có kết quả tối ưu. Kiểm tra theo thứ tự: 404 → `PLAN_NOT_EDITABLE` (không phải DRAFT) → `PLAN_BUSY` → `PLAN_MODIFIED` → `PLAN_NOT_OPTIMIZED` → 400 validation.
+- `routes` phải liệt kê **mọi** route của plan đúng một lần (kể cả route không có stop, gửi `stopIds: []`); mỗi stop của plan nằm đúng một lần trong `routes[].stopIds` hoặc `unassignedStopIds`. Lỗi là 400 `VALIDATION_ERROR` với `details`: `routes[i].routeId` `INVALID_ROUTE_ID` (không phải route của plan, hoặc lặp); `routes` `ROUTES_INCOMPLETE` (thiếu route); `routes[i].stopIds[j]` hoặc `unassignedStopIds[j]` `INVALID_STOP_ID` (không phải stop của plan, hoặc lặp); `stops` `STOPS_INCOMPLETE` (có stop không được nhắc tới); `routes[i].stopIds[j]` `STOP_NOT_GEOCODED` (stop chưa có toạ độ không được vào route). Mã field thiếu: `VERSION_REQUIRED`, `ROUTES_REQUIRED`, `UNASSIGNED_STOP_IDS_REQUIRED`.
+- Tính lại bằng `MatrixProvider` (cùng node như optimize), gọi ngoài transaction; ghi trong transaction kiểm tra `version` (đổi giữa chừng → 409 `PLAN_MODIFIED`); matrix lỗi → 502 `ROUTING_PROVIDER_ERROR`, không đổi gì. Mỗi route có stop: rời điểm đầu lúc `shiftStart`, hoặc muộn hơn để tới stop đầu đúng lúc time window của nó mở (không chờ ở stop đầu); tới sớm thì chờ tới đầu time window; `plannedArrival` = giờ bắt đầu phục vụ; `plannedEnd` = giờ về điểm cuối; `plannedDurationSeconds` = `plannedEnd − plannedStart` (lái, phục vụ, chờ); `plannedDistanceMeters` theo matrix. Route không còn stop: như route không được dùng của optimize. `totalDistanceMeters`/`totalDurationSeconds` tính lại; `optimizedAt` giữ nguyên; `version` tăng 1.
+- Lưu được cả khi vi phạm ràng buộc (vượt tải, trễ time window, quá ca, quá `maxDistanceMeters`): response có `violations`. Stop trong `unassignedStopIds` có `dropReason = MANUAL` tới lần optimize sau; optimize lại thay mọi chỉnh tay bằng kết quả mới.
+
 **Publish (T26):**
 - Kiểm tra theo thứ tự: 404 → `PLAN_NOT_EDITABLE` (không phải DRAFT) → `PLAN_BUSY` → `PLAN_MODIFIED` → `PLAN_NOT_OPTIMIZED` (chưa có kết quả tối ưu còn hiệu lực, BR-06) → `INVALID_ASSIGNMENT` (tài xế/xe của route có stop không còn dùng được, `details` như optimize) → `SHIFT_OVERLAP`.
 - Trùng ca (D-23, BR-12): với mỗi route **có stop**, ca `[shiftStart, shiftEnd)` không được giao với ca của cùng tài xế hoặc cùng xe trong một route có stop của plan PUBLISHED/IN_PROGRESS khác **cùng `planDate`** trong store. Ca nửa mở: 08:00–12:00 và 12:00–16:00 không trùng. Route không có stop không tính (P-34). Plan CANCELLED, COMPLETED, DRAFT không tính.
 - `SHIFT_OVERLAP` trả mỗi xung đột là một phần tử `details`: `{field: "assignments[i].driverId" | "assignments[i].vehicleId", code: "SHIFT_OVERLAP", conflictPlanId}` (P-32); `i` là thứ tự route trong `PlanDetail.routes`. Trùng cả tài xế lẫn xe với một plan thì có hai phần tử.
-- Plan còn stop trong `unassignedStops` (`INFEASIBLE`) vẫn publish được (P-13); client cảnh báo dựa vào `unassignedStops`.
+- Plan còn stop trong `unassignedStops` (`INFEASIBLE`, `MANUAL`) vẫn publish được (P-13); client cảnh báo dựa vào `unassignedStops`. Plan còn `violations` cũng publish được (P-58); client hỏi xác nhận trước khi gửi.
 - Thành công: `status = PUBLISHED`, `version` tăng 1. Sau đó `PUT`, `PATCH` stop, `geocode`, `optimize`, `publish` → 422 `PLAN_NOT_EDITABLE`.
 
 **Cancel (T26):** được từ DRAFT và PUBLISHED; IN_PROGRESS, COMPLETED, CANCELLED → 422 `PLAN_NOT_CANCELLABLE`. Kiểm tra theo thứ tự: 404 → `PLAN_NOT_CANCELLABLE` → `PLAN_BUSY` → `PLAN_MODIFIED`. Kết quả tối ưu giữ lại để tra cứu; `version` tăng 1.
 
 **Mã validation (`details[].code`) của plan:** `STOPS_REQUIRED`, `ASSIGNMENTS_REQUIRED` (trong `PLAN_INCOMPLETE`), `PLAN_NAME_REQUIRED`, `INVALID_PLAN_NAME_LENGTH` (≤ 150), `PLAN_DATE_REQUIRED`, `VERSION_REQUIRED` (`PUT`, `PATCH`, `POST /geocode`), `LATITUDE_REQUIRED`, `LONGITUDE_REQUIRED`, `INVALID_LATITUDE`, `INVALID_LONGITUDE`, `INVALID_ADDRESS_LENGTH` (≤ 500), `STOP_LABEL_REQUIRED`, `INVALID_STOP_LABEL_LENGTH` (≤ 150), `INVALID_RECIPIENT_NAME_LENGTH` (≤ 100), `PHONE_NUMBER_*`, `COORDINATES_INCOMPLETE` (trên field còn thiếu, `lat` hoặc `lon`), `ADDRESS_OR_COORDINATES_REQUIRED` (trên `address`), `INVALID_DEMAND` (số nguyên ≥ 0), `ORDER_DEMAND_NOT_ALLOWED` (trên `demands`), `INVALID_SERVICE_TIME` (0–86400), `TIME_WINDOW_START_REQUIRED`, `TIME_WINDOW_END_REQUIRED`, `INVALID_TIME_WINDOW` (trên `timeWindow.end`, `start < end`), `INVALID_NOTE_LENGTH` (≤ 500), `DRIVER_REQUIRED`, `VEHICLE_REQUIRED`, `SHIFT_START_REQUIRED`, `SHIFT_END_REQUIRED`, `INVALID_SHIFT` (trên `shiftEnd`, `shiftStart < shiftEnd`), `INVALID_MAX_DISTANCE` (> 0), `INVALID_STOP_ID`, `NOT_NULLABLE`, `INVALID_ASSIGNMENT` (trong `INVALID_ASSIGNMENT` của optimize).
+
+## 7a. Báo cáo cửa hàng — `/api/v1/reports` (T63, P-67, P-68)
+
+| Method & path | Quyền | Request | Response | Lỗi chính | Hiện trạng |
+|---|---|---|---|---|---|
+| `GET /reports/summary` | O, D | `from?`, `to?` (`YYYY-MM-DD`, theo `planDate`, cả hai ngày tính; thiếu cả hai = hôm nay theo timezone cửa hàng; chỉ có một thì khoảng một ngày đó; tối đa 31 ngày) | `StoreReport` (xem dưới) | 400 `VALIDATION_ERROR` trên `from`: `INVALID_DATE_RANGE` (from > to), `DATE_RANGE_TOO_LONG` | ✅ T63 |
+| `GET /reports/stops.csv` | O, D | như trên | 200 `text/csv; charset=UTF-8`, `Content-Disposition: attachment; filename="pathwise-YYYYMMDD-YYYYMMDD.csv"` | như trên (lỗi vẫn là JSON, kiểm khoảng trước khi ghi) | ✅ T63 |
+
+- Chỉ đọc, dùng được khi cửa hàng bị khoá (P-62). Dữ liệu của cửa hàng trong token (BR-01); không ghi nhật ký.
+- **Summary:** `plans` đếm mọi plan của khoảng theo trạng thái (kể cả CANCELLED). `stops`, `plannedDistanceMeters`, `days`, `drivers`, `failureReasons` chỉ tính plan **đã giao việc** (PUBLISHED, IN_PROGRESS, COMPLETED): plan DRAFT và CANCELLED không phải việc giao hàng. `deliveredRate` = đã giao / (đã giao + không giao được + bỏ qua), `null` khi chưa có kết quả. `plannedDistanceMeters` = tổng quãng đường dự kiến của các route có stop. `days` đủ mọi ngày của khoảng (ngày không có plan là 0). `drivers` là tài xế có route có stop, theo tên; `firstResultAt`/`lastResultAt` là lần báo kết quả đầu/cuối của tài xế trong khoảng (UTC, `null` khi chưa báo). `failureReasons`: 10 lý do thất bại hay gặp nhất, gom theo chuỗi đã cắt khoảng trắng không phân biệt hoa thường, hiện theo cách viết của lần đầu gặp.
+- **CSV:** UTF-8 có BOM (Excel đọc đúng dấu), RFC 4180, CRLF. Mỗi dòng một stop của plan **không bị huỷ** (gồm DRAFT) theo ngày, plan, route, thứ tự. Cột: Ngày (`dd/MM/yyyy`), Kế hoạch, Trạng thái kế hoạch (Nháp, Đã giao việc, Đang giao, Hoàn thành), Tài xế, Xe, Thứ tự, Nhãn / mã đơn, Người nhận, Số điện thoại (`0905 123 456`), Địa chỉ, Giờ dự kiến (`HH:mm`), Kết quả (Chờ giao, Đã giao, Không giao được, Bỏ qua), Lý do, Giờ báo (`dd/MM/yyyy HH:mm`); giờ theo timezone của plan. Ô bắt đầu bằng `=`, `+`, `-`, `@`, tab hoặc CR có thêm `'` phía trước (chống CSV injection).
+
+```jsonc
+// StoreReport
+{ "from": "2026-12-01", "to": "2026-12-07",
+  "plans": { "total": 9, "draft": 1, "published": 1, "inProgress": 0, "completed": 6, "cancelled": 1 },
+  "stops": { "total": 210, "delivered": 190, "failed": 12, "skipped": 3, "pending": 5, "deliveredRate": 0.9268 },
+  "plannedDistanceMeters": 412300,
+  "days": [ { "date": "2026-12-01", "plans": 1, "delivered": 30, "failed": 2, "skipped": 0, "pending": 0 }, … ],
+  "drivers": [ { "driverId": 21, "fullName": "Tùng", "routes": 6, "delivered": 95, "failed": 5, "skipped": 1, "pending": 0,
+                 "plannedDistanceMeters": 201000, "firstResultAt": "2026-12-01T01:12:00Z", "lastResultAt": "2026-12-07T09:40:00Z" } ],
+  "failureReasons": [ { "reason": "Vắng nhà", "count": 7 } ] }
+```
 
 ## 8. Driver — `/api/v1/driver`
 
@@ -336,7 +516,7 @@ Người gọi phải có `role=DRIVER` hoặc `canDrive=true` (D-21); người 
 | `PATCH /driver/routes/{routeId}/stops/{stopId}/status` | R | `{status: DELIVERED\|FAILED\|SKIPPED, failureReason?}` | 200 `{stop: DriverStop, routeStatus, planStatus}` | 400 · 404 · 422 `INVALID_STOP_TRANSITION` · 422 `FAILURE_REASON_REQUIRED` · 422 `PLAN_NOT_ACTIVE` | ✅ |
 | `POST /driver/location` | R | `{points:[{lat, lon, accuracyMeters?, headingDegrees?, speedMps?, recordedAt}]}`, 1–100 điểm (D-26), thứ tự tuỳ ý | 204. MVP chỉ giữ điểm có `recordedAt` mới nhất (xem dưới). | 400 | ✅ |
 | `PUT /driver/location/sharing` | R | `{routeId, state: SHARING\|DECLINED\|NO_PERMISSION\|GPS_OFF}` (P-53) | 204 | 400 · 404 · 422 `PLAN_NOT_ACTIVE` | ✅ |
-| `GET /driver/routes/{routeId}/directions` | R | — | `DirectionsResponse` (Should) | 404 · 502 | ❌ T33 |
+| `GET /driver/routes/{routeId}/directions` | R | query `lat`, `lon` (vị trí hiện tại, bắt buộc), `toStopId?` (P-57) | `Directions`: đường từ vị trí hiện tại tới điểm đích (Should, FR-D05) | 400 · 404 · 422 `PLAN_NOT_ACTIVE` · 429 `RATE_LIMITED` · 502 `ROUTING_PROVIDER_ERROR` | ✅ T33 |
 
 **Vị trí (T32):**
 - `POST /driver/location`: mã validation `POINTS_REQUIRED`, `TOO_MANY_POINTS` (> 100), `POINT_REQUIRED`, `LATITUDE_REQUIRED`, `LONGITUDE_REQUIRED`, `INVALID_LATITUDE`, `INVALID_LONGITUDE`, `INVALID_ACCURACY` (< 0), `INVALID_HEADING` (ngoài `[0, 360)`), `INVALID_SPEED` (< 0), `RECORDED_AT_REQUIRED` (trên `points[i].<field>`). Lô hợp lệ luôn 204, kể cả khi không điểm nào được giữ: điểm có `recordedAt` muộn hơn giờ server quá 2 phút bị bỏ (đồng hồ máy chạy nhanh); điểm cũ hơn 10 phút không lưu; điểm không mới hơn điểm đang lưu không ghi đè. Gửi được khi không có route đang chạy (dispatcher chỉ đọc qua route của plan đang giao).
@@ -354,15 +534,28 @@ Người gọi phải có `role=DRIVER` hoặc `canDrive=true` (D-21); người 
 { "id": 101, "sequence": 1, "label": "ĐH-1024", "recipientName": "Chị Lan", "recipientPhone": "+84905…",
   "address": "…", "lat": 16.06, "lon": 108.22, "plannedArrival": "…",
   "timeWindow": { "start": "09:00", "end": "11:00" }, "note": "…", "status": "PENDING", "failureReason": null }
-// DirectionsResponse (Should; hình dạng sẽ chốt lại ở T33, xem IMPLEMENTATION_PLAN)
-{ "legs": [ { "fromStopId": null, "toStopId": 101, "distanceMeters": 2100, "durationSeconds": 360,
-              "geometry": "<polyline6>",
-              "steps": [ { "maneuver": "turn", "modifier": "left", "roadName": "Nguyễn Văn Linh",
-                           "distanceMeters": 400, "durationSeconds": 60, "location": [108.21, 16.055] } ] } ] }
+// Directions (T33, P-57): đường lái xe từ vị trí hiện tại tới một điểm, không phụ thuộc nhà cung cấp
+{ "destination": { "stopId": 101, "lat": 16.06, "lon": 108.22 },   // stopId null: điểm kết thúc của tuyến (route.end)
+  "distanceMeters": 2100, "durationSeconds": 360,
+  "polyline": "…",               // Encoded Polyline Algorithm, độ chính xác 6 chữ số thập phân (1e-6), thứ tự [lat, lon]
+  "steps": [
+    { "maneuver": "DEPART", "exitNumber": null, "roadName": "Lê Duẩn",
+      "distanceMeters": 400, "durationSeconds": 60, "location": { "lat": 16.0544, "lon": 108.2022 } },
+    { "maneuver": "LEFT", "exitNumber": null, "roadName": "Nguyễn Văn Linh",
+      "distanceMeters": 1700, "durationSeconds": 300, "location": { "lat": 16.0571, "lon": 108.2051 } },
+    { "maneuver": "ARRIVE", "exitNumber": null, "roadName": null,
+      "distanceMeters": 0, "durationSeconds": 0, "location": { "lat": 16.06, "lon": 108.22 } } ] }
 ```
 
 - `timezone` (T47) là bản chụp timezone của cửa hàng lúc lưu plan, như `PlanDetail.timezone`: app hiện `plannedStart`, `plannedArrival` theo timezone này, không theo máy. Tài xế không đọc được `GET /store`.
-- Dẫn đường (D-07): client tự dựng deep link Google Maps hoặc Apple Maps theo nền tảng từ `lat`/`lon` của stop; server không trả URL (P-32).
+- Dẫn đường (D-07): client tự dựng deep link Google Maps hoặc Apple Maps theo nền tảng từ `lat`/`lon` của stop; server không trả URL (P-32). Đây cũng là đường lùi khi `GET …/directions` lỗi.
+- **`GET /driver/routes/{routeId}/directions`** (T33, P-57): app gọi khi mở màn dẫn đường và mỗi lần tài xế đi lệch đường; không cache vì điểm đầu là vị trí hiện tại.
+  - `lat`, `lon`: vị trí hiện tại của máy, bắt buộc. Thiếu hoặc không phải số → 400 `MALFORMED_REQUEST` (như `q` của tìm địa chỉ); ngoài khoảng → 400 `VALIDATION_ERROR`, mã `INVALID_LATITUDE`/`INVALID_LONGITUDE` trên field `lat`/`lon`. `toStopId` không phải số → `MALFORMED_REQUEST`.
+  - `toStopId`: điểm đích, phải là stop của route này (khác → 404), kể cả stop đã kết thúc. Không gửi → stop `PENDING` đầu tiên theo `sequence`; hết stop `PENDING` → điểm kết thúc của route (`destination.stopId = null`).
+  - Route tìm như `GET /driver/routes/{routeId}` (404 như ở đó); plan `COMPLETED`, hoặc đã publish rồi huỷ → 422 `PLAN_NOT_ACTIVE`.
+  - Mỗi bước: `maneuver` xảy ra tại `location` (đầu bước), `distanceMeters`/`durationSeconds` là đoạn đi sau thao tác đó tới bước kế tiếp. Bước đầu luôn `DEPART`, bước cuối luôn `ARRIVE` (0 m). `roadName` là tên đường sau thao tác, `null` khi không có tên và với `ARRIVE`. `exitNumber` chỉ có với `ROUNDABOUT` (lối ra thứ mấy, từ 1; `null` khi không biết).
+  - `maneuver`: `DEPART`, `ARRIVE`, `STRAIGHT`, `SLIGHT_LEFT`, `SLIGHT_RIGHT`, `LEFT`, `RIGHT`, `SHARP_LEFT`, `SHARP_RIGHT`, `UTURN`, `KEEP_LEFT`, `KEEP_RIGHT` (rẽ nhánh, nhập làn, lên/xuống đường dẫn), `ROUNDABOUT`. Câu chỉ dẫn do client dựng từ enum (tiếng Việt ở client). Client sinh từ OpenAPI không đọc được giá trị lạ, nên **thêm giá trị mới là thay đổi phá vỡ contract** với app cũ.
+  - Giới hạn 30 request mỗi 5 phút cho mỗi tài xế (rule `directions-user`) → 429 `RATE_LIMITED`. Nhà cung cấp lỗi, quá thời gian, hoặc không có đường (ví dụ vị trí nằm ngoài vùng dữ liệu bản đồ `ROUTING_BBOX`) → 502 `ROUTING_PROVIDER_ERROR`; app mở Google/Apple Maps thay thế.
 - `PATCH …/status` của tài xế trả `routeStatus` (cùng nghĩa với `status` của route ở trên) và `planStatus` để app biết route/plan đã chuyển `IN_PROGRESS` hay `COMPLETED` (BR-11). Cập nhật trạng thái stop không tăng `version` của plan (§1). Chỉ đi từ `PENDING`; stop đã kết thúc không đổi được nữa (P-34).
   - Route tìm được như `GET` (P-36, T48): route của plan **đã publish rồi bị huỷ** trả 422 `PLAN_NOT_ACTIVE` thay vì 404, để app biết plan đã huỷ. Route của plan chưa từng publish, của tài xế khác hay store khác, và stop không thuộc route đó → 404 `NOT_FOUND`.
   - Thứ tự kiểm tra: 404 → `INVALID_STOP_TRANSITION` (gửi `PENDING`) → **idempotent**: stop đã ở đúng trạng thái gửi lên → 200, không đổi gì (kể cả `failureReason`), kể cả khi plan đã `COMPLETED`, để app gửi lại được khi mất response → `PLAN_NOT_ACTIVE` (plan `COMPLETED`, `CANCELLED`) → `INVALID_STOP_TRANSITION` (stop đã kết thúc với trạng thái khác) → `FAILURE_REASON_REQUIRED` (`FAILED` mà `failureReason` trống hoặc toàn khoảng trắng).
@@ -378,10 +571,12 @@ Người gọi phải có `role=DRIVER` hoặc `canDrive=true` (D-21); người 
 | Xác thực | `UNAUTHORIZED`, `INVALID_TOKEN`, `INVALID_EMAIL_OR_PASSWORD` | 401 |
 | Xác thực | `INVALID_OTP`, `INVALID_CURRENT_PASSWORD`, `INVALID_RESET_TOKEN` | 400 |
 | Quyền | `FORBIDDEN`, `EMAIL_NOT_VERIFIED`, `ACCOUNT_DISABLED` | 403 |
+| File quá lớn | `IMPORT_FILE_TOO_LARGE` (T61) | 413 |
+| Cửa hàng bị khoá | `STORE_READ_ONLY` (T56, P-62) | 423 |
 | Không tìm thấy | `NOT_FOUND`, `INVITATION_INVALID` | 404 |
 | Method | `METHOD_NOT_ALLOWED` | 405 |
 | Xung đột | `EMAIL_EXISTED`, `EMAIL_ALREADY_VERIFIED`, `VEHICLE_NAME_EXISTED`, `PLAN_MODIFIED`, `PLAN_BUSY`, `CONFLICT` | 409 |
-| Nghiệp vụ | `CANNOT_MODIFY_OWNER`, `INVITATION_NOT_PENDING`, `STORE_DEPOT_REQUIRED`, `INVALID_ASSIGNMENT`, `PLAN_TOO_LARGE`, `PLAN_NOT_EDITABLE`, `NOTHING_TO_GEOCODE`, `PLAN_INCOMPLETE`, `STOPS_NOT_GEOCODED`, `PLAN_NOT_OPTIMIZED`, `PLAN_NOT_CANCELLABLE`, `PLAN_NOT_ACTIVE`, `SHIFT_OVERLAP`, `INVALID_STOP_TRANSITION`, `FAILURE_REASON_REQUIRED` | 422 |
+| Nghiệp vụ | `CANNOT_MODIFY_OWNER`, `CANNOT_MODIFY_SELF`, `INVITATION_NOT_PENDING`, `STORE_DEPOT_REQUIRED`, `INVALID_ASSIGNMENT`, `PLAN_TOO_LARGE`, `INVALID_IMPORT_FILE` (T61), `NOTHING_TO_COPY` (T62), `PLAN_NOT_EDITABLE`, `NOTHING_TO_GEOCODE`, `PLAN_INCOMPLETE`, `STOPS_NOT_GEOCODED`, `PLAN_NOT_OPTIMIZED`, `PLAN_NOT_CANCELLABLE`, `PLAN_NOT_ACTIVE`, `SHIFT_OVERLAP`, `INVALID_STOP_TRANSITION`, `FAILURE_REASON_REQUIRED` | 422 |
 | Giới hạn | `OTP_COOLDOWN`, `RATE_LIMITED` | 429 |
 | Provider | `GEOCODING_PROVIDER_ERROR`, `ROUTING_PROVIDER_ERROR` | 502 |
 | Provider / hạ tầng | `GEOCODING_BUSY`, `SERVICE_UNAVAILABLE` | 503 |

@@ -77,6 +77,10 @@ abstract final class Vi {
   static const noRoutesTitle = 'Chưa có tuyến nào';
   static const noRoutesLead = 'Tuyến hiện ở đây khi điều phối viên giao việc cho bạn. Kéo xuống để tải lại.';
   static const routesLoadFailed = 'Không tải được danh sách tuyến.';
+  // T56, W11: the store is locked by an ADMIN; the driver still delivers.
+  static const storeLocked = 'Cửa hàng đang tạm khoá';
+  static String storeLockReason(String reason) => 'Lý do: $reason';
+  static const storeLockedDriver = 'Bạn vẫn giao và báo kết quả tuyến bình thường.';
 
   // Chi tiết tuyến (M01)
   static const backToRoutes = 'Về danh sách tuyến';
@@ -93,6 +97,47 @@ abstract final class Vi {
   static const noAddress = 'Không có địa chỉ, chỉ đường theo toạ độ';
   static const routeLoadFailed = 'Không tải được tuyến.';
   static const cannotOpen = 'Không mở được ứng dụng trên máy.';
+
+  // Dẫn đường (M05, P-57)
+  static const navigationTitle = 'Dẫn đường';
+  static const navigationNotificationTitle = 'PathWise đang dẫn đường';
+  static const navigationNotificationText = 'Đang dẫn đường tới điểm giao. Tự dừng khi bạn rời màn dẫn đường.';
+  static const waitingForGps = 'Đang lấy vị trí của bạn…';
+  static const findingRoute = 'Đang tìm đường…';
+  static const rerouting = 'Đang tìm đường mới…';
+  static const routeEnd = 'Điểm kết thúc tuyến';
+  static String arrivedAt(String place) => 'Bạn đã tới $place';
+  static String remaining(String distance, String duration, String arrival) =>
+      '$distance · $duration · tới lúc $arrival';
+  static String thenStep(String instruction) => 'Sau đó: $instruction';
+  static const recenter = 'Về vị trí của tôi';
+  static const navigationFailed = 'Không dẫn đường được lúc này.';
+  static const navigationNoGps = 'Chưa lấy được vị trí của bạn.';
+  static const navigationRateLimited = 'Tìm đường quá nhiều lần, thử lại sau ít phút.';
+  static const navigationNeedsPermission = 'Cần quyền vị trí để dẫn đường.';
+  static const navigationPermissionForever = 'Máy đang chặn quyền vị trí của PathWise. Mở cài đặt để cho phép.';
+  static const navigationGpsOff = 'Định vị (GPS) đang tắt.';
+  static const allowLocation = 'Cho phép dùng vị trí';
+  static String openExternalMaps(bool apple) => apple ? 'Mở Apple Maps' : 'Mở Google Maps';
+  static String instruction(String maneuver, {String? road, int? exit, String? place}) {
+    final onto = road == null ? '' : ' vào $road';
+    return switch (maneuver) {
+      'depart' => road == null ? 'Bắt đầu đi' : 'Đi theo $road',
+      'arrive' => place == null ? 'Tới nơi' : 'Tới $place',
+      'straight' => 'Đi thẳng$onto',
+      'slightLeft' => 'Chếch sang trái$onto',
+      'slightRight' => 'Chếch sang phải$onto',
+      'left' => 'Rẽ trái$onto',
+      'right' => 'Rẽ phải$onto',
+      'sharpLeft' => 'Rẽ gắt sang trái$onto',
+      'sharpRight' => 'Rẽ gắt sang phải$onto',
+      'uturn' => 'Quay đầu$onto',
+      'keepLeft' => 'Đi về bên trái$onto',
+      'keepRight' => 'Đi về bên phải$onto',
+      'roundabout' => exit == null ? 'Vào vòng xoay$onto' : 'Vào vòng xoay, ra lối thứ $exit$onto',
+      _ => 'Đi tiếp$onto',
+    };
+  }
 
   // Báo kết quả (M02)
   static const report = 'Báo kết quả';

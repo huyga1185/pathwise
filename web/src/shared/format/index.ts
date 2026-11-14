@@ -87,3 +87,15 @@ export function todayIn(timeZone: string, now: Date = new Date()): string {
   const get = (type: string) => parts.find((part) => part.type === type)?.value ?? '';
   return `${get('year')}-${get('month')}-${get('day')}`;
 }
+
+/** 0.9647 → "96,5%"; null (nothing to divide) → "—" (UX_BRIEF §5.5). */
+export function formatRate(rate: number | null | undefined): string {
+  if (rate == null) return '—';
+  return `${(Math.round(rate * 1000) / 10).toLocaleString('vi-VN')}%`;
+}
+
+/** "2026-11-14" → "14/11". */
+export function shortDate(day: string): string {
+  const [, month, date] = day.split('-');
+  return `${date}/${month}`;
+}

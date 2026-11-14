@@ -1,3 +1,4 @@
+import { useStoreReadOnly } from '@/data/meQuery';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useSearchParams } from 'react-router';
@@ -50,6 +51,7 @@ export function VehiclesPage() {
   const onlyActive = params.get('active') === 'true';
   const vehicles = useVehicles(onlyActive ? { active: true } : {});
   const vehicleApi = useVehicleApi();
+  const { readOnly } = useStoreReadOnly();
   const [editing, setEditing] = useState<Vehicle | null>(null);
   const [saved, setSaved] = useState<string | null>(null);
   const [failure, setFailure] = useState<unknown>(null);
@@ -222,7 +224,7 @@ export function VehiclesPage() {
             <Button variant="quiet" onClick={startAdd}>
               {vi.vehicles.cancel}
             </Button>
-            <Button type="submit" variant="primary" busy={isSubmitting}>
+            <Button type="submit" variant="primary" busy={isSubmitting} disabled={readOnly}>
               {editing ? vi.vehicles.save : vi.vehicles.submitAdd}
             </Button>
           </div>

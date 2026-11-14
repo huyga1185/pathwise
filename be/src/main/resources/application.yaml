@@ -1,6 +1,11 @@
 spring:
   application:
     name: pathwise
+  # The only upload is the stop import (T61, P-68): 1 MB per file; larger is 413 IMPORT_FILE_TOO_LARGE.
+  servlet:
+    multipart:
+      max-file-size: 1MB
+      max-request-size: 2MB
   datasource:
     driver-class-name: org.mariadb.jdbc.Driver
   jpa:
@@ -42,6 +47,15 @@ routing:
       max-table-size: 100
       connect-timeout: 3s
       read-timeout: 10s
+  directions:
+    provider: osrm
+    osrm:
+      # Same server as the matrix unless set (ROUTING_DIRECTIONS_OSRM_BASEURL); compose.routing.yaml serves both.
+      base-url: ${routing.matrix.osrm.base-url}
+      user-agent: PathWise/1.0 (https://huy-vu.uk/)
+      profile: driving
+      connect-timeout: 3s
+      read-timeout: 10s
   solver:
     provider: ortools
     # Guided local search runs until this limit, so every optimization takes this long (NFR-02: <= 15 s).
@@ -58,6 +72,18 @@ jobs:
   executor:
     pool-size: 2
     queue-capacity: 50
+
+# Nightly deletion of stale rows (T53, P-59), after the 02:30 backup. One instance at a time (Redis lock with TTL).
+housekeeping:
+  cron: "0 30 3 * * *"
+  zone: Asia/Ho_Chi_Minh
+  lock-ttl: 30m
+  retention:
+    refresh-tokens: 30d
+    # 100 days, so the 90-day charts of the ADMIN overview have every optimization (T60, P-64).
+    jobs: 100d
+    invitations: 90d
+    audit-events: 365d
 
 # Web origins allowed to call the API from a browser (ARCHITECTURE.md §6.4); env CORS_ALLOWED_ORIGINS, comma separated.
 # None by default: only same-origin pages and mobile apps (which send no Origin) can call the API.
@@ -104,3 +130,7 @@ rate-limit:
     forgot-password-email: { limit: 5, window: 1h }
     change-password-otp-user: { limit: 5, window: 1h }
     create-invitation-store: { limit: 30, window: 1h }
+    # Turn-by-turn directions from the driver's position (T33, P-57): the app asks again only when off the route.
+    directions-user: { limit: 30, window: 5m }
+    # Stop import from a file (T61, P-68): reading the file costs CPU and memory.
+    plan-import-user: { limit: 30, window: 1h }

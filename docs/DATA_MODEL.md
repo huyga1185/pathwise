@@ -2,7 +2,7 @@
 
 > Hiện trạng: có `users`, `refresh_tokens` (`V1__baseline.sql`), `stores` cùng các cột tenancy của `users` (`V2__stores_and_user_tenancy.sql`, T13), `store_invitations` (`V3__store_invitations.sql`, T16), `vehicles` (`V4__vehicles.sql`, T20) và `background_jobs`, `route_plans`, `route_plan_routes`, `route_plan_stops`, `route_plan_stop_demands` (`V5__route_plans.sql`, T24). Mọi bảng mục tiêu đã tồn tại.
 > Dựa trên D-01..D-05, D-15, D-16, D-18..D-21, P-01, P-07, P-14 (đã Approved). Dữ liệu cũ không được giữ (D-29).
-> Quy ước: `BIGINT AUTO_INCREMENT` id; timestamp sự kiện `DATETIME(6)` lưu UTC (`hibernate.jdbc.time_zone: UTC`, Java `Instant`); toạ độ `DOUBLE`; khoảng cách mét `INT`, thời lượng giây `INT`; enum lưu `VARCHAR` (`@Enumerated(STRING)`); bảng thuộc store luôn có `store_id NOT NULL` + FK + index.
+> Quy ước: `BIGINT AUTO_INCREMENT` id; timestamp sự kiện `DATETIME(6)` lưu UTC (`hibernate.jdbc.time_zone: UTC`, Java `Instant`); giờ trong ngày `TIME` lưu đúng giờ trên đồng hồ theo timezone của plan (`LocalTime` gắn `@JdbcType(LocalTimeJdbcType.class)`, không đổi theo múi giờ JVM; F-54, T50); ngày `DATE` (`LocalDate`); toạ độ `DOUBLE`; khoảng cách mét `INT`, thời lượng giây `INT`; enum lưu `VARCHAR` (`@Enumerated(STRING)`); bảng thuộc store luôn có `store_id NOT NULL` + FK + index.
 
 ## 1. Sơ đồ quan hệ
 
@@ -45,13 +45,17 @@ Index: `idx_users_store_role (store_id, role)`. Tên ràng buộc trong V2: FK `
 | depot_address | VARCHAR(500) | NULL |
 | depot_lat, depot_lon | DOUBLE | NULL (cả hai cùng NULL hoặc cùng có: CHECK `chk_stores_depot_coordinates`) |
 | timezone | VARCHAR(50) | NOT NULL DEFAULT `'Asia/Ho_Chi_Minh'` |
+| status | VARCHAR(20) | NOT NULL DEFAULT `'ACTIVE'` (V7, T55) — `ACTIVE, READ_ONLY`; CHECK `chk_stores_status`; index `idx_stores_status`. `READ_ONLY` do ADMIN khoá (T56, P-59); enum `shared.store.StoreStatus` (P-62) |
+| lock_reason | VARCHAR(500) | NULL (V7). Lý do khoá hiện tại; NULL khi `ACTIVE` |
+| locked_at | DATETIME(6) | NULL (V7) |
+| locked_by | BIGINT | NULL (V7), FK `fk_stores_locked_by` → users (ADMIN đã khoá). Khoá lại thì ghi đè lý do, thời điểm, người khoá; mở khoá đặt cả ba về NULL (T56) |
 | created_at, updated_at | DATETIME(6) | NOT NULL |
 
 OWNER của store = user có `role='OWNER' AND store_id=?` (đúng 1, BR-03, kiểm tra ở service).
 
 ### 2.3 `refresh_tokens` — Keep + index (V2, đã tạo ở T13)
 
-Giữ nguyên cột (timestamp đổi sang `DATETIME(6)`). Thêm `idx_refresh_tokens_user_state (user_id, state)`. `family_id` = session id công khai (P-07). Trạng thái `EXPIRED` được gán khi phát hiện token hết hạn lúc rotate (T10). Không có job dọn dẹp trong MVP (Could).
+Giữ nguyên cột (timestamp đổi sang `DATETIME(6)`). Thêm `idx_refresh_tokens_user_state (user_id, state)`. `family_id` = session id công khai (P-07). Trạng thái `EXPIRED` được gán khi phát hiện token hết hạn lúc rotate (T10). Dòng cũ bị job dọn dữ liệu xoá (T53, §6).
 
 ### 2.4 `store_invitations` — New (V3, đã tạo ở T16)
 
@@ -191,6 +195,27 @@ Bảng job dùng chung. MVP có 2 loại job: `GEOCODE_PLAN` (chạy nền) và 
 
 Index `(status, created_at)`, `(store_id, target_id)`. Tên ràng buộc trong V5: FK `fk_background_jobs_store_id`/`_created_by`, index `idx_background_jobs_status_created`/`_store_target`. Entity `job.model.BackgroundJob` và repository (module `job`; T24 đặt ở `core.job`, T29 tách ra, P-31); executor, `JobService`, khôi phục lúc khởi động (T29). Khi khởi động, job `QUEUED` cũng chuyển sang `FAILED/INTERRUPTED` như `RUNNING` (P-30). Khi ứng dụng khởi động, job đang `RUNNING` hoặc `QUEUED` được chuyển sang `FAILED` (`error_code = INTERRUPTED`) và plan tương ứng trả về `processing_status = IDLE`. MVP giả định chỉ chạy **một instance**; muốn chạy nhiều instance thì phải có cơ chế claim job (ghi vào Could).
 
+### 2.10 `audit_events` — New (V8, T58) (P-61)
+
+Nhật ký thao tác (FR-A14). Chỉ thêm, không sửa; **không có FK** để nhật ký còn sau khi đối tượng được mô tả thay đổi. Module `audit` (`audit.model.AuditEvent`).
+
+| Cột | Kiểu | Ràng buộc / ghi chú |
+|---|---|---|
+| id | BIGINT | PK |
+| occurred_at | DATETIME(6) | NOT NULL |
+| actor_id | BIGINT | NULL. Người làm |
+| actor_email | VARCHAR(255) | NULL. Email người làm lúc đó |
+| actor_role | VARCHAR(20) | NULL. `UserRole` lúc đó |
+| store_id | BIGINT | NULL. Cửa hàng liên quan; NULL nếu ngoài cửa hàng |
+| action | VARCHAR(50) | NOT NULL — `AuditAction` (`MEMBER_UPDATED, INVITATION_REVOKED, PLAN_PUBLISHED, PLAN_CANCELLED, PLAN_ROUTES_EDITED, STORE_VIEWED`; T56 thêm `STORE_LOCKED, STORE_UNLOCKED, USER_DISABLED, USER_ENABLED, USER_SESSIONS_REVOKED`; T57 thêm `VERIFICATION_EMAIL_SENT, PASSWORD_RESET_LINK_SENT, STORE_OWNER_TRANSFERRED`; chỉ thêm) |
+| target_type | VARCHAR(30) | NOT NULL — `STORE, USER, INVITATION, PLAN` |
+| target_id | BIGINT | NULL |
+| details | VARCHAR(2000) | NULL. Đối tượng JSON nhỏ, không dữ liệu cá nhân ngoài email; dài hơn thì thành `{"truncated": "…"}` |
+| request_id | VARCHAR(64) | NULL. `requestId` của log (MDC) |
+| ip | VARCHAR(45) | NULL. IP client (sau proxy tin cậy, P-38) |
+
+Index `idx_audit_events_store_occurred (store_id, occurred_at)`, `idx_audit_events_actor_occurred (actor_id, occurred_at)`, `idx_audit_events_occurred (occurred_at)`.
+
 ## 3. Redis keys (mọi key có TTL)
 
 | Key | Giá trị | TTL | Module |
@@ -203,6 +228,10 @@ Index `(status, created_at)`, `(store_id, target_id)`. Tên ràng buộc trong V
 | `geocode:nominatim:next-slot` | thời điểm (ms, đồng hồ Redis) slot trống kế tiếp; Lua `ReserveThrottleSlot.lua` đặt slot theo thứ tự đến (P-11) | hết khi slot cuối đã đặt kết thúc (`chờ + 1000 / per-second` ms) | routing |
 | `driver:location:{storeId}:{driverId}` | hash: `t` = `recordedAt` (epoch ms), `v` = JSON `{lat, lon, accuracyMeters, headingDegrees, speedMps, recordedAt}`; Lua `SaveLatestLocation.lua` chỉ ghi khi điểm mới hơn (T32) | 10 phút tính từ `recordedAt` | planning |
 | `driver:sharing:{storeId}:{driverId}` | JSON `{routeId, state, updatedAt}`, `state` là `SHARING`/`DECLINED`/`NO_PERMISSION`/`GPS_OFF` (P-53, T32) | 12 giờ | planning |
+| `housekeeping:lock` | token ngẫu nhiên của lần chạy giữ khoá; `SET NX`, nhả bằng Lua so token (chỉ xoá khoá của mình) (T53) | `housekeeping.lock-ttl` (30 phút) | core |
+| `resetLink:{sha256(token)}` | userId của link đặt lại mật khẩu ADMIN gửi (T57, P-63) | `auth.reset-link.ttl` (24 giờ) | auth |
+| `resetLink:user:{userId}` | sha256(token) của link còn hiệu lực của user; link mới xoá link cũ | như trên | auth |
+| `metrics:business:{from}:{to}` | JSON của `GET /admin/metrics/business` cho khoảng ngày đó (T60) | 60 giây | admin |
 | `directions:route:{routeId}:{planVersion}` (Should) | JSON geometry/steps | 24 h | planning |
 
 Key OTP dùng **userId** (T12), không dùng email. OTP bị xoá khi đúng (dùng một lần) hoặc khi sai đủ `otp.max-attempts` (mặc định 3) lần.
@@ -218,6 +247,9 @@ Version được cấp trước — agent **không** tự chọn số khác:
 | V3 | `V3__store_invitations.sql` | T16 ✓ | Bảng `store_invitations`. **Đã tạo.** |
 | V4 | `V4__vehicles.sql` | T20 ✓ | Bảng `vehicles`. **Đã tạo.** |
 | V5 | `V5__route_plans.sql` | T24 ✓ | `background_jobs`, `route_plans`, `route_plan_routes`, `route_plan_stops`, `route_plan_stop_demands` (D-36). **Đã tạo.** |
+| V6 | `V6__manual_route_edit.sql` | T28 ✓ | `route_plan_stops.manually_unassigned BOOLEAN NOT NULL DEFAULT FALSE`: stop dispatcher bỏ ra khỏi route bằng `PUT /plans/{id}/routes` (`dropReason = MANUAL`, P-58); optimize, `PUT /plans/{id}` và `PATCH` stop đặt lại `FALSE`. |
+| V7 | `V7__store_status.sql` | T55 | `stores.status` (`ACTIVE`/`READ_ONLY`, mặc định `ACTIVE`), `lock_reason`, `locked_at`, `locked_by` (FK users), CHECK `chk_stores_status`, index `idx_stores_status` (P-60). T55 chỉ đọc; T56 ghi khi khoá/mở khoá, không cần migration riêng. |
+| V8 | `V8__audit_events.sql` | T58 | Bảng `audit_events` (§2.10, P-61). |
 
 Task phát sinh cần migration mới lấy số tiếp theo **sau khi** cập nhật bảng này trong cùng PR.
 
@@ -226,4 +258,17 @@ Task phát sinh cần migration mới lấy số tiếp theo **sau khi** cập n
 - **Không chuyển dữ liệu.** Trước khi chạy V2, dev xoá DB local (`DROP DATABASE pathwise; CREATE DATABASE pathwise;`) để Flyway chạy lại từ V1.
 - V2 thêm các cột NOT NULL (`status`...) mà không đặt giá trị mặc định cho dữ liệu cũ. Nếu bảng `users` còn dữ liệu thì migration fail, coi như tín hiệu nhắc phải reset DB.
 - Testcontainers và CI luôn bắt đầu từ DB trống nên không bị ảnh hưởng.
-- ADMIN đầu tiên được tạo bằng script seed thủ công. T13 cung cấp file `be/db/seed-admin.example.sql`, không chạy tự động.
+- ADMIN đầu tiên: từ T59, app tự tạo lúc khởi động khi chưa có ADMIN nào và có `BOOTSTRAP_ADMIN_EMAIL` (DEPLOYMENT §2): `role=ADMIN`, `store_id NULL`, `ACTIVE`, `email_verified_at` có giá trị. File `be/db/seed-admin.example.sql` (T13, chạy tay) còn giữ làm cách dự phòng.
+
+## 6. Thời gian giữ dữ liệu (T53, P-59)
+
+Job `core.housekeeping` chạy mỗi đêm (`housekeeping.cron`, mặc định 03:30 giờ Việt Nam, sau backup 02:30), giữ khoá Redis `housekeeping:lock` để chỉ một instance chạy. Mỗi module tự xoá bảng của mình qua một `RetentionTask` (ARCHITECTURE §8.6); số ngày ở `housekeeping.retention.<tên>`:
+
+| Tên | Bảng | Xoá khi | Mặc định | Giữ lại |
+|---|---|---|---|---|
+| `refresh-tokens` | `refresh_tokens` | `expires_at` quá hạn giữ, hoặc `REVOKED` và `updated_at` quá hạn giữ | 30 ngày | token còn hạn hoặc mới hết hạn/thu hồi (phát hiện dùng lại token cũ, P-07) |
+| `jobs` | `background_jobs` | `SUCCEEDED`/`FAILED` và `finished_at` quá hạn giữ | 100 ngày (30 ở T53; T60, P-64: biểu đồ tối ưu 90 ngày) | job `QUEUED`/`RUNNING`; job còn là `route_plans.active_job_id` của một plan |
+| `invitations` | `store_invitations` | chưa `ACCEPTED` và (`expires_at` quá hạn giữ, hoặc `REVOKED` và `updated_at` quá hạn giữ) | 90 ngày | lời mời `ACCEPTED` (lịch sử ai mời ai); lời mời còn dùng được |
+| `audit-events` | `audit_events` (T58) | `occurred_at` quá hạn giữ | 365 ngày | sự kiện trong năm |
+
+Task thiếu cấu hình số ngày thì bị bỏ qua (log cảnh báo); một task lỗi không chặn task khác. Log mỗi lần chạy: số dòng đã xoá theo tên.

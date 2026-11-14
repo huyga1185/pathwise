@@ -1,12 +1,13 @@
 package uk.huy.pathwise.job.service;
 
 import jakarta.annotation.PreDestroy;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.task.TaskRejectedException;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;
 import uk.huy.pathwise.core.exception.AppException;
 import uk.huy.pathwise.core.exception.ExternalServiceException;
+import uk.huy.pathwise.core.observability.FailureLog;
+import uk.huy.pathwise.core.observability.FailureSource;
 import uk.huy.pathwise.job.dto.JobRef;
 import uk.huy.pathwise.job.infrastructure.config.JobMode;
 import uk.huy.pathwise.job.infrastructure.config.JobProperties;
@@ -22,17 +23,18 @@ import java.util.Map;
  * pool is private to this class rather than a Spring {@code Executor} bean, so that it does not replace Spring Boot's
  * default task executor.
  */
-@Slf4j
 @Component
 public class JobExecutor {
     private final JobProperties properties;
     private final JobStateService jobStateService;
+    private final FailureLog failureLog;
     private final Map<JobType, JobHandler> handlers = new EnumMap<>(JobType.class);
     private final ThreadPoolTaskExecutor pool;
 
-    JobExecutor(JobProperties properties, JobStateService jobStateService, List<JobHandler> handlers) {
+    JobExecutor(JobProperties properties, JobStateService jobStateService, List<JobHandler> handlers, FailureLog failureLog) {
         this.properties = properties;
         this.jobStateService = jobStateService;
+        this.failureLog = failureLog;
         for (JobHandler handler : handlers) {
             if (this.handlers.put(handler.type(), handler) != null)
                 throw new IllegalStateException("Two handlers for job type " + handler.type());
@@ -58,7 +60,7 @@ public class JobExecutor {
         try {
             pool.execute(() -> run(handler, job));
         } catch (TaskRejectedException e) {
-            log.warn("Job queue full, job rejected. jobId={}, type={}", job.id(), job.type());
+            failureLog.record(FailureSource.JOB, job.type().name(), JobErrors.JOB_QUEUE_FULL, "jobId=" + job.id(), null);
             jobStateService.markFailed(job.id(), JobErrors.JOB_QUEUE_FULL);
             handler.abandon(job);
         }
@@ -77,7 +79,9 @@ public class JobExecutor {
             jobStateService.markSucceeded(job.id());
         } catch (Exception e) {
             String errorCode = errorCodeOf(e);
-            log.error("Job failed. jobId={}, type={}, errorCode={}", job.id(), job.type(), errorCode, e);
+            // The stack trace only for an unexpected error: a provider failure is reported by the provider itself.
+            Throwable stack = JobErrors.INTERNAL_ERROR.equals(errorCode) ? e : null;
+            failureLog.record(FailureSource.JOB, job.type().name(), errorCode, "jobId=" + job.id(), stack);
             jobStateService.markFailed(job.id(), errorCode);
         }
     }

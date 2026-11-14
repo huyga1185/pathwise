@@ -104,6 +104,44 @@ describe('accessibility', () => {
     expect(await violations(container)).toEqual([]);
   });
 
+  it('màn báo cáo (thẻ số, biểu đồ, bảng) không có lỗi axe', async () => {
+    server.use(
+      http.get(`${API}/store`, () => ok(sample<{ data: unknown }>('store').data)),
+      http.get(`${API}/reports/summary`, () =>
+        ok({
+          from: '2026-12-01',
+          to: '2026-12-02',
+          plans: { total: 2, draft: 0, published: 0, inProgress: 0, completed: 2, cancelled: 0 },
+          stops: { total: 20, delivered: 18, failed: 2, skipped: 0, pending: 0, deliveredRate: 0.9 },
+          plannedDistanceMeters: 50000,
+          days: [
+            { date: '2026-12-01', plans: 1, delivered: 9, failed: 1, skipped: 0, pending: 0 },
+            { date: '2026-12-02', plans: 1, delivered: 9, failed: 1, skipped: 0, pending: 0 },
+          ],
+          drivers: [
+            {
+              driverId: 451,
+              fullName: 'Tùng',
+              routes: 2,
+              delivered: 18,
+              failed: 2,
+              skipped: 0,
+              pending: 0,
+              plannedDistanceMeters: 50000,
+              firstResultAt: '2026-12-01T01:00:00Z',
+              lastResultAt: '2026-12-02T09:00:00Z',
+            },
+          ],
+          failureReasons: [{ reason: 'Vắng nhà', count: 2 }],
+        }),
+      ),
+      ...signedInHandlers(),
+    );
+    const { container } = renderApp('/reports?from=2026-12-01&to=2026-12-02');
+    await screen.findByText('Tùng');
+    expect(await violations(container)).toEqual([]);
+  });
+
   it.each([
     ['/vehicles', 'Xe'],
     ['/members', 'Thành viên'],

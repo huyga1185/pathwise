@@ -4,6 +4,134 @@
  */
 
 export interface paths {
+    "/api/v1/admin/audit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["listEvents_1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/metrics/business": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["business"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/metrics/technical": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["technical"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/stores": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["listStores"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/stores/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getStore_1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/stores/{id}/lock": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["lock"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/stores/{id}/owner": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["transferOwner"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/stores/{id}/unlock": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["unlock"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/users": {
         parameters: {
             query?: never;
@@ -14,6 +142,86 @@ export interface paths {
         get: operations["getListUser"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/users/{id}/disable": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["disable"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/users/{id}/enable": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["enable"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/users/{id}/password-reset-email": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["sendPasswordResetLink"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/users/{id}/sessions/revoke": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["revokeSessions"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/users/{id}/verification-email": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["sendVerificationEmail"];
         delete?: never;
         options?: never;
         head?: never;
@@ -142,6 +350,38 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["resetPassword"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/password/reset-link": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["resetPassword_1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/password/reset-link/otp": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["sendOtp"];
         delete?: never;
         options?: never;
         head?: never;
@@ -308,6 +548,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/driver/routes/{routeId}/directions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getDirections"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/driver/routes/{routeId}/stops/{stopId}/status": {
         parameters: {
             query?: never;
@@ -404,6 +660,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/plans/import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["importStops"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/plans/import/template.csv": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["csvTemplate"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/plans/import/template.xlsx": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["xlsxTemplate"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/plans/{id}": {
         parameters: {
             query?: never;
@@ -430,6 +734,22 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["cancelPlan"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/plans/{id}/copy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["copyPlan"];
         delete?: never;
         options?: never;
         head?: never;
@@ -500,6 +820,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/plans/{id}/routes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["replaceRoutes"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/plans/{id}/stops/{stopId}": {
         parameters: {
             query?: never;
@@ -516,6 +852,38 @@ export interface paths {
         patch: operations["patchStop"];
         trace?: never;
     };
+    "/api/v1/reports/stops.csv": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["stopsCsv"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/reports/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["summary"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/store": {
         parameters: {
             query?: never;
@@ -525,6 +893,22 @@ export interface paths {
         };
         get: operations["getStore"];
         put: operations["updateStore"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/store/audit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["listEvents"];
+        put?: never;
         post?: never;
         delete?: never;
         options?: never;
@@ -679,11 +1063,95 @@ export interface components {
             phoneNumber: string | null;
             /** @enum {string} */
             role: "ADMIN" | "OWNER" | "DISPATCHER" | "DRIVER";
+            /** @enum {string} */
+            status: "PENDING_VERIFICATION" | "ACTIVE" | "DISABLED";
+            /** Format: int64 */
+            storeId: number | null;
             /** Format: date-time */
             updatedAt: string;
         };
+        AdminMemberResponse: {
+            /** Format: date-time */
+            createdAt: string;
+            email: string;
+            /** Format: int64 */
+            id: number;
+            /** @enum {string} */
+            role: "ADMIN" | "OWNER" | "DISPATCHER" | "DRIVER";
+            /** @enum {string} */
+            status: "PENDING_VERIFICATION" | "ACTIVE" | "DISABLED";
+        };
+        AdminStoreDetailResponse: {
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: int64 */
+            id: number;
+            last30Days: components["schemas"]["StorePeriodStatsResponse"];
+            /** Format: date-time */
+            lastActivityAt: string | null;
+            lockReason: string | null;
+            /** Format: date-time */
+            lockedAt: string | null;
+            memberCounts: components["schemas"]["MemberCountsResponse"];
+            members: components["schemas"]["AdminMemberResponse"][];
+            name: string;
+            ownerEmail: string | null;
+            /** Format: int64 */
+            plans: number;
+            /** @enum {string} */
+            status: "ACTIVE" | "READ_ONLY";
+            timezone: string;
+            /** Format: int64 */
+            vehicles: number;
+        };
+        AdminStoreStateResponse: {
+            /** Format: int64 */
+            id: number;
+            lockReason: string | null;
+            /** Format: date-time */
+            lockedAt: string | null;
+            /** @enum {string} */
+            status: "ACTIVE" | "READ_ONLY";
+        };
+        AdminStoreSummaryResponse: {
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: int64 */
+            id: number;
+            /** Format: date-time */
+            lastActivityAt: string | null;
+            memberCounts: components["schemas"]["MemberCountsResponse"];
+            name: string;
+            ownerEmail: string | null;
+            /** Format: int64 */
+            plans: number;
+            /** @enum {string} */
+            status: "ACTIVE" | "READ_ONLY";
+            /** Format: int64 */
+            vehicles: number;
+        };
+        ApiResponseAdminGetUserResponse: {
+            data: components["schemas"]["AdminGetUserResponse"];
+            message?: string;
+        };
+        ApiResponseAdminStoreDetailResponse: {
+            data: components["schemas"]["AdminStoreDetailResponse"];
+            message?: string;
+        };
+        ApiResponseAdminStoreStateResponse: {
+            data: components["schemas"]["AdminStoreStateResponse"];
+            message?: string;
+        };
         ApiResponseAuthTokenResponse: {
             data: components["schemas"]["AuthTokenResponse"];
+            message?: string;
+        };
+        ApiResponseBusinessMetricsResponse: {
+            data: components["schemas"]["BusinessMetricsResponse"];
+            message?: string;
+        };
+        ApiResponseDirectionsResponse: {
+            data: components["schemas"]["DirectionsResponse"];
             message?: string;
         };
         ApiResponseDriverRouteDetailResponse: {
@@ -746,12 +1214,32 @@ export interface components {
             data: components["schemas"]["PageResponseAdminGetUserResponse"];
             message?: string;
         };
+        ApiResponsePageResponseAdminStoreSummaryResponse: {
+            data: components["schemas"]["PageResponseAdminStoreSummaryResponse"];
+            message?: string;
+        };
+        ApiResponsePageResponseAuditEventResponse: {
+            data: components["schemas"]["PageResponseAuditEventResponse"];
+            message?: string;
+        };
         ApiResponsePageResponsePlanSummaryResponse: {
             data: components["schemas"]["PageResponsePlanSummaryResponse"];
             message?: string;
         };
+        ApiResponsePageResponseStoreAuditEventResponse: {
+            data: components["schemas"]["PageResponseStoreAuditEventResponse"];
+            message?: string;
+        };
+        ApiResponsePlanCopyResponse: {
+            data: components["schemas"]["PlanCopyResponse"];
+            message?: string;
+        };
         ApiResponsePlanDetailResponse: {
             data: components["schemas"]["PlanDetailResponse"];
+            message?: string;
+        };
+        ApiResponsePlanImportResponse: {
+            data: components["schemas"]["PlanImportResponse"];
             message?: string;
         };
         ApiResponseRegisterResponse: {
@@ -762,8 +1250,20 @@ export interface components {
             data: components["schemas"]["ResetTokenResponse"];
             message?: string;
         };
+        ApiResponseStoreReportResponse: {
+            data: components["schemas"]["StoreReportResponse"];
+            message?: string;
+        };
         ApiResponseStoreResponse: {
             data: components["schemas"]["StoreResponse"];
+            message?: string;
+        };
+        ApiResponseTechnicalMetricsResponse: {
+            data: components["schemas"]["TechnicalMetricsResponse"];
+            message?: string;
+        };
+        ApiResponseTransferOwnerResponse: {
+            data: components["schemas"]["TransferOwnerResponse"];
             message?: string;
         };
         ApiResponseVehicleResponse: {
@@ -781,6 +1281,30 @@ export interface components {
             shiftStart: string;
             /** Format: int64 */
             vehicleId: number;
+        };
+        AuditEventResponse: {
+            /** @enum {string} */
+            action: "MEMBER_UPDATED" | "INVITATION_REVOKED" | "PLAN_PUBLISHED" | "PLAN_CANCELLED" | "PLAN_ROUTES_EDITED" | "STORE_VIEWED" | "STORE_LOCKED" | "STORE_UNLOCKED" | "USER_DISABLED" | "USER_ENABLED" | "USER_SESSIONS_REVOKED" | "VERIFICATION_EMAIL_SENT" | "PASSWORD_RESET_LINK_SENT" | "STORE_OWNER_TRANSFERRED";
+            actorEmail: string | null;
+            /** Format: int64 */
+            actorId: number | null;
+            /** @enum {string|null} */
+            actorRole: "ADMIN" | "OWNER" | "DISPATCHER" | "DRIVER" | null;
+            details: {
+                [key: string]: unknown;
+            };
+            /** Format: int64 */
+            id: number;
+            ip: string | null;
+            /** Format: date-time */
+            occurredAt: string;
+            requestId: string | null;
+            /** Format: int64 */
+            storeId: number | null;
+            /** Format: int64 */
+            targetId: number | null;
+            /** @enum {string} */
+            targetType: "STORE" | "USER" | "INVITATION" | "PLAN";
         };
         AuthTokenResponse: {
             accessToken: string;
@@ -802,9 +1326,28 @@ export interface components {
             /** Format: int64 */
             storeId?: number;
         };
+        BusinessMetricsResponse: {
+            /** Format: date-time */
+            computedAt: string;
+            days: components["schemas"]["Day"][];
+            /** Format: date */
+            from: string;
+            now: components["schemas"]["Now"];
+            timezone: string;
+            /** Format: date */
+            to: string;
+            totals: components["schemas"]["Totals"];
+        };
         ChangePasswordRequest: {
             newPassword: string;
             otp: string;
+        };
+        CopyPlanRequest: {
+            name?: string;
+            /** Format: date */
+            planDate: string;
+            /** @enum {string} */
+            stops: "ALL" | "NOT_DELIVERED";
         };
         CreateInvitationRequest: {
             /** Format: email */
@@ -820,6 +1363,39 @@ export interface components {
             name: string;
             plateNumber?: string;
         };
+        Database: {
+            /** Format: int32 */
+            activeConnections: number | null;
+            /** Format: int32 */
+            idleConnections: number | null;
+            largestTables: components["schemas"]["Table"][];
+            /** Format: int32 */
+            maxConnections: number | null;
+            /** Format: int64 */
+            sizeBytes: number;
+        };
+        Day: {
+            /** Format: date */
+            date: string;
+            /** Format: int64 */
+            newStores: number;
+            /** Format: int64 */
+            optimizations: number;
+            /** Format: int64 */
+            optimizationsFailed: number;
+            /** Format: int64 */
+            plansCompleted: number;
+            /** Format: int64 */
+            plansCreated: number;
+            /** Format: int64 */
+            plansPublished: number;
+            /** Format: int64 */
+            stopsDelivered: number;
+            /** Format: int64 */
+            stopsFailed: number;
+            /** Format: int64 */
+            stopsSkipped: number;
+        };
         DepotRequest: {
             address?: string;
             /** Format: double */
@@ -833,6 +1409,41 @@ export interface components {
             lat: number;
             /** Format: double */
             lon: number;
+        };
+        DirectionsDestination: {
+            /** Format: double */
+            lat: number;
+            /** Format: double */
+            lon: number;
+            /** Format: int64 */
+            stopId: number | null;
+        };
+        DirectionsInstruction: {
+            /** Format: int32 */
+            distanceMeters: number;
+            /** Format: int32 */
+            durationSeconds: number;
+            /** Format: int32 */
+            exitNumber: number | null;
+            location: components["schemas"]["DirectionsPoint"];
+            /** @enum {string} */
+            maneuver: "DEPART" | "ARRIVE" | "STRAIGHT" | "SLIGHT_LEFT" | "SLIGHT_RIGHT" | "LEFT" | "RIGHT" | "SHARP_LEFT" | "SHARP_RIGHT" | "UTURN" | "KEEP_LEFT" | "KEEP_RIGHT" | "ROUNDABOUT";
+            roadName: string | null;
+        };
+        DirectionsPoint: {
+            /** Format: double */
+            lat: number;
+            /** Format: double */
+            lon: number;
+        };
+        DirectionsResponse: {
+            destination: components["schemas"]["DirectionsDestination"];
+            /** Format: int32 */
+            distanceMeters: number;
+            /** Format: int32 */
+            durationSeconds: number;
+            polyline: string;
+            steps: components["schemas"]["DirectionsInstruction"][];
         };
         Driver: {
             fullName: string | null;
@@ -931,6 +1542,20 @@ export interface components {
             routeStatus: "PENDING" | "IN_PROGRESS" | "COMPLETED";
             stop: components["schemas"]["DriverStopResponse"];
         };
+        Failures: {
+            /** Format: int64 */
+            email: number;
+            /** Format: int64 */
+            geocoding: number;
+            /** Format: int64 */
+            job: number;
+            /** Format: int64 */
+            routing: number;
+        };
+        FieldErrorDetail: {
+            code?: string;
+            field?: string;
+        };
         ForgotPasswordRequest: {
             /** Format: email */
             email: string;
@@ -960,6 +1585,50 @@ export interface components {
             status: "PENDING_VERIFICATION" | "ACTIVE" | "DISABLED";
             /** Format: int64 */
             storeId: number | null;
+            storeLockReason: string | null;
+            /** @enum {string|null} */
+            storeStatus: "ACTIVE" | "READ_ONLY" | null;
+        };
+        Group: {
+            group: string;
+            /** Format: double */
+            p95Millis: number | null;
+            /** Format: int64 */
+            requestsLastHour: number;
+        };
+        Http: {
+            /** Format: double */
+            clientErrorRate: number | null;
+            groups: components["schemas"]["Group"][];
+            /** Format: int64 */
+            requestsLastHour: number;
+            /** Format: double */
+            requestsPerMinute: number;
+            /** Format: double */
+            serverErrorRate: number | null;
+        };
+        ImportedRowResponse: {
+            errors: components["schemas"]["FieldErrorDetail"][];
+            /** Format: int32 */
+            row: number;
+            stop: components["schemas"]["ImportedStopResponse"];
+        };
+        ImportedStopResponse: {
+            address: string | null;
+            demands: {
+                [key: string]: number;
+            };
+            label: string | null;
+            /** Format: double */
+            lat: number | null;
+            /** Format: double */
+            lon: number | null;
+            note: string | null;
+            recipientName: string | null;
+            recipientPhone: string | null;
+            /** Format: int32 */
+            serviceTimeSeconds: number | null;
+            timeWindow: components["schemas"]["TimeWindowResponse"] | null;
         };
         InvitationPreviewResponse: {
             email: string;
@@ -997,6 +1666,18 @@ export interface components {
             /** @enum {string} */
             type: "GEOCODE_PLAN" | "OPTIMIZE_PLAN";
         };
+        Jobs: {
+            /** Format: int64 */
+            failedLast24h: number;
+            /** Format: int64 */
+            unfinished: number;
+        };
+        Jvm: {
+            /** Format: int64 */
+            heapMaxBytes: number | null;
+            /** Format: int64 */
+            heapUsedBytes: number;
+        };
         LocationBatchRequest: {
             points: components["schemas"]["LocationPointRequest"][];
         };
@@ -1021,10 +1702,21 @@ export interface components {
             /** Format: double */
             lon: number;
         };
+        LockStoreRequest: {
+            reason: string;
+        };
         LogInRequest: {
             /** Format: email */
             email: string;
             password: string;
+        };
+        MemberCountsResponse: {
+            /** Format: int64 */
+            dispatchers: number;
+            /** Format: int64 */
+            drivers: number;
+            /** Format: int64 */
+            owners: number;
         };
         MemberResponse: {
             canDrive: boolean;
@@ -1038,6 +1730,24 @@ export interface components {
             /** @enum {string} */
             status: "PENDING_VERIFICATION" | "ACTIVE" | "DISABLED";
         };
+        Now: {
+            /** Format: int64 */
+            activeStores30d: number;
+            /** Format: int64 */
+            activeStores7d: number;
+            /** Format: int64 */
+            admins: number;
+            /** Format: int64 */
+            dispatchers: number;
+            /** Format: int64 */
+            drivers: number;
+            /** Format: int64 */
+            lockedStores: number;
+            /** Format: int64 */
+            owners: number;
+            /** Format: int64 */
+            stores: number;
+        };
         PageResponseAdminGetUserResponse: {
             items: components["schemas"]["AdminGetUserResponse"][];
             /** Format: int32 */
@@ -1049,8 +1759,41 @@ export interface components {
             /** Format: int32 */
             totalPages: number;
         };
+        PageResponseAdminStoreSummaryResponse: {
+            items: components["schemas"]["AdminStoreSummaryResponse"][];
+            /** Format: int32 */
+            page: number;
+            /** Format: int32 */
+            size: number;
+            /** Format: int64 */
+            totalElements: number;
+            /** Format: int32 */
+            totalPages: number;
+        };
+        PageResponseAuditEventResponse: {
+            items: components["schemas"]["AuditEventResponse"][];
+            /** Format: int32 */
+            page: number;
+            /** Format: int32 */
+            size: number;
+            /** Format: int64 */
+            totalElements: number;
+            /** Format: int32 */
+            totalPages: number;
+        };
         PageResponsePlanSummaryResponse: {
             items: components["schemas"]["PlanSummaryResponse"][];
+            /** Format: int32 */
+            page: number;
+            /** Format: int32 */
+            size: number;
+            /** Format: int64 */
+            totalElements: number;
+            /** Format: int32 */
+            totalPages: number;
+        };
+        PageResponseStoreAuditEventResponse: {
+            items: components["schemas"]["StoreAuditEventResponse"][];
             /** Format: int32 */
             page: number;
             /** Format: int32 */
@@ -1086,6 +1829,10 @@ export interface components {
             /** Format: double */
             lon: number;
         };
+        PlanCopyResponse: {
+            plan: components["schemas"]["PlanDetailResponse"];
+            skippedAssignments: components["schemas"]["SkippedAssignmentResponse"][];
+        };
         PlanDetailResponse: {
             activeJob: components["schemas"]["JobResponse"] | null;
             depot: components["schemas"]["LocationResponse"];
@@ -1110,6 +1857,7 @@ export interface components {
             unassignedStops: components["schemas"]["PlanStopResponse"][];
             /** Format: int64 */
             version: number;
+            violations: components["schemas"]["ViolationResponse"][];
         };
         PlanDraftRequest: {
             assignments?: components["schemas"]["AssignmentRequest"][];
@@ -1119,7 +1867,15 @@ export interface components {
             planDate: string;
             stops?: components["schemas"]["PlanStopRequest"][];
             /** Format: int64 */
-            version: number;
+            version?: number;
+        };
+        PlanImportResponse: {
+            /** Format: int32 */
+            errorCount: number;
+            ignoredColumns: string[];
+            rows: components["schemas"]["ImportedRowResponse"][];
+            /** Format: int32 */
+            validCount: number;
         };
         PlanRouteResponse: {
             driver: components["schemas"]["Driver"];
@@ -1173,7 +1929,7 @@ export interface components {
                 [key: string]: number;
             };
             /** @enum {string|null} */
-            dropReason: "NOT_OPTIMIZED" | "INFEASIBLE" | null;
+            dropReason: "NOT_OPTIMIZED" | "INFEASIBLE" | "MANUAL" | null;
             failureReason: string | null;
             /** @enum {string|null} */
             geocodeError: "NOT_FOUND" | "PROVIDER_ERROR" | null;
@@ -1244,12 +2000,94 @@ export interface components {
             /** @enum {string} */
             status: "PENDING_VERIFICATION" | "ACTIVE" | "DISABLED";
         };
+        ReplaceRoutesRequest: {
+            routes: components["schemas"]["RouteStops"][];
+            unassignedStopIds: number[];
+            /** Format: int64 */
+            version: number;
+        };
+        ReportDay: {
+            /** Format: date */
+            date: string;
+            /** Format: int64 */
+            delivered: number;
+            /** Format: int64 */
+            failed: number;
+            /** Format: int64 */
+            pending: number;
+            /** Format: int64 */
+            plans: number;
+            /** Format: int64 */
+            skipped: number;
+        };
+        ReportDriver: {
+            /** Format: int64 */
+            delivered: number;
+            /** Format: int64 */
+            driverId: number;
+            /** Format: int64 */
+            failed: number;
+            /** Format: date-time */
+            firstResultAt: string | null;
+            fullName: string;
+            /** Format: date-time */
+            lastResultAt: string | null;
+            /** Format: int64 */
+            pending: number;
+            /** Format: int64 */
+            plannedDistanceMeters: number;
+            /** Format: int64 */
+            routes: number;
+            /** Format: int64 */
+            skipped: number;
+        };
+        ReportFailureReason: {
+            /** Format: int64 */
+            count: number;
+            reason: string;
+        };
+        ReportPlanCounts: {
+            /** Format: int64 */
+            cancelled: number;
+            /** Format: int64 */
+            completed: number;
+            /** Format: int64 */
+            draft: number;
+            /** Format: int64 */
+            inProgress: number;
+            /** Format: int64 */
+            published: number;
+            /** Format: int64 */
+            total: number;
+        };
+        ReportStopCounts: {
+            /** Format: int64 */
+            delivered: number;
+            /** Format: double */
+            deliveredRate: number | null;
+            /** Format: int64 */
+            failed: number;
+            /** Format: int64 */
+            pending: number;
+            /** Format: int64 */
+            skipped: number;
+            /** Format: int64 */
+            total: number;
+        };
         RequestPasswordChangeOtpRequest: {
             currentPassword: string;
         };
         ResendVerificationRequest: {
             /** Format: email */
             email: string;
+        };
+        ResetLinkOtpRequest: {
+            token: string;
+        };
+        ResetPasswordByLinkRequest: {
+            newPassword: string;
+            otp: string;
+            token: string;
         };
         ResetPasswordRequest: {
             newPassword: string;
@@ -1259,6 +2097,11 @@ export interface components {
             /** Format: date-time */
             expiresAt: string;
             resetToken: string;
+        };
+        RouteStops: {
+            /** Format: int64 */
+            routeId: number;
+            stopIds: number[];
         };
         SessionResponse: {
             current: boolean;
@@ -1270,12 +2113,95 @@ export interface components {
             sessionId: string;
             userAgent: string | null;
         };
+        SkippedAssignmentResponse: {
+            /** Format: int64 */
+            driverId: number;
+            /** @enum {string} */
+            reason: "DRIVER_UNAVAILABLE" | "VEHICLE_INACTIVE";
+            /** Format: int64 */
+            vehicleId: number;
+        };
+        StoreAuditEventResponse: {
+            /** @enum {string} */
+            action: "MEMBER_UPDATED" | "INVITATION_REVOKED" | "PLAN_PUBLISHED" | "PLAN_CANCELLED" | "PLAN_ROUTES_EDITED" | "STORE_VIEWED" | "STORE_LOCKED" | "STORE_UNLOCKED" | "USER_DISABLED" | "USER_ENABLED" | "USER_SESSIONS_REVOKED" | "VERIFICATION_EMAIL_SENT" | "PASSWORD_RESET_LINK_SENT" | "STORE_OWNER_TRANSFERRED";
+            actorEmail: string | null;
+            /** Format: int64 */
+            actorId: number | null;
+            /** @enum {string|null} */
+            actorRole: "ADMIN" | "OWNER" | "DISPATCHER" | "DRIVER" | null;
+            details: {
+                [key: string]: unknown;
+            };
+            /** Format: int64 */
+            id: number;
+            ip: string | null;
+            /** Format: date-time */
+            occurredAt: string;
+            requestId: string | null;
+            /** Format: int64 */
+            targetId: number | null;
+            /** @enum {string} */
+            targetType: "STORE" | "USER" | "INVITATION" | "PLAN";
+        };
+        StorePeriodStatsResponse: {
+            /** Format: double */
+            deliveredRate: number | null;
+            /** Format: int64 */
+            plansCompleted: number;
+            /** Format: int64 */
+            plansCreated: number;
+            /** Format: int64 */
+            plansPublished: number;
+            /** Format: date-time */
+            since: string;
+            /** Format: int64 */
+            stopsDelivered: number;
+            /** Format: int64 */
+            stopsFailed: number;
+            /** Format: int64 */
+            stopsSkipped: number;
+        };
+        StoreReportResponse: {
+            days: components["schemas"]["ReportDay"][];
+            drivers: components["schemas"]["ReportDriver"][];
+            failureReasons: components["schemas"]["ReportFailureReason"][];
+            /** Format: date */
+            from: string;
+            /** Format: int64 */
+            plannedDistanceMeters: number;
+            plans: components["schemas"]["ReportPlanCounts"];
+            stops: components["schemas"]["ReportStopCounts"];
+            /** Format: date */
+            to: string;
+        };
         StoreResponse: {
             depot: components["schemas"]["DepotResponse"] | null;
             /** Format: int64 */
             id: number;
             name: string;
             timezone: string;
+        };
+        Table: {
+            /** Format: int64 */
+            bytes: number;
+            name: string;
+            /** Format: int64 */
+            rows: number;
+        };
+        TechnicalMetricsResponse: {
+            database: components["schemas"]["Database"];
+            failuresLast24h: components["schemas"]["Failures"];
+            http: components["schemas"]["Http"];
+            jobs: components["schemas"]["Jobs"];
+            jvm: components["schemas"]["Jvm"];
+            /** Format: date-time */
+            measuredAt: string;
+            /** Format: int64 */
+            rateLimitedLast24h: number;
+            /** Format: date-time */
+            startedAt: string;
+            /** Format: int64 */
+            uptimeSeconds: number;
         };
         TimeWindowRequest: {
             /** Format: time-local */
@@ -1288,6 +2214,49 @@ export interface components {
             end: string;
             /** Format: time-local */
             start: string;
+        };
+        Totals: {
+            /** Format: double */
+            deliveredRate: number | null;
+            /** Format: double */
+            failedRate: number | null;
+            /** Format: int64 */
+            newStores: number;
+            /** Format: double */
+            optimizationFailureRate: number | null;
+            /** Format: int64 */
+            optimizations: number;
+            /** Format: int64 */
+            optimizationsFailed: number;
+            /** Format: int64 */
+            plansCompleted: number;
+            /** Format: int64 */
+            plansCreated: number;
+            /** Format: int64 */
+            plansPublished: number;
+            /** Format: double */
+            skippedRate: number | null;
+            /** Format: int64 */
+            stopsDelivered: number;
+            /** Format: int64 */
+            stopsFailed: number;
+            /** Format: int64 */
+            stopsSkipped: number;
+        };
+        TransferOwnerRequest: {
+            /** Format: int64 */
+            userId: number;
+        };
+        TransferOwnerResponse: {
+            ownerCanDrive: boolean;
+            ownerEmail: string;
+            /** Format: int64 */
+            ownerId: number;
+            previousOwnerEmail: string | null;
+            /** Format: int64 */
+            previousOwnerId: number | null;
+            /** Format: int64 */
+            storeId: number;
         };
         UpdateCanDriveRequest: {
             canDrive: boolean;
@@ -1358,6 +2327,16 @@ export interface components {
             email: string;
             otp: string;
         };
+        ViolationResponse: {
+            /** @enum {string} */
+            code: "CAPACITY_EXCEEDED" | "TIME_WINDOW_MISSED" | "SHIFT_EXCEEDED" | "MAX_DISTANCE_EXCEEDED";
+            /** Format: int32 */
+            excess: number;
+            /** Format: int64 */
+            routeId: number;
+            /** Format: int64 */
+            stopId: number | null;
+        };
     };
     responses: never;
     parameters: never;
@@ -1367,9 +2346,212 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    listEvents_1: {
+        parameters: {
+            query?: {
+                storeId?: number;
+                actorId?: number;
+                action?: "MEMBER_UPDATED" | "INVITATION_REVOKED" | "PLAN_PUBLISHED" | "PLAN_CANCELLED" | "PLAN_ROUTES_EDITED" | "STORE_VIEWED" | "STORE_LOCKED" | "STORE_UNLOCKED" | "USER_DISABLED" | "USER_ENABLED" | "USER_SESSIONS_REVOKED" | "VERIFICATION_EMAIL_SENT" | "PASSWORD_RESET_LINK_SENT" | "STORE_OWNER_TRANSFERRED";
+                from?: string;
+                to?: string;
+                /** @description Zero-based page index (0..N) */
+                page?: number;
+                /** @description The size of the page to be returned */
+                size?: number;
+                /** @description Sorting criteria in the format: property,(asc|desc). Default sort order is ascending. Multiple sort criteria are supported. */
+                sort?: string[];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponsePageResponseAuditEventResponse"];
+                };
+            };
+        };
+    };
+    business: {
+        parameters: {
+            query?: {
+                from?: string;
+                to?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponseBusinessMetricsResponse"];
+                };
+            };
+        };
+    };
+    technical: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponseTechnicalMetricsResponse"];
+                };
+            };
+        };
+    };
+    listStores: {
+        parameters: {
+            query?: {
+                q?: string;
+                status?: "ACTIVE" | "READ_ONLY";
+                /** @description Zero-based page index (0..N) */
+                page?: number;
+                /** @description The size of the page to be returned */
+                size?: number;
+                /** @description Sorting criteria in the format: property,(asc|desc). Default sort order is ascending. Multiple sort criteria are supported. */
+                sort?: string[];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponsePageResponseAdminStoreSummaryResponse"];
+                };
+            };
+        };
+    };
+    getStore_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponseAdminStoreDetailResponse"];
+                };
+            };
+        };
+    };
+    lock: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LockStoreRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponseAdminStoreStateResponse"];
+                };
+            };
+        };
+    };
+    transferOwner: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TransferOwnerRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponseTransferOwnerResponse"];
+                };
+            };
+        };
+    };
+    unlock: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponseAdminStoreStateResponse"];
+                };
+            };
+        };
+    };
     getListUser: {
         parameters: {
             query?: {
+                storeId?: number;
+                role?: "ADMIN" | "OWNER" | "DISPATCHER" | "DRIVER";
+                status?: "PENDING_VERIFICATION" | "ACTIVE" | "DISABLED";
                 /** @description Zero-based page index (0..N) */
                 page?: number;
                 /** @description The size of the page to be returned */
@@ -1391,6 +2573,110 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["ApiResponsePageResponseAdminGetUserResponse"];
                 };
+            };
+        };
+    };
+    disable: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponseAdminGetUserResponse"];
+                };
+            };
+        };
+    };
+    enable: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponseAdminGetUserResponse"];
+                };
+            };
+        };
+    };
+    sendPasswordResetLink: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    revokeSessions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    sendVerificationEmail: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -1566,6 +2852,50 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["ResetPasswordRequest"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    resetPassword_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResetPasswordByLinkRequest"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    sendOtp: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResetLinkOtpRequest"];
             };
         };
         responses: {
@@ -1802,6 +3132,32 @@ export interface operations {
             };
         };
     };
+    getDirections: {
+        parameters: {
+            query: {
+                lat: number;
+                lon: number;
+                toStopId?: number;
+            };
+            header?: never;
+            path: {
+                routeId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponseDirectionsResponse"];
+                };
+            };
+        };
+    };
     updateStopStatus: {
         parameters: {
             query?: never;
@@ -1971,6 +3327,73 @@ export interface operations {
             };
         };
     };
+    importStops: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "multipart/form-data": {
+                    /** Format: binary */
+                    file: string;
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponsePlanImportResponse"];
+                };
+            };
+        };
+    };
+    csvTemplate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/csv": string;
+                };
+            };
+        };
+    };
+    xlsxTemplate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": string;
+                };
+            };
+        };
+    };
     getPlan: {
         parameters: {
             query?: never;
@@ -2041,6 +3464,32 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ApiResponsePlanDetailResponse"];
+                };
+            };
+        };
+    };
+    copyPlan: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CopyPlanRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponsePlanCopyResponse"];
                 };
             };
         };
@@ -2145,6 +3594,32 @@ export interface operations {
             };
         };
     };
+    replaceRoutes: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReplaceRoutesRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponsePlanDetailResponse"];
+                };
+            };
+        };
+    };
     patchStop: {
         parameters: {
             query?: never;
@@ -2168,6 +3643,50 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ApiResponsePlanDetailResponse"];
+                };
+            };
+        };
+    };
+    stopsCsv: {
+        parameters: {
+            query?: {
+                from?: string | null;
+                to?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    summary: {
+        parameters: {
+            query?: {
+                from?: string | null;
+                to?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponseStoreReportResponse"];
                 };
             };
         };
@@ -2212,6 +3731,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ApiResponseStoreResponse"];
+                };
+            };
+        };
+    };
+    listEvents: {
+        parameters: {
+            query?: {
+                actorId?: number;
+                action?: "MEMBER_UPDATED" | "INVITATION_REVOKED" | "PLAN_PUBLISHED" | "PLAN_CANCELLED" | "PLAN_ROUTES_EDITED" | "STORE_VIEWED" | "STORE_LOCKED" | "STORE_UNLOCKED" | "USER_DISABLED" | "USER_ENABLED" | "USER_SESSIONS_REVOKED" | "VERIFICATION_EMAIL_SENT" | "PASSWORD_RESET_LINK_SENT" | "STORE_OWNER_TRANSFERRED";
+                from?: string;
+                to?: string;
+                /** @description Zero-based page index (0..N) */
+                page?: number;
+                /** @description The size of the page to be returned */
+                size?: number;
+                /** @description Sorting criteria in the format: property,(asc|desc). Default sort order is ascending. Multiple sort criteria are supported. */
+                sort?: string[];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponsePageResponseStoreAuditEventResponse"];
                 };
             };
         };

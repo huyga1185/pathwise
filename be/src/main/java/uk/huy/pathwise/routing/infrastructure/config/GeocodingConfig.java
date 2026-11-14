@@ -6,6 +6,8 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.web.client.RestClient;
+import uk.huy.pathwise.core.observability.FailureLog;
+import uk.huy.pathwise.routing.infrastructure.failure.FailureLoggingGeocodingProvider;
 import tools.jackson.databind.ObjectMapper;
 import uk.huy.pathwise.core.security.Hasher;
 import uk.huy.pathwise.routing.geocoding.CachingGeocodingProvider;
@@ -30,11 +32,13 @@ public class GeocodingConfig {
                                         StringRedisTemplate redisTemplate,
                                         GeocodingCacheStore cache,
                                         Hasher hasher,
-                                        ObjectMapper objectMapper) {
+                                        ObjectMapper objectMapper,
+                                        FailureLog failureLog) {
         GeocodingProvider upstream = switch (properties.provider()) {
             case "nominatim" -> nominatim(properties.nominatim(), restClientBuilder, redisTemplate);
             default -> throw new IllegalStateException("Unknown routing.geocoding.provider: " + properties.provider());
         };
+        upstream = new FailureLoggingGeocodingProvider(upstream, properties.provider(), failureLog);
         return new CachingGeocodingProvider(upstream, properties.provider(), cache, hasher, objectMapper, properties.cacheTtl());
     }
 

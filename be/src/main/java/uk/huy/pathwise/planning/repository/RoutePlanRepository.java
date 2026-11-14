@@ -78,4 +78,85 @@ public interface RoutePlanRepository extends JpaRepository<RoutePlan, Long> {
      */
     @Query("SELECT r.plan.id, COUNT(r) FROM PlanRoute r WHERE r.plan.id IN :planIds GROUP BY r.plan.id")
     List<Object[]> countRoutes(@Param("planIds") Collection<Long> planIds);
+
+    /**
+     * @return {@code [status, count]} of the store's plans with {@code planDate} in {@code [from, to]} (T63)
+     */
+    @Query("SELECT p.status, COUNT(p) FROM RoutePlan p WHERE p.storeId = :storeId AND p.planDate BETWEEN :from AND :to "
+            + "GROUP BY p.status")
+    List<Object[]> countByStatusBetween(@Param("storeId") long storeId, @Param("from") LocalDate from, @Param("to") LocalDate to);
+
+    /**
+     * The store's plans with {@code planDate} in {@code [from, to]} and one of {@code statuses}, by day then id (T63).
+     */
+    @Query("SELECT p FROM RoutePlan p WHERE p.storeId = :storeId AND p.planDate BETWEEN :from AND :to "
+            + "AND p.status IN :statuses ORDER BY p.planDate, p.id")
+    List<RoutePlan> findInPeriod(@Param("storeId") long storeId, @Param("from") LocalDate from, @Param("to") LocalDate to,
+                                 @Param("statuses") Collection<PlanStatus> statuses);
+
+    // --- Across stores, for the ADMIN area (T55). Never for a store member's request.
+
+    /**
+     * @return {@code [storeId, plan count, latest updatedAt]} rows, only for stores that have plans
+     */
+    @Query("SELECT p.storeId, COUNT(p), MAX(p.updatedAt) FROM RoutePlan p WHERE p.storeId IN :storeIds GROUP BY p.storeId")
+    List<Object[]> summarizeByStore(@Param("storeIds") Collection<Long> storeIds);
+
+    /**
+     * @return {@code [storeId, latest statusUpdatedAt]} rows, only for stores with a reported stop
+     */
+    @Query("SELECT s.storeId, MAX(s.statusUpdatedAt) FROM PlanStop s "
+            + "WHERE s.storeId IN :storeIds AND s.statusUpdatedAt IS NOT NULL GROUP BY s.storeId")
+    List<Object[]> lastStopResultByStore(@Param("storeIds") Collection<Long> storeIds);
+
+    @Query("SELECT COUNT(p) FROM RoutePlan p WHERE p.storeId = :storeId AND p.createdAt >= :since")
+    long countCreatedSince(@Param("storeId") long storeId, @Param("since") Instant since);
+
+    @Query("SELECT COUNT(p) FROM RoutePlan p WHERE p.storeId = :storeId AND p.publishedAt >= :since")
+    long countPublishedSince(@Param("storeId") long storeId, @Param("since") Instant since);
+
+    @Query("SELECT COUNT(p) FROM RoutePlan p WHERE p.storeId = :storeId AND p.completedAt >= :since")
+    long countCompletedSince(@Param("storeId") long storeId, @Param("since") Instant since);
+
+    /**
+     * @return {@code [status, count]} rows of the stop results reported since {@code since}
+     */
+    @Query("SELECT s.status, COUNT(s) FROM PlanStop s WHERE s.storeId = :storeId AND s.statusUpdatedAt >= :since "
+            + "GROUP BY s.status")
+    List<Object[]> countStopResultsSince(@Param("storeId") long storeId, @Param("since") Instant since);
+
+    /**
+     * @return {@code [day, count]} of plans by created_at in {@code [from, to)}, by day at {@code offset} seconds (T60)
+     */
+    @Query(value = "SELECT DATE(DATE_ADD(created_at, INTERVAL :offset SECOND)) AS d, COUNT(*) FROM route_plans "
+            + "WHERE created_at >= :from AND created_at < :to GROUP BY d", nativeQuery = true)
+    List<Object[]> countCreatedByDay(@Param("from") Instant from, @Param("to") Instant to, @Param("offset") int offset);
+
+    /**
+     * @return {@code [day, count]} of plans by published_at in {@code [from, to)}, by day at {@code offset} seconds (T60)
+     */
+    @Query(value = "SELECT DATE(DATE_ADD(published_at, INTERVAL :offset SECOND)) AS d, COUNT(*) FROM route_plans "
+            + "WHERE published_at >= :from AND published_at < :to GROUP BY d", nativeQuery = true)
+    List<Object[]> countPublishedByDay(@Param("from") Instant from, @Param("to") Instant to, @Param("offset") int offset);
+
+    /**
+     * @return {@code [day, count]} of plans by completed_at in {@code [from, to)}, by day at {@code offset} seconds (T60)
+     */
+    @Query(value = "SELECT DATE(DATE_ADD(completed_at, INTERVAL :offset SECOND)) AS d, COUNT(*) FROM route_plans "
+            + "WHERE completed_at >= :from AND completed_at < :to GROUP BY d", nativeQuery = true)
+    List<Object[]> countCompletedByDay(@Param("from") Instant from, @Param("to") Instant to, @Param("offset") int offset);
+
+    /**
+     * @return {@code [day, status, count]} of stop results reported in {@code [from, to)} (T60)
+     */
+    @Query(value = "SELECT DATE(DATE_ADD(status_updated_at, INTERVAL :offset SECOND)) AS d, status, COUNT(*) "
+            + "FROM route_plan_stops WHERE status_updated_at >= :from AND status_updated_at < :to AND status <> 'PENDING' "
+            + "GROUP BY d, status", nativeQuery = true)
+    List<Object[]> countStopResultsByDay(@Param("from") Instant from, @Param("to") Instant to, @Param("offset") int offset);
+
+    /**
+     * @return stores that published a plan since {@code since} (T60: "active")
+     */
+    @Query("SELECT COUNT(DISTINCT p.storeId) FROM RoutePlan p WHERE p.publishedAt >= :since")
+    long countStoresPublishingSince(@Param("since") Instant since);
 }

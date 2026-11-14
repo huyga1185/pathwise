@@ -4,12 +4,13 @@ import 'package:go_router/go_router.dart';
 
 import '../features/auth/auth.dart';
 import '../features/driver_routes/driver_routes.dart';
+import '../features/navigation/navigation.dart';
 import '../shared/i18n/vi.dart';
 
 /// Routes of the driver app (SCREENS §2), redirected by the session (ARCHITECTURE §9): loading → splash,
 /// anonymous → login, not a driver → no access, signed in → today's routes. `/routes/{routeId}` opens a route straight
 /// away (later the `pathwise://routes/{routeId}` deep link of notifications); `/routes/{routeId}/stops/{stopId}` reports
-/// a stop's result (M02).
+/// a stop's result (M02); `/routes/{routeId}/navigate?stopId=` gives turn-by-turn directions (M05).
 final routerProvider = Provider<GoRouter>((ref) {
   final refresh = ValueNotifier<Session>(ref.read(sessionProvider));
   ref
@@ -41,6 +42,13 @@ final routerProvider = Provider<GoRouter>((ref) {
             redirect: (context, state) => int.tryParse(state.pathParameters['routeId']!) == null ? '/routes' : null,
             builder: (context, state) => RouteDetailScreen(routeId: int.parse(state.pathParameters['routeId']!)),
             routes: [
+              GoRoute(
+                path: 'navigate',
+                builder: (context, state) => NavigationScreen(
+                  routeId: int.parse(state.pathParameters['routeId']!),
+                  stopId: int.tryParse(state.uri.queryParameters['stopId'] ?? ''),
+                ),
+              ),
               GoRoute(
                 path: 'stops/:stopId',
                 redirect: (context, state) => int.tryParse(state.pathParameters['stopId']!) == null

@@ -41,6 +41,10 @@ routing:
   solver:
     time-limit: 1s
 
+# Tests run the housekeeping by hand (HousekeepingIntegrationTest), never on a schedule.
+housekeeping:
+  cron: "-"
+
 # Every test runs from the same IP and many share a user or store: no test may hit a limit by accident.
 # RateLimitIntegrationTest sets its own low limits.
 rate-limit:
@@ -54,3 +58,5 @@ rate-limit:
     forgot-password-email: { limit: 1000000 }
     change-password-otp-user: { limit: 1000000 }
     create-invitation-store: { limit: 1000000 }
+    directions-user: { limit: 1000000 }
+    plan-import-user: { limit: 1000000 }

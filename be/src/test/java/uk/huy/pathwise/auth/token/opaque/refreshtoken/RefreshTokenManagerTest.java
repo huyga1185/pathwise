@@ -1,5 +1,6 @@
 package uk.huy.pathwise.auth.token.opaque.refreshtoken;
 
+import uk.huy.pathwise.auth.infrastructure.config.TokenProperties;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -50,7 +51,7 @@ public class RefreshTokenManagerTest {
         this.sha256Hasher = new SHA256Hasher();
 
         this.refreshTokenManager = new RefreshTokenManager(refreshTokenRepository,
-                Duration.ofDays(14),
+                new TokenProperties(Duration.ofDays(14), new TokenProperties.Jwt("secret", "HS256", Duration.ofMinutes(14), null)),
                 this.sha256Hasher,
                 opaqueTokenGenerator);
     }

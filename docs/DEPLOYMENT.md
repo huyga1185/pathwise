@@ -5,7 +5,7 @@
 > - Prod: `ghcr.io/huyga1185/pathwise:x.y.z` (khi push tag `vx.y.z`), profile `prod`.
 > - Web dispatcher kèm Caddy: `ghcr.io/huyga1185/pathwise-web` với cùng tag (W08, P-56).
 >
-> Mỗi môi trường là một thư mục riêng trên VPS, chứa `compose.prod.yaml`, `.env` và tuỳ chọn `compose.web.yaml` (Caddy trong container, §8.1) hoặc `compose.routing.yaml` (§7).
+> Mỗi môi trường là một thư mục riêng trên VPS, chứa `compose.prod.yaml`, `.env` và tuỳ chọn `compose.backup.yaml` (backup tự động, §5, nên có), `compose.web.yaml` (Caddy trong container, §8.1), `compose.routing.yaml` (§7). Giám sát và cảnh báo: §9.
 
 ## 1. Chuẩn bị VPS (một lần)
 
@@ -17,7 +17,7 @@
    - `APP_IMAGE_TAG`: `0.1.0` cho prod, `develop` hoặc `develop-<sha>` cho staging.
    - `SPRING_PROFILES_ACTIVE`: `prod` hoặc `staging`.
    - Thay **mọi** giá trị `change-me`. JWT secret: `openssl rand -base64 32`. Mật khẩu DB: `openssl rand -base64 24`.
-   - SMTP thật (ví dụ Brevo) và các `SERVICE_IDENTITY_*`.
+   - SMTP thật (ví dụ Brevo) và các `SERVICE_IDENTITY_*`. `SERVICE_IDENTITY_APP_URL` là gốc của domain, ví dụ `https://pathwise.example.com` (không thêm `/app`): link đặt lại mật khẩu ADMIN gửi (T57) là `{SERVICE_IDENTITY_APP_URL}/app/reset-password?token=…`.
    - `PATHWISE_DOMAIN` (domain trỏ về VPS, ví dụ `pathwise.example.com`), `MAPTILER_KEY` (key bản đồ nền của web, giới hạn domain trong trang quản lý MapTiler): xem §8.
    - `CORS_ALLOWED_ORIGINS`: web chạy cùng origin với API (P-47) nên để trống; chỉ điền khi có web ở origin khác (đúng scheme và domain, nhiều origin cách nhau dấu phẩy). App mobile không bị ảnh hưởng.
    - `chmod 600 .env`. Không commit file này ở bất kỳ đâu.
@@ -41,6 +41,21 @@ docker compose -f compose.prod.yaml logs app | grep -E "Flyway|Migrating|Started
 
 Flyway tự tạo schema ở lần chạy đầu. Swagger chỉ có ở staging: `https://<domain>/swagger-ui/index.html`.
 
+**ADMIN đầu tiên (T59).** Trước lần `up -d` đầu, thêm vào `.env`:
+
+```bash
+BOOTSTRAP_ADMIN_EMAIL=admin@example.com
+# Tuỳ chọn, 8–72 ký tự. Bỏ trống: app gửi email mã đặt lại mật khẩu (hạn 5 phút; quá hạn thì dùng "Quên mật khẩu" trên web).
+BOOTSTRAP_ADMIN_PASSWORD=
+BOOTSTRAP_ADMIN_FULL_NAME=Quản trị
+```
+
+Khi khởi động, nếu chưa có ADMIN nào, app tạo một ADMIN đã xác thực email và log `First ADMIN created`:
+```bash
+docker compose -f compose.prod.yaml logs app | grep -i admin
+```
+Đã có ADMIN thì app bỏ qua và log cảnh báo nhắc xoá biến. Đăng nhập được rồi thì **xoá cả ba dòng khỏi `.env`** (nhất là mật khẩu) và `up -d app`. Email đã thuộc tài khoản khác hoặc mật khẩu sai độ dài: app vẫn chạy, log lỗi, không tạo gì; sửa `.env` rồi `up -d app`. Cách dự phòng bằng SQL: `be/db/seed-admin.example.sql`.
+
 Caddy trong container (§8.1): mọi lệnh `docker compose` ở mục này và các mục sau thêm `-f compose.web.yaml` sau `-f compose.prod.yaml`; lần cập nhật phiên bản thì `pull`/`up -d` cả `app web`.
 
 ## 3. Cập nhật phiên bản
@@ -60,27 +75,81 @@ Caddy trong container (§8.1): mọi lệnh `docker compose` ở mục này và 
 1. Đặt `APP_IMAGE_TAG` về tag cũ đang chạy tốt, rồi `pull app` và `up -d app` như mục 3.
 2. **Nếu bản lỗi đã chạy migration Flyway mới**, bản cũ có thể không khớp schema (Hibernate `validate` báo lỗi khi khởi động). Khi đó phải khôi phục bản backup đã tạo trước lần cập nhật (mục 5) rồi mới chạy lại tag cũ. Flyway không có migration "down".
 
-## 5. Backup và khôi phục MariaDB (thủ công)
+## 5. Backup và khôi phục MariaDB (`compose.backup.yaml`, T52)
 
-Backup (chạy trong thư mục deploy, file nén để ngoài volume):
+### 5.1 Backup tự động
 
+Copy `compose.backup.yaml` vào thư mục của môi trường và chạy kèm (mọi lệnh `docker compose` ở các mục khác cũng thêm `-f compose.backup.yaml`):
 ```bash
-mkdir -p backups
-docker compose -f compose.prod.yaml exec -T mariadb sh -c \
-  'mariadb-dump -uroot -p"$MARIADB_ROOT_PASSWORD" --single-transaction --routines "$MARIADB_DATABASE"' \
-  | gzip > backups/pathwise-$(date +%Y%m%d-%H%M%S).sql.gz
+docker compose -f compose.prod.yaml -f compose.backup.yaml up -d
 ```
+- Service `backup`: mỗi đêm lúc `BACKUP_TIME` (mặc định 02:30, giờ Việt Nam) dump DB (`mariadb-dump --single-transaction`, kèm `CREATE DATABASE`), nén gzip, kiểm file nén, ghi vào `./backups/daily/pathwise-<ngày-giờ>.sql.gz` kèm `.sha256`; giữ `BACKUP_KEEP_DAILY` bản mới nhất (7). Ngày `BACKUP_WEEKLY_DAY` (7 = Chủ nhật) chép thêm vào `./backups/weekly/`, giữ `BACKUP_KEEP_WEEKLY` bản (4).
+- Mã hoá (tuỳ chọn): đặt `BACKUP_PASSPHRASE` (ví dụ `openssl rand -base64 32`) thì file thành `.sql.gz.enc` (AES-256, `openssl enc -pbkdf2`). **Mất passphrase là mất backup**: lưu nó ở chỗ khác VPS (trình quản lý mật khẩu).
+- Trạng thái cho giám sát (T54): `./backups/status/last-success` (giờ, tên file, kích thước), `last-error` khi lần gần nhất thất bại, `last-offsite-success`/`last-offsite-error` của bản đẩy ra ngoài.
+- Backup ngay một lần: `docker compose -f compose.prod.yaml -f compose.backup.yaml run --rm -e BACKUP_ONCE=true backup`.
+- Xem log: `docker compose -f compose.prod.yaml -f compose.backup.yaml logs backup` (dòng `next backup at …` và `ok`/`FAILED`).
 
-Khôi phục (ghi đè dữ liệu hiện tại):
+### 5.2 Đẩy backup ra ngoài VPS (S3 tương thích)
 
+Service `backup-offsite` mỗi giờ (`BACKUP_S3_EVERY` giây) **chép** `./backups/daily` và `./backups/weekly` lên bucket bằng rclone; không đặt `BACKUP_S3_BUCKET` thì không làm gì (backup chỉ nằm trên VPS). Nó chỉ chép, không xoá trên bucket: đặt luật tự xoá trên bucket (ví dụ sau 60 ngày) để không tốn dung lượng.
+
+Cloudflare R2: tạo bucket, tạo API token quyền "Object Read & Write" chỉ cho bucket đó, rồi trong `.env`:
+```bash
+BACKUP_S3_BUCKET=pathwise-backups
+BACKUP_S3_PROVIDER=Cloudflare
+BACKUP_S3_ENDPOINT=https://<account-id>.r2.cloudflarestorage.com
+BACKUP_S3_ACCESS_KEY_ID=<access key>
+BACKUP_S3_SECRET_ACCESS_KEY=<secret>
+```
+Backblaze B2: `BACKUP_S3_PROVIDER=Other`, `BACKUP_S3_ENDPOINT=https://s3.<region>.backblazeb2.com`, `BACKUP_S3_REGION=<region>`, application key chỉ cho bucket. Đổi `.env` xong: `up -d backup-offsite`; kiểm `./backups/status/last-offsite-success` có giờ mới.
+
+### 5.3 Khôi phục
+
+Ghi đè dữ liệu hiện tại; dừng app trước. File thường:
 ```bash
 docker compose -f compose.prod.yaml stop app
-gunzip -c backups/<file>.sql.gz | docker compose -f compose.prod.yaml exec -T mariadb sh -c \
-  'mariadb -uroot -p"$MARIADB_ROOT_PASSWORD" "$MARIADB_DATABASE"'
+gunzip -c backups/daily/<file>.sql.gz | docker compose -f compose.prod.yaml exec -T mariadb sh -c \
+  'mariadb -uroot -p"$MARIADB_ROOT_PASSWORD"'
 docker compose -f compose.prod.yaml start app
 ```
+File mã hoá (`.enc`): thay dòng `gunzip` bằng
+```bash
+openssl enc -d -aes-256-cbc -pbkdf2 -pass env:BACKUP_PASSPHRASE -in backups/daily/<file>.sql.gz.enc | gunzip -c | …
+```
+(`export BACKUP_PASSPHRASE=…` trước; không có `openssl` trên host thì chạy trong `docker run --rm -i mariadb:11.8`). Kiểm toàn vẹn trước khi khôi phục: `cd backups/daily && sha256sum -c <file>.sha256`.
 
-Nên chép file backup ra khỏi VPS định kỳ. Redis không cần backup: mọi key đều có TTL.
+### 5.4 Tập khôi phục (mỗi tháng)
+
+Một backup chưa từng khôi phục thử thì chưa chắc dùng được. Khôi phục vào một MariaDB tạm, không đụng DB thật:
+```bash
+docker run -d --name restore-drill -e MARIADB_ROOT_PASSWORD=drill mariadb:11.8
+sleep 20
+gunzip -c backups/daily/<file mới nhất>.sql.gz | docker exec -i restore-drill mariadb -uroot -pdrill
+docker exec restore-drill mariadb -uroot -pdrill -N -e \
+  "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='pathwise'; SELECT COUNT(*) FROM pathwise.route_plans;"
+docker rm -f restore-drill
+```
+So số bảng và số plan với DB thật (`docker compose -f compose.prod.yaml exec mariadb sh -c 'mariadb -uroot -p"$MARIADB_ROOT_PASSWORD" -N -e "…"'`). Làm thêm một lần với file tải về từ bucket.
+
+Redis không cần backup: mọi key đều có TTL.
+
+### 5.5 Dọn dữ liệu cũ (T53)
+
+App tự xoá dòng cũ mỗi đêm lúc 03:30 giờ Việt Nam (sau backup 02:30): refresh token hết hạn hoặc bị thu hồi quá 30 ngày, job nền đã kết thúc quá 100 ngày (T60: đủ cho biểu đồ 90 ngày), lời mời hết hạn hoặc bị huỷ quá 90 ngày (lời mời đã nhận giữ lại), nhật ký thao tác quá 1 năm (T58). Quy tắc đủ ở DATA_MODEL §6. Mỗi lần chạy log số dòng đã xoá của từng loại:
+
+```bash
+docker compose -f compose.prod.yaml logs app | grep -i housekeeping
+```
+
+Đổi lịch hoặc số ngày trong `.env` (app đọc `.env`), rồi `up -d` lại app:
+
+| Biến | Mặc định | Ghi chú |
+|---|---|---|
+| `HOUSEKEEPING_CRON` | `0 30 3 * * *` | cron Spring 6 trường; `-` tắt hẳn |
+| `HOUSEKEEPING_ZONE` | `Asia/Ho_Chi_Minh` | |
+| `SPRING_APPLICATION_JSON` | — | số ngày giữ, ví dụ `{"housekeeping":{"retention":{"jobs":"60d","invitations":"180d","refresh-tokens":"30d","audit-events":"730d"}}}`. Dùng JSON vì tên `refresh-tokens` có gạch nối không viết được thành biến môi trường thường. |
+
+Dòng đã xoá chỉ lấy lại được từ backup.
 
 ## 6. Lệnh thường dùng
 
@@ -90,6 +159,10 @@ Nên chép file backup ra khỏi VPS định kỳ. Redis không cần backup: m�
 | Khởi động lại app | `docker compose -f compose.prod.yaml restart app` |
 | Dừng toàn bộ (giữ dữ liệu) | `docker compose -f compose.prod.yaml down` |
 | Dọn image cũ | `docker image prune` |
+| Log trong 1 giờ qua | `docker compose -f compose.prod.yaml logs --since 1h app` |
+| Dung lượng log của các container | `sudo du -ch /var/lib/docker/containers/*/*-json.log \| tail -1` |
+
+**Giới hạn log (T51):** mọi service trong các file compose giữ tối đa `LOG_MAX_FILE` file × `LOG_MAX_SIZE` (mặc định 3 × 10 MB, tức 30 MB mỗi container); dòng cũ hơn bị bỏ. Muốn giữ nhiều hơn để điều tra thì tăng hai biến trong `.env` rồi `up -d` lại (container được tạo lại mới nhận giới hạn mới). Log đã bị bỏ không lấy lại được: cần lưu lâu thì gom log ra ngoài (chưa làm). Kiểm tra một container: `docker inspect -f '{{json .HostConfig.LogConfig}}' <container>`.
 
 ## 7. OSRM và Nominatim tự host (`compose.routing.yaml`, P-55)
 
@@ -154,6 +227,7 @@ Hai số này phải nằm xa dưới timeout đọc của app (10 s).
    ```bash
    ROUTING_MATRIX_OSRM_BASEURL=http://10.0.0.5:5000
    ROUTING_MATRIX_OSRM_MAXTABLESIZE=200          # bằng OSRM_MAX_TABLE_SIZE của máy routing (F-41)
+   # Dẫn đường trong app (T33) dùng cùng OSRM; chỉ đặt ROUTING_DIRECTIONS_OSRM_BASEURL khi muốn server khác.
    ROUTING_GEOCODING_NOMINATIM_BASEURL=http://10.0.0.5:8088
    ROUTING_GEOCODING_NOMINATIM_RATELIMIT_ENABLED=false
    ```
@@ -230,3 +304,77 @@ Dùng khi VPS đã có Caddy (nhiều site). Web lấy từ tarball đính kèm 
    tar -xzf pathwise-web-<tag>.tar.gz --strip-components=1 -C /var/www/pathwise
    cp /tmp/pathwise-config.js /var/www/pathwise/app/config.js
    ```
+
+### 8.3 Domain đi qua Cloudflare (proxy, đám mây cam)
+
+Khi bản ghi DNS bật proxy của Cloudflare, Caddy nhận kết nối từ máy của Cloudflare chứ không từ người dùng. Không khai báo gì thì app lưu IP của Cloudflare cho phiên đăng nhập, nhật ký, và rate limit theo IP (đăng nhập, đăng ký, quên mật khẩu) gộp mọi người dùng vào vài IP của Cloudflare (F-59).
+
+1. Trong `.env` (Caddy trong container) đặt `TRUSTED_PROXIES` là các dải IP của Cloudflare, cách nhau bằng dấu cách. Dòng mẫu có sẵn trong `.env.prod.example` (lấy từ https://www.cloudflare.com/ips/ ngày 2026-11-14); Cloudflare hiếm khi đổi, nhưng kiểm lại ở trang đó khi cập nhật.
+   Caddy trên host: thêm `PATHWISE_TRUSTED_PROXIES=<các dải>` vào `Environment=` của service (§8.2 bước 3).
+2. Tạo lại container web (`docker compose -f compose.prod.yaml -f compose.web.yaml up -d web`) hoặc `systemctl restart caddy`. Image web cần có `Caddyfile` mới (bản sau F-59).
+3. Kiểm tra: đăng nhập web từ máy của mình rồi xem danh sách thiết bị ở Hồ sơ (`GET /api/v1/auth/sessions`): cột IP phải là IP công khai của mình, không phải `162.158.x.x`, `172.64.x.x`, `104.x.x.x`…
+
+Caddy chỉ tin header `CF-Connecting-IP` (rồi `X-Forwarded-For`) của request đến từ các dải này; request đến thẳng VPS mà không qua Cloudflare vẫn dùng IP của bên kết nối, nên không giả được IP bằng header. Muốn chặn hẳn truy cập thẳng vào VPS thì chỉ mở cổng 80/443 cho các dải của Cloudflare (lưu ý: Let's Encrypt cần tới được cổng 80/443; với Cloudflare proxy, dùng chế độ SSL "Full (strict)").
+
+## 9. Giám sát và cảnh báo (T54)
+
+Hai lớp, không cần Prometheus/Grafana:
+
+| Lớp | Bắt được | Không bắt được |
+|---|---|---|
+| Uptime bên ngoài (§9.1) | VPS tắt, mất mạng, Caddy/app chết, DB/Redis chết (health 503), chứng chỉ hết hạn | đĩa sắp đầy, backup lỗi |
+| Script trên VPS (§9.2) | đĩa, RAM, container dừng/unhealthy/tự khởi động lại, health, backup và bản chép lên S3 | VPS tắt hẳn, SMTP chết (không gửi được email) |
+
+### 9.1 Uptime bên ngoài
+
+`https://<domain>/actuator/health` công khai qua Caddy, trả `{"status":"UP",…}` hoặc 503 khi DB/Redis lỗi; không có chi tiết nào khác.
+
+1. Đăng ký gói miễn phí của UptimeRobot (https://uptimerobot.com) hoặc Better Stack (https://betterstack.com/uptime).
+2. Tạo monitor **HTTP(s) – Keyword**: URL `https://<domain>/actuator/health`, keyword `"status":"UP"`, chu kỳ 5 phút, báo khi keyword **không** có.
+3. Thêm monitor HTTP thường cho `https://<domain>/app/` (web và Caddy), và bật cảnh báo chứng chỉ nếu dịch vụ có.
+4. Kênh cảnh báo: email (khác hộp thư của SMTP gửi đi nếu được), thêm app điện thoại của dịch vụ nếu muốn.
+5. Thử: `docker compose -f compose.prod.yaml stop app`, chờ báo, rồi `start app`.
+
+### 9.2 Script `deploy/monitor/pathwise-monitor.sh`
+
+Cron trên host chạy mỗi 5 phút, gửi email qua SMTP của app (`SPRING_MAIL_*` trong `.env`, bằng `curl`). Mỗi sự cố báo **một lần** khi bắt đầu, nhắc lại sau `MONITOR_REMIND_HOURS` (mặc định 6 giờ) nếu còn, và báo khi đã hết. Kiểm tra:
+
+- đĩa của thư mục môi trường và của Docker > `MONITOR_DISK_PERCENT` (85 %);
+- RAM khả dụng < `MONITOR_MEM_AVAILABLE_PERCENT` (10 %);
+- container của project: dừng với mã thoát khác 0 (kèm hết RAM nếu bị OOM kill), đang restart, unhealthy, hoặc đã tự khởi động lại kể từ lần trước; service trong `MONITOR_SERVICES` (`mariadb redis app`) không chạy. Container chạy một lần rồi thoát 0 (`routing-data`, `osrm-prepare`) là bình thường;
+- `http://127.0.0.1:${APP_PORT}/actuator/health` không `UP`;
+- có `compose.backup.yaml` hoặc `./backups/status`: `last-error` có mặt, bản thành công gần nhất cũ hơn `MONITOR_BACKUP_MAX_AGE_HOURS` (26 giờ); có `BACKUP_S3_BUCKET`: `last-offsite-error`, lần chép thành công gần nhất cũ hơn `MONITOR_OFFSITE_MAX_AGE_HOURS` (3 giờ).
+
+Cài (cần `bash`, `curl`, `docker`, `flock`; có sẵn trên Ubuntu/Debian):
+
+```bash
+cd /opt/pathwise-prod
+mkdir -p monitor
+curl -fsSLo monitor/pathwise-monitor.sh https://raw.githubusercontent.com/huyga1185/pathwise/<tag>/deploy/monitor/pathwise-monitor.sh
+chmod 700 monitor/pathwise-monitor.sh
+# Thêm vào .env: MONITOR_ALERT_EMAIL=ban@example.com  (các biến khác xem đầu script và .env.prod.example)
+./monitor/pathwise-monitor.sh --test-email /opt/pathwise-prod   # phải nhận được email
+./monitor/pathwise-monitor.sh --dry-run /opt/pathwise-prod      # in sự cố hiện có, không gửi; "OK" là sạch
+echo '*/5 * * * * root /opt/pathwise-prod/monitor/pathwise-monitor.sh /opt/pathwise-prod >> /var/log/pathwise-monitor.log 2>&1' \
+  | sudo tee /etc/cron.d/pathwise-monitor
+```
+
+Script chạy bằng root vì `.env` là `chmod 600` và cần quyền Docker; nó chỉ đọc `.env` (không chạy file này) và chỉ ghi vào `.monitor/` (trạng thái các sự cố đang mở) và log ở trên. Log chỉ có dòng khi gửi cảnh báo hoặc gửi lỗi. Mỗi môi trường (prod, staging) một dòng cron với thư mục riêng; `MONITOR_NAME` đặt tên trong tiêu đề email (mặc định là tên thư mục).
+
+Khi nhận email: làm theo lệnh gợi ý trong email (`docker logs`, `docker stats`, log của `backup`). Đĩa đầy thường do image cũ (`docker image prune`), backup (`BACKUP_KEEP_*`) hoặc dữ liệu Nominatim. Gửi lỗi thì script ghi `alert email failed` vào log và thử lại ở lần sau.
+
+### 9.3 Lỗi trong log của app
+
+Mỗi lần gửi email lỗi, OSRM/Nominatim lỗi, hoặc job nền kết thúc `FAILED`, app ghi một dòng cố định (T54, ARCHITECTURE §10):
+
+```
+WARN … failure source=ROUTING operation=osrm.table reason=unreachable message="OSRM table request failed"
+WARN … failure source=JOB operation=OPTIMIZE_PLAN reason=ROUTING_PROVIDER_ERROR jobId=42
+```
+
+```bash
+docker compose -f compose.prod.yaml logs --since 24h app | grep 'failure source='                  # mọi lỗi trong 24 giờ
+docker compose -f compose.prod.yaml logs --since 24h app | grep -o 'failure source=[A-Z]*' | sort | uniq -c
+```
+
+`source`: `EMAIL` (SMTP; `authentication_failed` là sai tài khoản SMTP), `ROUTING` (OSRM; `unreachable` là không kết nối được, xem §7), `GEOCODING` (Nominatim), `JOB` (`reason` là mã lỗi của job, ví dụ `INTERRUPTED` sau khi app khởi động lại).

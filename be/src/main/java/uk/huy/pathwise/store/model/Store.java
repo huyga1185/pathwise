@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
+import uk.huy.pathwise.shared.store.StoreStatus;
 
 import java.time.Instant;
 
@@ -39,6 +40,21 @@ public class Store {
     // IANA zone id; time windows and shifts are read in this zone (P-14).
     @Column(nullable = false)
     private String timezone;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    @Builder.Default
+    private StoreStatus status = StoreStatus.ACTIVE;
+
+    // The current lock (T56); null while ACTIVE.
+    @Column(name = "lock_reason")
+    private String lockReason;
+
+    @Column(name = "locked_at")
+    private Instant lockedAt;
+
+    @Column(name = "locked_by")
+    private Long lockedBy;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     @CreationTimestamp

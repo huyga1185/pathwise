@@ -57,6 +57,16 @@ const FIELD_SENTENCES: Record<string, string> = {
   INVALID_DEMAND: 'Số lượng phải là số nguyên, không âm.',
   INVALID_MAX_DISTANCE: 'Quãng đường tối đa phải lớn hơn 0.',
   INVALID_SERVICE_TIME: 'Thời gian phục vụ từ 0 đến 24 giờ.',
+  // Stop import (T61, UX_BRIEF §6.2): errors on the file, and on a time of a row.
+  INVALID_TIME_FORMAT: 'Giờ không đúng dạng, ví dụ 09:00.',
+  UNSUPPORTED_FILE_TYPE: 'Chỉ nhận file .xlsx hoặc .csv.',
+  UNREADABLE_FILE: 'File bị hỏng hoặc không đúng định dạng.',
+  NO_ROWS: 'File không có dòng điểm giao nào.',
+  LABEL_COLUMN_REQUIRED: 'File thiếu cột "Nhãn / mã đơn". Tải file mẫu để xem các cột.',
+  // Plan copy (T62).
+  COPY_SCOPE_REQUIRED: 'Vui lòng chọn điểm giao cần chép.',
+  // Date ranges (T60, T63); DATE_RANGE_TOO_LONG depends on the screen's limit.
+  INVALID_DATE_RANGE: 'Ngày bắt đầu phải trước hoặc bằng ngày kết thúc.',
 };
 
 /**

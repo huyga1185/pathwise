@@ -1,12 +1,14 @@
 package uk.huy.pathwise.core.ratelimit;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.dao.DataAccessException;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.stereotype.Component;
+import uk.huy.pathwise.core.observability.OpsMetrics;
 import uk.huy.pathwise.core.security.Hasher;
 import uk.huy.pathwise.core.statestore.StateStoreException;
 
@@ -32,6 +34,7 @@ public class RedisRateLimiter implements RateLimiter {
     private final StringRedisTemplate redisTemplate;
     private final RateLimitProperties properties;
     private final Hasher hasher;
+    private final ObjectProvider<OpsMetrics> metrics;
 
     @Override
     public RateLimitDecision tryAcquire(String rule, String subject) {
@@ -48,6 +51,8 @@ public class RedisRateLimiter implements RateLimiter {
         if (result == null || result.size() != 2) throw new StateStoreException("Rate limit script returned " + result);
         long count = ((Number) result.get(0)).longValue();
         if (count <= limit.limit()) return new RateLimitDecision.Allowed();
+        OpsMetrics opsMetrics = metrics.getIfAvailable();
+        if (opsMetrics != null) opsMetrics.recordRateLimited();
         return new RateLimitDecision.Limited(Duration.ofMillis(((Number) result.get(1)).longValue()));
     }
 

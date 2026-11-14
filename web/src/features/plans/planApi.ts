@@ -1,7 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo } from 'react';
 import { useApi } from '@/data/ApiContext';
-import { unwrap } from '@/data/http';
+import { unwrap, unwrapFile } from '@/data/http';
 import { queryKeys } from '@/data/queryKeys';
 import type { Schemas } from '@/data/types';
 
@@ -14,6 +14,13 @@ export type StopPatch = Schemas['PatchStopRequest'];
 export type AssignableMember = Schemas['MemberResponse'];
 export type ActiveVehicle = Schemas['VehicleResponse'];
 export type DriverLocation = Schemas['DriverLocationResponse'];
+export type RoutesEdit = Schemas['ReplaceRoutesRequest'];
+export type PlanImport = Schemas['PlanImportResponse'];
+export type ImportedRow = Schemas['ImportedRowResponse'];
+export type ImportedStop = Schemas['ImportedStopResponse'];
+export type CopyPlan = Schemas['CopyPlanRequest'];
+export type PlanCopy = Schemas['PlanCopyResponse'];
+export type SkippedAssignment = Schemas['SkippedAssignmentResponse'];
 
 /** While the server works on a plan (geocode, optimize) it is read again this often (UX_BRIEF §5.1: 2–3 s). */
 export const POLL_INTERVAL_MS = 2000;
@@ -135,9 +142,8 @@ export function usePlanApi() {
     };
     const reload = (id: number) => queryClient.invalidateQueries({ queryKey: queryKeys.plan(id) });
     return {
-      // POST takes no version; the generated type requires one (F-51).
-      create: async (body: Omit<PlanDraft, 'version'>) =>
-        store(await unwrap(api.POST('/api/v1/plans', { body: body as PlanDraft }))),
+      // POST takes no version (only PUT checks it, F-51).
+      create: async (body: Omit<PlanDraft, 'version'>) => store(await unwrap(api.POST('/api/v1/plans', { body }))),
       replace: async (id: number, body: PlanDraft) =>
         store(await unwrap(api.PUT('/api/v1/plans/{id}', { params: { path: { id } }, body }))),
       patchStop: async (id: number, stopId: number, body: StopPatch) =>
@@ -155,10 +161,34 @@ export function usePlanApi() {
         await reload(id);
         return job;
       },
+      /** Saves a manual edit of the optimized routes (T28, P-58); the plan comes back with its violations. */
+      replaceRoutes: async (id: number, body: RoutesEdit) =>
+        store(await unwrap(api.PUT('/api/v1/plans/{id}/routes', { params: { path: { id } }, body }))),
       publish: async (id: number, version: number) =>
         store(await unwrap(api.POST('/api/v1/plans/{id}/publish', { params: { path: { id } }, body: { version } }))),
       cancel: async (id: number, version: number) =>
         store(await unwrap(api.POST('/api/v1/plans/{id}/cancel', { params: { path: { id } }, body: { version } }))),
+      /** Copies a plan into a new DRAFT (T62); the new plan is cached, the lists refreshed. */
+      copy: async (id: number, body: CopyPlan) => {
+        const copied = await unwrap(api.POST('/api/v1/plans/{id}/copy', { params: { path: { id } }, body }));
+        store(copied.plan);
+        return copied;
+      },
+      /** Reads an import file (T61): rows with their errors, nothing saved on the server. */
+      importStops: async (file: File) => {
+        const form = new FormData();
+        form.append('file', file, file.name);
+        // openapi-fetch sends a FormData body as it is: the browser sets the multipart boundary.
+        return unwrap(api.POST('/api/v1/plans/import', { body: form as unknown as { file: string } }));
+      },
+      /** The template file of the import, `.xlsx` or `.csv`. */
+      template: (kind: 'xlsx' | 'csv') =>
+        unwrapFile(
+          kind === 'xlsx'
+            ? api.GET('/api/v1/plans/import/template.xlsx', { parseAs: 'blob' })
+            : api.GET('/api/v1/plans/import/template.csv', { parseAs: 'blob' }),
+          `pathwise-mau-diem-giao.${kind}`,
+        ),
       reload,
     };
   }, [api, queryClient]);

@@ -5,6 +5,7 @@ import { routeColour } from '@/platform/map';
 import { messageFor } from '@/shared/errors';
 import { vi } from '@/shared/i18n/vi';
 import { Dialog, ErrorBanner } from '@/shared/ui';
+import { violationText } from './manualEdit';
 import { usePlanApi, type PlanDetail } from './planApi';
 import { driverName, spanText, stopTitle } from './planShared';
 
@@ -124,7 +125,7 @@ export function PublishDialog({
     <Dialog
       open={open}
       title={vi.publish.title(routes.length)}
-      confirmLabel={vi.publish.confirm}
+      confirmLabel={plan.violations.length > 0 ? vi.publish.confirmAnyway : vi.publish.confirm}
       cancelLabel={vi.publish.back}
       busy={busy}
       onConfirm={() => void publish()}
@@ -150,6 +151,21 @@ export function PublishDialog({
           </li>
         ) : null}
       </ul>
+      {plan.violations.length > 0 ? (
+        <div className="pw-publish-violations">
+          <p>
+            <strong>{vi.manual.violationsTitle(plan.violations.length)}</strong>
+          </p>
+          <ul>
+            {plan.violations.map((violation, index) => (
+              <li key={`${violation.code}-${violation.routeId}-${violation.stopId ?? ''}-${index}`}>
+                {violationText(plan, violation)}
+              </li>
+            ))}
+          </ul>
+          <p>{vi.publish.violationsLead}</p>
+        </div>
+      ) : null}
       <p>{vi.publish.lead}</p>
     </Dialog>
   );

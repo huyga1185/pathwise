@@ -3,6 +3,7 @@ package uk.huy.pathwise.user.infrastructure.mapper;
 import org.mapstruct.*;
 import uk.huy.pathwise.user.dto.response.AdminGetUserResponse;
 import uk.huy.pathwise.user.dto.response.GetUserResponse;
+import uk.huy.pathwise.shared.store.StoreState;
 import uk.huy.pathwise.user.model.User;
 import uk.huy.pathwise.shared.identity.UserIdentity;
 import uk.huy.pathwise.user.dto.StoreUser;
@@ -13,7 +14,10 @@ import uk.huy.pathwise.user.dto.StoreUser;
         unmappedSourcePolicy = ReportingPolicy.IGNORE)
 public interface UserMapper {
     @Mapping(target = "canDrive", expression = "java(UserIdentity.canBeAssignedRoutes(user.getRole(), user.isCanDrive()))")
-    GetUserResponse toGetUserResponse(User user);
+    @Mapping(target = "storeStatus", source = "storeState.status")
+    @Mapping(target = "storeLockReason", source = "storeState.lockReason")
+    @Mapping(target = "status", source = "user.status")
+    GetUserResponse toGetUserResponse(User user, StoreState storeState);
 
     AdminGetUserResponse toAdminGetUserResponse(User user);
 

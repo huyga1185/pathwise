@@ -17,14 +17,19 @@ import org.springframework.web.bind.annotation.*;
 import uk.huy.pathwise.core.apiresponse.ApiResponse;
 import uk.huy.pathwise.core.pagination.PageResponse;
 import uk.huy.pathwise.job.dto.JobResponse;
+import uk.huy.pathwise.planning.dto.request.CopyPlanRequest;
 import uk.huy.pathwise.planning.dto.request.PatchStopRequest;
 import uk.huy.pathwise.planning.dto.request.PlanDraftRequest;
 import uk.huy.pathwise.planning.dto.request.PlanVersionRequest;
+import uk.huy.pathwise.planning.dto.request.ReplaceRoutesRequest;
 import uk.huy.pathwise.planning.dto.response.DriverLocationResponse;
+import uk.huy.pathwise.planning.dto.response.PlanCopyResponse;
 import uk.huy.pathwise.planning.dto.response.PlanDetailResponse;
 import uk.huy.pathwise.planning.dto.response.PlanSummaryResponse;
 import uk.huy.pathwise.planning.model.PlanStatus;
 import uk.huy.pathwise.planning.service.DriverLocationService;
+import uk.huy.pathwise.planning.service.ManualRouteService;
+import uk.huy.pathwise.planning.service.PlanCopyService;
 import uk.huy.pathwise.planning.service.PlanService;
 import uk.huy.pathwise.shared.identity.AuthenticatedUser;
 
@@ -40,7 +45,9 @@ import java.util.List;
 @PreAuthorize("hasAnyRole('OWNER', 'DISPATCHER')")
 public class PlanController {
     private final PlanService planService;
+    private final ManualRouteService manualRouteService;
     private final DriverLocationService driverLocationService;
+    private final PlanCopyService planCopyService;
 
     @ResponseStatus(HttpStatus.CREATED)
     @PostMapping
@@ -71,6 +78,17 @@ public class PlanController {
             @PathVariable("id") long planId,
             @Validated({Default.class, PlanDraftRequest.Replace.class}) @RequestBody PlanDraftRequest request) {
         return ResponseEntity.ok(new ApiResponse<>(planService.replacePlan(actor.identity(), planId, request)));
+    }
+
+    /**
+     * Manual edit of the optimized routes (T28, P-58): saved even if it breaks constraints, see {@code violations}.
+     */
+    @PutMapping("/{id}/routes")
+    public ResponseEntity<ApiResponse<PlanDetailResponse>> replaceRoutes(
+            @AuthenticationPrincipal AuthenticatedUser actor,
+            @PathVariable("id") long planId,
+            @Valid @RequestBody ReplaceRoutesRequest request) {
+        return ResponseEntity.ok(new ApiResponse<>(manualRouteService.replaceRoutes(actor.identity(), planId, request)));
     }
 
     /**
@@ -120,6 +138,18 @@ public class PlanController {
                                                                       @PathVariable("id") long planId,
                                                                       @Valid @RequestBody PlanVersionRequest request) {
         return ResponseEntity.ok(new ApiResponse<>(planService.cancelPlan(actor.identity(), planId, request)));
+    }
+
+    /**
+     * Copies the plan, whatever its status, into a new DRAFT on another day (T62).
+     */
+    @ResponseStatus(HttpStatus.CREATED)
+    @PostMapping("/{id}/copy")
+    public ResponseEntity<ApiResponse<PlanCopyResponse>> copyPlan(@AuthenticationPrincipal AuthenticatedUser actor,
+                                                                  @PathVariable("id") long planId,
+                                                                  @Valid @RequestBody CopyPlanRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(new ApiResponse<>(planCopyService.copyPlan(actor.identity(), planId, request)));
     }
 
     @GetMapping("/{id}/driver-locations")

@@ -73,7 +73,10 @@ class GeocodePlanJobHandler implements JobHandler {
             } catch (ExternalServiceException e) {
                 // Busy means other requests hold the rate limit slots: wait for our turn again, a few times.
                 if (e.getErrorCode() == ErrorCode.GEOCODING_BUSY && attempt < BUSY_ATTEMPTS) continue;
-                log.warn("Geocoding a stop failed. stopId={}, errorCode={}", stop.id(), e.getErrorCode());
+                // The provider's own message and cause type, never the cause's message: it can hold the request URL,
+                // so the address (F-48).
+                log.warn("Geocoding a stop failed. stopId={}, errorCode={}, reason={}, cause={}", stop.id(), e.getErrorCode(),
+                        e.getMessage(), e.getCause() == null ? null : e.getCause().getClass().getSimpleName());
                 return Outcome.failed(stop, GeocodeError.PROVIDER_ERROR);
             }
         }

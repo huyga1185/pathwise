@@ -11,7 +11,7 @@
 | OWNER | Web | Mọi việc của DISPATCHER, cộng: thông tin store và depot, mời và quản lý thành viên, bật `canDrive` cho mình. |
 | DISPATCHER | Web | Xe; soạn plan, sửa stop geocode lỗi, optimize, publish, huỷ; theo dõi tiến độ giao. |
 | DRIVER (hoặc OWNER/DISPATCHER có `canDrive`) | Mobile (Flutter) | Xem route trong ngày, mở bản đồ dẫn đường, báo kết quả từng stop. |
-| ADMIN | Web (tối thiểu) | Danh sách user. Không cần thiết kế kỹ. |
+| ADMIN | Web, khu `/admin` (W11, M5, P-59) | Xem cửa hàng (số tổng, không nội dung), người dùng; sau T56–T58, T60: khoá chỉ đọc, hỗ trợ tài khoản, nhật ký, thông số. |
 
 Một người có `canDrive` dùng cả hai: web để điều phối, mobile để đi giao. `GET /users/me` trả `role`, `canDrive` để client chọn menu.
 
@@ -80,6 +80,8 @@ Một người có `canDrive` dùng cả hai: web để điều phối, mobile �
 | Stop chưa xếp | `dropReason`: `NOT_OPTIMIZED` (chưa tối ưu), `INFEASIBLE` (solver không xếp được) | |
 | Route | `PENDING`, `IN_PROGRESS`, `COMPLETED` | tính riêng cho từng route (P-35); tài xế thấy ở `/driver/routes`, dispatcher thấy ở `PlanDetail.routes[].status` (P-39); client không tự tính |
 | Job | `QUEUED`, `RUNNING`, `SUCCEEDED`, `FAILED` (+ `errorCode`) | |
+| Cửa hàng (khu ADMIN, T55) | `ACTIVE` "Đang hoạt động", `READ_ONLY` "Tạm khoá (chỉ đọc)" kèm `lockReason`; nhãn ngắn trên `StatusPill` (W11): "HOẠT ĐỘNG", "TẠM KHOÁ" | khoá: cam/vàng, không dùng đỏ (vẫn đọc được, tài xế vẫn giao) |
+| Cửa hàng (phía thành viên, T56) | `GET /users/me`: `storeStatus` `READ_ONLY` + `storeLockReason` → băng "Cửa hàng đang tạm khoá: {lý do}" trên mọi màn web và app tài xế; web khoá nút ghi, app tài xế vẫn báo kết quả | băng cam/vàng, không đỏ |
 
 ### 5.3 Xung đột và giới hạn
 
@@ -87,6 +89,35 @@ Một người có `canDrive` dùng cả hai: web để điều phối, mobile �
 - **429 `RATE_LIMITED`:** đọc header `Retry-After` (giây), khoá nút và đếm ngược.
 - **503 `SERVICE_UNAVAILABLE`, `GEOCODING_BUSY`:** tạm thời; cho thử lại.
 - **502 `*_PROVIDER_ERROR`:** dịch vụ bản đồ lỗi; cho thử lại sau.
+- **Dữ liệu cũ bị dọn (T53, DATA_MODEL §6):** job đã xong quá 100 ngày bị xoá, `GET /jobs/{id}` trả 404 (client không còn theo dõi job cũ như vậy); lời mời chưa nhận đã hết hạn hoặc bị huỷ quá 90 ngày biến khỏi `GET /store/invitations` (lời mời đã nhận giữ lại).
+
+### 5.4 Nhật ký thao tác (T58)
+
+| `action` | Câu hiển thị (gợi ý) | Từ `details` |
+|---|---|---|
+| `MEMBER_UPDATED` | "{actorEmail} đổi thành viên {details.email}: {thay đổi}" | `changes.role` "vai trò Điều phối → Tài xế", `changes.status` "khoá" / "mở khoá", `changes.canDrive` "bật/tắt giao hàng" |
+| `INVITATION_REVOKED` | "{actorEmail} huỷ lời mời {details.email} ({vai trò})" | `email`, `role` |
+| `PLAN_PUBLISHED` | "{actorEmail} giao việc kế hoạch #{targetId}" | — |
+| `PLAN_CANCELLED` | "{actorEmail} huỷ kế hoạch #{targetId}" | `from`: trạng thái trước khi huỷ |
+| `PLAN_ROUTES_EDITED` | "{actorEmail} chỉnh tay tuyến kế hoạch #{targetId}" (+ "còn {n} vi phạm" khi `violations` > 0) | `violations` |
+| `STORE_VIEWED` | "Quản trị viên nền tảng xem thông tin cửa hàng" | — (với OWNER không có IP) |
+| `STORE_LOCKED` | "Quản trị viên tạm khoá cửa hàng: {details.reason}" | `reason` |
+| `STORE_UNLOCKED` | "Quản trị viên mở khoá cửa hàng" | `reason` (lý do lần khoá vừa gỡ) |
+| `USER_DISABLED` | "Quản trị viên khoá tài khoản {details.email}" | `email` |
+| `USER_ENABLED` | "Quản trị viên mở khoá tài khoản {details.email}" | `email`, `status` |
+| `USER_SESSIONS_REVOKED` | "Quản trị viên đăng xuất {details.email} khỏi mọi thiết bị" | `email` |
+| `VERIFICATION_EMAIL_SENT` | "Quản trị viên gửi lại email xác thực cho {details.email}" | `email` |
+| `PASSWORD_RESET_LINK_SENT` | "Quản trị viên gửi link đặt lại mật khẩu cho {details.email}" | `email` |
+| `STORE_OWNER_TRANSFERRED` | "Quản trị viên chuyển quyền chủ cửa hàng từ {details.from} sang {details.to}" | `from`, `to` |
+
+Web (W11) hiện người làm (email; hành động của ADMIN mà OWNER xem hiện "Quản trị viên PathWise") ở cột riêng nên câu bỏ phần chủ ngữ. Giá trị `action` mới có thể xuất hiện sau này: chưa có câu thì hiện mã. `details` có `truncated` nghĩa là chi tiết quá dài đã bị cắt: hiện "(chi tiết quá dài)".
+
+### 5.5 Thông số nền tảng (T60, khu ADMIN)
+
+- Nhãn: "Cửa hàng mới", "Cửa hàng hoạt động (7 ngày / 30 ngày)" (có giao việc ít nhất một kế hoạch), "Đang tạm khoá", "Người dùng" theo vai trò, "Kế hoạch tạo / giao việc / hoàn thành", "Điểm giao: đã giao / không giao được / bỏ qua" kèm tỉ lệ %, "Lần tối ưu" và "Tỉ lệ tối ưu lỗi".
+- Tỉ lệ `null` (chưa có gì để chia): hiện "—", không hiện 0 %.
+- Khối kỹ thuật ghi "Số của máy chủ đang chạy, tính từ {startedAt}; về 0 khi khởi động lại." Nhóm endpoint hiện tên đoạn path (`plans`, `driver`…), không cần dịch.
+- Số nghiệp vụ có thể trễ tới 1 phút (cache): ghi "Cập nhật lúc {computedAt}".
 
 ## 6. Thông điệp lỗi
 
@@ -100,6 +131,8 @@ Một người có `canDrive` dùng cả hai: web để điều phối, mobile �
 | `INVALID_EMAIL_OR_PASSWORD` | Email hoặc mật khẩu không đúng. | đăng nhập |
 | `EMAIL_NOT_VERIFIED` | Email chưa được xác thực. | đăng nhập |
 | `ACCOUNT_DISABLED` | Tài khoản đã bị vô hiệu hoá. Liên hệ chủ cửa hàng. | đăng nhập |
+| `STORE_READ_ONLY` (423) | Cửa hàng đang tạm khoá nên chưa thay đổi được. Bạn vẫn xem được dữ liệu. | mọi thao tác ghi của cửa hàng bị khoá (T56); tải lại `/users/me` để hiện băng |
+| `CANNOT_MODIFY_SELF` | Bạn không thể khoá tài khoản của chính mình. | ADMIN, khu quản trị (T56) |
 | `EMAIL_EXISTED` | Email này đã được dùng. | đăng ký, mời |
 | `EMAIL_ALREADY_VERIFIED` | Email đã được xác thực, bạn có thể đăng nhập. | xác thực |
 | `INVALID_OTP` | Mã OTP không đúng hoặc đã hết hạn. | OTP |
@@ -117,11 +150,14 @@ Một người có `canDrive` dùng cả hai: web để điều phối, mobile �
 | `VEHICLE_NAME_EXISTED` | Tên xe đã tồn tại. | xe |
 | `STORE_DEPOT_REQUIRED` | Cửa hàng chưa có kho xuất phát. Cập nhật trong phần Cửa hàng. | tạo plan |
 | `INVALID_ASSIGNMENT` | Tài xế hoặc xe không còn dùng được (`details` chỉ ra phân công nào). | plan |
-| `PLAN_TOO_LARGE` | Plan vượt giới hạn 100 điểm giao hoặc 20 phân công. | plan |
+| `PLAN_TOO_LARGE` | Plan vượt giới hạn 100 điểm giao hoặc 20 phân công. | plan, nhập file (file quá 100 dòng) |
+| `INVALID_IMPORT_FILE` | Không đọc được file. Dùng file Excel (.xlsx) hoặc CSV theo file mẫu. | nhập file (T61); `details[0].code` cho biết lý do, xem §6.2 |
+| `IMPORT_FILE_TOO_LARGE` | File quá lớn, tối đa 1 MB. | nhập file (T61) |
 | `PLAN_NOT_EDITABLE` | Plan đã giao việc, không sửa được nữa. | plan |
 | `PLAN_BUSY` | Plan đang được xử lý, vui lòng chờ. | plan |
 | `PLAN_MODIFIED` | Plan vừa được người khác thay đổi. Tải lại để xem bản mới. | plan |
 | `NOTHING_TO_GEOCODE` | Không còn địa chỉ nào cần tìm toạ độ. | geocode |
+| `NOTHING_TO_COPY` | Mọi điểm giao của kế hoạch này đã giao xong, không còn điểm nào để chép. | sao chép kế hoạch (T62) |
 | `PLAN_INCOMPLETE` | Plan cần ít nhất một điểm giao và một phân công. | optimize |
 | `STOPS_NOT_GEOCODED` | Còn điểm giao chưa có toạ độ. | optimize |
 | `PLAN_NOT_OPTIMIZED` | Cần tối ưu lộ trình trước khi giao việc. | publish |
@@ -130,7 +166,7 @@ Một người có `canDrive` dùng cả hai: web để điều phối, mobile �
 | `PLAN_NOT_ACTIVE` | Plan đã kết thúc hoặc đã bị huỷ. | tài xế |
 | `INVALID_STOP_TRANSITION` | Điểm giao đã được báo kết quả, không đổi được. | tài xế |
 | `FAILURE_REASON_REQUIRED` | Vui lòng nhập lý do không giao được. | tài xế |
-| `RATE_LIMITED` | Bạn thao tác quá nhiều lần. Thử lại sau {Retry-After}. | đăng nhập, đăng ký, OTP, lời mời |
+| `RATE_LIMITED` | Bạn thao tác quá nhiều lần. Thử lại sau {Retry-After}. | đăng nhập, đăng ký, OTP, lời mời, nhập file |
 | `CONFLICT` | Dữ liệu vừa thay đổi, vui lòng thử lại. | hiếm |
 | `GEOCODING_BUSY` | Dịch vụ tìm địa chỉ đang bận, thử lại sau ít phút. | tìm địa chỉ |
 | `GEOCODING_PROVIDER_ERROR`, `ROUTING_PROVIDER_ERROR` | Dịch vụ bản đồ đang gặp sự cố, thử lại sau. | tìm địa chỉ, optimize |
@@ -149,12 +185,28 @@ Job thất bại có `errorCode` riêng: `NO_SOLUTION` ("Không tìm được l�
 - **Số điện thoại:** `PHONE_NUMBER_INVALID`, `PHONE_NUMBER_WRONG_REGION` ("Chỉ nhận số Việt Nam"), `PHONE_NUMBER_TOO_SHORT`, `PHONE_NUMBER_TOO_LONG`, `PHONE_NUMBER_TYPE_NOT_ALLOWED`.
 - **Kiểm tra chéo:** `INVALID_TIME_WINDOW` (giờ kết thúc phải sau giờ bắt đầu, trên `timeWindow.end`), `INVALID_SHIFT` (trên `shiftEnd`), `COORDINATES_INCOMPLETE` (thiếu `lat` hoặc `lon`), `ADDRESS_OR_COORDINATES_REQUIRED` (trên `address`), `ORDER_DEMAND_NOT_ALLOWED`, `INVALID_STOP_ID`, `NOT_NULLABLE` (bug client).
 - **Trong `PLAN_INCOMPLETE`:** `STOPS_REQUIRED`, `ASSIGNMENTS_REQUIRED`. **Trong `SHIFT_OVERLAP`:** mỗi phần tử có `conflictPlanId`.
+- **Chỉnh tay tuyến (`PUT /plans/{id}/routes`, T28):** `INVALID_ROUTE_ID`, `ROUTES_INCOMPLETE`, `INVALID_STOP_ID`, `STOPS_INCOMPLETE`, `STOP_NOT_GEOCODED` là lỗi của client (nháp lệch với plan): hiện "Danh sách tuyến đã thay đổi, tải lại rồi chỉnh lại." và tải lại plan.
+- **Chuyển chủ cửa hàng (`POST /admin/stores/{id}/owner`, T57):** trên `userId`: `USER_ID_REQUIRED` ("Vui lòng chọn thành viên."), `NEW_OWNER_NOT_ACTIVE` ("Chỉ chuyển được cho thành viên đang hoạt động, đã xác thực email."), `ALREADY_OWNER` ("Người này đã là chủ cửa hàng.").
+- **Trang đặt lại mật khẩu từ link (T57):** `RESET_TOKEN_REQUIRED` là lỗi client (link thiếu token): hiện như `INVALID_RESET_TOKEN` của trang này ("Link đã hết hạn hoặc đã được dùng…", SCREENS). `OTP_REQUIRED`, `INVALID_OTP_LENGTH`, `PASSWORD_REQUIRED`, `INVALID_PASSWORD_LENGTH` như các form OTP và mật khẩu khác.
+
+- **Sao chép kế hoạch (`POST /plans/{id}/copy`, T62):** `COPY_SCOPE_REQUIRED` trên `stops` ("Vui lòng chọn điểm giao cần chép."); `PLAN_DATE_REQUIRED`, `INVALID_PLAN_NAME_LENGTH` như form kế hoạch. Phân công không chép được (`skippedAssignments[].reason`, không phải lỗi), gộp một câu trên kế hoạch mới: "Không chép phân công của {danh sách}. Thêm phân công rồi tối ưu lộ trình.", mỗi phần tử `DRIVER_UNAVAILABLE` "tài xế {tên} (không còn nhận tuyến được)", `VEHICLE_INACTIVE` "xe {tên} (đã tắt)".
+- **Khoảng ngày (báo cáo T63, thông số ADMIN T60):** trên `from`: `INVALID_DATE_RANGE` ("Ngày bắt đầu phải trước hoặc bằng ngày kết thúc."), `DATE_RANGE_TOO_LONG` (báo cáo: "Chọn tối đa 31 ngày."; thông số ADMIN: "Chọn tối đa 92 ngày.").
+- **Nhập điểm giao từ file (`POST /plans/import`, T61):** trong `INVALID_IMPORT_FILE`, `details[0]` trên `file`: `UNSUPPORTED_FILE_TYPE` ("Chỉ nhận file .xlsx hoặc .csv."), `UNREADABLE_FILE` ("File bị hỏng hoặc không đúng định dạng."), `NO_ROWS` ("File không có dòng điểm giao nào."), `LABEL_COLUMN_REQUIRED` ("File thiếu cột "Nhãn / mã đơn". Tải file mẫu để xem các cột."). Lỗi từng dòng (`rows[].errors`) dùng đúng các mã của stop ở trên, hiện ở cột tương ứng của bảng xem trước (tên cột theo file mẫu: `label` → "Nhãn / mã đơn", `demands` → cột KG/Thùng/Kiện…); thêm `INVALID_TIME_FORMAT` ("Giờ không đúng dạng, ví dụ 09:00.").
+
+### 6.3 Vi phạm sau khi chỉnh tay (`PlanDetail.violations`, T28)
+
+Không phải lỗi: plan vẫn lưu và giao việc được (P-58). Câu theo `code`, `excess` đổi đơn vị:
+- `CAPACITY_EXCEEDED`: "{Tuyến}: vượt tải {excess} {đơn vị của xe}" (ví dụ "vượt tải 3 thùng"; `ORDER` là "đơn").
+- `TIME_WINDOW_MISSED`: "{Điểm}: tới muộn {phút} phút so với khung giờ" (làm tròn lên).
+- `SHIFT_EXCEEDED`: "{Tuyến}: về muộn {phút} phút so với ca".
+- `MAX_DISTANCE_EXCEEDED`: "{Tuyến}: vượt {km} km quãng đường tối đa".
+Giao việc khi còn vi phạm: hộp xác nhận liệt kê các dòng trên, nút "Vẫn giao việc".
 
 Danh sách đầy đủ theo endpoint: API_SPEC §2–§8. Mã không có trong bảng: hiện "Giá trị không hợp lệ".
 
 ## 7. Ngoài phạm vi MVP (thiết kế chỗ trống, chưa có API)
 
-Dẫn đường từng bước trong app (T33), kéo thả chỉnh route sau optimize (T28). Có thể thiết kế trước để giữ chỗ trong layout, đánh dấu "sắp có". Vị trí tài xế đã có từ T32 (§4.1, §4.2).
+Không còn mục nào: dẫn đường trong app (T33, M05), chỉnh tay tuyến (T28, W10) và vị trí tài xế (T32) đã có.
 
 ## 8. Dữ liệu mẫu (`docs/ux/samples`)
 

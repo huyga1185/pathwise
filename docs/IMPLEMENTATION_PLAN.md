@@ -33,6 +33,7 @@ M1 Track A (auth)       T10─T11─T12─T13─T17─┬─T14─T15
 M2 Track A                                       T20─T24─T29─T25─T26─T27
 M3                                                          T30─T31  T40 T41
 M4                                                                     T43  (T32 T33 T28 nếu kịp)
+M5 (vận hành, P-59)  A: T50─T51─T52─T53─T54   B: T59─T55─T56─T57─T58─T60 + W11 (web)   C: T61, T62, T63 + W12 (web)
 ```
 
 Bảng dependency (→ nghĩa là "phải xong trước"):
@@ -471,18 +472,150 @@ T42 cũ (Docker, compose, README) đã được gộp vào T05 và T07 trong M0 
 - **Phạm vi:** `DirectionsProvider` dùng OSRM route (`steps=true`, `polyline6`); `GET /driver/routes/{routeId}/directions`; cache theo `routeId` và version của plan.
 - **Acceptance criteria:** parse response mẫu; route có n stop → n+1 leg (về depot); provider lỗi → 502 (app fallback sang deep link).
 - **Ghi chú từ T44:** `DirectionsResponse` ở API_SPEC §8 đang theo OSRM (`geometry` polyline6, `maneuver`/`modifier` theo từ vựng OSRM). Trước khi làm, chốt một dạng trung tính với provider (ghi rõ độ chính xác polyline, enum maneuver riêng), để đổi provider sau này không phải đổi contract; đây là quyết định cần chủ dự án duyệt.
+- **Phát sinh khi làm (2026-11-13), P-57:** chủ dự án chọn contract trung tính (enum riêng + polyline6), tính đường **từ vị trí hiện tại** và app **dẫn đường trực tiếp** (client ở `docs/client/PLAN.md` M05). Phạm vi mới thay phạm vi cũ:
+  - `routing.directions`: `DirectionsProvider.directions(from, to)` → `Directions` (khoảng cách, thời gian, polyline6, bước với `Maneuver` của PathWise); `OsrmDirectionsProvider` (`/route/v1/driving`, `overview=full`, `geometries=polyline6`, `steps=true`, timeout như matrix, đổi `type`/`modifier` của OSRM sang enum; `code` khác `Ok`, `NoRoute`, HTTP lỗi → `ROUTING_PROVIDER_ERROR`); chọn bằng `routing.directions.provider`, base URL `routing.directions.osrm.base-url` (mặc định bằng của matrix, cùng server tự host ở `compose.routing.yaml`).
+  - `GET /driver/routes/{routeId}/directions?lat&lon[&toStopId]` trong `DriverRouteController`: tìm route như `GET /driver/routes/{id}` trong transaction chỉ đọc, gọi provider **ngoài** transaction; plan `COMPLETED`/huỷ sau publish → 422 `PLAN_NOT_ACTIVE`; rate limit `directions-user` 30/5 phút. **Không cache** (điểm đầu là vị trí hiện tại), bỏ phần "cache theo `routeId` và version".
+  - Acceptance mới: parse response OSRM mẫu (cả vòng xoay, rẽ nhánh, đường không tên) ra đúng enum; đích mặc định là stop `PENDING` đầu tiên, `toStopId` lạ → 404, hết stop → điểm kết thúc; tenant isolation; 422 khi plan đã xong; 429 khi vượt giới hạn; provider lỗi → 502; không gọi provider bên trong transaction.
+  - Ước lượng: 1,5 ngày (không đổi).
 
 ### T28. Chỉnh tay route sau optimize
 - **Ước lượng:** 1,5 ngày · **FR:** P08 · **Quyết định:** D-24
 - **Phạm vi:** `PUT /plans/{id}/routes`; tính lại ETA và quãng đường bằng matrix (không giải lại); trả `violations` (vượt capacity, trễ time window, quá ca).
 - **Acceptance criteria:** chuyển stop gây vượt capacity → lưu được nhưng có violation `CAPACITY_EXCEEDED`; stopIds không thuộc plan → 422.
+- **Phát sinh khi làm (2026-11-13), P-58:** chủ dự án chọn chỉ sửa plan DRAFT đã tối ưu, lưu cả khi vi phạm và cảnh báo (`PlanDetail.violations` luôn có, tính mỗi lần đọc; publish vẫn được, web hỏi xác nhận), web kéo thả bằng `@dnd-kit` sau port (`docs/client/PLAN.md` W10).
+  - Phạm vi chốt: `PUT /plans/{id}/routes` (API_SPEC §7): kiểm tra như sửa draft (404 → `PLAN_NOT_EDITABLE` → `PLAN_BUSY` → `PLAN_MODIFIED` → `PLAN_NOT_OPTIMIZED`), rồi 400 validation (đủ mọi route, mỗi stop đúng một lần, stop chưa có toạ độ không vào route); transaction đọc → matrix ngoài transaction → transaction ghi có kiểm `version`; lịch mỗi route: rời điểm đầu lúc `shiftStart` hoặc muộn hơn để không chờ ở stop đầu, chờ tới đầu time window khi tới sớm. `violations` tính trong `PlanDetailAssembler` từ ETA, tải, giờ về, quãng đường đã lưu. Cột `manually_unassigned` (V6, DATA_MODEL §4) cho `dropReason = MANUAL`.
+  - Acceptance chốt: chuyển stop làm vượt tải → 200, `violations` có `CAPACITY_EXCEEDED` với `excess`; đổi thứ tự làm trễ time window → `TIME_WINDOW_MISSED`; route về muộn hơn ca → `SHIFT_EXCEEDED`; ETA/quãng đường tính lại đúng với matrix giả; stop không thuộc plan, lặp hay thiếu → 400 với đúng field (thay "422" của bản cũ); plan PUBLISHED → 422; version cũ → 409; matrix lỗi → 502 và không đổi gì; tenant isolation; optimize lại xoá `MANUAL`; matrix không được gọi trong transaction.
 - **Ghi chú từ T44:** hình dạng `violations[]` chưa có trong API_SPEC, chốt khi làm task này (đề xuất mỗi phần tử có `code`, `routeId`, `stopId?` và dữ liệu đo được như vượt bao nhiêu). `PUT /plans/{id}` tạo lại route nên `routeId` đổi sau mỗi lần sửa draft; request của task này dùng `routeId` lấy từ `PlanDetail` mới nhất.
 
-## 9. Sau MVP (Could, chưa lên lịch)
+## 9. Phase M5: Vận hành và quản trị (chủ dự án duyệt 2026-11-14, P-59)
 
-Google provider (I-03) · realtime push (I-04) · optimize bất đồng bộ (FR-X03) · job dọn refresh token hết hạn · lịch sử vị trí · gợi ý địa điểm (I-01, cần phê duyệt) · thanh toán QR (I-02, cần phê duyệt).
+Làm **A trước B**. A giữ an toàn dữ liệu và VPS (2 GB, chạy cả routing); B cho ADMIN thực quyền và trang thông số. Giai đoạn C (nhập điểm giao từ CSV/Excel, sao chép plan, báo cáo và xuất CSV) lên kế hoạch ngày 2026-11-14 (P-67, P-68), làm sau B. Mỗi task backend có ước lượng riêng; web của B là W11 (`docs/client/PLAN.md`).
 
-## 10. Task đầu tiên: T00
+| Task | Phụ thuộc | Song song được với |
+|---|---|---|
+| T50 | — | T51, T52 |
+| T51, T52, T53, T54 | — | nhau |
+| T59 | — | A |
+| T55 | T59 | T53, T54 |
+| T56, T57, T58 | T55 | nhau |
+| T60 | T55 | T56–T58 |
+| W11 | T55 (danh sách), T56–T58, T60 theo từng màn | — |
+| T61, T62, T63 | — (sau B) | nhau |
+| W12 | T61, T62, T63 theo từng màn | — |
+
+### Giai đoạn A: an toàn vận hành
+
+#### T50. Giờ trong ngày không đổi theo múi giờ JVM (F-54)
+- **Ước lượng:** 0,5–1 ngày · **Phụ thuộc:** —
+- **Phạm vi:** `LocalTime` (ca `shift_start`/`shift_end` của route, time window `tw_start`/`tw_end` của stop) đọc/ghi không qua đổi múi giờ (kiểu JDBC/Hibernate không đổi zone cho `TIME`, hoặc converter); Flyway migration chuyển dữ liệu đã lưu lệch về giờ thật (lệch phụ thuộc múi giờ JVM lúc ghi: ghi lại cách xác định và giả định trong DATA_MODEL); test chạy với JVM ở hai múi giờ khác nhau (`-Duser.timezone`).
+- **Acceptance:** ca 08:00 nằm trong DB là `08:00:00` (đọc bằng SQL); app chạy JVM UTC hay +07 đều đọc 08:00; dữ liệu cũ sau migration đúng giờ; mọi test cũ xanh.
+- **Phát sinh khi làm (2026-11-14):** không làm migration chuyển dữ liệu: image app không đặt múi giờ nên JVM trong container chạy UTC, dữ liệu staging/prod vốn đúng và một migration dời giờ sẽ làm hỏng nó; chỉ DB dev ghi bởi app chạy từ IDE (JVM +07) bị lệch 8 giờ, README hướng dẫn tạo lại hoặc chạy câu SQL sửa (dời 8 giờ, quay vòng trong ngày). Cách sửa: `@JdbcType(LocalTimeJdbcType.class)` trên bốn cột giờ (bind `LocalTime` thẳng qua driver), giữ `hibernate.jdbc.time_zone: UTC` cho `Instant`. Test ép JVM `Asia/Ho_Chi_Minh` để CI (UTC) cũng bắt lỗi.
+
+#### T51. Giới hạn log Docker
+- **Ước lượng:** 0,25 ngày · **Phụ thuộc:** —
+- **Phạm vi:** mọi service trong `compose.yaml`, `compose.prod.yaml`, `compose.routing.yaml`, `compose.web.yaml` có `logging: {driver: json-file, options: {max-size, max-file}}` (mặc định 10 MB × 3, chỉnh bằng biến); DEPLOYMENT ghi cách xem log cũ và dung lượng tối đa.
+- **Acceptance:** `docker compose config` của mọi tổ hợp có `logging`; CI xanh.
+
+#### T52. Backup MariaDB tự động, đẩy ra ngoài VPS
+- **Ước lượng:** 1 ngày · **Phụ thuộc:** —
+- **Phạm vi:** service `backup` trong file compose riêng (`compose.backup.yaml`, ghép bằng `-f`): mỗi đêm `mariadb-dump` nén, giữ 7 bản ngày + 4 bản tuần trên VPS, đẩy lên dịch vụ tương thích S3 (Cloudflare R2, Backblaze B2…) khi có biến `BACKUP_S3_*` (trống thì chỉ giữ trên VPS), mã hoá file bằng khoá trong `.env` (tuỳ chọn); script khôi phục và hướng dẫn tập khôi phục định kỳ vào DB tạm; log thành công/thất bại để T54 cảnh báo.
+- **Acceptance:** chạy tay một lần: file xuất hiện trên VPS và trên S3 giả (MinIO trong test thủ công); khôi phục vào DB tạm và đếm bảng khớp; xoay vòng giữ đúng số bản.
+- **Phát sinh khi làm (2026-11-14):** không build image riêng (VPS chỉ kéo image): `backup` dùng `mariadb:11.8` (có `mariadb-dump`, `openssl`, tzdata), `backup-offsite` dùng `rclone/rclone:1.71.2` với remote khai báo bằng biến môi trường; script trong `command` như `compose.routing.yaml`. Chép lên bucket bằng `rclone copy` (không xoá; luật hết hạn đặt trên bucket) để kẻ chiếm VPS không xoá được bản ngoài. Thêm `BACKUP_WEEKLY_DAY`, `.sha256` cho mỗi file. S3 giả dùng `rclone serve s3` vì image `minio/minio` không còn kéo được từ Docker Hub. Khôi phục là các lệnh trong DEPLOYMENT §5.3–5.4, không phải script riêng.
+
+#### T53. Dọn dữ liệu cũ
+- **Ước lượng:** 0,5 ngày · **Phụ thuộc:** —
+- **Phạm vi:** job theo lịch (Spring `@Scheduled`, khoá Redis có TTL để chỉ một instance chạy): xoá refresh token hết hạn hoặc đã thu hồi quá 30 ngày, job nền đã kết thúc quá 30 ngày, lời mời hết hạn quá 90 ngày; số ngày cấu hình được; log số dòng đã xoá. Thay mục "job dọn refresh token hết hạn" ở §10.
+- **Acceptance:** integration test: dữ liệu quá hạn bị xoá, dữ liệu còn hiệu lực giữ nguyên; hai instance chạy cùng lúc chỉ một lần xoá.
+- **Phát sinh khi làm (2026-11-14):** khung chung ở `core.housekeeping` (khoá Redis, lịch 03:30 sau backup), mỗi module tự xoá bảng của mình qua interface `RetentionTask` (ARCHITECTURE §7.1) để `core` không phụ thuộc module nghiệp vụ. Lời mời `ACCEPTED` không xoá (lịch sử ai mời ai); lời mời `REVOKED` cũng xoá sau 90 ngày; job còn là `active_job_id` của plan được giữ (FK). Không thêm endpoint chạy tay: test gọi `HousekeepingService.run()`. Quy tắc giữ ở DATA_MODEL §6.
+
+#### T54. Giám sát tối thiểu và cảnh báo
+- **Ước lượng:** 1 ngày · **Phụ thuộc:** T52 (trạng thái backup)
+- **Phạm vi:** không thêm Prometheus/Grafana (VPS 2 GB). (1) Health công khai đủ cho dịch vụ uptime bên ngoài (UptimeRobot/BetterStack, gói miễn phí) qua Caddy; hướng dẫn đăng ký. (2) Script cron trên host (trong repo, `deploy/monitor/`): đĩa > 85 %, RAM khả dụng thấp, container restart hoặc unhealthy, backup đêm qua thất bại → gửi email qua SMTP của app. (3) App log có cấu trúc khi gửi SMTP lỗi, OSRM/Nominatim lỗi, job lỗi, để T60 đếm.
+- **Acceptance:** chạy script với ngưỡng thấp gửi được email (Mailpit ở dev); dừng container app thì script báo; DEPLOYMENT có mục giám sát.
+- **Phát sinh khi làm (2026-11-14):** health công khai là `https://<domain>/actuator/health` (Caddy mở đúng path này). Script `deploy/monitor/pathwise-monitor.sh` (bash + curl + docker, không cài thêm gì) đọc cấu hình từ `.env` (biến môi trường thắng), gửi email bằng `curl` qua SMTP của app; mỗi sự cố báo một lần khi bắt đầu, nhắc lại sau `MONITOR_REMIND_HOURS` (6 giờ), báo khi hết (trạng thái ở `.monitor/`); thêm kiểm tra health của app và container tự khởi động lại; `--dry-run`, `--test-email`. Log lỗi qua interface `core.observability.FailureLog` (ARCHITECTURE §10) để T60 gắn bộ đếm vào cùng chỗ. SMTP chết thì script không gửi được: uptime bên ngoài là lớp báo thứ hai.
+
+### Giai đoạn B: ADMIN có thực quyền
+
+ADMIN **không xem nội dung** của cửa hàng (plan, xe, điểm giao, người nhận): chỉ số tổng và nhật ký (BR-01, P-59). Mọi endpoint ở `/api/v1/admin/**`, quyền **AD**; mọi hành động ghi audit log (T58).
+
+Endpoint ADMIN mới đặt ở module `admin` (P-60, từ T55); cột khoá của cửa hàng (`stores.status`, `lock_reason`, `locked_at`, `locked_by`) đã có từ V7 (T55).
+
+#### T59. Tạo ADMIN không qua SQL
+- **Ước lượng:** 0,5 ngày · **Phụ thuộc:** —
+- **Phạm vi:** khi khởi động, nếu chưa có ADMIN nào và có biến `BOOTSTRAP_ADMIN_EMAIL` (+ mật khẩu lấy từ biến hoặc sinh ngẫu nhiên gửi qua email đặt lại mật khẩu) thì tạo một ADMIN đã xác thực; đã có ADMIN thì bỏ qua và log cảnh báo nếu biến còn đặt; không log mật khẩu. DEPLOYMENT hướng dẫn.
+- **Acceptance:** lần đầu tạo đúng một ADMIN; khởi động lại không tạo thêm; ADMIN đăng nhập được.
+- **Phát sinh khi làm (2026-11-14):** biến `BOOTSTRAP_ADMIN_EMAIL`, `BOOTSTRAP_ADMIN_PASSWORD` (8–72 ký tự, tuỳ chọn), `BOOTSTRAP_ADMIN_FULL_NAME` (mặc định `Admin`), cấu hình `bootstrap.admin.*`. Không có mật khẩu: mật khẩu ngẫu nhiên không ai biết, gửi ngay OTP đặt lại mật khẩu (hết hạn 5 phút; quá hạn thì dùng "Quên mật khẩu" như mọi tài khoản). Cấu hình sai (mật khẩu sai độ dài, email đã thuộc tài khoản khác) chỉ log lỗi và bỏ qua, không làm app dừng; "đã có ADMIN" tính cả ADMIN bị khoá. Code ở `auth` (`AdminBootstrapService`, chạy ở `ApplicationReadyEvent`), tạo user qua `UserAccountService.createAdmin`/`adminExists`.
+
+#### T55. Danh sách và chi tiết cửa hàng; sửa danh sách user
+- **Ước lượng:** 1 ngày · **Phụ thuộc:** T59
+- **Phạm vi:** `GET /admin/stores` (phân trang, tìm theo tên/email chủ, lọc trạng thái, sort whitelist): tên, chủ (email), ngày tạo, trạng thái (ACTIVE/READ_ONLY), số thành viên theo vai trò, số xe, số plan, lần hoạt động gần nhất; `GET /admin/stores/{id}`: thêm số liệu 30 ngày (plan, điểm giao, tỉ lệ giao được), thành viên (email, vai trò, trạng thái; không số điện thoại); `GET /admin/users` trả đủ `storeId`, `status` (đóng lệch ở API_SPEC §0), lọc theo store/vai trò/trạng thái. Truy vấn tổng hợp, không trả nội dung plan.
+- **Acceptance:** số liệu đúng trên dữ liệu test; OWNER/DISPATCHER/DRIVER → 403; không field nội dung plan/điểm giao nào trong response.
+- **Phát sinh khi làm (2026-11-14, P-60):** module mới `admin` (`admin → store, user, fleet, planning`); migration **V7** thêm `stores.status`, `lock_reason`, `locked_at`, `locked_by` (T56 dùng, không cần migration riêng); "lần hoạt động gần nhất" = mới nhất giữa plan tạo/sửa và tài xế báo kết quả. Tìm `q` khớp tên cửa hàng hoặc email OWNER; sort `id`, `name`, `createdAt` (sort theo số tổng để sau). Số liệu 30 ngày tính từ lúc gọi (UTC), không theo ngày của múi giờ cửa hàng.
+
+#### T56. Khoá cửa hàng (chỉ đọc), khoá user, buộc đăng xuất
+- **Ước lượng:** 1–1,5 ngày · **Phụ thuộc:** T55
+- **Phạm vi:** `POST /admin/stores/{id}/lock {reason}` / `unlock`: store **READ_ONLY** (P-59): thành viên vẫn đăng nhập và đọc; mọi request ghi của store (tạo/sửa/xoá xe, thành viên, lời mời, plan; geocode, optimize, publish, huỷ) → mã mới `STORE_READ_ONLY` (chủ dự án duyệt tên mã 2026-11-14; HTTP status chốt ở task, ghi API_SPEC); tài xế **vẫn báo kết quả và gửi vị trí** để giao nốt plan đang chạy; web/app hiện băng "Cửa hàng đang tạm khoá: {lý do}". `POST /admin/users/{id}/disable` / `enable` (ADMIN không khoá được chính mình hay ADMIN khác cuối cùng); `POST /admin/users/{id}/sessions/revoke` (thu hồi mọi refresh token). Kiểm tra chặn ghi đặt ở một chỗ (filter hoặc aspect theo endpoint), có test cho từng nhóm endpoint ghi.
+- **Acceptance:** store khoá: đọc 200, ghi → mã khoá, tài xế báo kết quả 200; mở khoá ghi lại được; user bị khoá không refresh được, lần đăng nhập sau 403 `ACCOUNT_DISABLED`; audit log có đủ.
+- **Phát sinh khi làm (2026-11-14, P-62):** `STORE_READ_ONLY` = 423; chặn mặc định bằng interceptor, endpoint được phép gắn `@AllowedWhenStoreReadOnly` (auth, `/users/me`, tài xế báo kết quả và vị trí); `POST /invitations/accept` của cửa hàng bị khoá → 423 (mã mời vẫn dùng được sau khi mở). `GET /users/me` thêm `storeStatus`, `storeLockReason` (port `StoreStateLookup`, `StoreStatus` sang `shared.store`). Mũi tên mới `admin → auth` (`SessionRevoker`). Thêm `CANNOT_MODIFY_SELF` (422). Khoá lại thì thay lý do; mở khoá cửa hàng đang ACTIVE thì không làm gì, không ghi nhật ký. Mở khoá user chưa từng xác thực email → `PENDING_VERIFICATION`. Ghi nhật ký `STORE_LOCKED`, `STORE_UNLOCKED`, `USER_DISABLED`, `USER_ENABLED`, `USER_SESSIONS_REVOKED` (kèm `storeId` của user). Fixture `/users/me` của test mobile và `docs/ux/samples/user-me.json` thêm hai field mới.
+
+#### T57. Hỗ trợ tài khoản
+- **Ước lượng:** 1 ngày · **Phụ thuộc:** T55
+- **Phạm vi:** `POST /admin/users/{id}/verification-email` (gửi lại OTP xác thực, theo rate limit), `POST /admin/users/{id}/password-reset-email` (gửi email đặt lại mật khẩu như quên mật khẩu; ADMIN không thấy, không đặt mật khẩu), `POST /admin/stores/{id}/owner {userId}` (chuyển OWNER cho một thành viên ACTIVE đã xác thực; OWNER cũ thành DISPATCHER; khi chủ cũ mất email). Email báo cho người liên quan.
+- **Acceptance:** email đúng người nhận (FakeEmailSender); chuyển chủ: đúng vai trò hai người, token cũ của họ hết hiệu lực vai trò (refresh lại ra vai trò mới); không chuyển cho user của store khác (404).
+- **Phát sinh khi làm (2026-11-14, P-63):** "email đặt lại mật khẩu" là **link 24 giờ không chứa email**, mở trang công khai mới `/app/reset-password` (W11) mà vẫn phải nhập OTP gửi về email đó; thêm `POST /auth/password/reset-link/otp`, `POST /auth/password/reset-link` (công khai), key Redis `resetLink:*`, mẫu email `reset-link`. Chuyển chủ: DRIVER thành OWNER thì `canDrive = true`; chủ cũ bị thu hồi mọi phiên (đăng nhập lại là DISPATCHER); email `owner-granted` cho chủ mới, `owner-transferred` cho chủ cũ (sau commit, lỗi chỉ log); khoá dòng store khi chuyển. Lỗi người nhận không hợp lệ: `VALIDATION_ERROR` trên `userId` (`NEW_OWNER_NOT_ACTIVE`, `ALREADY_OWNER`), không thêm `ErrorCode`. Hai nút email đếm chung giới hạn theo email với "Gửi lại mã"/"Quên mật khẩu". Ghi nhật ký 3 hành động mới.
+
+#### T58. Nhật ký thao tác (audit log)
+- **Ước lượng:** 1–1,5 ngày · **Phụ thuộc:** T55 (dùng ở T56, T57; làm trước hoặc cùng T56)
+- **Phạm vi:** bảng `audit_events` (migration mới, DATA_MODEL §4): thời điểm, người làm (userId, vai trò), storeId, hành động (enum), đối tượng (loại, id), chi tiết nhỏ (JSON, không dữ liệu cá nhân ngoài email), requestId, IP. Ghi: mọi hành động ADMIN; trong store: đổi vai trò/khoá thành viên, thu hồi lời mời, publish, huỷ plan, chỉnh tay tuyến. `GET /admin/audit` (lọc store, người, hành động, khoảng ngày); `GET /store/audit` cho OWNER (chỉ store mình, không thấy IP của ADMIN). Giữ 1 năm (T53 dọn).
+- **Acceptance:** mỗi hành động trên ghi đúng một dòng trong cùng transaction với thay đổi; OWNER không thấy store khác; ghi không làm hỏng thao tác khi chi tiết quá lớn (cắt).
+- **Phát sinh khi làm (2026-11-14, P-61):** module mới `audit` ở dưới cùng (store, planning, admin gọi `AuditLog`); migration **V8**. Hành động hiện có: `MEMBER_UPDATED` (chỉ khi có field thật sự đổi), `INVITATION_REVOKED`, `PLAN_PUBLISHED`, `PLAN_CANCELLED`, `PLAN_ROUTES_EDITED`, `STORE_VIEWED` (ADMIN mở chi tiết cửa hàng, chủ dự án chọn). Hành động ADMIN của T56, T57 thêm vào `AuditAction` khi làm các task đó. Lưu `actor_email` lúc ghi; không FK. Khoảng ngày: `from`/`to` là ngày (cả hai tính), giờ Asia/Ho_Chi_Minh ở `/admin/audit`, giờ của cửa hàng ở `/store/audit`. `details` tối đa 2000 ký tự. Giữ 1 năm (`housekeeping.retention.audit-events: 365d`).
+
+#### T60. Thông số nền tảng cho ADMIN
+- **Ước lượng:** 1,5 ngày · **Phụ thuộc:** T55
+- **Phạm vi:** `GET /admin/metrics/business?from&to` (theo ngày, múi giờ Asia/Ho_Chi_Minh): cửa hàng mới, cửa hàng hoạt động (có plan publish) 7/30 ngày, cửa hàng bị khoá, user theo vai trò, plan tạo/publish/hoàn thành, điểm giao và tỉ lệ giao được/không được/bỏ qua, số lần tối ưu và tỉ lệ lỗi. `GET /admin/metrics/technical`: từ Micrometer trong app (không cần Prometheus): request/phút, tỉ lệ 4xx/5xx, p95 thời gian phản hồi theo nhóm endpoint, job đang chạy/lỗi 24 giờ, lỗi OSRM/Nominatim/SMTP 24 giờ, số lần bị rate limit, heap JVM, số kết nối DB, dung lượng DB (bảng lớn nhất), tuổi bản backup gần nhất (T52). Số kỹ thuật là của instance đang chạy (reset khi khởi động lại, ghi rõ); số nghiệp vụ tính từ DB, cache Redis ngắn (có TTL).
+- **Acceptance:** số nghiệp vụ đúng trên dữ liệu test; số kỹ thuật tăng sau khi gọi API và gây lỗi giả; chỉ ADMIN; response < 1 s với 100 store.
+- **Phát sinh khi làm (2026-11-14, P-64, P-65):** chủ dự án chọn giữ job 100 ngày (sửa hạn của T53) và bỏ tuổi backup khỏi API (theo dõi bằng script T54). Số nghiệp vụ: khoảng `from`–`to` tối đa 92 ngày, mặc định 30, đủ mọi ngày; `now` (cửa hàng, hoạt động 7/30 ngày, đang khoá, user theo vai trò) tính tại lúc gọi; cache Redis 60 s. Số kỹ thuật: bộ đếm cuộn theo phút trong bộ nhớ (`OpsMetrics`), p95 bằng timer Micrometer; thêm mũi tên `admin → job` (P-65). Không thêm dependency.
+
+### Giai đoạn C: nhập file, sao chép plan, báo cáo (chủ dự án chọn 2026-11-14, P-67; chi tiết P-68, cùng Approved)
+
+Dành cho OWNER và DISPATCHER (quyền **O, D**), lọc theo `actor.storeId()`; plan của cửa hàng khác → 404. Không có danh mục đơn hàng lâu dài (D-04 giữ nguyên): file chỉ là cách nhập nhanh điểm giao cho **một** plan. Endpoint mới ở module `planning` (đọc plan, stop, route của chính module); không cần migration. Cửa hàng `READ_ONLY` (T56): nhập file và sao chép bị chặn 423 như mọi request ghi (mặc định của interceptor), báo cáo và xuất CSV vẫn dùng được. Web làm ở W12 (`docs/client/PLAN.md`); app tài xế không đổi.
+
+#### T61. Nhập điểm giao từ file CSV/Excel
+- **Ước lượng:** 1,5 ngày · **Phụ thuộc:** — · **Dependency mới:** Apache POI `poi-ooxml` (P-67; chốt phiên bản ≥ 2 tuần và không có CVE đang mở khi làm, sửa `pom.xml`)
+- **Phạm vi:**
+  - `POST /api/v1/plans/import` (multipart, field `file`) **chỉ đọc file và trả kết quả, không lưu gì** (P-68): `{rows: [{row, stop: <stop như trong PlanDraftRequest> | null, errors: [{field, code}]}], validCount, errorCount}`. Web cho xem trước, sửa hoặc bỏ dòng lỗi, rồi đưa các stop vào form và lưu bằng `POST /plans` / `PUT /plans/{id}` như hiện nay, nên geocode chạy nền, validation và giới hạn giữ nguyên một chỗ.
+  - Định dạng: `.xlsx` (sheet đầu tiên) và `.csv` (UTF-8 có hoặc không BOM; byte không phải UTF-8 hợp lệ thì đọc theo Windows-1258, kiểu Excel tiếng Việt lưu CSV thường; dấu phân cách `,` hoặc `;` tự nhận theo dòng tiêu đề). Không nhận `.xls` cũ. File ≤ 1 MB, ≤ 100 dòng dữ liệu (D-19); dòng trống bị bỏ qua.
+  - Cột theo **file mẫu** (`GET /api/v1/plans/import/template.xlsx` và `.csv`), tiêu đề tiếng Việt, so khớp không phân biệt hoa thường, dấu và khoảng trắng; thứ tự cột tuỳ ý; cột lạ bị bỏ qua và báo trong `ignoredColumns`. Cột: Nhãn / mã đơn (bắt buộc), Người nhận, Số điện thoại, Địa chỉ, Vĩ độ, Kinh độ, KG, Thùng, Kiện, Phút phục vụ, Giao từ, Giao đến, Ghi chú. Phải có Địa chỉ hoặc đủ Vĩ độ + Kinh độ (D-18). Ô số và giờ của Excel đọc theo kiểu ô (số, giờ), ô chữ thì parse `HH:mm`.
+  - Lỗi theo dòng dùng **cùng mã validation** với `PlanDraftRequest` (ví dụ `STOP_LABEL_REQUIRED`, `INVALID_STOP_LABEL_LENGTH`, `INVALID_LATITUDE`, `INVALID_DEMAND`; số điện thoại sai như `@ValidPhoneNumber`), `field` là tên field API để web hiện nhãn cột. Lỗi cả file (không đọc được, sai định dạng, thiếu cột Nhãn) → 422 `INVALID_IMPORT_FILE` kèm `fieldErrors` mô tả; quá 1 MB → 413 `IMPORT_FILE_TOO_LARGE`; quá 100 dòng → 422 `PLAN_TOO_LARGE`. Rate limit theo user bằng cơ chế của T40 (quy tắc mới `rate-limit.rules.plan-import`, 30 lần/giờ, P-68).
+  - An toàn: POI giữ mặc định chống zip bomb (`ZipSecureFile`), không đánh giá công thức (đọc giá trị đã lưu), không log nội dung ô (có số điện thoại, tên người nhận).
+- **Phát sinh khi làm (2026-11-14):** Apache POI **5.5.1** (bản 11/2025; 6.0.0 ra 19/10/2026, major mới, chưa dùng). `stop` luôn có mặt trong mỗi dòng (giá trị đọc được, kể cả khi dòng có lỗi) thay vì `null`, để web hiện nội dung dòng lỗi. Mã field mới `INVALID_TIME_FORMAT`. Windows-1258 ghi dấu thanh dạng ký tự tổ hợp nên text CSV được chuẩn hoá NFC. `.xlsx` được giải nén thử (tối đa 10 MB, 1000 entry) trước khi POI dựng workbook trong bộ nhớ. Request không phải multipart hoặc `Content-Type` không hỗ trợ trả 400 `MALFORMED_REQUEST` (trước đó rơi vào handler chung); quá `spring.servlet.multipart.max-file-size` (1 MB) trả 413 `IMPORT_FILE_TOO_LARGE`. File mẫu tải ở `GET /plans/import/template.xlsx` và `.csv` (O, D).
+- **Acceptance:** test với file mẫu `.xlsx`, CSV UTF-8, CSV có BOM, CSV Windows-1258, dấu `;`; dòng lỗi trả đúng `row` và mã; file hỏng/không phải Excel → 422; > 1 MB → 413; 101 dòng → 422; không ghi DB (đếm bảng trước/sau); tenant isolation không áp dụng vì không đọc dữ liệu cửa hàng, nhưng có test quyền (DRIVER, ADMIN → 403) và cửa hàng `READ_ONLY` → 423. API_SPEC §7, UX_BRIEF §6 (câu cho mã mới, thêm cùng câu vào `messages.ts` và `messages.dart`), docs client (PLAN W12, SCREENS).
+
+#### T62. Sao chép plan
+- **Ước lượng:** 1 ngày · **Phụ thuộc:** —
+- **Phạm vi:**
+  - `POST /api/v1/plans/{id}/copy {planDate, name?, stops: "ALL" | "NOT_DELIVERED"}` → 201 `PlanDetail` của plan mới (DRAFT, chưa tối ưu, `processingStatus = IDLE`). Chép được từ plan ở **mọi trạng thái** (kể cả CANCELLED). `name` mặc định "{tên cũ} (bản sao)", cắt cho vừa 150 ký tự.
+  - `NOT_DELIVERED` = stop `FAILED`, `SKIPPED`, và stop chưa có tuyến / còn `PENDING` (plan bị huỷ giữa chừng); bỏ stop `DELIVERED`. Không còn stop nào → 422 `NOTHING_TO_COPY`.
+  - Chép mỗi stop: nhãn, người nhận, số điện thoại, địa chỉ, **toạ độ cùng `geocodeStatus` và tên địa chỉ provider** (không geocode lại; stop `FAILED`/`PENDING` geocode thì giữ trạng thái đó để dispatcher sửa), demand, thời gian phục vụ, time window, ghi chú. Không chép: kết quả tối ưu, trạng thái giao, lý do thất bại.
+  - Chép depot của plan cũ (snapshot) và timezone hiện tại của cửa hàng. Chép phân công (tài xế, xe, ca, quãng đường tối đa) **chỉ khi** tài xế còn `ACTIVE` và giao được, xe còn dùng; capacity lấy theo xe hiện tại. Phân công bị bỏ trả trong `skippedAssignments: [{driverId, vehicleId, reason: DRIVER_UNAVAILABLE | VEHICLE_INACTIVE}]` để web báo.
+  - Không kiểm tra chồng ca lúc chép (vẫn kiểm ở publish, D-23).
+- **Phát sinh khi làm (2026-11-14):** response là `PlanCopy` `{plan: PlanDetail, skippedAssignments}` (bọc `PlanDetail` vì nó không có chỗ cho phân công bị bỏ). Mã field mới `COPY_SCOPE_REQUIRED`. `ALL` của plan không có stop vẫn tạo draft rỗng (`NOTHING_TO_COPY` chỉ cho `NOT_DELIVERED`). Bỏ phân công vì tài xế được xét trước vì xe.
+- **Acceptance:** chép ALL và NOT_DELIVERED đúng tập stop; toạ độ và trạng thái geocode giữ nguyên, không tạo job geocode khi mọi stop đã có toạ độ; phân công của tài xế bị khoá/xe đã tắt bị bỏ và báo; plan cũ không đổi; plan của cửa hàng khác → 404 (tenant isolation); `READ_ONLY` → 423. API_SPEC §7, UX_BRIEF §6 (`NOTHING_TO_COPY`), docs client.
+
+#### T63. Báo cáo và xuất CSV
+- **Ước lượng:** 1,5 ngày · **Phụ thuộc:** —
+- **Phạm vi:**
+  - `GET /api/v1/reports/summary?from=&to=` (ngày `YYYY-MM-DD` theo `planDate`, cả hai ngày đều tính, tối đa 31 ngày, mặc định hôm nay theo timezone cửa hàng; lỗi như `/admin/metrics/business`: 400 `VALIDATION_ERROR` trên `from` với `INVALID_DATE_RANGE` (from > to) hoặc `DATE_RANGE_TOO_LONG`): `plans` (số plan theo trạng thái), `stops` của plan đã giao việc trở đi, **không tính plan CANCELLED** (`total`, `delivered`, `failed`, `skipped`, `pending`, `deliveredRate` 0–1 hoặc null), `plannedDistanceMeters` tổng, `days[]` đủ mọi ngày trong khoảng, `drivers[]` (tài xế: số tuyến, số stop theo trạng thái, quãng đường dự kiến, giờ thực tế **bắt đầu** = lần báo kết quả đầu tiên và **kết thúc** = lần báo cuối cùng của ngày, null khi chưa báo), `failureReasons[]` (10 lý do hay gặp nhất, gom theo chuỗi đã cắt khoảng trắng, không phân biệt hoa thường, kèm số lần).
+  - `GET /api/v1/reports/stops.csv?from=&to=` (cùng khoảng): `text/csv; charset=UTF-8` **có BOM** để Excel đọc đúng dấu, `Content-Disposition: attachment; filename="pathwise-YYYYMMDD-YYYYMMDD.csv"`, ghi theo luồng. Mỗi dòng một stop của plan không bị huỷ: Ngày, Kế hoạch, Trạng thái kế hoạch, Tài xế, Xe, Thứ tự, Nhãn, Người nhận, Số điện thoại (dạng `0905 123 456`), Địa chỉ, Giờ dự kiến, Kết quả, Lý do, Giờ báo (giờ địa phương của plan). Chống CSV injection: ô bắt đầu bằng `=`, `+`, `-`, `@`, tab, CR thì thêm `'` phía trước.
+  - Không ghi audit cho việc xem/xuất (dữ liệu của chính cửa hàng).
+- **Phát sinh khi làm (2026-11-14):** endpoint ở module `planning` (`ReportController`, `StoreReportService`, API_SPEC §7a). Chỉ truyền một trong `from`/`to` thì khoảng là đúng ngày đó. `plans` của summary đếm cả DRAFT và CANCELLED theo trạng thái; phần còn lại chỉ tính plan đã giao việc. Với khoảng nhiều ngày, giờ bắt đầu/kết thúc của tài xế là lần báo đầu/cuối của cả khoảng (`firstResultAt`, `lastResultAt`, UTC). CSV gồm cả plan DRAFT (cột Trạng thái kế hoạch), không gồm plan CANCELLED; số điện thoại `0905 123 456`, ngày `dd/MM/yyyy`. Tên thành viên có thể rỗng (test lần đầu lỗi 500 vì tên null trong `Collectors.toMap`, đã sửa).
+- **Acceptance:** số đếm đúng với dữ liệu nhiều trạng thái, loại plan CANCELLED; khoảng 32 ngày → 400 `DATE_RANGE_TOO_LONG`; ngày không có plan vẫn có phần tử trong `days`; CSV có BOM, header, escape dấu phẩy/ngoặc kép/xuống dòng, chống injection; tenant isolation cho cả hai endpoint; DRIVER/ADMIN → 403; `READ_ONLY` vẫn đọc được. API_SPEC (mục Reports mới), docs client.
+
+## 10. Sau MVP (Could, chưa lên lịch)
+
+Google provider (I-03) · realtime push (I-04) · optimize bất đồng bộ (FR-X03) · lịch sử vị trí · gợi ý địa điểm (I-01, cần phê duyệt) · thanh toán QR (I-02, cần phê duyệt).
+
+## 11. Task đầu tiên: T00
 
 T00 phải làm trước vì:
 

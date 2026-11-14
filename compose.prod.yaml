@@ -3,8 +3,17 @@
 # Variables come from .env next to this file (copy .env.prod.example). No mailpit: real SMTP via env.
 # Only the app port is published, on 127.0.0.1, for a reverse proxy (TLS) on the same host.
 
+# Docker keeps container logs without limit by default: a small VPS fills its disk (T51, P-59). Each container keeps
+# at most LOG_MAX_FILE files of LOG_MAX_SIZE (30 MB by default); older lines are dropped.
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: ${LOG_MAX_SIZE:-10m}
+    max-file: "${LOG_MAX_FILE:-3}"
+
 services:
   mariadb:
+    logging: *logging
     image: mariadb:11.8 # D-35
     restart: unless-stopped
     # InnoDB cache; 64M on a 2 GB host that also runs compose.routing.yaml (docs/DEPLOYMENT.md §7.1).
@@ -23,6 +32,7 @@ services:
       retries: 30
 
   redis:
+    logging: *logging
     image: redis:7.4
     restart: unless-stopped
     # Every key has a TTL, so losing data is acceptable; AOF only avoids surprises on restart.
@@ -36,6 +46,7 @@ services:
       retries: 30
 
   app:
+    logging: *logging
     image: ${APP_IMAGE:-ghcr.io/huyga1185/pathwise}:${APP_IMAGE_TAG:?set in .env, e.g. 0.1.0 or develop}
     restart: unless-stopped
     env_file: .env

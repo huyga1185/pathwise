@@ -18,6 +18,11 @@ export function useAccountApi() {
         unwrap(api.POST('/api/v1/auth/password/reset/verify', { body })),
       resetPassword: (body: Schemas['ResetPasswordRequest']) =>
         unwrapEmpty(api.POST('/api/v1/auth/password/reset', { body })),
+      /** The page of a reset link sent by an ADMIN (T57, P-63): a code to the account's email, then the password. */
+      sendResetLinkOtp: (token: string) =>
+        unwrapEmpty(api.POST('/api/v1/auth/password/reset-link/otp', { body: { token } })),
+      resetPasswordByLink: (body: Schemas['ResetPasswordByLinkRequest']) =>
+        unwrapEmpty(api.POST('/api/v1/auth/password/reset-link', { body })),
       previewInvitation: (code: string) =>
         unwrap(api.GET('/api/v1/invitations/{code}', { params: { path: { code } } })),
       acceptInvitation: (body: Schemas['AcceptInvitationRequest']) =>

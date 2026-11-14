@@ -15,6 +15,7 @@ import java.util.List;
  * @param activeJob       the job running on the plan while {@code processingStatus} is not IDLE, otherwise null
  * @param routes          one per assignment, by id
  * @param unassignedStops stops without a route, by id
+ * @param violations      constraints the stored routes break, after a manual edit (T28, P-58); empty if none
  */
 public record PlanDetailResponse(long id,
                                  String name,
@@ -30,4 +31,5 @@ public record PlanDetailResponse(long id,
                                  @Nullable Integer totalDistanceMeters,
                                  @Nullable Integer totalDurationSeconds,
                                  List<PlanRouteResponse> routes,
-                                 List<PlanStopResponse> unassignedStops) {}
+                                 List<PlanStopResponse> unassignedStops,
+                                 List<ViolationResponse> violations) {}
