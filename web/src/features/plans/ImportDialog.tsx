@@ -30,23 +30,30 @@ export function ImportDialog({ open, keptStops, onClose, onAdd }: ImportDialogPr
   const [busy, setBusy] = useState(false);
   const [failure, setFailure] = useState<unknown>(null);
   const [dragging, setDragging] = useState(false);
+  // Each read gets a number; a read that ends after the dialog closed or another file was chosen is dropped.
+  const reading = useRef(0);
 
   const close = () => {
+    reading.current += 1;
+    setBusy(false);
     setResult(null);
     setFailure(null);
     onClose();
   };
   const read = async (file: File | undefined) => {
     if (!file) return;
+    const id = ++reading.current;
     setBusy(true);
     setFailure(null);
     try {
-      setResult({ name: file.name, data: await planApi.importStops(file) });
+      const data = await planApi.importStops(file);
+      if (id === reading.current) setResult({ name: file.name, data });
     } catch (error) {
+      if (id !== reading.current) return;
       setFailure(error);
       setResult(null);
     } finally {
-      setBusy(false);
+      if (id === reading.current) setBusy(false);
       if (input.current) input.current.value = '';
     }
   };

@@ -97,6 +97,7 @@ export function CopyDialog({ planId, planName, open, onClose }: CopyDialogProps)
           error={fields.name}
           onChange={(event) => setName(event.target.value)}
         />
+        {plan.isError ? <ErrorBanner title={messageFor(plan.error)} /> : null}
         {counts ? (
           <fieldset className="pw-copy-scope">
             <legend className="pw-field-label">{t.scope}</legend>
@@ -127,7 +128,7 @@ export function CopyDialog({ planId, planName, open, onClose }: CopyDialogProps)
               </label>
             ) : null}
           </fieldset>
-        ) : (
+        ) : plan.isError ? null : (
           <p className="pw-muted">{vi.pages.loading}</p>
         )}
         <p className="pw-muted">{t.hint}</p>

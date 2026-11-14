@@ -31,7 +31,7 @@ export interface TextFieldProps extends React.InputHTMLAttributes<HTMLInputEleme
 }
 export declare function TextField(props: TextFieldProps): React.ReactElement;
 
-export type StatusKind = 'plan' | 'route' | 'stop' | 'dropReason' | 'geocode' | 'processing' | 'invitation' | 'member' | 'vehicle' | 'job';
+export type StatusKind = 'plan' | 'route' | 'stop' | 'dropReason' | 'geocode' | 'processing' | 'invitation' | 'member' | 'vehicle' | 'job' | 'store';
 export interface StatusPillProps {
   /** Which API enum `status` belongs to. With kind + status the label and tone come from the README table. */
   kind?: StatusKind;
