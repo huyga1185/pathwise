@@ -46,6 +46,14 @@ public class UserDirectoryService implements UserDirectoryQuery {
     }
 
     @Override
+    public Map<UserRole, Long> countByRole() {
+        Map<UserRole, Long> counts = new EnumMap<>(UserRole.class);
+        for (UserRole role : UserRole.values()) counts.put(role, 0L);
+        for (Object[] row : userRepository.countByRole()) counts.put((UserRole) row[0], (Long) row[1]);
+        return counts;
+    }
+
+    @Override
     public List<MemberAccount> listMembers(long storeId) {
         return userRepository.findAllByStoreIdOrderById(storeId).stream()
                 .map(user -> new MemberAccount(user.getId(), user.getEmail(), user.getRole(), user.getStatus(),

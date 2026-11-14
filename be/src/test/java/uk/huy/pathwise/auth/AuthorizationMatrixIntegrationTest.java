@@ -102,7 +102,12 @@ class AuthorizationMatrixIntegrationTest extends AbstractIntegrationTest {
                 Arguments.of("GET", "/api/v1/store/audit", "ADMIN", 403),
                 Arguments.of("GET", "/api/v1/store/audit", "OWNER", 200),
                 Arguments.of("GET", "/api/v1/store/audit", "DISPATCHER", 403),
-                Arguments.of("GET", "/api/v1/store/audit", "DRIVER", 403));
+                Arguments.of("GET", "/api/v1/store/audit", "DRIVER", 403),
+                // Platform metrics (T60): ADMIN only.
+                Arguments.of("GET", "/api/v1/admin/metrics/business", "ADMIN", 200),
+                Arguments.of("GET", "/api/v1/admin/metrics/business", "OWNER", 403),
+                Arguments.of("GET", "/api/v1/admin/metrics/technical", "ADMIN", 200),
+                Arguments.of("GET", "/api/v1/admin/metrics/technical", "DISPATCHER", 403));
     }
 
     @ParameterizedTest(name = "{2} {0} {1} -> {3}")

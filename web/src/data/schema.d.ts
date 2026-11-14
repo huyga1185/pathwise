@@ -20,6 +20,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/metrics/business": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["business"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/metrics/technical": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["technical"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/stores": {
         parameters: {
             query?: never;
@@ -1018,6 +1050,10 @@ export interface components {
             data: components["schemas"]["AuthTokenResponse"];
             message?: string;
         };
+        ApiResponseBusinessMetricsResponse: {
+            data: components["schemas"]["BusinessMetricsResponse"];
+            message?: string;
+        };
         ApiResponseDirectionsResponse: {
             data: components["schemas"]["DirectionsResponse"];
             message?: string;
@@ -1114,6 +1150,10 @@ export interface components {
             data: components["schemas"]["StoreResponse"];
             message?: string;
         };
+        ApiResponseTechnicalMetricsResponse: {
+            data: components["schemas"]["TechnicalMetricsResponse"];
+            message?: string;
+        };
         ApiResponseTransferOwnerResponse: {
             data: components["schemas"]["TransferOwnerResponse"];
             message?: string;
@@ -1178,6 +1218,18 @@ export interface components {
             /** Format: int64 */
             storeId?: number;
         };
+        BusinessMetricsResponse: {
+            /** Format: date-time */
+            computedAt: string;
+            days: components["schemas"]["Day"][];
+            /** Format: date */
+            from: string;
+            now: components["schemas"]["Now"];
+            timezone: string;
+            /** Format: date */
+            to: string;
+            totals: components["schemas"]["Totals"];
+        };
         ChangePasswordRequest: {
             newPassword: string;
             otp: string;
@@ -1195,6 +1247,39 @@ export interface components {
             capacityUnit: "KG" | "BOX" | "PACKAGE" | "ORDER";
             name: string;
             plateNumber?: string;
+        };
+        Database: {
+            /** Format: int32 */
+            activeConnections: number | null;
+            /** Format: int32 */
+            idleConnections: number | null;
+            largestTables: components["schemas"]["Table"][];
+            /** Format: int32 */
+            maxConnections: number | null;
+            /** Format: int64 */
+            sizeBytes: number;
+        };
+        Day: {
+            /** Format: date */
+            date: string;
+            /** Format: int64 */
+            newStores: number;
+            /** Format: int64 */
+            optimizations: number;
+            /** Format: int64 */
+            optimizationsFailed: number;
+            /** Format: int64 */
+            plansCompleted: number;
+            /** Format: int64 */
+            plansCreated: number;
+            /** Format: int64 */
+            plansPublished: number;
+            /** Format: int64 */
+            stopsDelivered: number;
+            /** Format: int64 */
+            stopsFailed: number;
+            /** Format: int64 */
+            stopsSkipped: number;
         };
         DepotRequest: {
             address?: string;
@@ -1342,6 +1427,16 @@ export interface components {
             routeStatus: "PENDING" | "IN_PROGRESS" | "COMPLETED";
             stop: components["schemas"]["DriverStopResponse"];
         };
+        Failures: {
+            /** Format: int64 */
+            email: number;
+            /** Format: int64 */
+            geocoding: number;
+            /** Format: int64 */
+            job: number;
+            /** Format: int64 */
+            routing: number;
+        };
         ForgotPasswordRequest: {
             /** Format: email */
             email: string;
@@ -1374,6 +1469,24 @@ export interface components {
             storeLockReason: string | null;
             /** @enum {string|null} */
             storeStatus: "ACTIVE" | "READ_ONLY" | null;
+        };
+        Group: {
+            group: string;
+            /** Format: double */
+            p95Millis: number | null;
+            /** Format: int64 */
+            requestsLastHour: number;
+        };
+        Http: {
+            /** Format: double */
+            clientErrorRate: number | null;
+            groups: components["schemas"]["Group"][];
+            /** Format: int64 */
+            requestsLastHour: number;
+            /** Format: double */
+            requestsPerMinute: number;
+            /** Format: double */
+            serverErrorRate: number | null;
         };
         InvitationPreviewResponse: {
             email: string;
@@ -1410,6 +1523,18 @@ export interface components {
             status: "QUEUED" | "RUNNING" | "SUCCEEDED" | "FAILED";
             /** @enum {string} */
             type: "GEOCODE_PLAN" | "OPTIMIZE_PLAN";
+        };
+        Jobs: {
+            /** Format: int64 */
+            failedLast24h: number;
+            /** Format: int64 */
+            unfinished: number;
+        };
+        Jvm: {
+            /** Format: int64 */
+            heapMaxBytes: number | null;
+            /** Format: int64 */
+            heapUsedBytes: number;
         };
         LocationBatchRequest: {
             points: components["schemas"]["LocationPointRequest"][];
@@ -1462,6 +1587,24 @@ export interface components {
             role: "ADMIN" | "OWNER" | "DISPATCHER" | "DRIVER";
             /** @enum {string} */
             status: "PENDING_VERIFICATION" | "ACTIVE" | "DISABLED";
+        };
+        Now: {
+            /** Format: int64 */
+            activeStores30d: number;
+            /** Format: int64 */
+            activeStores7d: number;
+            /** Format: int64 */
+            admins: number;
+            /** Format: int64 */
+            dispatchers: number;
+            /** Format: int64 */
+            drivers: number;
+            /** Format: int64 */
+            lockedStores: number;
+            /** Format: int64 */
+            owners: number;
+            /** Format: int64 */
+            stores: number;
         };
         PageResponseAdminGetUserResponse: {
             items: components["schemas"]["AdminGetUserResponse"][];
@@ -1795,6 +1938,28 @@ export interface components {
             name: string;
             timezone: string;
         };
+        Table: {
+            /** Format: int64 */
+            bytes: number;
+            name: string;
+            /** Format: int64 */
+            rows: number;
+        };
+        TechnicalMetricsResponse: {
+            database: components["schemas"]["Database"];
+            failuresLast24h: components["schemas"]["Failures"];
+            http: components["schemas"]["Http"];
+            jobs: components["schemas"]["Jobs"];
+            jvm: components["schemas"]["Jvm"];
+            /** Format: date-time */
+            measuredAt: string;
+            /** Format: int64 */
+            rateLimitedLast24h: number;
+            /** Format: date-time */
+            startedAt: string;
+            /** Format: int64 */
+            uptimeSeconds: number;
+        };
         TimeWindowRequest: {
             /** Format: time-local */
             end: string;
@@ -1806,6 +1971,34 @@ export interface components {
             end: string;
             /** Format: time-local */
             start: string;
+        };
+        Totals: {
+            /** Format: double */
+            deliveredRate: number | null;
+            /** Format: double */
+            failedRate: number | null;
+            /** Format: int64 */
+            newStores: number;
+            /** Format: double */
+            optimizationFailureRate: number | null;
+            /** Format: int64 */
+            optimizations: number;
+            /** Format: int64 */
+            optimizationsFailed: number;
+            /** Format: int64 */
+            plansCompleted: number;
+            /** Format: int64 */
+            plansCreated: number;
+            /** Format: int64 */
+            plansPublished: number;
+            /** Format: double */
+            skippedRate: number | null;
+            /** Format: int64 */
+            stopsDelivered: number;
+            /** Format: int64 */
+            stopsFailed: number;
+            /** Format: int64 */
+            stopsSkipped: number;
         };
         TransferOwnerRequest: {
             /** Format: int64 */
@@ -1938,6 +2131,49 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ApiResponsePageResponseAuditEventResponse"];
+                };
+            };
+        };
+    };
+    business: {
+        parameters: {
+            query?: {
+                from?: string;
+                to?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponseBusinessMetricsResponse"];
+                };
+            };
+        };
+    };
+    technical: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponseTechnicalMetricsResponse"];
                 };
             };
         };

@@ -11,11 +11,22 @@ import org.springframework.stereotype.Repository;
 import uk.huy.pathwise.store.model.Store;
 import uk.huy.pathwise.shared.store.StoreStatus;
 
+import java.time.Instant;
 import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 
 @Repository
 public interface StoreRepository extends JpaRepository<Store, Long> {
+    /**
+     * @return {@code [day, count]} of stores created in {@code [from, to)}, by day at {@code offset} seconds from UTC
+     */
+    @Query(value = "SELECT DATE(DATE_ADD(created_at, INTERVAL :offset SECOND)) AS d, COUNT(*) FROM stores "
+            + "WHERE created_at >= :from AND created_at < :to GROUP BY d", nativeQuery = true)
+    List<Object[]> countCreatedByDay(@Param("from") Instant from, @Param("to") Instant to, @Param("offset") int offset);
+
+    long countByStatus(StoreStatus status);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT s FROM Store s WHERE s.id = :id")
     Optional<Store> findByIdForUpdate(@Param("id") long id);

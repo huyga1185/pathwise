@@ -6,7 +6,11 @@ import org.springframework.data.domain.Pageable;
 import uk.huy.pathwise.store.dto.StoreRecord;
 import uk.huy.pathwise.shared.store.StoreStatus;
 
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.Collection;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -25,4 +29,16 @@ public interface StoreDirectoryQuery {
                              Pageable pageable);
 
     Optional<StoreRecord> find(long storeId);
+
+    /**
+     * @return stores created in {@code [from, to)}, by local day at {@code offset} (T60); days without any are absent
+     */
+    Map<LocalDate, Long> countCreatedByDay(Instant from, Instant to, ZoneOffset offset);
+
+    /**
+     * @return every store, and those READ_ONLY (T60)
+     */
+    StoreTotals totals();
+
+    record StoreTotals(long stores, long readOnly) {}
 }

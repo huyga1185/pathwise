@@ -25,7 +25,7 @@
 | `/plans/:id` (DRAFT, chế độ chỉnh tay) | Chỉnh tay tuyến | Kế hoạch — chỉnh tay tuyến (T28) | O, D | `PUT /plans/{id}/routes` | W10 |
 | (hộp thoại trên `/plans/:id`) | Xác nhận giao việc, trùng ca, huỷ | Xác nhận giao việc | O, D | `POST /plans/{id}/publish`, `POST /plans/{id}/cancel` | W06 |
 | `/plans/:id` (PUBLISHED trở đi) | Theo dõi tiến độ | Theo dõi tiến độ | O, D | `GET /plans/{id}` (30 s) | W06 |
-| `/admin` | Quản trị — tổng quan (thẻ số, biểu đồ, khối kỹ thuật); ADMIN đăng nhập vào đây | (vẽ ở W11) | AD | chưa có API (T60) | W11, chưa làm |
+| `/admin` | Quản trị — tổng quan (thẻ số, biểu đồ 7/30/90 ngày, khối kỹ thuật); ADMIN đăng nhập vào đây | (vẽ ở W11) | AD | `GET /admin/metrics/business`, `GET /admin/metrics/technical` (T60) | W11, chưa làm |
 | `/admin/stores` | Quản trị — danh sách cửa hàng (tìm, lọc trạng thái, phân trang) | (vẽ ở W11) | AD | `GET /admin/stores` (T55) | W11, chưa làm |
 | `/admin/stores/:id` | Quản trị — chi tiết cửa hàng (số tổng, 30 ngày, thành viên, nhật ký của cửa hàng, khoá/mở khoá, chuyển chủ) | (vẽ ở W11) | AD | `GET /admin/stores/{id}` (T55; mỗi lần gọi ghi `STORE_VIEWED`, không tự gọi lại), `GET /admin/audit?storeId=` (T58), `POST /admin/stores/{id}/lock`, `/unlock` (T56), `POST /admin/stores/{id}/owner` (T57) | W11, chưa làm |
 | `/admin/users` | Quản trị — người dùng (lọc cửa hàng, vai trò, trạng thái; khoá/mở, buộc đăng xuất, gửi lại email xác thực, gửi link đặt lại mật khẩu) | (vẽ ở W11) | AD | `GET /admin/users` (T55), `POST /admin/users/{id}/disable`, `/enable`, `/sessions/revoke` (T56), `/verification-email`, `/password-reset-email` (T57) | W11, chưa làm |

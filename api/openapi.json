@@ -367,6 +367,20 @@
         ],
         "type": "object"
       },
+      "ApiResponseBusinessMetricsResponse": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/BusinessMetricsResponse"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "type": "object"
+      },
       "ApiResponseDirectionsResponse": {
         "properties": {
           "data": {
@@ -724,6 +738,20 @@
         ],
         "type": "object"
       },
+      "ApiResponseTechnicalMetricsResponse": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/TechnicalMetricsResponse"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "type": "object"
+      },
       "ApiResponseTransferOwnerResponse": {
         "properties": {
           "data": {
@@ -958,6 +986,47 @@
         ],
         "type": "object"
       },
+      "BusinessMetricsResponse": {
+        "properties": {
+          "computedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "days": {
+            "items": {
+              "$ref": "#/components/schemas/Day"
+            },
+            "type": "array"
+          },
+          "from": {
+            "format": "date",
+            "type": "string"
+          },
+          "now": {
+            "$ref": "#/components/schemas/Now"
+          },
+          "timezone": {
+            "type": "string"
+          },
+          "to": {
+            "format": "date",
+            "type": "string"
+          },
+          "totals": {
+            "$ref": "#/components/schemas/Totals"
+          }
+        },
+        "required": [
+          "computedAt",
+          "days",
+          "from",
+          "now",
+          "timezone",
+          "to",
+          "totals"
+        ],
+        "type": "object"
+      },
       "ChangePasswordRequest": {
         "properties": {
           "newPassword": {
@@ -1029,6 +1098,106 @@
           "capacity",
           "capacityUnit",
           "name"
+        ],
+        "type": "object"
+      },
+      "Database": {
+        "properties": {
+          "activeConnections": {
+            "format": "int32",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "idleConnections": {
+            "format": "int32",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "largestTables": {
+            "items": {
+              "$ref": "#/components/schemas/Table"
+            },
+            "type": "array"
+          },
+          "maxConnections": {
+            "format": "int32",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "sizeBytes": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "activeConnections",
+          "idleConnections",
+          "largestTables",
+          "maxConnections",
+          "sizeBytes"
+        ],
+        "type": "object"
+      },
+      "Day": {
+        "properties": {
+          "date": {
+            "format": "date",
+            "type": "string"
+          },
+          "newStores": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "optimizations": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "optimizationsFailed": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "plansCompleted": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "plansCreated": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "plansPublished": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "stopsDelivered": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "stopsFailed": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "stopsSkipped": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "date",
+          "newStores",
+          "optimizations",
+          "optimizationsFailed",
+          "plansCompleted",
+          "plansCreated",
+          "plansPublished",
+          "stopsDelivered",
+          "stopsFailed",
+          "stopsSkipped"
         ],
         "type": "object"
       },
@@ -1591,6 +1760,33 @@
         ],
         "type": "object"
       },
+      "Failures": {
+        "properties": {
+          "email": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "geocoding": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "job": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "routing": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "email",
+          "geocoding",
+          "job",
+          "routing"
+        ],
+        "type": "object"
+      },
       "ForgotPasswordRequest": {
         "properties": {
           "email": {
@@ -1712,6 +1908,70 @@
           "storeId",
           "storeLockReason",
           "storeStatus"
+        ],
+        "type": "object"
+      },
+      "Group": {
+        "properties": {
+          "group": {
+            "type": "string"
+          },
+          "p95Millis": {
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "requestsLastHour": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "group",
+          "p95Millis",
+          "requestsLastHour"
+        ],
+        "type": "object"
+      },
+      "Http": {
+        "properties": {
+          "clientErrorRate": {
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "groups": {
+            "items": {
+              "$ref": "#/components/schemas/Group"
+            },
+            "type": "array"
+          },
+          "requestsLastHour": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "requestsPerMinute": {
+            "format": "double",
+            "type": "number"
+          },
+          "serverErrorRate": {
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "clientErrorRate",
+          "groups",
+          "requestsLastHour",
+          "requestsPerMinute",
+          "serverErrorRate"
         ],
         "type": "object"
       },
@@ -1846,6 +2106,43 @@
           "startedAt",
           "status",
           "type"
+        ],
+        "type": "object"
+      },
+      "Jobs": {
+        "properties": {
+          "failedLast24h": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "unfinished": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "failedLast24h",
+          "unfinished"
+        ],
+        "type": "object"
+      },
+      "Jvm": {
+        "properties": {
+          "heapMaxBytes": {
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "heapUsedBytes": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "heapMaxBytes",
+          "heapUsedBytes"
         ],
         "type": "object"
       },
@@ -2034,6 +2331,53 @@
           "phoneNumber",
           "role",
           "status"
+        ],
+        "type": "object"
+      },
+      "Now": {
+        "properties": {
+          "activeStores30d": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "activeStores7d": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "admins": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "dispatchers": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "drivers": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "lockedStores": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "owners": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "stores": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "activeStores30d",
+          "activeStores7d",
+          "admins",
+          "dispatchers",
+          "drivers",
+          "lockedStores",
+          "owners",
+          "stores"
         ],
         "type": "object"
       },
@@ -3315,6 +3659,74 @@
         ],
         "type": "object"
       },
+      "Table": {
+        "properties": {
+          "bytes": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "rows": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "bytes",
+          "name",
+          "rows"
+        ],
+        "type": "object"
+      },
+      "TechnicalMetricsResponse": {
+        "properties": {
+          "database": {
+            "$ref": "#/components/schemas/Database"
+          },
+          "failuresLast24h": {
+            "$ref": "#/components/schemas/Failures"
+          },
+          "http": {
+            "$ref": "#/components/schemas/Http"
+          },
+          "jobs": {
+            "$ref": "#/components/schemas/Jobs"
+          },
+          "jvm": {
+            "$ref": "#/components/schemas/Jvm"
+          },
+          "measuredAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "rateLimitedLast24h": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "startedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "uptimeSeconds": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "database",
+          "failuresLast24h",
+          "http",
+          "jobs",
+          "jvm",
+          "measuredAt",
+          "rateLimitedLast24h",
+          "startedAt",
+          "uptimeSeconds"
+        ],
+        "type": "object"
+      },
       "TimeWindowRequest": {
         "properties": {
           "end": {
@@ -3346,6 +3758,90 @@
         "required": [
           "end",
           "start"
+        ],
+        "type": "object"
+      },
+      "Totals": {
+        "properties": {
+          "deliveredRate": {
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "failedRate": {
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "newStores": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "optimizationFailureRate": {
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "optimizations": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "optimizationsFailed": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "plansCompleted": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "plansCreated": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "plansPublished": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "skippedRate": {
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "stopsDelivered": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "stopsFailed": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "stopsSkipped": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "deliveredRate",
+          "failedRate",
+          "newStores",
+          "optimizationFailureRate",
+          "optimizations",
+          "optimizationsFailed",
+          "plansCompleted",
+          "plansCreated",
+          "plansPublished",
+          "skippedRate",
+          "stopsDelivered",
+          "stopsFailed",
+          "stopsSkipped"
         ],
         "type": "object"
       },
@@ -3835,6 +4331,66 @@
         },
         "tags": [
           "admin-audit-controller"
+        ]
+      }
+    },
+    "/api/v1/admin/metrics/business": {
+      "get": {
+        "operationId": "business",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "from",
+            "required": false,
+            "schema": {
+              "format": "date",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "to",
+            "required": false,
+            "schema": {
+              "format": "date",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseBusinessMetricsResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "admin-metrics-controller"
+        ]
+      }
+    },
+    "/api/v1/admin/metrics/technical": {
+      "get": {
+        "operationId": "technical",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseTechnicalMetricsResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "admin-metrics-controller"
         ]
       }
     },
