@@ -22,13 +22,16 @@ import 'package:pathwise_api/src/model/api_response_list_vehicle_response.dart';
 import 'package:pathwise_api/src/model/api_response_member_response.dart';
 import 'package:pathwise_api/src/model/api_response_page_response_admin_get_user_response.dart';
 import 'package:pathwise_api/src/model/api_response_page_response_admin_store_summary_response.dart';
+import 'package:pathwise_api/src/model/api_response_page_response_audit_event_response.dart';
 import 'package:pathwise_api/src/model/api_response_page_response_plan_summary_response.dart';
+import 'package:pathwise_api/src/model/api_response_page_response_store_audit_event_response.dart';
 import 'package:pathwise_api/src/model/api_response_plan_detail_response.dart';
 import 'package:pathwise_api/src/model/api_response_register_response.dart';
 import 'package:pathwise_api/src/model/api_response_reset_token_response.dart';
 import 'package:pathwise_api/src/model/api_response_store_response.dart';
 import 'package:pathwise_api/src/model/api_response_vehicle_response.dart';
 import 'package:pathwise_api/src/model/assignment_request.dart';
+import 'package:pathwise_api/src/model/audit_event_response.dart';
 import 'package:pathwise_api/src/model/auth_token_response.dart';
 import 'package:pathwise_api/src/model/auth_user_response.dart';
 import 'package:pathwise_api/src/model/change_password_request.dart';
@@ -62,7 +65,9 @@ import 'package:pathwise_api/src/model/member_counts_response.dart';
 import 'package:pathwise_api/src/model/member_response.dart';
 import 'package:pathwise_api/src/model/page_response_admin_get_user_response.dart';
 import 'package:pathwise_api/src/model/page_response_admin_store_summary_response.dart';
+import 'package:pathwise_api/src/model/page_response_audit_event_response.dart';
 import 'package:pathwise_api/src/model/page_response_plan_summary_response.dart';
+import 'package:pathwise_api/src/model/page_response_store_audit_event_response.dart';
 import 'package:pathwise_api/src/model/patch_stop_request.dart';
 import 'package:pathwise_api/src/model/place_response.dart';
 import 'package:pathwise_api/src/model/plan_detail_response.dart';
@@ -82,6 +87,7 @@ import 'package:pathwise_api/src/model/reset_password_request.dart';
 import 'package:pathwise_api/src/model/reset_token_response.dart';
 import 'package:pathwise_api/src/model/route_stops.dart';
 import 'package:pathwise_api/src/model/session_response.dart';
+import 'package:pathwise_api/src/model/store_audit_event_response.dart';
 import 'package:pathwise_api/src/model/store_period_stats_response.dart';
 import 'package:pathwise_api/src/model/store_response.dart';
 import 'package:pathwise_api/src/model/time_window_request.dart';
@@ -165,8 +171,12 @@ final _regMap = RegExp(r'^Map<String,(.*)>$');
           return ApiResponsePageResponseAdminGetUserResponse.fromJson(value as Map<String, dynamic>) as ReturnType;
         case 'ApiResponsePageResponseAdminStoreSummaryResponse':
           return ApiResponsePageResponseAdminStoreSummaryResponse.fromJson(value as Map<String, dynamic>) as ReturnType;
+        case 'ApiResponsePageResponseAuditEventResponse':
+          return ApiResponsePageResponseAuditEventResponse.fromJson(value as Map<String, dynamic>) as ReturnType;
         case 'ApiResponsePageResponsePlanSummaryResponse':
           return ApiResponsePageResponsePlanSummaryResponse.fromJson(value as Map<String, dynamic>) as ReturnType;
+        case 'ApiResponsePageResponseStoreAuditEventResponse':
+          return ApiResponsePageResponseStoreAuditEventResponse.fromJson(value as Map<String, dynamic>) as ReturnType;
         case 'ApiResponsePlanDetailResponse':
           return ApiResponsePlanDetailResponse.fromJson(value as Map<String, dynamic>) as ReturnType;
         case 'ApiResponseRegisterResponse':
@@ -179,6 +189,8 @@ final _regMap = RegExp(r'^Map<String,(.*)>$');
           return ApiResponseVehicleResponse.fromJson(value as Map<String, dynamic>) as ReturnType;
         case 'AssignmentRequest':
           return AssignmentRequest.fromJson(value as Map<String, dynamic>) as ReturnType;
+        case 'AuditEventResponse':
+          return AuditEventResponse.fromJson(value as Map<String, dynamic>) as ReturnType;
         case 'AuthTokenResponse':
           return AuthTokenResponse.fromJson(value as Map<String, dynamic>) as ReturnType;
         case 'AuthUserResponse':
@@ -245,8 +257,12 @@ final _regMap = RegExp(r'^Map<String,(.*)>$');
           return PageResponseAdminGetUserResponse.fromJson(value as Map<String, dynamic>) as ReturnType;
         case 'PageResponseAdminStoreSummaryResponse':
           return PageResponseAdminStoreSummaryResponse.fromJson(value as Map<String, dynamic>) as ReturnType;
+        case 'PageResponseAuditEventResponse':
+          return PageResponseAuditEventResponse.fromJson(value as Map<String, dynamic>) as ReturnType;
         case 'PageResponsePlanSummaryResponse':
           return PageResponsePlanSummaryResponse.fromJson(value as Map<String, dynamic>) as ReturnType;
+        case 'PageResponseStoreAuditEventResponse':
+          return PageResponseStoreAuditEventResponse.fromJson(value as Map<String, dynamic>) as ReturnType;
         case 'PatchStopRequest':
           return PatchStopRequest.fromJson(value as Map<String, dynamic>) as ReturnType;
         case 'PlaceResponse':
@@ -285,6 +301,8 @@ final _regMap = RegExp(r'^Map<String,(.*)>$');
           return RouteStops.fromJson(value as Map<String, dynamic>) as ReturnType;
         case 'SessionResponse':
           return SessionResponse.fromJson(value as Map<String, dynamic>) as ReturnType;
+        case 'StoreAuditEventResponse':
+          return StoreAuditEventResponse.fromJson(value as Map<String, dynamic>) as ReturnType;
         case 'StorePeriodStatsResponse':
           return StorePeriodStatsResponse.fromJson(value as Map<String, dynamic>) as ReturnType;
         case 'StoreResponse':

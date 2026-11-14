@@ -6,6 +6,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -16,6 +17,7 @@ import uk.huy.pathwise.admin.dto.response.AdminStoreSummaryResponse;
 import uk.huy.pathwise.admin.service.AdminStoreService;
 import uk.huy.pathwise.core.apiresponse.ApiResponse;
 import uk.huy.pathwise.core.pagination.PageResponse;
+import uk.huy.pathwise.shared.identity.AuthenticatedUser;
 import uk.huy.pathwise.store.model.StoreStatus;
 
 /**
@@ -40,7 +42,8 @@ public class AdminStoreController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<AdminStoreDetailResponse>> getStore(@PathVariable long id) {
-        return ResponseEntity.ok(new ApiResponse<>(null, adminStoreService.getStore(id)));
+    public ResponseEntity<ApiResponse<AdminStoreDetailResponse>> getStore(@AuthenticationPrincipal AuthenticatedUser actor,
+                                                                          @PathVariable long id) {
+        return ResponseEntity.ok(new ApiResponse<>(null, adminStoreService.getStore(actor.identity(), id)));
     }
 }

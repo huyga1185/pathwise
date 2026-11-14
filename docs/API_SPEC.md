@@ -115,14 +115,15 @@ Ghi chú:
   "status": "ACTIVE", "canDrive": false }   // canDrive luôn true với DRIVER (D-21)
 ```
 
-## 3a. Quản trị cửa hàng (ADMIN) — `/api/v1/admin/stores`
+## 3a. Quản trị (ADMIN) — `/api/v1/admin/stores`, `/api/v1/admin/audit`
 
 Module `admin` (P-60). ADMIN chỉ thấy **số tổng và tài khoản thành viên**, không thấy nội dung của cửa hàng: không depot, plan, xe, điểm giao, người nhận, tên hay số điện thoại của thành viên (P-59, BR-01).
 
 | Method & path | Quyền | Request | Response | Lỗi chính | Hiện trạng |
 |---|---|---|---|---|---|
 | `GET /admin/stores` | AD | `q?` (chứa trong tên cửa hàng **hoặc** email OWNER, không phân biệt hoa thường; `%`, `_` khớp đúng ký tự), `status?` (`ACTIVE\|READ_ONLY`), paging; sort `id` (mặc định), `name`, `createdAt` | Page `AdminStoreSummary` | 400 `INVALID_SORT_FIELD` · 400 `MALFORMED_REQUEST` | ✅ (T55) |
-| `GET /admin/stores/{id}` | AD | — | `AdminStoreDetail` | 404 `NOT_FOUND` | ✅ (T55) |
+| `GET /admin/stores/{id}` | AD | — | `AdminStoreDetail`; ghi nhật ký `STORE_VIEWED` (T58, P-61) | 404 `NOT_FOUND` | ✅ (T55) |
+| `GET /admin/audit` | AD | `storeId?`, `actorId?`, `action?` (`AuditAction`), `from?`, `to?` (`YYYY-MM-DD`, cả hai ngày tính, giờ Asia/Ho_Chi_Minh), paging; sort `occurredAt` (mặc định, mới nhất trước), `id` | Page `AuditEvent` | 400 `INVALID_SORT_FIELD` · 400 `MALFORMED_REQUEST` | ✅ (T58) |
 
 ```jsonc
 // AdminStoreSummary
@@ -144,6 +145,28 @@ Ghi chú:
 - `last30Days`: từ `since` (= lúc gọi − 30 ngày) tới nay. Plan đếm theo thời điểm tạo, publish, hoàn thành; điểm giao đếm theo lúc tài xế báo kết quả. `deliveredRate` = delivered / (delivered + failed + skipped), làm tròn 4 chữ số.
 - Store không tồn tại → 404. OWNER, DISPATCHER, DRIVER → 403.
 
+**Nhật ký thao tác (T58, P-61, FR-A14).** Mỗi thao tác dưới ghi đúng một dòng, trong cùng transaction với thay đổi (thao tác lỗi thì không có dòng nào); giữ 1 năm (DATA_MODEL §6).
+
+| `action` | Ai làm | `targetType` | `details` |
+|---|---|---|---|
+| `MEMBER_UPDATED` | OWNER, `PATCH /store/members/{userId}` khi có field thật sự đổi | `USER` | `{email, changes: {role?\|status?\|canDrive?: {from, to}}}` |
+| `INVITATION_REVOKED` | OWNER, `POST /store/invitations/{id}/revoke` | `INVITATION` | `{email, role}` |
+| `PLAN_PUBLISHED` | OWNER/DISPATCHER, `POST /plans/{id}/publish` | `PLAN` | `{}` |
+| `PLAN_CANCELLED` | OWNER/DISPATCHER, `POST /plans/{id}/cancel` | `PLAN` | `{from}` (trạng thái trước khi huỷ) |
+| `PLAN_ROUTES_EDITED` | OWNER/DISPATCHER, `PUT /plans/{id}/routes` | `PLAN` | `{violations}` (số vi phạm sau khi chỉnh) |
+| `STORE_VIEWED` | ADMIN, `GET /admin/stores/{id}` (danh sách thì không) | `STORE` | `{}` |
+
+```jsonc
+// AuditEvent
+{ "id": 91, "occurredAt": "2026-11-14T03:12:45.123456Z", "actorId": 12, "actorEmail": "chu@tiem.vn", "actorRole": "OWNER",
+  "storeId": 3, "action": "MEMBER_UPDATED", "targetType": "USER", "targetId": 15,
+  "details": { "email": "taixe@tiem.vn", "changes": { "status": { "from": "ACTIVE", "to": "DISABLED" } } },
+  "requestId": "6f1c…", "ip": "203.0.113.7" }   // requestId, ip null ngoài HTTP request
+```
+
+- `details` không chứa dữ liệu cá nhân ngoài email; quá 2000 ký tự thì thành `{"truncated": "<đầu chuỗi JSON>"}` và thao tác vẫn thành công.
+- Danh sách `action` chỉ được thêm (T56, T57 sẽ thêm hành động của ADMIN); client gặp giá trị lạ thì hiện mã.
+
 ## 4. Store — `/api/v1/store`, `/api/v1/invitations`
 
 Store luôn là store của actor (không có `storeId` trong path).
@@ -158,6 +181,7 @@ Store luôn là store của actor (không có `storeId` trong path).
 | `POST /store/invitations` | O | `{email, role: DISPATCHER\|DRIVER}` | 201 `Invitation`; gửi email mã mời | 409 `EMAIL_EXISTED` · 429 `RATE_LIMITED` | ✅ |
 | `GET /store/invitations` | O | query `status?` | `[Invitation]` | — | ✅ |
 | `POST /store/invitations/{id}/revoke` | O | — | 204; lời mời thành `REVOKED`, vẫn có trong danh sách | 404 · 422 `INVITATION_NOT_PENDING` | ✅ |
+| `GET /store/audit` | O | `actorId?`, `action?`, `from?`, `to?` (`YYYY-MM-DD`, cả hai ngày tính, theo `timezone` của cửa hàng), paging; sort `occurredAt` (mặc định, mới nhất trước), `id` | Page `StoreAuditEvent` = `AuditEvent` bỏ `storeId`; `ip` là `null` với hành động của ADMIN (P-59) | 400 `INVALID_SORT_FIELD` · 400 `MALFORMED_REQUEST` | ✅ (T58) |
 | `GET /invitations/{code}` | P | — | `{storeName, email, role, expiresAt}` | 404 `INVITATION_INVALID` | ✅ |
 | `POST /invitations/accept` | P | `{code, password, fullName, phoneNumber?}` | 204 (user ACTIVE, email đã xác thực; sau đó log-in) | 404 `INVITATION_INVALID` · 409 `EMAIL_EXISTED` · 400 `INVALID_PHONE_NUMBER` | ✅ |
 

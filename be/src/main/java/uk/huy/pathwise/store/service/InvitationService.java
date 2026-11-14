@@ -5,6 +5,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
+import uk.huy.pathwise.audit.dto.AuditEntry;
+import uk.huy.pathwise.audit.model.AuditAction;
+import uk.huy.pathwise.audit.model.AuditTargetType;
+import uk.huy.pathwise.audit.service.AuditLog;
 import uk.huy.pathwise.core.exception.AppException;
 import uk.huy.pathwise.core.exception.ErrorCode;
 import uk.huy.pathwise.core.ratelimit.RateLimitDecision;
@@ -59,6 +63,7 @@ public class InvitationService {
     private final Hasher hasher;
     private final TransactionTemplate transactionTemplate;
     private final RateLimiter rateLimiter;
+    private final AuditLog auditLog;
 
     public InvitationService(StoreInvitationRepository invitationRepository,
                              StoreRepository storeRepository,
@@ -67,7 +72,8 @@ public class InvitationService {
                              OpaqueTokenGenerator codeGenerator,
                              Hasher hasher,
                              PlatformTransactionManager transactionManager,
-                             RateLimiter rateLimiter) {
+                             RateLimiter rateLimiter,
+                             AuditLog auditLog) {
         this.invitationRepository = invitationRepository;
         this.storeRepository = storeRepository;
         this.storeUserService = storeUserService;
@@ -76,6 +82,7 @@ public class InvitationService {
         this.hasher = hasher;
         this.transactionTemplate = new TransactionTemplate(transactionManager);
         this.rateLimiter = rateLimiter;
+        this.auditLog = auditLog;
     }
 
     private record Created(StoreInvitation invitation, Store store, String code) {}
@@ -136,6 +143,8 @@ public class InvitationService {
         if (invitation.effectiveStatus(Instant.now()) != InvitationStatus.PENDING)
             throw new AppException(ErrorCode.INVITATION_NOT_PENDING);
         invitation.setStatus(InvitationStatus.REVOKED);
+        auditLog.record(new AuditEntry(actor, invitation.getStoreId(), AuditAction.INVITATION_REVOKED,
+                AuditTargetType.INVITATION, invitationId, Map.of("email", invitation.getEmail(), "role", invitation.getRole())));
     }
 
     /**

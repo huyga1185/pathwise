@@ -26,9 +26,10 @@
 | `/plans/:id` (PUBLISHED trở đi) | Theo dõi tiến độ | Theo dõi tiến độ | O, D | `GET /plans/{id}` (30 s) | W06 |
 | `/admin` | Quản trị — tổng quan (thẻ số, biểu đồ, khối kỹ thuật); ADMIN đăng nhập vào đây | (vẽ ở W11) | AD | chưa có API (T60) | W11, chưa làm |
 | `/admin/stores` | Quản trị — danh sách cửa hàng (tìm, lọc trạng thái, phân trang) | (vẽ ở W11) | AD | `GET /admin/stores` (T55) | W11, chưa làm |
-| `/admin/stores/:id` | Quản trị — chi tiết cửa hàng (số tổng, 30 ngày, thành viên) | (vẽ ở W11) | AD | `GET /admin/stores/{id}` (T55); khoá/chuyển chủ/nhật ký theo T56–T58 | W11, chưa làm |
+| `/admin/stores/:id` | Quản trị — chi tiết cửa hàng (số tổng, 30 ngày, thành viên, nhật ký của cửa hàng) | (vẽ ở W11) | AD | `GET /admin/stores/{id}` (T55; mỗi lần gọi ghi `STORE_VIEWED`, không tự gọi lại), `GET /admin/audit?storeId=` (T58); khoá/chuyển chủ theo T56, T57 | W11, chưa làm |
 | `/admin/users` | Quản trị — người dùng (lọc cửa hàng, vai trò, trạng thái) | (vẽ ở W11) | AD | `GET /admin/users` (T55); hành động theo T56, T57 | W11, chưa làm |
-| `/admin/audit` | Quản trị — nhật ký (lọc cửa hàng, người làm, hành động, khoảng ngày) | (vẽ ở W11) | AD | chưa có API (T58) | W11, chưa làm |
+| `/admin/audit` | Quản trị — nhật ký (lọc cửa hàng, người làm, hành động, khoảng ngày) | (vẽ ở W11) | AD | `GET /admin/audit` (T58) | W11, chưa làm |
+| `/store/audit` | Nhật ký của cửa hàng (mục trong khu Cửa hàng, chỉ OWNER) | (vẽ ở W11) | O | `GET /store/audit` (T58) | W11, chưa làm |
 | `*` | Không tìm thấy / không có quyền / tài xế dùng web | (không có artboard) | — | — | W01 |
 
 Từ W01, route của màn chưa làm hiện trang "Sắp có" (ghi task phụ trách) để menu và link đã chạy được; task của màn đó thay trang này.
