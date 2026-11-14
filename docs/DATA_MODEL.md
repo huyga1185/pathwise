@@ -207,7 +207,7 @@ Nhật ký thao tác (FR-A14). Chỉ thêm, không sửa; **không có FK** đ�
 | actor_email | VARCHAR(255) | NULL. Email người làm lúc đó |
 | actor_role | VARCHAR(20) | NULL. `UserRole` lúc đó |
 | store_id | BIGINT | NULL. Cửa hàng liên quan; NULL nếu ngoài cửa hàng |
-| action | VARCHAR(50) | NOT NULL — `AuditAction` (`MEMBER_UPDATED, INVITATION_REVOKED, PLAN_PUBLISHED, PLAN_CANCELLED, PLAN_ROUTES_EDITED, STORE_VIEWED`; T56 thêm `STORE_LOCKED, STORE_UNLOCKED, USER_DISABLED, USER_ENABLED, USER_SESSIONS_REVOKED`; chỉ thêm) |
+| action | VARCHAR(50) | NOT NULL — `AuditAction` (`MEMBER_UPDATED, INVITATION_REVOKED, PLAN_PUBLISHED, PLAN_CANCELLED, PLAN_ROUTES_EDITED, STORE_VIEWED`; T56 thêm `STORE_LOCKED, STORE_UNLOCKED, USER_DISABLED, USER_ENABLED, USER_SESSIONS_REVOKED`; T57 thêm `VERIFICATION_EMAIL_SENT, PASSWORD_RESET_LINK_SENT, STORE_OWNER_TRANSFERRED`; chỉ thêm) |
 | target_type | VARCHAR(30) | NOT NULL — `STORE, USER, INVITATION, PLAN` |
 | target_id | BIGINT | NULL |
 | details | VARCHAR(2000) | NULL. Đối tượng JSON nhỏ, không dữ liệu cá nhân ngoài email; dài hơn thì thành `{"truncated": "…"}` |
@@ -229,6 +229,8 @@ Index `idx_audit_events_store_occurred (store_id, occurred_at)`, `idx_audit_even
 | `driver:location:{storeId}:{driverId}` | hash: `t` = `recordedAt` (epoch ms), `v` = JSON `{lat, lon, accuracyMeters, headingDegrees, speedMps, recordedAt}`; Lua `SaveLatestLocation.lua` chỉ ghi khi điểm mới hơn (T32) | 10 phút tính từ `recordedAt` | planning |
 | `driver:sharing:{storeId}:{driverId}` | JSON `{routeId, state, updatedAt}`, `state` là `SHARING`/`DECLINED`/`NO_PERMISSION`/`GPS_OFF` (P-53, T32) | 12 giờ | planning |
 | `housekeeping:lock` | token ngẫu nhiên của lần chạy giữ khoá; `SET NX`, nhả bằng Lua so token (chỉ xoá khoá của mình) (T53) | `housekeeping.lock-ttl` (30 phút) | core |
+| `resetLink:{sha256(token)}` | userId của link đặt lại mật khẩu ADMIN gửi (T57, P-63) | `auth.reset-link.ttl` (24 giờ) | auth |
+| `resetLink:user:{userId}` | sha256(token) của link còn hiệu lực của user; link mới xoá link cũ | như trên | auth |
 | `directions:route:{routeId}:{planVersion}` (Should) | JSON geometry/steps | 24 h | planning |
 
 Key OTP dùng **userId** (T12), không dùng email. OTP bị xoá khi đúng (dùng một lần) hoặc khi sai đủ `otp.max-attempts` (mặc định 3) lần.

@@ -32,6 +32,7 @@ import 'package:pathwise_api/src/model/api_response_plan_detail_response.dart';
 import 'package:pathwise_api/src/model/api_response_register_response.dart';
 import 'package:pathwise_api/src/model/api_response_reset_token_response.dart';
 import 'package:pathwise_api/src/model/api_response_store_response.dart';
+import 'package:pathwise_api/src/model/api_response_transfer_owner_response.dart';
 import 'package:pathwise_api/src/model/api_response_vehicle_response.dart';
 import 'package:pathwise_api/src/model/assignment_request.dart';
 import 'package:pathwise_api/src/model/audit_event_response.dart';
@@ -87,6 +88,8 @@ import 'package:pathwise_api/src/model/register_response.dart';
 import 'package:pathwise_api/src/model/replace_routes_request.dart';
 import 'package:pathwise_api/src/model/request_password_change_otp_request.dart';
 import 'package:pathwise_api/src/model/resend_verification_request.dart';
+import 'package:pathwise_api/src/model/reset_link_otp_request.dart';
+import 'package:pathwise_api/src/model/reset_password_by_link_request.dart';
 import 'package:pathwise_api/src/model/reset_password_request.dart';
 import 'package:pathwise_api/src/model/reset_token_response.dart';
 import 'package:pathwise_api/src/model/route_stops.dart';
@@ -96,6 +99,8 @@ import 'package:pathwise_api/src/model/store_period_stats_response.dart';
 import 'package:pathwise_api/src/model/store_response.dart';
 import 'package:pathwise_api/src/model/time_window_request.dart';
 import 'package:pathwise_api/src/model/time_window_response.dart';
+import 'package:pathwise_api/src/model/transfer_owner_request.dart';
+import 'package:pathwise_api/src/model/transfer_owner_response.dart';
 import 'package:pathwise_api/src/model/update_can_drive_request.dart';
 import 'package:pathwise_api/src/model/update_location_sharing_request.dart';
 import 'package:pathwise_api/src/model/update_member_request.dart';
@@ -195,6 +200,8 @@ final _regMap = RegExp(r'^Map<String,(.*)>$');
           return ApiResponseResetTokenResponse.fromJson(value as Map<String, dynamic>) as ReturnType;
         case 'ApiResponseStoreResponse':
           return ApiResponseStoreResponse.fromJson(value as Map<String, dynamic>) as ReturnType;
+        case 'ApiResponseTransferOwnerResponse':
+          return ApiResponseTransferOwnerResponse.fromJson(value as Map<String, dynamic>) as ReturnType;
         case 'ApiResponseVehicleResponse':
           return ApiResponseVehicleResponse.fromJson(value as Map<String, dynamic>) as ReturnType;
         case 'AssignmentRequest':
@@ -305,6 +312,10 @@ final _regMap = RegExp(r'^Map<String,(.*)>$');
           return RequestPasswordChangeOtpRequest.fromJson(value as Map<String, dynamic>) as ReturnType;
         case 'ResendVerificationRequest':
           return ResendVerificationRequest.fromJson(value as Map<String, dynamic>) as ReturnType;
+        case 'ResetLinkOtpRequest':
+          return ResetLinkOtpRequest.fromJson(value as Map<String, dynamic>) as ReturnType;
+        case 'ResetPasswordByLinkRequest':
+          return ResetPasswordByLinkRequest.fromJson(value as Map<String, dynamic>) as ReturnType;
         case 'ResetPasswordRequest':
           return ResetPasswordRequest.fromJson(value as Map<String, dynamic>) as ReturnType;
         case 'ResetTokenResponse':
@@ -323,6 +334,10 @@ final _regMap = RegExp(r'^Map<String,(.*)>$');
           return TimeWindowRequest.fromJson(value as Map<String, dynamic>) as ReturnType;
         case 'TimeWindowResponse':
           return TimeWindowResponse.fromJson(value as Map<String, dynamic>) as ReturnType;
+        case 'TransferOwnerRequest':
+          return TransferOwnerRequest.fromJson(value as Map<String, dynamic>) as ReturnType;
+        case 'TransferOwnerResponse':
+          return TransferOwnerResponse.fromJson(value as Map<String, dynamic>) as ReturnType;
         case 'UpdateCanDriveRequest':
           return UpdateCanDriveRequest.fromJson(value as Map<String, dynamic>) as ReturnType;
         case 'UpdateLocationSharingRequest':

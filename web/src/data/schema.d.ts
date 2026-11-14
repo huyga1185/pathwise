@@ -68,6 +68,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/stores/{id}/owner": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["transferOwner"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/stores/{id}/unlock": {
         parameters: {
             query?: never;
@@ -132,6 +148,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/users/{id}/password-reset-email": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["sendPasswordResetLink"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/users/{id}/sessions/revoke": {
         parameters: {
             query?: never;
@@ -142,6 +174,22 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["revokeSessions"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/users/{id}/verification-email": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["sendVerificationEmail"];
         delete?: never;
         options?: never;
         head?: never;
@@ -270,6 +318,38 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["resetPassword"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/password/reset-link": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["resetPassword_1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/password/reset-link/otp": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["sendOtp"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1034,6 +1114,10 @@ export interface components {
             data: components["schemas"]["StoreResponse"];
             message?: string;
         };
+        ApiResponseTransferOwnerResponse: {
+            data: components["schemas"]["TransferOwnerResponse"];
+            message?: string;
+        };
         ApiResponseVehicleResponse: {
             data: components["schemas"]["VehicleResponse"];
             message?: string;
@@ -1052,7 +1136,7 @@ export interface components {
         };
         AuditEventResponse: {
             /** @enum {string} */
-            action: "MEMBER_UPDATED" | "INVITATION_REVOKED" | "PLAN_PUBLISHED" | "PLAN_CANCELLED" | "PLAN_ROUTES_EDITED" | "STORE_VIEWED" | "STORE_LOCKED" | "STORE_UNLOCKED" | "USER_DISABLED" | "USER_ENABLED" | "USER_SESSIONS_REVOKED";
+            action: "MEMBER_UPDATED" | "INVITATION_REVOKED" | "PLAN_PUBLISHED" | "PLAN_CANCELLED" | "PLAN_ROUTES_EDITED" | "STORE_VIEWED" | "STORE_LOCKED" | "STORE_UNLOCKED" | "USER_DISABLED" | "USER_ENABLED" | "USER_SESSIONS_REVOKED" | "VERIFICATION_EMAIL_SENT" | "PASSWORD_RESET_LINK_SENT" | "STORE_OWNER_TRANSFERRED";
             actorEmail: string | null;
             /** Format: int64 */
             actorId: number | null;
@@ -1632,6 +1716,14 @@ export interface components {
             /** Format: email */
             email: string;
         };
+        ResetLinkOtpRequest: {
+            token: string;
+        };
+        ResetPasswordByLinkRequest: {
+            newPassword: string;
+            otp: string;
+            token: string;
+        };
         ResetPasswordRequest: {
             newPassword: string;
             resetToken: string;
@@ -1658,7 +1750,7 @@ export interface components {
         };
         StoreAuditEventResponse: {
             /** @enum {string} */
-            action: "MEMBER_UPDATED" | "INVITATION_REVOKED" | "PLAN_PUBLISHED" | "PLAN_CANCELLED" | "PLAN_ROUTES_EDITED" | "STORE_VIEWED" | "STORE_LOCKED" | "STORE_UNLOCKED" | "USER_DISABLED" | "USER_ENABLED" | "USER_SESSIONS_REVOKED";
+            action: "MEMBER_UPDATED" | "INVITATION_REVOKED" | "PLAN_PUBLISHED" | "PLAN_CANCELLED" | "PLAN_ROUTES_EDITED" | "STORE_VIEWED" | "STORE_LOCKED" | "STORE_UNLOCKED" | "USER_DISABLED" | "USER_ENABLED" | "USER_SESSIONS_REVOKED" | "VERIFICATION_EMAIL_SENT" | "PASSWORD_RESET_LINK_SENT" | "STORE_OWNER_TRANSFERRED";
             actorEmail: string | null;
             /** Format: int64 */
             actorId: number | null;
@@ -1714,6 +1806,21 @@ export interface components {
             end: string;
             /** Format: time-local */
             start: string;
+        };
+        TransferOwnerRequest: {
+            /** Format: int64 */
+            userId: number;
+        };
+        TransferOwnerResponse: {
+            ownerCanDrive: boolean;
+            ownerEmail: string;
+            /** Format: int64 */
+            ownerId: number;
+            previousOwnerEmail: string | null;
+            /** Format: int64 */
+            previousOwnerId: number | null;
+            /** Format: int64 */
+            storeId: number;
         };
         UpdateCanDriveRequest: {
             canDrive: boolean;
@@ -1808,7 +1915,7 @@ export interface operations {
             query?: {
                 storeId?: number;
                 actorId?: number;
-                action?: "MEMBER_UPDATED" | "INVITATION_REVOKED" | "PLAN_PUBLISHED" | "PLAN_CANCELLED" | "PLAN_ROUTES_EDITED" | "STORE_VIEWED" | "STORE_LOCKED" | "STORE_UNLOCKED" | "USER_DISABLED" | "USER_ENABLED" | "USER_SESSIONS_REVOKED";
+                action?: "MEMBER_UPDATED" | "INVITATION_REVOKED" | "PLAN_PUBLISHED" | "PLAN_CANCELLED" | "PLAN_ROUTES_EDITED" | "STORE_VIEWED" | "STORE_LOCKED" | "STORE_UNLOCKED" | "USER_DISABLED" | "USER_ENABLED" | "USER_SESSIONS_REVOKED" | "VERIFICATION_EMAIL_SENT" | "PASSWORD_RESET_LINK_SENT" | "STORE_OWNER_TRANSFERRED";
                 from?: string;
                 to?: string;
                 /** @description Zero-based page index (0..N) */
@@ -1912,6 +2019,32 @@ export interface operations {
             };
         };
     };
+    transferOwner: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TransferOwnerRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponseTransferOwnerResponse"];
+                };
+            };
+        };
+    };
     unlock: {
         parameters: {
             query?: never;
@@ -2008,7 +2141,47 @@ export interface operations {
             };
         };
     };
+    sendPasswordResetLink: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     revokeSessions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    sendVerificationEmail: {
         parameters: {
             query?: never;
             header?: never;
@@ -2200,6 +2373,50 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["ResetPasswordRequest"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    resetPassword_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResetPasswordByLinkRequest"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    sendOtp: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResetLinkOtpRequest"];
             };
         };
         responses: {
@@ -2906,7 +3123,7 @@ export interface operations {
         parameters: {
             query?: {
                 actorId?: number;
-                action?: "MEMBER_UPDATED" | "INVITATION_REVOKED" | "PLAN_PUBLISHED" | "PLAN_CANCELLED" | "PLAN_ROUTES_EDITED" | "STORE_VIEWED" | "STORE_LOCKED" | "STORE_UNLOCKED" | "USER_DISABLED" | "USER_ENABLED" | "USER_SESSIONS_REVOKED";
+                action?: "MEMBER_UPDATED" | "INVITATION_REVOKED" | "PLAN_PUBLISHED" | "PLAN_CANCELLED" | "PLAN_ROUTES_EDITED" | "STORE_VIEWED" | "STORE_LOCKED" | "STORE_UNLOCKED" | "USER_DISABLED" | "USER_ENABLED" | "USER_SESSIONS_REVOKED" | "VERIFICATION_EMAIL_SENT" | "PASSWORD_RESET_LINK_SENT" | "STORE_OWNER_TRANSFERRED";
                 from?: string;
                 to?: string;
                 /** @description Zero-based page index (0..N) */

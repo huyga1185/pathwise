@@ -28,5 +28,11 @@ public enum AuditAction {
     /** The ADMIN enabled an account (T56); details: email, the new status. */
     USER_ENABLED,
     /** The ADMIN ended every session of an account (T56); details: email. */
-    USER_SESSIONS_REVOKED
+    USER_SESSIONS_REVOKED,
+    /** The ADMIN resent the verification code of an account (T57); details: email. */
+    VERIFICATION_EMAIL_SENT,
+    /** The ADMIN sent a password reset link (T57, P-63); details: email. */
+    PASSWORD_RESET_LINK_SENT,
+    /** The ADMIN made another member the OWNER (T57, P-63); details: from, to (emails). */
+    STORE_OWNER_TRANSFERRED
 }

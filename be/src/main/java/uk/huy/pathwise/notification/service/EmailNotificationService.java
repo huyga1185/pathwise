@@ -23,13 +23,20 @@ public class EmailNotificationService {
     public static final String RESET_PASSWORD = "reset-password";
     public static final String CHANGE_PASSWORD = "change-password";
     public static final String INVITATION = "invitation";
+    // T57 (P-63).
+    public static final String RESET_LINK = "reset-link";
+    public static final String OWNER_GRANTED = "owner-granted";
+    public static final String OWNER_TRANSFERRED = "owner-transferred";
 
     // Subject of each template; a template without a subject here cannot be sent.
     private static final Map<String, String> SUBJECTS = Map.of(
             VERIFY_EMAIL, "Mã xác thực email",
             RESET_PASSWORD, "Mã đặt lại mật khẩu",
             CHANGE_PASSWORD, "Mã xác nhận đổi mật khẩu",
-            INVITATION, "Lời mời tham gia cửa hàng");
+            INVITATION, "Lời mời tham gia cửa hàng",
+            RESET_LINK, "Đặt lại mật khẩu",
+            OWNER_GRANTED, "Bạn đã trở thành chủ cửa hàng",
+            OWNER_TRANSFERRED, "Quyền chủ cửa hàng đã được chuyển");
 
     private final EmailSender emailSender;
     private final TemplateEngine templateEngine;
@@ -72,5 +79,12 @@ public class EmailNotificationService {
         } catch (EmailSenderException e) {
             throw new EmailDeliveryException("Could not send email " + templateName, e);
         }
+    }
+
+    /**
+     * @return {@code service-identity.app-url}, for links in emails
+     */
+    public String appUrl() {
+        return identity.appUrl();
     }
 }

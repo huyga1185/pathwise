@@ -43,4 +43,18 @@ public class AdminUserActionController {
         adminUserService.revokeSessions(actor.identity(), id);
         return ResponseEntity.noContent().build();
     }
+
+    @PostMapping("/{id}/verification-email")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public ResponseEntity<Void> sendVerificationEmail(@AuthenticationPrincipal AuthenticatedUser actor, @PathVariable long id) {
+        adminUserService.sendVerificationEmail(actor.identity(), id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/{id}/password-reset-email")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public ResponseEntity<Void> sendPasswordResetLink(@AuthenticationPrincipal AuthenticatedUser actor, @PathVariable long id) {
+        adminUserService.sendPasswordResetLink(actor.identity(), id);
+        return ResponseEntity.noContent().build();
+    }
 }

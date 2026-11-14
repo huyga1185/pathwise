@@ -89,6 +89,12 @@ const _$StoreAuditEventResponseActionEnumEnumMap = {
   StoreAuditEventResponseActionEnum.USER_ENABLED: 'USER_ENABLED',
   StoreAuditEventResponseActionEnum.USER_SESSIONS_REVOKED:
       'USER_SESSIONS_REVOKED',
+  StoreAuditEventResponseActionEnum.VERIFICATION_EMAIL_SENT:
+      'VERIFICATION_EMAIL_SENT',
+  StoreAuditEventResponseActionEnum.PASSWORD_RESET_LINK_SENT:
+      'PASSWORD_RESET_LINK_SENT',
+  StoreAuditEventResponseActionEnum.STORE_OWNER_TRANSFERRED:
+      'STORE_OWNER_TRANSFERRED',
 };
 
 const _$StoreAuditEventResponseActorRoleEnumEnumMap = {

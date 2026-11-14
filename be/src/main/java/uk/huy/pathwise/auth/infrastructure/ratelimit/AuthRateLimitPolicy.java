@@ -40,6 +40,20 @@ public class AuthRateLimitPolicy {
                 () -> rateLimiter.tryAcquire("forgot-password-email", normalize(email)));
     }
 
+    /**
+     * An ADMIN resends the verification code (T57): counted with the user's own resends, by email.
+     */
+    public RateLimitDecision supportVerificationEmail(String email) {
+        return rateLimiter.tryAcquire("resend-verification-email", normalize(email));
+    }
+
+    /**
+     * An ADMIN sends a password reset link (T57): counted with "Quên mật khẩu", by email.
+     */
+    public RateLimitDecision supportPasswordReset(String email) {
+        return rateLimiter.tryAcquire("forgot-password-email", normalize(email));
+    }
+
     public RateLimitDecision changePasswordOtp(long userId) {
         return rateLimiter.tryAcquire("change-password-otp-user", String.valueOf(userId));
     }

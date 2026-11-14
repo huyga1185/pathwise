@@ -11,6 +11,7 @@
 | `/login` | Đăng nhập | Đăng nhập | công khai | `POST /auth/log-in`, `POST /auth/refresh` | W01 |
 | `/register` | Đăng ký cửa hàng | Đăng ký cửa hàng | công khai | `POST /auth/register` | W02 |
 | `/verify-email?email=` | Xác thực email (6 ô OTP) | Xác thực email | công khai | `POST /auth/email/verify`, `/email/verify/resend` | W02 |
+| `/reset-password?token=` | Đặt lại mật khẩu từ link ADMIN gửi (Gửi mã → OTP + mật khẩu mới; không hiện email) | (vẽ ở W11, theo layout Quên mật khẩu) | công khai | `POST /auth/password/reset-link/otp`, `POST /auth/password/reset-link` (T57) | W11, chưa làm |
 | `/forgot-password` | Quên mật khẩu (3 bước) | Quên mật khẩu | công khai | `/password/forgot` → `/password/reset/verify` → `/password/reset` | W02 |
 | `/invite` | Nhận lời mời | Nhận lời mời | công khai | `GET /invitations/{code}`, `POST /invitations/accept` | W02 |
 | `/profile` | Hồ sơ, đổi mật khẩu, thiết bị | Hồ sơ và bảo mật | O, D | `GET/PATCH /users/me`, `/password/change/otp`, `PUT /password`, `/auth/sessions*` | W02 |
@@ -26,8 +27,8 @@
 | `/plans/:id` (PUBLISHED trở đi) | Theo dõi tiến độ | Theo dõi tiến độ | O, D | `GET /plans/{id}` (30 s) | W06 |
 | `/admin` | Quản trị — tổng quan (thẻ số, biểu đồ, khối kỹ thuật); ADMIN đăng nhập vào đây | (vẽ ở W11) | AD | chưa có API (T60) | W11, chưa làm |
 | `/admin/stores` | Quản trị — danh sách cửa hàng (tìm, lọc trạng thái, phân trang) | (vẽ ở W11) | AD | `GET /admin/stores` (T55) | W11, chưa làm |
-| `/admin/stores/:id` | Quản trị — chi tiết cửa hàng (số tổng, 30 ngày, thành viên, nhật ký của cửa hàng, khoá/mở khoá) | (vẽ ở W11) | AD | `GET /admin/stores/{id}` (T55; mỗi lần gọi ghi `STORE_VIEWED`, không tự gọi lại), `GET /admin/audit?storeId=` (T58), `POST /admin/stores/{id}/lock`, `/unlock` (T56); chuyển chủ theo T57 | W11, chưa làm |
-| `/admin/users` | Quản trị — người dùng (lọc cửa hàng, vai trò, trạng thái; khoá/mở, buộc đăng xuất) | (vẽ ở W11) | AD | `GET /admin/users` (T55), `POST /admin/users/{id}/disable`, `/enable`, `/sessions/revoke` (T56); hỗ trợ tài khoản theo T57 | W11, chưa làm |
+| `/admin/stores/:id` | Quản trị — chi tiết cửa hàng (số tổng, 30 ngày, thành viên, nhật ký của cửa hàng, khoá/mở khoá, chuyển chủ) | (vẽ ở W11) | AD | `GET /admin/stores/{id}` (T55; mỗi lần gọi ghi `STORE_VIEWED`, không tự gọi lại), `GET /admin/audit?storeId=` (T58), `POST /admin/stores/{id}/lock`, `/unlock` (T56), `POST /admin/stores/{id}/owner` (T57) | W11, chưa làm |
+| `/admin/users` | Quản trị — người dùng (lọc cửa hàng, vai trò, trạng thái; khoá/mở, buộc đăng xuất, gửi lại email xác thực, gửi link đặt lại mật khẩu) | (vẽ ở W11) | AD | `GET /admin/users` (T55), `POST /admin/users/{id}/disable`, `/enable`, `/sessions/revoke` (T56), `/verification-email`, `/password-reset-email` (T57) | W11, chưa làm |
 | `/admin/audit` | Quản trị — nhật ký (lọc cửa hàng, người làm, hành động, khoảng ngày) | (vẽ ở W11) | AD | `GET /admin/audit` (T58) | W11, chưa làm |
 | `/store/audit` | Nhật ký của cửa hàng (mục trong khu Cửa hàng, chỉ OWNER) | (vẽ ở W11) | O | `GET /store/audit` (T58) | W11, chưa làm |
 | `*` | Không tìm thấy / không có quyền / tài xế dùng web | (không có artboard) | — | — | W01 |

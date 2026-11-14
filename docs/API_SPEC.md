@@ -79,6 +79,8 @@
 | `POST /password/forgot` | P | `{email}` | 204 (khi không bị giới hạn); gửi OTP `RESET_PASSWORD` nếu email ACTIVE | 429 `RATE_LIMITED` | ✅ |
 | `POST /password/reset/verify` | P | `{email, otp}` | 200 `{resetToken, expiresAt}` | 400 `INVALID_OTP` | ✅ |
 | `POST /password/reset` | P | `{resetToken, newPassword}` | 204; revoke **mọi** session | 400 `INVALID_RESET_TOKEN` (P-26) | ✅ |
+| `POST /password/reset-link/otp` | P | `{token}` (token trong link ADMIN gửi, T57) | 204; gửi OTP `RESET_PASSWORD` về email của tài khoản (không trả email); link vẫn dùng được | 400 `INVALID_RESET_TOKEN` (link sai, hết hạn, đã dùng, tài khoản không còn ACTIVE) · 429 `OTP_COOLDOWN` · 429 `RATE_LIMITED` | ✅ (T57) |
+| `POST /password/reset-link` | P | `{token, otp, newPassword}` (8–72) | 204; đổi mật khẩu, revoke **mọi** session, link hết hiệu lực | 400 `INVALID_RESET_TOKEN` · 400 `INVALID_OTP` (link vẫn dùng được) | ✅ (T57) |
 | `POST /password/change/otp` | A | `{currentPassword}` | 204; gửi OTP `CHANGE_PASSWORD` | 400 `INVALID_CURRENT_PASSWORD` · 429 `OTP_COOLDOWN` · 429 `RATE_LIMITED` | ✅ |
 | `PUT /password` | A | `{otp, newPassword}` | 204; revoke mọi session **khác** | 400 `INVALID_OTP` | ✅ |
 
@@ -104,6 +106,7 @@ Ghi chú:
 - `DELETE /sessions/{sessionId}`: session của chính user. Nếu là session hiện tại thì xử lý **như `/log-out`** (204, `no-store`, web xoá cookie); client bỏ token như sau khi log-out. Session của user khác, không tồn tại, đã thu hồi hoặc hết hạn → 404.
 - `POST /sessions/revoke-others`: access token cấp trước khi có claim `sid` thì thu hồi mọi session.
 - `resetToken` là chuỗi opaque, hạn 10 phút, dùng một lần (lần thử đầu tiên tiêu thụ token, kể cả khi sai). `/password/reset` đổi mật khẩu và thu hồi mọi session trong một transaction.
+- **Link đặt lại mật khẩu do ADMIN gửi** (T57, P-63): email chứa `{app-url}/app/reset-password?token=…` (token 43 ký tự, **không chứa email**), mở được trong 24 giờ (`auth.reset-link.ttl`), mỗi user chỉ một link còn hiệu lực (link mới thay link cũ). Có link vẫn phải nhập OTP gửi về chính email đó (`/reset-link/otp`, hạn 5 phút, chờ 60 s giữa hai lần) mới đổi được mật khẩu. Trang không bao giờ biết email.
 - `/password/change/otp`: sai mật khẩu hiện tại → 400 và không gửi email; gửi email lỗi → 500 `INTERNAL_ERROR` (cooldown đã được xoá nên gọi lại được ngay). `PUT /password`: OTP gắn userId của người gọi; session hiện tại vẫn refresh được.
 - OTP: 6 chữ số; sai quá 3 lần → OTP huỷ, phải xin mã mới.
 
@@ -117,6 +120,8 @@ Ghi chú:
 | `POST /admin/users/{id}/disable` | AD | — | 200 `{id, email, phoneNumber, role, storeId, status: DISABLED, createdAt, updatedAt}`; thu hồi mọi phiên; ghi `USER_DISABLED` | 404 · 422 `CANNOT_MODIFY_SELF` (tự khoá mình, nên luôn còn ADMIN) | ✅ (T56) |
 | `POST /admin/users/{id}/enable` | AD | — | 200 như trên; `status` về `ACTIVE`, hoặc `PENDING_VERIFICATION` nếu email chưa từng xác thực; ghi `USER_ENABLED` | 404 | ✅ (T56) |
 | `POST /admin/users/{id}/sessions/revoke` | AD | — | 204; mọi refresh token bị thu hồi (buộc đăng xuất; access token cũ hết hạn trong ≤ 15 phút); ghi `USER_SESSIONS_REVOKED` | 404 | ✅ (T56) |
+| `POST /admin/users/{id}/verification-email` | AD | — | 204; gửi lại OTP `VERIFY_EMAIL` cho tài khoản chờ xác thực (đếm chung giới hạn gửi lại theo email); ghi `VERIFICATION_EMAIL_SENT` | 404 · 409 `EMAIL_ALREADY_VERIFIED` · 403 `ACCOUNT_DISABLED` · 429 `OTP_COOLDOWN`, `RATE_LIMITED` · 500 khi gửi email lỗi | ✅ (T57) |
+| `POST /admin/users/{id}/password-reset-email` | AD | — | 204, không trả gì (ADMIN không thấy link, mã hay mật khẩu); gửi email link đặt lại mật khẩu (§2, P-63); ghi `PASSWORD_RESET_LINK_SENT` | 404 · 403 `ACCOUNT_DISABLED` · 403 `EMAIL_NOT_VERIFIED` (tài khoản chờ xác thực: dùng `verification-email`) · 429 `RATE_LIMITED` (đếm chung với Quên mật khẩu theo email) · 500 khi gửi email lỗi (link bị huỷ) | ✅ (T57) |
 
 ```jsonc
 // User
@@ -135,6 +140,7 @@ Module `admin` (P-60). ADMIN chỉ thấy **số tổng và tài khoản thành 
 | `GET /admin/stores/{id}` | AD | — | `AdminStoreDetail`; ghi nhật ký `STORE_VIEWED` (T58, P-61) | 404 `NOT_FOUND` | ✅ (T55) |
 | `POST /admin/stores/{id}/lock` | AD | `{reason}` (bắt buộc, cắt khoảng trắng, ≤ 500) | 200 `{id, status: READ_ONLY, lockReason, lockedAt}`; khoá lại thì thay lý do; ghi `STORE_LOCKED` | 400 `LOCK_REASON_REQUIRED`, `INVALID_LOCK_REASON_LENGTH` · 404 | ✅ (T56) |
 | `POST /admin/stores/{id}/unlock` | AD | — | 200 `{id, status: ACTIVE, lockReason: null, lockedAt: null}`; cửa hàng đang ACTIVE thì không đổi, không ghi nhật ký; ghi `STORE_UNLOCKED` | 404 | ✅ (T56) |
+| `POST /admin/stores/{id}/owner` | AD | `{userId}` (thành viên ACTIVE của cửa hàng) | 200 `{storeId, ownerId, ownerEmail, ownerCanDrive, previousOwnerId, previousOwnerEmail}`; OWNER cũ thành DISPATCHER và bị đăng xuất mọi nơi; DRIVER thành OWNER thì `canDrive = true`; email báo cả chủ mới và chủ cũ (thư cho chủ cũ không nêu chủ mới); ghi `STORE_OWNER_TRANSFERRED` (P-63) | 404 (cửa hàng không có, user không thuộc cửa hàng) · 400 `VALIDATION_ERROR` trên `userId`: `USER_ID_REQUIRED`, `NEW_OWNER_NOT_ACTIVE`, `ALREADY_OWNER` | ✅ (T57) |
 | `GET /admin/audit` | AD | `storeId?`, `actorId?`, `action?` (`AuditAction`), `from?`, `to?` (`YYYY-MM-DD`, cả hai ngày tính, giờ Asia/Ho_Chi_Minh), paging; sort `occurredAt` (mặc định, mới nhất trước), `id` | Page `AuditEvent` | 400 `INVALID_SORT_FIELD` · 400 `MALFORMED_REQUEST` | ✅ (T58) |
 
 ```jsonc
@@ -172,6 +178,9 @@ Ghi chú:
 | `USER_DISABLED` | ADMIN, `POST /admin/users/{id}/disable` | `USER` | `{email}` |
 | `USER_ENABLED` | ADMIN, `POST /admin/users/{id}/enable` | `USER` | `{email, status}` |
 | `USER_SESSIONS_REVOKED` | ADMIN, `POST /admin/users/{id}/sessions/revoke` | `USER` | `{email}` |
+| `VERIFICATION_EMAIL_SENT` | ADMIN, `POST /admin/users/{id}/verification-email` | `USER` | `{email}` |
+| `PASSWORD_RESET_LINK_SENT` | ADMIN, `POST /admin/users/{id}/password-reset-email` | `USER` | `{email}` |
+| `STORE_OWNER_TRANSFERRED` | ADMIN, `POST /admin/stores/{id}/owner` | `USER` (chủ mới) | `{from, to}` (email chủ cũ, chủ mới) |
 
 ```jsonc
 // AuditEvent
@@ -183,7 +192,7 @@ Ghi chú:
 
 - `details` không chứa dữ liệu cá nhân ngoài email; quá 2000 ký tự thì thành `{"truncated": "<đầu chuỗi JSON>"}` và thao tác vẫn thành công.
 - Hành động trên user ghi kèm `storeId` của user đó, nên OWNER thấy ADMIN đã làm gì với thành viên của mình.
-- Danh sách `action` chỉ được thêm (T57 sẽ thêm); client gặp giá trị lạ thì hiện mã.
+- Danh sách `action` chỉ được thêm; client gặp giá trị lạ thì hiện mã.
 
 ## 4. Store — `/api/v1/store`, `/api/v1/invitations`
 

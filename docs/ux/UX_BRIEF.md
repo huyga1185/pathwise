@@ -106,8 +106,11 @@ Một người có `canDrive` dùng cả hai: web để điều phối, mobile �
 | `USER_DISABLED` | "Quản trị viên khoá tài khoản {details.email}" | `email` |
 | `USER_ENABLED` | "Quản trị viên mở khoá tài khoản {details.email}" | `email`, `status` |
 | `USER_SESSIONS_REVOKED` | "Quản trị viên đăng xuất {details.email} khỏi mọi thiết bị" | `email` |
+| `VERIFICATION_EMAIL_SENT` | "Quản trị viên gửi lại email xác thực cho {details.email}" | `email` |
+| `PASSWORD_RESET_LINK_SENT` | "Quản trị viên gửi link đặt lại mật khẩu cho {details.email}" | `email` |
+| `STORE_OWNER_TRANSFERRED` | "Quản trị viên chuyển quyền chủ cửa hàng từ {details.from} sang {details.to}" | `from`, `to` |
 
-Giá trị `action` mới có thể xuất hiện (T57): chưa có câu thì hiện mã. `details` có `truncated` nghĩa là chi tiết quá dài đã bị cắt: hiện "(chi tiết quá dài)".
+Giá trị `action` mới có thể xuất hiện sau này: chưa có câu thì hiện mã. `details` có `truncated` nghĩa là chi tiết quá dài đã bị cắt: hiện "(chi tiết quá dài)".
 
 ## 6. Thông điệp lỗi
 
@@ -173,6 +176,8 @@ Job thất bại có `errorCode` riêng: `NO_SOLUTION` ("Không tìm được l�
 - **Kiểm tra chéo:** `INVALID_TIME_WINDOW` (giờ kết thúc phải sau giờ bắt đầu, trên `timeWindow.end`), `INVALID_SHIFT` (trên `shiftEnd`), `COORDINATES_INCOMPLETE` (thiếu `lat` hoặc `lon`), `ADDRESS_OR_COORDINATES_REQUIRED` (trên `address`), `ORDER_DEMAND_NOT_ALLOWED`, `INVALID_STOP_ID`, `NOT_NULLABLE` (bug client).
 - **Trong `PLAN_INCOMPLETE`:** `STOPS_REQUIRED`, `ASSIGNMENTS_REQUIRED`. **Trong `SHIFT_OVERLAP`:** mỗi phần tử có `conflictPlanId`.
 - **Chỉnh tay tuyến (`PUT /plans/{id}/routes`, T28):** `INVALID_ROUTE_ID`, `ROUTES_INCOMPLETE`, `INVALID_STOP_ID`, `STOPS_INCOMPLETE`, `STOP_NOT_GEOCODED` là lỗi của client (nháp lệch với plan): hiện "Danh sách tuyến đã thay đổi, tải lại rồi chỉnh lại." và tải lại plan.
+- **Chuyển chủ cửa hàng (`POST /admin/stores/{id}/owner`, T57):** trên `userId`: `USER_ID_REQUIRED` ("Vui lòng chọn thành viên."), `NEW_OWNER_NOT_ACTIVE` ("Chỉ chuyển được cho thành viên đang hoạt động, đã xác thực email."), `ALREADY_OWNER` ("Người này đã là chủ cửa hàng.").
+- **Trang đặt lại mật khẩu từ link (T57):** `RESET_TOKEN_REQUIRED` là lỗi client (link thiếu token): hiện như `INVALID_RESET_TOKEN` của trang này ("Link đã hết hạn hoặc đã được dùng…", SCREENS). `OTP_REQUIRED`, `INVALID_OTP_LENGTH`, `PASSWORD_REQUIRED`, `INVALID_PASSWORD_LENGTH` như các form OTP và mật khẩu khác.
 
 ### 6.3 Vi phạm sau khi chỉnh tay (`PlanDetail.violations`, T28)
 

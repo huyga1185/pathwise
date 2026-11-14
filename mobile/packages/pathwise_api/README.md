@@ -77,10 +77,13 @@ Class | Method | HTTP request | Description
 [*AdminStoreControllerApi*](doc/AdminStoreControllerApi.md) | [**getStore1**](doc/AdminStoreControllerApi.md#getstore1) | **GET** /api/v1/admin/stores/{id} | 
 [*AdminStoreControllerApi*](doc/AdminStoreControllerApi.md) | [**listStores**](doc/AdminStoreControllerApi.md#liststores) | **GET** /api/v1/admin/stores | 
 [*AdminStoreControllerApi*](doc/AdminStoreControllerApi.md) | [**lock**](doc/AdminStoreControllerApi.md#lock) | **POST** /api/v1/admin/stores/{id}/lock | 
+[*AdminStoreControllerApi*](doc/AdminStoreControllerApi.md) | [**transferOwner**](doc/AdminStoreControllerApi.md#transferowner) | **POST** /api/v1/admin/stores/{id}/owner | 
 [*AdminStoreControllerApi*](doc/AdminStoreControllerApi.md) | [**unlock**](doc/AdminStoreControllerApi.md#unlock) | **POST** /api/v1/admin/stores/{id}/unlock | 
 [*AdminUserActionControllerApi*](doc/AdminUserActionControllerApi.md) | [**disable**](doc/AdminUserActionControllerApi.md#disable) | **POST** /api/v1/admin/users/{id}/disable | 
 [*AdminUserActionControllerApi*](doc/AdminUserActionControllerApi.md) | [**enable**](doc/AdminUserActionControllerApi.md#enable) | **POST** /api/v1/admin/users/{id}/enable | 
 [*AdminUserActionControllerApi*](doc/AdminUserActionControllerApi.md) | [**revokeSessions**](doc/AdminUserActionControllerApi.md#revokesessions) | **POST** /api/v1/admin/users/{id}/sessions/revoke | 
+[*AdminUserActionControllerApi*](doc/AdminUserActionControllerApi.md) | [**sendPasswordResetLink**](doc/AdminUserActionControllerApi.md#sendpasswordresetlink) | **POST** /api/v1/admin/users/{id}/password-reset-email | 
+[*AdminUserActionControllerApi*](doc/AdminUserActionControllerApi.md) | [**sendVerificationEmail**](doc/AdminUserActionControllerApi.md#sendverificationemail) | **POST** /api/v1/admin/users/{id}/verification-email | 
 [*AdminUserControllerApi*](doc/AdminUserControllerApi.md) | [**getListUser**](doc/AdminUserControllerApi.md#getlistuser) | **GET** /api/v1/admin/users | 
 [*AuthControllerApi*](doc/AuthControllerApi.md) | [**changePassword**](doc/AuthControllerApi.md#changepassword) | **PUT** /api/v1/auth/password | 
 [*AuthControllerApi*](doc/AuthControllerApi.md) | [**forgotPassword**](doc/AuthControllerApi.md#forgotpassword) | **POST** /api/v1/auth/password/forgot | 
@@ -106,6 +109,8 @@ Class | Method | HTTP request | Description
 [*InvitationControllerApi*](doc/InvitationControllerApi.md) | [**acceptInvitation**](doc/InvitationControllerApi.md#acceptinvitation) | **POST** /api/v1/invitations/accept | 
 [*InvitationControllerApi*](doc/InvitationControllerApi.md) | [**previewInvitation**](doc/InvitationControllerApi.md#previewinvitation) | **GET** /api/v1/invitations/{code} | 
 [*JobControllerApi*](doc/JobControllerApi.md) | [**getJob**](doc/JobControllerApi.md#getjob) | **GET** /api/v1/jobs/{id} | 
+[*PasswordResetLinkControllerApi*](doc/PasswordResetLinkControllerApi.md) | [**resetPassword1**](doc/PasswordResetLinkControllerApi.md#resetpassword1) | **POST** /api/v1/auth/password/reset-link | 
+[*PasswordResetLinkControllerApi*](doc/PasswordResetLinkControllerApi.md) | [**sendOtp**](doc/PasswordResetLinkControllerApi.md#sendotp) | **POST** /api/v1/auth/password/reset-link/otp | 
 [*PlanControllerApi*](doc/PlanControllerApi.md) | [**cancelPlan**](doc/PlanControllerApi.md#cancelplan) | **POST** /api/v1/plans/{id}/cancel | 
 [*PlanControllerApi*](doc/PlanControllerApi.md) | [**createPlan**](doc/PlanControllerApi.md#createplan) | **POST** /api/v1/plans | 
 [*PlanControllerApi*](doc/PlanControllerApi.md) | [**driverLocations**](doc/PlanControllerApi.md#driverlocations) | **GET** /api/v1/plans/{id}/driver-locations | 
@@ -170,6 +175,7 @@ Class | Method | HTTP request | Description
  - [ApiResponseRegisterResponse](doc/ApiResponseRegisterResponse.md)
  - [ApiResponseResetTokenResponse](doc/ApiResponseResetTokenResponse.md)
  - [ApiResponseStoreResponse](doc/ApiResponseStoreResponse.md)
+ - [ApiResponseTransferOwnerResponse](doc/ApiResponseTransferOwnerResponse.md)
  - [ApiResponseVehicleResponse](doc/ApiResponseVehicleResponse.md)
  - [AssignmentRequest](doc/AssignmentRequest.md)
  - [AuditEventResponse](doc/AuditEventResponse.md)
@@ -225,6 +231,8 @@ Class | Method | HTTP request | Description
  - [ReplaceRoutesRequest](doc/ReplaceRoutesRequest.md)
  - [RequestPasswordChangeOtpRequest](doc/RequestPasswordChangeOtpRequest.md)
  - [ResendVerificationRequest](doc/ResendVerificationRequest.md)
+ - [ResetLinkOtpRequest](doc/ResetLinkOtpRequest.md)
+ - [ResetPasswordByLinkRequest](doc/ResetPasswordByLinkRequest.md)
  - [ResetPasswordRequest](doc/ResetPasswordRequest.md)
  - [ResetTokenResponse](doc/ResetTokenResponse.md)
  - [RouteStops](doc/RouteStops.md)
@@ -234,6 +242,8 @@ Class | Method | HTTP request | Description
  - [StoreResponse](doc/StoreResponse.md)
  - [TimeWindowRequest](doc/TimeWindowRequest.md)
  - [TimeWindowResponse](doc/TimeWindowResponse.md)
+ - [TransferOwnerRequest](doc/TransferOwnerRequest.md)
+ - [TransferOwnerResponse](doc/TransferOwnerResponse.md)
  - [UpdateCanDriveRequest](doc/UpdateCanDriveRequest.md)
  - [UpdateLocationSharingRequest](doc/UpdateLocationSharingRequest.md)
  - [UpdateMemberRequest](doc/UpdateMemberRequest.md)
