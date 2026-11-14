@@ -144,7 +144,7 @@ export function usePlanApi() {
     return {
       // POST takes no version; the generated type requires one (F-51).
       create: async (body: Omit<PlanDraft, 'version'>) =>
-        store(await unwrap(api.POST('/api/v1/plans', { body: body as PlanDraft }))),
+        store(await unwrap(api.POST('/api/v1/plans', { body }))),
       replace: async (id: number, body: PlanDraft) =>
         store(await unwrap(api.PUT('/api/v1/plans/{id}', { params: { path: { id } }, body }))),
       patchStop: async (id: number, stopId: number, body: StopPatch) =>

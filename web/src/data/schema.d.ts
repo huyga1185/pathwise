@@ -1867,7 +1867,7 @@ export interface components {
             planDate: string;
             stops?: components["schemas"]["PlanStopRequest"][];
             /** Format: int64 */
-            version: number;
+            version?: number;
         };
         PlanImportResponse: {
             /** Format: int32 */

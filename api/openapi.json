@@ -3017,8 +3017,7 @@
         },
         "required": [
           "name",
-          "planDate",
-          "version"
+          "planDate"
         ],
         "type": "object"
       },

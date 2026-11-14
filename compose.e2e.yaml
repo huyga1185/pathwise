@@ -54,6 +54,9 @@ services:
       # First ADMIN of the stack (T59), for the ADMIN area E2E (W11).
       BOOTSTRAP_ADMIN_EMAIL: admin@pathwise.test
       BOOTSTRAP_ADMIN_PASSWORD: matkhau-admin-e2e
+      # Every spec registers a store from the same IP; the production limit (5 an hour) stops a second local run on the
+      # same stack. Map keys with "-" cannot be set by plain variables, hence JSON.
+      SPRING_APPLICATION_JSON: '{"rate-limit":{"rules":{"register-ip":{"limit":100}}}}'
     depends_on:
       map-stub:
         condition: service_healthy

@@ -9,7 +9,7 @@ part of 'plan_draft_request.dart';
 PlanDraftRequest _$PlanDraftRequestFromJson(
   Map<String, dynamic> json,
 ) => $checkedCreate('PlanDraftRequest', json, ($checkedConvert) {
-  $checkKeys(json, requiredKeys: const ['name', 'planDate', 'version']);
+  $checkKeys(json, requiredKeys: const ['name', 'planDate']);
   final val = PlanDraftRequest(
     assignments: $checkedConvert(
       'assignments',
@@ -30,7 +30,7 @@ PlanDraftRequest _$PlanDraftRequestFromJson(
           ?.map((e) => PlanStopRequest.fromJson(e as Map<String, dynamic>))
           .toList(),
     ),
-    version: $checkedConvert('version', (v) => (v as num).toInt()),
+    version: $checkedConvert('version', (v) => (v as num?)?.toInt()),
   );
   return val;
 });
@@ -42,5 +42,5 @@ Map<String, dynamic> _$PlanDraftRequestToJson(PlanDraftRequest instance) =>
       'name': instance.name,
       'planDate': instance.planDate,
       'stops': ?instance.stops?.map((e) => e.toJson()).toList(),
-      'version': instance.version,
+      'version': ?instance.version,
     };

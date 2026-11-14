@@ -1,6 +1,7 @@
 package uk.huy.pathwise.core.exception;
 
 import lombok.extern.slf4j.Slf4j;
+import org.hibernate.exception.ConstraintViolationException;
 import org.springframework.core.env.Environment;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpHeaders;
@@ -24,6 +25,8 @@ import org.springframework.web.servlet.resource.NoResourceFoundException;
 import uk.huy.pathwise.core.ratelimit.RateLimitedException;
 
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Maps every exception raised inside Spring MVC to the error format of API_SPEC §1.
@@ -33,6 +36,7 @@ import java.util.List;
 @RestControllerAdvice
 @Slf4j
 public class GlobalExceptionHandler {
+    private static final Pattern CONSTRAINT = Pattern.compile("(?:for key|constraint) [`'\"]?([\\w.]+)");
     private final ErrorResponseFactory errors;
 
     public GlobalExceptionHandler(Environment env) {
@@ -117,8 +121,22 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<ErrorResponse> handleDataIntegrityViolation(DataIntegrityViolationException e) {
-        log.warn("Data integrity violation: {}", e.getMostSpecificCause().getMessage());
+        // Only the constraint: MariaDB's message quotes the duplicate value, which can be an email (F-46).
+        log.warn("Data integrity violation: constraint={}", constraintOf(e));
         return errors.response(ErrorCode.CONFLICT, null, e);
+    }
+
+    /**
+     * The constraint name of a violation ({@code uk_users_email} in "Duplicate entry '…' for key 'uk_users_email'"), or
+     * the exception type when the database message has none. Never the rest of the message.
+     */
+    static String constraintOf(DataIntegrityViolationException e) {
+        if (e.getCause() instanceof ConstraintViolationException violation && violation.getConstraintName() != null)
+            return violation.getConstraintName();
+        String message = e.getMostSpecificCause().getMessage();
+        Matcher key = message == null ? null : CONSTRAINT.matcher(message);
+        if (key != null && key.find()) return key.group(1);
+        return e.getMostSpecificCause().getClass().getSimpleName();
     }
 
     @ExceptionHandler(ExternalServiceException.class)

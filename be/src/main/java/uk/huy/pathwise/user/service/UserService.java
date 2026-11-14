@@ -136,13 +136,6 @@ public class UserService implements UserAccountService, UserProfileService, Stor
     }
 
     @Override
-    @Transactional
-    public void deleteUser(long id) {
-        User user = getUserById(id);
-        userRepository.delete(user);
-    }
-
-    @Override
     public AuthenticationResult authenticate(String email, String password) {
         if (password == null) throw new NullPointerException("Password is null");
         return userRepository.findByEmail(normalizeEmail(email))
