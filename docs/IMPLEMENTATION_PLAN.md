@@ -33,7 +33,7 @@ M1 Track A (auth)       T10─T11─T12─T13─T17─┬─T14─T15
 M2 Track A                                       T20─T24─T29─T25─T26─T27
 M3                                                          T30─T31  T40 T41
 M4                                                                     T43  (T32 T33 T28 nếu kịp)
-M5 (vận hành, P-59)  A: T50─T51─T52─T53─T54   B: T59─T55─T56─T57─T58─T60 + W11 (web)
+M5 (vận hành, P-59)  A: T50─T51─T52─T53─T54   B: T59─T55─T56─T57─T58─T60 + W11 (web)   C: T61, T62, T63 + W12 (web)
 ```
 
 Bảng dependency (→ nghĩa là "phải xong trước"):
@@ -489,7 +489,7 @@ T42 cũ (Docker, compose, README) đã được gộp vào T05 và T07 trong M0 
 
 ## 9. Phase M5: Vận hành và quản trị (chủ dự án duyệt 2026-11-14, P-59)
 
-Làm **A trước B**. A giữ an toàn dữ liệu và VPS (2 GB, chạy cả routing); B cho ADMIN thực quyền và trang thông số. Giai đoạn C (nhập điểm giao từ CSV/Excel, sao chép plan hôm trước, báo cáo ngày) để mốc sau. Mỗi task backend có ước lượng riêng; web của B là W11 (`docs/client/PLAN.md`).
+Làm **A trước B**. A giữ an toàn dữ liệu và VPS (2 GB, chạy cả routing); B cho ADMIN thực quyền và trang thông số. Giai đoạn C (nhập điểm giao từ CSV/Excel, sao chép plan, báo cáo và xuất CSV) lên kế hoạch ngày 2026-11-14 (P-67, P-68), làm sau B. Mỗi task backend có ước lượng riêng; web của B là W11 (`docs/client/PLAN.md`).
 
 | Task | Phụ thuộc | Song song được với |
 |---|---|---|
@@ -500,6 +500,8 @@ Làm **A trước B**. A giữ an toàn dữ liệu và VPS (2 GB, chạy cả r
 | T56, T57, T58 | T55 | nhau |
 | T60 | T55 | T56–T58 |
 | W11 | T55 (danh sách), T56–T58, T60 theo từng màn | — |
+| T61, T62, T63 | — (sau B) | nhau |
+| W12 | T61, T62, T63 theo từng màn | — |
 
 ### Giai đoạn A: an toàn vận hành
 
@@ -574,9 +576,41 @@ Endpoint ADMIN mới đặt ở module `admin` (P-60, từ T55); cột khoá c�
 - **Acceptance:** số nghiệp vụ đúng trên dữ liệu test; số kỹ thuật tăng sau khi gọi API và gây lỗi giả; chỉ ADMIN; response < 1 s với 100 store.
 - **Phát sinh khi làm (2026-11-14, P-64, P-65):** chủ dự án chọn giữ job 100 ngày (sửa hạn của T53) và bỏ tuổi backup khỏi API (theo dõi bằng script T54). Số nghiệp vụ: khoảng `from`–`to` tối đa 92 ngày, mặc định 30, đủ mọi ngày; `now` (cửa hàng, hoạt động 7/30 ngày, đang khoá, user theo vai trò) tính tại lúc gọi; cache Redis 60 s. Số kỹ thuật: bộ đếm cuộn theo phút trong bộ nhớ (`OpsMetrics`), p95 bằng timer Micrometer; thêm mũi tên `admin → job` (P-65). Không thêm dependency.
 
+### Giai đoạn C: nhập file, sao chép plan, báo cáo (chủ dự án chọn 2026-11-14, P-67; chi tiết P-68, cùng Approved)
+
+Dành cho OWNER và DISPATCHER (quyền **O, D**), lọc theo `actor.storeId()`; plan của cửa hàng khác → 404. Không có danh mục đơn hàng lâu dài (D-04 giữ nguyên): file chỉ là cách nhập nhanh điểm giao cho **một** plan. Endpoint mới ở module `planning` (đọc plan, stop, route của chính module); không cần migration. Cửa hàng `READ_ONLY` (T56): nhập file và sao chép bị chặn 423 như mọi request ghi (mặc định của interceptor), báo cáo và xuất CSV vẫn dùng được. Web làm ở W12 (`docs/client/PLAN.md`); app tài xế không đổi.
+
+#### T61. Nhập điểm giao từ file CSV/Excel
+- **Ước lượng:** 1,5 ngày · **Phụ thuộc:** — · **Dependency mới:** Apache POI `poi-ooxml` (P-67; chốt phiên bản ≥ 2 tuần và không có CVE đang mở khi làm, sửa `pom.xml`)
+- **Phạm vi:**
+  - `POST /api/v1/plans/import` (multipart, field `file`) **chỉ đọc file và trả kết quả, không lưu gì** (P-68): `{rows: [{row, stop: <stop như trong PlanDraftRequest> | null, errors: [{field, code}]}], validCount, errorCount}`. Web cho xem trước, sửa hoặc bỏ dòng lỗi, rồi đưa các stop vào form và lưu bằng `POST /plans` / `PUT /plans/{id}` như hiện nay, nên geocode chạy nền, validation và giới hạn giữ nguyên một chỗ.
+  - Định dạng: `.xlsx` (sheet đầu tiên) và `.csv` (UTF-8 có hoặc không BOM; byte không phải UTF-8 hợp lệ thì đọc theo Windows-1258, kiểu Excel tiếng Việt lưu CSV thường; dấu phân cách `,` hoặc `;` tự nhận theo dòng tiêu đề). Không nhận `.xls` cũ. File ≤ 1 MB, ≤ 100 dòng dữ liệu (D-19); dòng trống bị bỏ qua.
+  - Cột theo **file mẫu** (`GET /api/v1/plans/import/template.xlsx` và `.csv`), tiêu đề tiếng Việt, so khớp không phân biệt hoa thường, dấu và khoảng trắng; thứ tự cột tuỳ ý; cột lạ bị bỏ qua và báo trong `ignoredColumns`. Cột: Nhãn / mã đơn (bắt buộc), Người nhận, Số điện thoại, Địa chỉ, Vĩ độ, Kinh độ, KG, Thùng, Kiện, Phút phục vụ, Giao từ, Giao đến, Ghi chú. Phải có Địa chỉ hoặc đủ Vĩ độ + Kinh độ (D-18). Ô số và giờ của Excel đọc theo kiểu ô (số, giờ), ô chữ thì parse `HH:mm`.
+  - Lỗi theo dòng dùng **cùng mã validation** với `PlanDraftRequest` (ví dụ `STOP_LABEL_REQUIRED`, `INVALID_STOP_LABEL_LENGTH`, `INVALID_LATITUDE`, `INVALID_DEMAND`; số điện thoại sai như `@ValidPhoneNumber`), `field` là tên field API để web hiện nhãn cột. Lỗi cả file (không đọc được, sai định dạng, thiếu cột Nhãn) → 422 `INVALID_IMPORT_FILE` kèm `fieldErrors` mô tả; quá 1 MB → 413 `IMPORT_FILE_TOO_LARGE`; quá 100 dòng → 422 `PLAN_TOO_LARGE`. Rate limit theo user bằng cơ chế của T40 (quy tắc mới `rate-limit.rules.plan-import`, 30 lần/giờ, P-68).
+  - An toàn: POI giữ mặc định chống zip bomb (`ZipSecureFile`), không đánh giá công thức (đọc giá trị đã lưu), không log nội dung ô (có số điện thoại, tên người nhận).
+- **Acceptance:** test với file mẫu `.xlsx`, CSV UTF-8, CSV có BOM, CSV Windows-1258, dấu `;`; dòng lỗi trả đúng `row` và mã; file hỏng/không phải Excel → 422; > 1 MB → 413; 101 dòng → 422; không ghi DB (đếm bảng trước/sau); tenant isolation không áp dụng vì không đọc dữ liệu cửa hàng, nhưng có test quyền (DRIVER, ADMIN → 403) và cửa hàng `READ_ONLY` → 423. API_SPEC §7, UX_BRIEF §6 (câu cho mã mới, thêm cùng câu vào `messages.ts` và `messages.dart`), docs client (PLAN W12, SCREENS).
+
+#### T62. Sao chép plan
+- **Ước lượng:** 1 ngày · **Phụ thuộc:** —
+- **Phạm vi:**
+  - `POST /api/v1/plans/{id}/copy {planDate, name?, stops: "ALL" | "NOT_DELIVERED"}` → 201 `PlanDetail` của plan mới (DRAFT, chưa tối ưu, `processingStatus = IDLE`). Chép được từ plan ở **mọi trạng thái** (kể cả CANCELLED). `name` mặc định "{tên cũ} (bản sao)", cắt cho vừa 150 ký tự.
+  - `NOT_DELIVERED` = stop `FAILED`, `SKIPPED`, và stop chưa có tuyến / còn `PENDING` (plan bị huỷ giữa chừng); bỏ stop `DELIVERED`. Không còn stop nào → 422 `NOTHING_TO_COPY`.
+  - Chép mỗi stop: nhãn, người nhận, số điện thoại, địa chỉ, **toạ độ cùng `geocodeStatus` và tên địa chỉ provider** (không geocode lại; stop `FAILED`/`PENDING` geocode thì giữ trạng thái đó để dispatcher sửa), demand, thời gian phục vụ, time window, ghi chú. Không chép: kết quả tối ưu, trạng thái giao, lý do thất bại.
+  - Chép depot của plan cũ (snapshot) và timezone hiện tại của cửa hàng. Chép phân công (tài xế, xe, ca, quãng đường tối đa) **chỉ khi** tài xế còn `ACTIVE` và giao được, xe còn dùng; capacity lấy theo xe hiện tại. Phân công bị bỏ trả trong `skippedAssignments: [{driverId, vehicleId, reason: DRIVER_UNAVAILABLE | VEHICLE_INACTIVE}]` để web báo.
+  - Không kiểm tra chồng ca lúc chép (vẫn kiểm ở publish, D-23).
+- **Acceptance:** chép ALL và NOT_DELIVERED đúng tập stop; toạ độ và trạng thái geocode giữ nguyên, không tạo job geocode khi mọi stop đã có toạ độ; phân công của tài xế bị khoá/xe đã tắt bị bỏ và báo; plan cũ không đổi; plan của cửa hàng khác → 404 (tenant isolation); `READ_ONLY` → 423. API_SPEC §7, UX_BRIEF §6 (`NOTHING_TO_COPY`), docs client.
+
+#### T63. Báo cáo và xuất CSV
+- **Ước lượng:** 1,5 ngày · **Phụ thuộc:** —
+- **Phạm vi:**
+  - `GET /api/v1/reports/summary?from=&to=` (ngày `YYYY-MM-DD` theo `planDate`, cả hai ngày đều tính, tối đa 31 ngày, mặc định hôm nay theo timezone cửa hàng; lỗi như `/admin/metrics/business`: 400 `VALIDATION_ERROR` trên `from` với `INVALID_DATE_RANGE` (from > to) hoặc `DATE_RANGE_TOO_LONG`): `plans` (số plan theo trạng thái), `stops` của plan đã giao việc trở đi, **không tính plan CANCELLED** (`total`, `delivered`, `failed`, `skipped`, `pending`, `deliveredRate` 0–1 hoặc null), `plannedDistanceMeters` tổng, `days[]` đủ mọi ngày trong khoảng, `drivers[]` (tài xế: số tuyến, số stop theo trạng thái, quãng đường dự kiến, giờ thực tế **bắt đầu** = lần báo kết quả đầu tiên và **kết thúc** = lần báo cuối cùng của ngày, null khi chưa báo), `failureReasons[]` (10 lý do hay gặp nhất, gom theo chuỗi đã cắt khoảng trắng, không phân biệt hoa thường, kèm số lần).
+  - `GET /api/v1/reports/stops.csv?from=&to=` (cùng khoảng): `text/csv; charset=UTF-8` **có BOM** để Excel đọc đúng dấu, `Content-Disposition: attachment; filename="pathwise-YYYYMMDD-YYYYMMDD.csv"`, ghi theo luồng. Mỗi dòng một stop của plan không bị huỷ: Ngày, Kế hoạch, Trạng thái kế hoạch, Tài xế, Xe, Thứ tự, Nhãn, Người nhận, Số điện thoại (dạng `0905 123 456`), Địa chỉ, Giờ dự kiến, Kết quả, Lý do, Giờ báo (giờ địa phương của plan). Chống CSV injection: ô bắt đầu bằng `=`, `+`, `-`, `@`, tab, CR thì thêm `'` phía trước.
+  - Không ghi audit cho việc xem/xuất (dữ liệu của chính cửa hàng).
+- **Acceptance:** số đếm đúng với dữ liệu nhiều trạng thái, loại plan CANCELLED; khoảng 32 ngày → 400 `DATE_RANGE_TOO_LONG`; ngày không có plan vẫn có phần tử trong `days`; CSV có BOM, header, escape dấu phẩy/ngoặc kép/xuống dòng, chống injection; tenant isolation cho cả hai endpoint; DRIVER/ADMIN → 403; `READ_ONLY` vẫn đọc được. API_SPEC (mục Reports mới), docs client.
+
 ## 10. Sau MVP (Could, chưa lên lịch)
 
-Giai đoạn C của M5: nhập điểm giao từ CSV/Excel, sao chép plan hôm trước, báo cáo ngày và xuất CSV (P-59) · Google provider (I-03) · realtime push (I-04) · optimize bất đồng bộ (FR-X03) · lịch sử vị trí · gợi ý địa điểm (I-01, cần phê duyệt) · thanh toán QR (I-02, cần phê duyệt).
+Google provider (I-03) · realtime push (I-04) · optimize bất đồng bộ (FR-X03) · lịch sử vị trí · gợi ý địa điểm (I-01, cần phê duyệt) · thanh toán QR (I-02, cần phê duyệt).
 
 ## 11. Task đầu tiên: T00
 

@@ -74,6 +74,9 @@ Mỗi user thuộc tối đa 1 store và có đúng 1 role (D-02). OWNER hoặc 
 | FR-P06 | Huỷ plan (DRAFT hoặc PUBLISHED). | Must | ✅ (T26) |
 | FR-P07 | Xem danh sách plan theo ngày/trạng thái và chi tiết plan với tiến độ từng stop. | Must | ✅ (T24): `GET /plans`, `GET /plans/{id}`; trạng thái stop đổi từ T26/T31 |
 | FR-P08 | Chỉnh tay sau tối ưu: chuyển stop giữa route, đổi thứ tự; hệ thống tính lại ETA/quãng đường và cảnh báo vi phạm ràng buộc. Endpoint có sẵn trong API contract (D-24). | Should | ❌ |
+| FR-P10 | Nhập điểm giao cho một plan từ file Excel (`.xlsx`) hoặc CSV theo file mẫu: server đọc file, trả từng dòng kèm lỗi theo cột, không lưu; dispatcher xem trước rồi thêm dòng hợp lệ vào plan. Không phải danh mục đơn hàng (D-04). | Should (M5 C, P-67) | ❌ T61, W12 |
+| FR-P11 | Sao chép plan sang ngày khác: tất cả điểm giao hoặc chỉ điểm chưa giao được, giữ toạ độ, chép phân công còn hợp lệ; plan mới là DRAFT. | Should (M5 C, P-67) | ❌ T62, W12 |
+| FR-P12 | Báo cáo của cửa hàng theo ngày hoặc khoảng ≤ 31 ngày (kế hoạch, kết quả điểm giao, theo tài xế, lý do thất bại) và xuất CSV từng điểm giao. | Should (M5 C, P-67) | ❌ T63, W12 |
 
 ### 3.5 Tài xế (D-06, D-07, D-08)
 
@@ -96,7 +99,7 @@ Mỗi user thuộc tối đa 1 store và có đúng 1 role (D-02). OWNER hoặc 
 | FR-X03 | Tối ưu bất đồng bộ (job) cho plan lớn. | Could |
 | FR-X04 | Gợi ý địa điểm đã dùng. | Idea (I-01) |
 | FR-X05 | Thanh toán QR tại điểm giao + xác thực thanh toán. | Idea (I-02) |
-| FR-X06 | Danh mục đơn hàng lâu dài, import CSV. | Không có kế hoạch (trái D-04) |
+| FR-X06 | Danh mục đơn hàng lâu dài (lưu đơn ngoài plan). Nhập file vào **một** plan là FR-P10, không thuộc mục này. | Không có kế hoạch (trái D-04) |
 
 ## 4. Business rules & invariants
 

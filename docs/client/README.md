@@ -9,7 +9,7 @@
 3. Màn hình của task trong `docs/client/SCREENS.md`, rồi mở artboard tương ứng trong prototype (`https://claude.ai/artifact/JPW7uzXLFrpqfgFmQVjs5N`, xem bằng Artifact tool `read` nếu cần mã nguồn của artboard).
 4. `docs/client/DESIGN_SYSTEM.md` và `brand/design-system/` (token, props component).
 5. Endpoint dùng tới trong `docs/API_SPEC.md`, thông điệp và trạng thái trong `docs/ux/UX_BRIEF.md`, dữ liệu mẫu trong `docs/ux/samples/`.
-6. `docs/DECISIONS.md`: P-40 → P-47 (client) cùng các quyết định backend mà màn hình dựa vào (P-34 không hoàn tác, P-35/P-39 trạng thái route, P-36 idempotent…); khu quản trị W11: P-59 → P-66 (P-66: Recharts).
+6. `docs/DECISIONS.md`: P-40 → P-47 (client) cùng các quyết định backend mà màn hình dựa vào (P-34 không hoàn tác, P-35/P-39 trạng thái route, P-36 idempotent…); khu quản trị W11: P-59 → P-66 (P-66: Recharts); nhập file, sao chép, báo cáo W12: P-67, P-68.
 7. `docs/CURRENT_STATE.md` §5: task client nào đã xong.
 
 ## 2. Quy tắc cứng

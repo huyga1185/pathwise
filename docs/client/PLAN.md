@@ -14,7 +14,8 @@ W00 ─┬─ W01 ─┬─ W02
      │       └─ W04 ── W05 ── W06 ── W07 ── W08 (sau khi chốt deploy)
      │                         ├─ W09 (cần T32)
      │                         ├─ W10 (cần T28)
-     │                         └─ W11 (cần T55–T60, M5)
+     │                         ├─ W11 (cần T55–T60, M5)
+     │                         └─ W12 (cần T61–T63, M5 giai đoạn C)
      └─ M00 ── M01 ── M02 ── M03 ── M04 (cần T32) ── M05 (cần T33)
 ```
 
@@ -36,6 +37,7 @@ W00 ─┬─ W01 ─┬─ W02
 | W09 | W07, T32 | M04 (cùng branch T32) |
 | W10 | W06, T28 | — (cùng branch T28) |
 | W11 | W07, T55 (từng màn theo T56–T58, T60) | — |
+| W12 | W11, T61–T63 (từng màn theo task) | — |
 | M04 | M03, T32 | W09 (cùng branch T32) |
 | M05 | M04, T33 | — (cùng branch T33) |
 
@@ -225,6 +227,16 @@ File nóng của client (không hai task song song cùng sửa): `web/package.js
   - App tài xế: `storeLockProvider` đọc `/users/me`; băng khoá trên danh sách tuyến, đọc lại khi app quay lại foreground và khi kéo để tải lại; không khoá nút nào.
   - E2E `web/e2e/admin.spec.ts`: chủ cửa hàng đăng ký và xác thực qua API, ADMIN đăng nhập web → tìm → khoá có lý do → chủ cửa hàng nhận 423 `STORE_READ_ONLY` → mở khoá → ghi lại được 201. `compose.e2e.yaml` thêm `BOOTSTRAP_ADMIN_EMAIL`/`BOOTSTRAP_ADMIN_PASSWORD` (giá trị test) cho ADMIN đầu tiên.
   - Test màn dùng fixture có kiểu `Schemas` từ `schema.d.ts` (đổi API thì `tsc` báo fixture lệch).
+
+### W12. Nhập file, sao chép kế hoạch, báo cáo (M5 giai đoạn C, P-67, P-68)
+- **Ước lượng:** 3 ngày · **Màn:** artboard mới vẽ vào prototype trước rồi làm (như W10, W11): "Nhập điểm giao từ file" (hộp thoại nhiều bước), "Sao chép kế hoạch" (hộp thoại), "Báo cáo" · **Quyết định:** P-67, P-68 · **Không thêm dependency web** (file Excel do backend đọc; CSV báo cáo do backend tạo)
+- **Phạm vi:**
+  - **Nhập file (T61)** trong form tạo/sửa kế hoạch (`/plans/new`, `/plans/:id/edit`): nút "Nhập từ file" mở hộp thoại: (1) chọn hoặc kéo thả file `.xlsx`/`.csv`, link tải file mẫu (`GET /plans/import/template.xlsx`, `.csv`); (2) gửi `POST /plans/import`, hiện bảng xem trước theo dòng của file: dòng hợp lệ, dòng lỗi tô `danger` kèm câu lỗi theo cột (dùng nhãn cột của file mẫu và câu ở UX_BRIEF §6.2), cột bị bỏ qua; (3) "Thêm {n} điểm giao" chỉ thêm dòng hợp lệ vào **cuối** danh sách điểm giao của form (không ghi đè điểm đang có; tổng vượt 100 thì báo trước khi thêm). Lưu vẫn bằng nút Lưu của form, nên lỗi của server và geocode chạy nền như cũ. Lỗi cả file (`INVALID_IMPORT_FILE`, `IMPORT_FILE_TOO_LARGE`, `PLAN_TOO_LARGE`, `RATE_LIMITED`) hiện trong hộp thoại, giữ nguyên form.
+  - **Sao chép (T62)** ở chi tiết kế hoạch (mọi trạng thái) và menu dòng của danh sách: hộp thoại chọn ngày (mặc định hôm nay theo timezone cửa hàng), tên (mặc định "{tên} (bản sao)"), phạm vi "Tất cả điểm giao" / "Chỉ điểm chưa giao được" (ẩn lựa chọn này khi plan còn DRAFT hoặc mọi stop đã giao). Xong → mở plan mới; có `skippedAssignments` thì báo "Không chép phân công của {tài xế/xe}: {lý do}" ở đầu plan mới (một lần). `NOTHING_TO_COPY` báo trong hộp thoại.
+  - **Báo cáo (T63)** route mới `/reports` (O, D; mục "Báo cáo" trên header): chọn Hôm nay / 7 ngày / khoảng ngày (≤ 31 ngày, trên URL `?from=&to=`); thẻ số (kế hoạch, điểm giao theo kết quả, tỉ lệ giao được, quãng đường dự kiến), biểu đồ theo ngày qua `platform/charts` (`DailyBarChart` chồng theo kết quả, P-66), bảng tài xế (tuyến, điểm theo kết quả, km dự kiến, giờ bắt đầu/kết thúc thực tế), bảng lý do thất bại hay gặp. Nút "Xuất CSV" tải `GET /reports/stops.csv?from=&to=` (link tải có token: dùng `fetch` + `Blob` qua client HTTP, không mở URL trần vì cần header Authorization).
+  - Cửa hàng `READ_ONLY`: ẩn/khoá "Nhập từ file" và "Sao chép" (W11); báo cáo, xuất CSV vẫn dùng được.
+- **Acceptance:** test từng màn với fixture có kiểu `Schemas`: nhập file có dòng lỗi chỉ thêm dòng hợp lệ, vượt 100 bị chặn; sao chép mở plan mới và báo phân công bị bỏ; báo cáo đổi khoảng ngày theo URL, xuất CSV gọi đúng endpoint; `pnpm lint/typecheck/test/build` xanh. E2E: nhập file mẫu vào plan mới rồi lưu (file mẫu trong `web/e2e/fixtures/`).
+- **API:** chưa có (T61–T63). Khi task backend xong, ghi mục "API đã có" như W11.
 
 ### W08. Đóng gói và deploy web
 - **Ước lượng:** 0,5–1 ngày · **Điều kiện:** chủ dự án chốt reverse proxy và domain (đang để sau, xem P-47)
