@@ -150,11 +150,14 @@ Web (W11) hiện người làm (email; hành động của ADMIN mà OWNER xem h
 | `VEHICLE_NAME_EXISTED` | Tên xe đã tồn tại. | xe |
 | `STORE_DEPOT_REQUIRED` | Cửa hàng chưa có kho xuất phát. Cập nhật trong phần Cửa hàng. | tạo plan |
 | `INVALID_ASSIGNMENT` | Tài xế hoặc xe không còn dùng được (`details` chỉ ra phân công nào). | plan |
-| `PLAN_TOO_LARGE` | Plan vượt giới hạn 100 điểm giao hoặc 20 phân công. | plan |
+| `PLAN_TOO_LARGE` | Plan vượt giới hạn 100 điểm giao hoặc 20 phân công. | plan, nhập file (file quá 100 dòng) |
+| `INVALID_IMPORT_FILE` | Không đọc được file. Dùng file Excel (.xlsx) hoặc CSV theo file mẫu. | nhập file (T61); `details[0].code` cho biết lý do, xem §6.2 |
+| `IMPORT_FILE_TOO_LARGE` | File quá lớn, tối đa 1 MB. | nhập file (T61) |
 | `PLAN_NOT_EDITABLE` | Plan đã giao việc, không sửa được nữa. | plan |
 | `PLAN_BUSY` | Plan đang được xử lý, vui lòng chờ. | plan |
 | `PLAN_MODIFIED` | Plan vừa được người khác thay đổi. Tải lại để xem bản mới. | plan |
 | `NOTHING_TO_GEOCODE` | Không còn địa chỉ nào cần tìm toạ độ. | geocode |
+| `NOTHING_TO_COPY` | Mọi điểm giao của kế hoạch này đã giao xong, không còn điểm nào để chép. | sao chép kế hoạch (T62) |
 | `PLAN_INCOMPLETE` | Plan cần ít nhất một điểm giao và một phân công. | optimize |
 | `STOPS_NOT_GEOCODED` | Còn điểm giao chưa có toạ độ. | optimize |
 | `PLAN_NOT_OPTIMIZED` | Cần tối ưu lộ trình trước khi giao việc. | publish |
@@ -163,7 +166,7 @@ Web (W11) hiện người làm (email; hành động của ADMIN mà OWNER xem h
 | `PLAN_NOT_ACTIVE` | Plan đã kết thúc hoặc đã bị huỷ. | tài xế |
 | `INVALID_STOP_TRANSITION` | Điểm giao đã được báo kết quả, không đổi được. | tài xế |
 | `FAILURE_REASON_REQUIRED` | Vui lòng nhập lý do không giao được. | tài xế |
-| `RATE_LIMITED` | Bạn thao tác quá nhiều lần. Thử lại sau {Retry-After}. | đăng nhập, đăng ký, OTP, lời mời |
+| `RATE_LIMITED` | Bạn thao tác quá nhiều lần. Thử lại sau {Retry-After}. | đăng nhập, đăng ký, OTP, lời mời, nhập file |
 | `CONFLICT` | Dữ liệu vừa thay đổi, vui lòng thử lại. | hiếm |
 | `GEOCODING_BUSY` | Dịch vụ tìm địa chỉ đang bận, thử lại sau ít phút. | tìm địa chỉ |
 | `GEOCODING_PROVIDER_ERROR`, `ROUTING_PROVIDER_ERROR` | Dịch vụ bản đồ đang gặp sự cố, thử lại sau. | tìm địa chỉ, optimize |
@@ -185,6 +188,10 @@ Job thất bại có `errorCode` riêng: `NO_SOLUTION` ("Không tìm được l�
 - **Chỉnh tay tuyến (`PUT /plans/{id}/routes`, T28):** `INVALID_ROUTE_ID`, `ROUTES_INCOMPLETE`, `INVALID_STOP_ID`, `STOPS_INCOMPLETE`, `STOP_NOT_GEOCODED` là lỗi của client (nháp lệch với plan): hiện "Danh sách tuyến đã thay đổi, tải lại rồi chỉnh lại." và tải lại plan.
 - **Chuyển chủ cửa hàng (`POST /admin/stores/{id}/owner`, T57):** trên `userId`: `USER_ID_REQUIRED` ("Vui lòng chọn thành viên."), `NEW_OWNER_NOT_ACTIVE` ("Chỉ chuyển được cho thành viên đang hoạt động, đã xác thực email."), `ALREADY_OWNER` ("Người này đã là chủ cửa hàng.").
 - **Trang đặt lại mật khẩu từ link (T57):** `RESET_TOKEN_REQUIRED` là lỗi client (link thiếu token): hiện như `INVALID_RESET_TOKEN` của trang này ("Link đã hết hạn hoặc đã được dùng…", SCREENS). `OTP_REQUIRED`, `INVALID_OTP_LENGTH`, `PASSWORD_REQUIRED`, `INVALID_PASSWORD_LENGTH` như các form OTP và mật khẩu khác.
+
+- **Sao chép kế hoạch (`POST /plans/{id}/copy`, T62):** `COPY_SCOPE_REQUIRED` trên `stops` ("Vui lòng chọn điểm giao cần chép."); `PLAN_DATE_REQUIRED`, `INVALID_PLAN_NAME_LENGTH` như form kế hoạch. Phân công không chép được (`skippedAssignments[].reason`, không phải lỗi): `DRIVER_UNAVAILABLE` "Tài xế {tên} không còn nhận tuyến được", `VEHICLE_INACTIVE` "Xe {tên} đã tắt".
+- **Khoảng ngày (báo cáo T63, thông số ADMIN T60):** trên `from`: `INVALID_DATE_RANGE` ("Ngày bắt đầu phải trước hoặc bằng ngày kết thúc."), `DATE_RANGE_TOO_LONG` (báo cáo: "Chọn tối đa 31 ngày."; thông số ADMIN: "Chọn tối đa 92 ngày.").
+- **Nhập điểm giao từ file (`POST /plans/import`, T61):** trong `INVALID_IMPORT_FILE`, `details[0]` trên `file`: `UNSUPPORTED_FILE_TYPE` ("Chỉ nhận file .xlsx hoặc .csv."), `UNREADABLE_FILE` ("File bị hỏng hoặc không đúng định dạng."), `NO_ROWS` ("File không có dòng điểm giao nào."), `LABEL_COLUMN_REQUIRED` ("File thiếu cột "Nhãn / mã đơn". Tải file mẫu để xem các cột."). Lỗi từng dòng (`rows[].errors`) dùng đúng các mã của stop ở trên, hiện ở cột tương ứng của bảng xem trước (tên cột theo file mẫu: `label` → "Nhãn / mã đơn", `demands` → cột KG/Thùng/Kiện…); thêm `INVALID_TIME_FORMAT` ("Giờ không đúng dạng, ví dụ 09:00.").
 
 ### 6.3 Vi phạm sau khi chỉnh tay (`PlanDetail.violations`, T28)
 

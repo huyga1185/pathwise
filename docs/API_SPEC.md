@@ -5,9 +5,10 @@
 > Cột "Hiện trạng" ở mọi bảng: ✅ khớp spec và có test · 🟡 có nhưng còn lệch (ghi rõ lệch gì) · ❌ chưa có. Lịch sử triển khai theo task nằm ở `CURRENT_STATE.md` §5, không ghi ở đây.
 > Lần rà soát contract gần nhất: T44 (2026-10-29, P-32).
 
-## 0. Lệch hiện tại so với spec (cập nhật 2026-11-14, sau T55)
+## 0. Lệch hiện tại so với spec (cập nhật 2026-11-14, sau T63)
 
 - Không còn lệch nào đã biết giữa endpoint và spec (`GET /admin/users` đủ `storeId`, `status` từ T55).
+- Request không phải `multipart/form-data` gửi tới endpoint nhận file, hoặc `Content-Type` không được hỗ trợ, trả 400 `MALFORMED_REQUEST` (T61; trước đó rơi vào handler chung).
 - Tài liệu OpenAPI sinh tự động (`/v3/api-docs` ở dev/staging; CI xuất artifact `api-contract` gồm `openapi.json` và dữ liệu mẫu) dùng để sinh code client; endpoint (method + path) được kiểm tự động khớp spec (`ApiSpecContractIntegrationTest`). Từ T46 (P-48): mã thành công đúng như spec (201, 202, 204); field response luôn có mặt là `required`, field có thể `null` có kiểu kèm `null`; field của request PATCH gửi `null` để xoá có kiểu kèm `null`. Response thật được kiểm khớp schema đó (`OpenApiNullabilityIntegrationTest`, trên `docs/ux/samples` và các response tài khoản). OpenAPI chưa mô tả response lỗi (dùng §1 và §9). Spec này vẫn là hợp đồng; hướng dẫn cho client ở `docs/ux/UX_BRIEF.md`.
 - Endpoint vận hành ngoài `/api/v1`, giữ có chủ đích: `GET /actuator/health` (kèm `/liveness`, `/readiness`), Public, chỉ trả `status` và tên các `groups` (T05, `ARCHITECTURE.md` §12.1). Mọi endpoint actuator khác tắt. Caddy chỉ mở `/actuator/health` (không mở `/liveness`, `/readiness`) ra internet cho dịch vụ uptime bên ngoài (T54, DEPLOYMENT §9).
 
@@ -51,7 +52,7 @@
 - Client biết trạng thái qua `GET /users/me` (`storeStatus`, `storeLockReason`) để hiện băng "Cửa hàng đang tạm khoá: {lý do}".
 
 **Rate limit** (P-16, P-37)
-- Áp dụng cho `POST /auth/log-in` (theo IP và email), `/auth/register` (IP), `/auth/email/verify/resend` và `/auth/password/forgot` (IP và email), `/auth/password/change/otp` (user), `POST /store/invitations` (store). Fixed window; ngưỡng ở `rate-limit.rules.*`, mặc định ghi ở P-37. Mọi request đều được đếm, kể cả thành công, và được đếm trước khi xử lý.
+- Áp dụng cho `POST /auth/log-in` (theo IP và email), `/auth/register` (IP), `/auth/email/verify/resend` và `/auth/password/forgot` (IP và email), `/auth/password/change/otp` (user), `POST /store/invitations` (store), `POST /plans/import` (user, T61). Fixed window; ngưỡng ở `rate-limit.rules.*`, mặc định ghi ở P-37. Mọi request đều được đếm, kể cả thành công, và được đếm trước khi xử lý.
 - Vượt ngưỡng → 429 `RATE_LIMITED`, header `Retry-After` = số giây tới khi hết window (làm tròn lên). `/email/verify/resend`, `/password/forgot` vẫn trả 429 với email không tồn tại, nên không lộ email nào đã đăng ký.
 - Không kiểm được giới hạn (Redis lỗi) → 503 `SERVICE_UNAVAILABLE` (fail-closed); client thử lại sau.
 
@@ -314,6 +315,10 @@ Ghi chú:
 | `POST /plans/{id}/cancel` | O, D | `{version}` | 200 `PlanDetail` (CANCELLED) | 404 · 409 `PLAN_MODIFIED`/`PLAN_BUSY` · 422 `PLAN_NOT_CANCELLABLE` | ✅ |
 | `GET /plans/{id}/driver-locations` | O, D | — | `DriverLocation[]` (xem dưới, P-53): mỗi route có stop một phần tử, theo thứ tự `routes`; plan không PUBLISHED/IN_PROGRESS → `[]` | 404 | ✅ |
 | `PUT /plans/{id}/routes` | O, D | `{version, routes:[{routeId, stopIds:[...]}], unassignedStopIds:[...]}`. Chỉnh tay sau optimize: chuyển stop giữa route, đổi thứ tự, bỏ ra ngoài; tính lại ETA và quãng đường bằng matrix, không giải lại (Should, D-24, P-58). | 200 `PlanDetail` (có `violations[]`) | 400 · 404 · 409 `PLAN_MODIFIED`/`PLAN_BUSY` · 422 `PLAN_NOT_EDITABLE` · 422 `PLAN_NOT_OPTIMIZED` · 502 `ROUTING_PROVIDER_ERROR` | ✅ T28 |
+| `POST /plans/{id}/copy` | O, D | `{planDate, name?, stops: ALL\|NOT_DELIVERED}` (T62, P-67, P-68) | 201 `PlanCopy` `{plan: PlanDetail (DRAFT mới), skippedAssignments: [{driverId, vehicleId, reason}]}` | 400 · 404 · 422 `NOTHING_TO_COPY` · 423 `STORE_READ_ONLY` | ✅ T62 |
+| `POST /plans/import` | O, D | `multipart/form-data`, phần `file`: `.xlsx` (sheet đầu) hoặc `.csv`, ≤ 1 MB, ≤ 100 dòng (T61, P-67, P-68) | 200 `PlanImport` (xem dưới). **Không lưu gì.** | 400 `MALFORMED_REQUEST` (thiếu `file`, không phải multipart) · 413 `IMPORT_FILE_TOO_LARGE` · 422 `INVALID_IMPORT_FILE` · 422 `PLAN_TOO_LARGE` · 423 `STORE_READ_ONLY` · 429 `RATE_LIMITED` | ✅ T61 |
+| `GET /plans/import/template.xlsx` | O, D | — | 200 file mẫu Excel (`Content-Disposition: attachment`), một dòng tiêu đề và một dòng ví dụ, mọi ô là chữ | — | ✅ T61 |
+| `GET /plans/import/template.csv` | O, D | — | 200 file mẫu CSV UTF-8 có BOM, cùng nội dung | — | ✅ T61 |
 
 **Vị trí tài xế (T32, P-15, D-26, P-53):** dispatcher polling cùng nhịp với `GET /plans/{id}` khi plan đang giao.
 
@@ -408,6 +413,34 @@ Ghi chú:
 - địa chỉ và toạ độ không đổi → giữ nguyên kết quả geocode (kể cả `FAILED`);
 - stop không còn địa chỉ lẫn toạ độ → 400, detail `{field: "address", code: "ADDRESS_OR_COORDINATES_REQUIRED"}`.
 
+**Sao chép plan (`POST /plans/{id}/copy`, T62, P-67, P-68):**
+- Chép từ plan ở **mọi trạng thái** (kể cả CANCELLED) sang một plan **DRAFT mới** chưa tối ưu, `version` 0; plan cũ không đổi. `planDate` bắt buộc (`PLAN_DATE_REQUIRED`); `name` tuỳ chọn (≤ 150, `INVALID_PLAN_NAME_LENGTH`), trống thì "{tên cũ} (bản sao)" (tên cũ cắt bớt cho vừa 150 ký tự); `stops` bắt buộc (`COPY_SCOPE_REQUIRED`), giá trị khác `ALL`/`NOT_DELIVERED` → 400 `MALFORMED_REQUEST`.
+- `ALL`: mọi stop. `NOT_DELIVERED`: stop `FAILED`, `SKIPPED` và stop còn `PENDING` (bỏ stop `DELIVERED`); không còn stop nào → 422 `NOTHING_TO_COPY`. `ALL` của plan không có stop vẫn tạo được draft rỗng.
+- Mỗi stop chép: nhãn, người nhận, số điện thoại, địa chỉ, toạ độ **cùng `geocodeStatus`, `geocodeError` và tên địa chỉ provider** (không geocode lại; stop `FAILED` giữ `FAILED` để sửa), demand, thời gian phục vụ, time window, ghi chú. Stop còn `PENDING` geocode thì plan mới `GEOCODING` và chạy job như khi lưu draft. Không chép: route, thứ tự, ETA, trạng thái giao (về `PENDING`), lý do thất bại.
+- Depot: snapshot của plan cũ; timezone: của cửa hàng lúc chép. Phân công (theo thứ tự `routes` của plan cũ) chỉ chép khi tài xế còn là thành viên ACTIVE giao được (BR-07) và xe còn dùng; capacity theo xe hiện tại; ca và quãng đường tối đa giữ nguyên. Phân công bị bỏ nằm trong `skippedAssignments` với `reason` `DRIVER_UNAVAILABLE` (xét trước) hoặc `VEHICLE_INACTIVE`. Không kiểm tra trùng ca lúc chép (kiểm ở publish, D-23).
+
+**Nhập điểm giao từ file (`POST /plans/import`, T61, P-67, P-68):**
+- Chỉ đọc file, không ghi DB. Client thêm các dòng không lỗi vào draft rồi lưu bằng `POST /plans` / `PUT /plans/{id}` như thường (geocode, validation và giới hạn 100 stop của draft áp dụng lúc lưu).
+- Định dạng theo **đuôi tên file** (không phân biệt hoa thường): `.xlsx` (Excel 2007+, sheet đầu tiên; công thức không được tính lại, lấy giá trị Excel đã lưu; ô số và ô giờ đọc theo kiểu ô) hoặc `.csv` (UTF-8 có/không BOM; không phải UTF-8 hợp lệ thì đọc Windows-1258; dấu phân cách `,`, `;` hoặc tab, chọn theo dòng đầu; ô có ngoặc kép theo RFC 4180). `.xls` cũ và đuôi khác → `INVALID_IMPORT_FILE`.
+- Dòng đầu tiên không trống là tiêu đề. Tiêu đề so khớp không phân biệt hoa thường, dấu, khoảng trắng và ký tự khác chữ/số; thứ tự cột tuỳ ý. Cột (tên trong file mẫu → field): `Nhãn / mã đơn` (cũng nhận `Nhãn`, `Mã đơn`; **bắt buộc có cột**) → `label`, `Người nhận` → `recipientName`, `Số điện thoại` (`SĐT`, `Điện thoại`) → `recipientPhone`, `Địa chỉ` → `address`, `Vĩ độ` (`lat`) → `lat`, `Kinh độ` (`lon`, `lng`) → `lon`, `KG` / `Thùng` / `Kiện` → `demands.KG` / `.BOX` / `.PACKAGE` (số nguyên), `Phút phục vụ` → `serviceTimeSeconds` (phút × 60, 0–1440 phút), `Giao từ` / `Giao đến` → `timeWindow.start` / `.end` (`HH:mm`, `H:mm`, `9h30`, hoặc ô giờ của Excel), `Ghi chú` → `note`. Tiêu đề không khớp cột nào, hoặc lặp lại một cột đã có, nằm trong `ignoredColumns`. Số thập phân nhận cả `16.06` và `16,06`.
+- Dòng trống bị bỏ qua. Không có dòng dữ liệu → `INVALID_IMPORT_FILE` (`NO_ROWS`); hơn 100 dòng dữ liệu → 422 `PLAN_TOO_LARGE`.
+- `INVALID_IMPORT_FILE` có `details` `[{field: "file", code}]`, `code` là `UNSUPPORTED_FILE_TYPE`, `UNREADABLE_FILE` (file hỏng, không đúng định dạng của đuôi, hoặc `.xlsx` giải nén ra quá 10 MB), `NO_ROWS`, `LABEL_COLUMN_REQUIRED`.
+- Lỗi theo dòng dùng **cùng mã validation** với stop của `PlanDraftRequest` (§6.2 UX_BRIEF), `field` là tên field của stop; mỗi field một lỗi. Thêm mã `INVALID_TIME_FORMAT` (ô giờ không đọc được) trên `timeWindow.start`/`.end`. Ô số không đọc được là `INVALID_LATITUDE`, `INVALID_LONGITUDE`, `INVALID_DEMAND`, `INVALID_SERVICE_TIME`.
+- Rate limit 30 lần/giờ/user (`plan-import-user`), đếm trước khi đọc file.
+
+```jsonc
+// PlanImport
+{ "rows": [
+    { "row": 2,                                   // số dòng trong file (1 là dòng tiêu đề)
+      "stop": { "label": "ĐH-1", "recipientName": "Chị Lan", "recipientPhone": "+84905123456",   // E.164 khi hợp lệ, không thì như trong file
+                "address": "12 Lê Duẩn, Đà Nẵng", "lat": null, "lon": null, "demands": { "BOX": 2 },
+                "serviceTimeSeconds": 300, "timeWindow": { "start": "09:00", "end": "11:30" }, "note": null },
+      "errors": [] },                             // [{field, code}], rỗng = thêm được
+    { "row": 3, "stop": { "label": null, … }, "errors": [ { "field": "label", "code": "STOP_LABEL_REQUIRED" } ] } ],
+  "validCount": 1, "errorCount": 1,
+  "ignoredColumns": ["Cột lạ"] }
+```
+
 **Thứ tự kiểm tra** của `PUT`, `PATCH`, `POST /geocode`: 404 → `PLAN_NOT_EDITABLE` → `PLAN_BUSY` → `PLAN_MODIFIED`. Mỗi lần sửa thành công tăng `version` đúng 1.
 
 **Geocode nền:**
@@ -446,6 +479,29 @@ Ghi chú:
 **Cancel (T26):** được từ DRAFT và PUBLISHED; IN_PROGRESS, COMPLETED, CANCELLED → 422 `PLAN_NOT_CANCELLABLE`. Kiểm tra theo thứ tự: 404 → `PLAN_NOT_CANCELLABLE` → `PLAN_BUSY` → `PLAN_MODIFIED`. Kết quả tối ưu giữ lại để tra cứu; `version` tăng 1.
 
 **Mã validation (`details[].code`) của plan:** `STOPS_REQUIRED`, `ASSIGNMENTS_REQUIRED` (trong `PLAN_INCOMPLETE`), `PLAN_NAME_REQUIRED`, `INVALID_PLAN_NAME_LENGTH` (≤ 150), `PLAN_DATE_REQUIRED`, `VERSION_REQUIRED` (`PUT`, `PATCH`, `POST /geocode`), `LATITUDE_REQUIRED`, `LONGITUDE_REQUIRED`, `INVALID_LATITUDE`, `INVALID_LONGITUDE`, `INVALID_ADDRESS_LENGTH` (≤ 500), `STOP_LABEL_REQUIRED`, `INVALID_STOP_LABEL_LENGTH` (≤ 150), `INVALID_RECIPIENT_NAME_LENGTH` (≤ 100), `PHONE_NUMBER_*`, `COORDINATES_INCOMPLETE` (trên field còn thiếu, `lat` hoặc `lon`), `ADDRESS_OR_COORDINATES_REQUIRED` (trên `address`), `INVALID_DEMAND` (số nguyên ≥ 0), `ORDER_DEMAND_NOT_ALLOWED` (trên `demands`), `INVALID_SERVICE_TIME` (0–86400), `TIME_WINDOW_START_REQUIRED`, `TIME_WINDOW_END_REQUIRED`, `INVALID_TIME_WINDOW` (trên `timeWindow.end`, `start < end`), `INVALID_NOTE_LENGTH` (≤ 500), `DRIVER_REQUIRED`, `VEHICLE_REQUIRED`, `SHIFT_START_REQUIRED`, `SHIFT_END_REQUIRED`, `INVALID_SHIFT` (trên `shiftEnd`, `shiftStart < shiftEnd`), `INVALID_MAX_DISTANCE` (> 0), `INVALID_STOP_ID`, `NOT_NULLABLE`, `INVALID_ASSIGNMENT` (trong `INVALID_ASSIGNMENT` của optimize).
+
+## 7a. Báo cáo cửa hàng — `/api/v1/reports` (T63, P-67, P-68)
+
+| Method & path | Quyền | Request | Response | Lỗi chính | Hiện trạng |
+|---|---|---|---|---|---|
+| `GET /reports/summary` | O, D | `from?`, `to?` (`YYYY-MM-DD`, theo `planDate`, cả hai ngày tính; thiếu cả hai = hôm nay theo timezone cửa hàng; chỉ có một thì khoảng một ngày đó; tối đa 31 ngày) | `StoreReport` (xem dưới) | 400 `VALIDATION_ERROR` trên `from`: `INVALID_DATE_RANGE` (from > to), `DATE_RANGE_TOO_LONG` | ✅ T63 |
+| `GET /reports/stops.csv` | O, D | như trên | 200 `text/csv; charset=UTF-8`, `Content-Disposition: attachment; filename="pathwise-YYYYMMDD-YYYYMMDD.csv"` | như trên (lỗi vẫn là JSON, kiểm khoảng trước khi ghi) | ✅ T63 |
+
+- Chỉ đọc, dùng được khi cửa hàng bị khoá (P-62). Dữ liệu của cửa hàng trong token (BR-01); không ghi nhật ký.
+- **Summary:** `plans` đếm mọi plan của khoảng theo trạng thái (kể cả CANCELLED). `stops`, `plannedDistanceMeters`, `days`, `drivers`, `failureReasons` chỉ tính plan **đã giao việc** (PUBLISHED, IN_PROGRESS, COMPLETED): plan DRAFT và CANCELLED không phải việc giao hàng. `deliveredRate` = đã giao / (đã giao + không giao được + bỏ qua), `null` khi chưa có kết quả. `plannedDistanceMeters` = tổng quãng đường dự kiến của các route có stop. `days` đủ mọi ngày của khoảng (ngày không có plan là 0). `drivers` là tài xế có route có stop, theo tên; `firstResultAt`/`lastResultAt` là lần báo kết quả đầu/cuối của tài xế trong khoảng (UTC, `null` khi chưa báo). `failureReasons`: 10 lý do thất bại hay gặp nhất, gom theo chuỗi đã cắt khoảng trắng không phân biệt hoa thường, hiện theo cách viết của lần đầu gặp.
+- **CSV:** UTF-8 có BOM (Excel đọc đúng dấu), RFC 4180, CRLF. Mỗi dòng một stop của plan **không bị huỷ** (gồm DRAFT) theo ngày, plan, route, thứ tự. Cột: Ngày (`dd/MM/yyyy`), Kế hoạch, Trạng thái kế hoạch (Nháp, Đã giao việc, Đang giao, Hoàn thành), Tài xế, Xe, Thứ tự, Nhãn / mã đơn, Người nhận, Số điện thoại (`0905 123 456`), Địa chỉ, Giờ dự kiến (`HH:mm`), Kết quả (Chờ giao, Đã giao, Không giao được, Bỏ qua), Lý do, Giờ báo (`dd/MM/yyyy HH:mm`); giờ theo timezone của plan. Ô bắt đầu bằng `=`, `+`, `-`, `@`, tab hoặc CR có thêm `'` phía trước (chống CSV injection).
+
+```jsonc
+// StoreReport
+{ "from": "2026-12-01", "to": "2026-12-07",
+  "plans": { "total": 9, "draft": 1, "published": 1, "inProgress": 0, "completed": 6, "cancelled": 1 },
+  "stops": { "total": 210, "delivered": 190, "failed": 12, "skipped": 3, "pending": 5, "deliveredRate": 0.9268 },
+  "plannedDistanceMeters": 412300,
+  "days": [ { "date": "2026-12-01", "plans": 1, "delivered": 30, "failed": 2, "skipped": 0, "pending": 0 }, … ],
+  "drivers": [ { "driverId": 21, "fullName": "Tùng", "routes": 6, "delivered": 95, "failed": 5, "skipped": 1, "pending": 0,
+                 "plannedDistanceMeters": 201000, "firstResultAt": "2026-12-01T01:12:00Z", "lastResultAt": "2026-12-07T09:40:00Z" } ],
+  "failureReasons": [ { "reason": "Vắng nhà", "count": 7 } ] }
+```
 
 ## 8. Driver — `/api/v1/driver`
 
@@ -515,11 +571,12 @@ Người gọi phải có `role=DRIVER` hoặc `canDrive=true` (D-21); người 
 | Xác thực | `UNAUTHORIZED`, `INVALID_TOKEN`, `INVALID_EMAIL_OR_PASSWORD` | 401 |
 | Xác thực | `INVALID_OTP`, `INVALID_CURRENT_PASSWORD`, `INVALID_RESET_TOKEN` | 400 |
 | Quyền | `FORBIDDEN`, `EMAIL_NOT_VERIFIED`, `ACCOUNT_DISABLED` | 403 |
+| File quá lớn | `IMPORT_FILE_TOO_LARGE` (T61) | 413 |
 | Cửa hàng bị khoá | `STORE_READ_ONLY` (T56, P-62) | 423 |
 | Không tìm thấy | `NOT_FOUND`, `INVITATION_INVALID` | 404 |
 | Method | `METHOD_NOT_ALLOWED` | 405 |
 | Xung đột | `EMAIL_EXISTED`, `EMAIL_ALREADY_VERIFIED`, `VEHICLE_NAME_EXISTED`, `PLAN_MODIFIED`, `PLAN_BUSY`, `CONFLICT` | 409 |
-| Nghiệp vụ | `CANNOT_MODIFY_OWNER`, `CANNOT_MODIFY_SELF`, `INVITATION_NOT_PENDING`, `STORE_DEPOT_REQUIRED`, `INVALID_ASSIGNMENT`, `PLAN_TOO_LARGE`, `PLAN_NOT_EDITABLE`, `NOTHING_TO_GEOCODE`, `PLAN_INCOMPLETE`, `STOPS_NOT_GEOCODED`, `PLAN_NOT_OPTIMIZED`, `PLAN_NOT_CANCELLABLE`, `PLAN_NOT_ACTIVE`, `SHIFT_OVERLAP`, `INVALID_STOP_TRANSITION`, `FAILURE_REASON_REQUIRED` | 422 |
+| Nghiệp vụ | `CANNOT_MODIFY_OWNER`, `CANNOT_MODIFY_SELF`, `INVITATION_NOT_PENDING`, `STORE_DEPOT_REQUIRED`, `INVALID_ASSIGNMENT`, `PLAN_TOO_LARGE`, `INVALID_IMPORT_FILE` (T61), `NOTHING_TO_COPY` (T62), `PLAN_NOT_EDITABLE`, `NOTHING_TO_GEOCODE`, `PLAN_INCOMPLETE`, `STOPS_NOT_GEOCODED`, `PLAN_NOT_OPTIMIZED`, `PLAN_NOT_CANCELLABLE`, `PLAN_NOT_ACTIVE`, `SHIFT_OVERLAP`, `INVALID_STOP_TRANSITION`, `FAILURE_REASON_REQUIRED` | 422 |
 | Giới hạn | `OTP_COOLDOWN`, `RATE_LIMITED` | 429 |
 | Provider | `GEOCODING_PROVIDER_ERROR`, `ROUTING_PROVIDER_ERROR` | 502 |
 | Provider / hạ tầng | `GEOCODING_BUSY`, `SERVICE_UNAVAILABLE` | 503 |

@@ -78,6 +78,13 @@ public enum ErrorCode {
     // T56 (P-62): the caller's store is locked by an ADMIN; members can read, not write.
     STORE_READ_ONLY(423),
     // T56: an ADMIN cannot disable themself (and so never the last ADMIN).
-    CANNOT_MODIFY_SELF(422);
+    CANNOT_MODIFY_SELF(422),
+    // T61 (P-68): the stop import file cannot be read (details: UNSUPPORTED_FILE_TYPE, UNREADABLE_FILE, NO_ROWS,
+    // LABEL_COLUMN_REQUIRED on "file").
+    INVALID_IMPORT_FILE(422),
+    // T61: the uploaded file is over 1 MB.
+    IMPORT_FILE_TOO_LARGE(413),
+    // T62: copying only the stops not delivered leaves no stop.
+    NOTHING_TO_COPY(422);
     private final int httpCode;
 }

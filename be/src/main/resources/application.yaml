@@ -1,6 +1,11 @@
 spring:
   application:
     name: pathwise
+  # The only upload is the stop import (T61, P-68): 1 MB per file; larger is 413 IMPORT_FILE_TOO_LARGE.
+  servlet:
+    multipart:
+      max-file-size: 1MB
+      max-request-size: 2MB
   datasource:
     driver-class-name: org.mariadb.jdbc.Driver
   jpa:
@@ -127,3 +132,5 @@ rate-limit:
     create-invitation-store: { limit: 30, window: 1h }
     # Turn-by-turn directions from the driver's position (T33, P-57): the app asks again only when off the route.
     directions-user: { limit: 30, window: 5m }
+    # Stop import from a file (T61, P-68): reading the file costs CPU and memory.
+    plan-import-user: { limit: 30, window: 1h }

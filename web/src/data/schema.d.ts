@@ -660,6 +660,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/plans/import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["importStops"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/plans/import/template.csv": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["csvTemplate"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/plans/import/template.xlsx": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["xlsxTemplate"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/plans/{id}": {
         parameters: {
             query?: never;
@@ -686,6 +734,22 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["cancelPlan"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/plans/{id}/copy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["copyPlan"];
         delete?: never;
         options?: never;
         head?: never;
@@ -786,6 +850,38 @@ export interface paths {
         options?: never;
         head?: never;
         patch: operations["patchStop"];
+        trace?: never;
+    };
+    "/api/v1/reports/stops.csv": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["stopsCsv"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/reports/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["summary"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/v1/store": {
@@ -1134,8 +1230,16 @@ export interface components {
             data: components["schemas"]["PageResponseStoreAuditEventResponse"];
             message?: string;
         };
+        ApiResponsePlanCopyResponse: {
+            data: components["schemas"]["PlanCopyResponse"];
+            message?: string;
+        };
         ApiResponsePlanDetailResponse: {
             data: components["schemas"]["PlanDetailResponse"];
+            message?: string;
+        };
+        ApiResponsePlanImportResponse: {
+            data: components["schemas"]["PlanImportResponse"];
             message?: string;
         };
         ApiResponseRegisterResponse: {
@@ -1144,6 +1248,10 @@ export interface components {
         };
         ApiResponseResetTokenResponse: {
             data: components["schemas"]["ResetTokenResponse"];
+            message?: string;
+        };
+        ApiResponseStoreReportResponse: {
+            data: components["schemas"]["StoreReportResponse"];
             message?: string;
         };
         ApiResponseStoreResponse: {
@@ -1233,6 +1341,13 @@ export interface components {
         ChangePasswordRequest: {
             newPassword: string;
             otp: string;
+        };
+        CopyPlanRequest: {
+            name?: string;
+            /** Format: date */
+            planDate: string;
+            /** @enum {string} */
+            stops: "ALL" | "NOT_DELIVERED";
         };
         CreateInvitationRequest: {
             /** Format: email */
@@ -1437,6 +1552,10 @@ export interface components {
             /** Format: int64 */
             routing: number;
         };
+        FieldErrorDetail: {
+            code?: string;
+            field?: string;
+        };
         ForgotPasswordRequest: {
             /** Format: email */
             email: string;
@@ -1487,6 +1606,29 @@ export interface components {
             requestsPerMinute: number;
             /** Format: double */
             serverErrorRate: number | null;
+        };
+        ImportedRowResponse: {
+            errors: components["schemas"]["FieldErrorDetail"][];
+            /** Format: int32 */
+            row: number;
+            stop: components["schemas"]["ImportedStopResponse"];
+        };
+        ImportedStopResponse: {
+            address: string | null;
+            demands: {
+                [key: string]: number;
+            };
+            label: string | null;
+            /** Format: double */
+            lat: number | null;
+            /** Format: double */
+            lon: number | null;
+            note: string | null;
+            recipientName: string | null;
+            recipientPhone: string | null;
+            /** Format: int32 */
+            serviceTimeSeconds: number | null;
+            timeWindow: components["schemas"]["TimeWindowResponse"] | null;
         };
         InvitationPreviewResponse: {
             email: string;
@@ -1687,6 +1829,10 @@ export interface components {
             /** Format: double */
             lon: number;
         };
+        PlanCopyResponse: {
+            plan: components["schemas"]["PlanDetailResponse"];
+            skippedAssignments: components["schemas"]["SkippedAssignmentResponse"][];
+        };
         PlanDetailResponse: {
             activeJob: components["schemas"]["JobResponse"] | null;
             depot: components["schemas"]["LocationResponse"];
@@ -1722,6 +1868,14 @@ export interface components {
             stops?: components["schemas"]["PlanStopRequest"][];
             /** Format: int64 */
             version: number;
+        };
+        PlanImportResponse: {
+            /** Format: int32 */
+            errorCount: number;
+            ignoredColumns: string[];
+            rows: components["schemas"]["ImportedRowResponse"][];
+            /** Format: int32 */
+            validCount: number;
         };
         PlanRouteResponse: {
             driver: components["schemas"]["Driver"];
@@ -1852,6 +2006,74 @@ export interface components {
             /** Format: int64 */
             version: number;
         };
+        ReportDay: {
+            /** Format: date */
+            date: string;
+            /** Format: int64 */
+            delivered: number;
+            /** Format: int64 */
+            failed: number;
+            /** Format: int64 */
+            pending: number;
+            /** Format: int64 */
+            plans: number;
+            /** Format: int64 */
+            skipped: number;
+        };
+        ReportDriver: {
+            /** Format: int64 */
+            delivered: number;
+            /** Format: int64 */
+            driverId: number;
+            /** Format: int64 */
+            failed: number;
+            /** Format: date-time */
+            firstResultAt: string | null;
+            fullName: string;
+            /** Format: date-time */
+            lastResultAt: string | null;
+            /** Format: int64 */
+            pending: number;
+            /** Format: int64 */
+            plannedDistanceMeters: number;
+            /** Format: int64 */
+            routes: number;
+            /** Format: int64 */
+            skipped: number;
+        };
+        ReportFailureReason: {
+            /** Format: int64 */
+            count: number;
+            reason: string;
+        };
+        ReportPlanCounts: {
+            /** Format: int64 */
+            cancelled: number;
+            /** Format: int64 */
+            completed: number;
+            /** Format: int64 */
+            draft: number;
+            /** Format: int64 */
+            inProgress: number;
+            /** Format: int64 */
+            published: number;
+            /** Format: int64 */
+            total: number;
+        };
+        ReportStopCounts: {
+            /** Format: int64 */
+            delivered: number;
+            /** Format: double */
+            deliveredRate: number | null;
+            /** Format: int64 */
+            failed: number;
+            /** Format: int64 */
+            pending: number;
+            /** Format: int64 */
+            skipped: number;
+            /** Format: int64 */
+            total: number;
+        };
         RequestPasswordChangeOtpRequest: {
             currentPassword: string;
         };
@@ -1890,6 +2112,14 @@ export interface components {
             lastUsedAt: string;
             sessionId: string;
             userAgent: string | null;
+        };
+        SkippedAssignmentResponse: {
+            /** Format: int64 */
+            driverId: number;
+            /** @enum {string} */
+            reason: "DRIVER_UNAVAILABLE" | "VEHICLE_INACTIVE";
+            /** Format: int64 */
+            vehicleId: number;
         };
         StoreAuditEventResponse: {
             /** @enum {string} */
@@ -1930,6 +2160,19 @@ export interface components {
             stopsFailed: number;
             /** Format: int64 */
             stopsSkipped: number;
+        };
+        StoreReportResponse: {
+            days: components["schemas"]["ReportDay"][];
+            drivers: components["schemas"]["ReportDriver"][];
+            failureReasons: components["schemas"]["ReportFailureReason"][];
+            /** Format: date */
+            from: string;
+            /** Format: int64 */
+            plannedDistanceMeters: number;
+            plans: components["schemas"]["ReportPlanCounts"];
+            stops: components["schemas"]["ReportStopCounts"];
+            /** Format: date */
+            to: string;
         };
         StoreResponse: {
             depot: components["schemas"]["DepotResponse"] | null;
@@ -3084,6 +3327,73 @@ export interface operations {
             };
         };
     };
+    importStops: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "multipart/form-data": {
+                    /** Format: binary */
+                    file: string;
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponsePlanImportResponse"];
+                };
+            };
+        };
+    };
+    csvTemplate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/csv": string;
+                };
+            };
+        };
+    };
+    xlsxTemplate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": string;
+                };
+            };
+        };
+    };
     getPlan: {
         parameters: {
             query?: never;
@@ -3154,6 +3464,32 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ApiResponsePlanDetailResponse"];
+                };
+            };
+        };
+    };
+    copyPlan: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CopyPlanRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponsePlanCopyResponse"];
                 };
             };
         };
@@ -3307,6 +3643,50 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ApiResponsePlanDetailResponse"];
+                };
+            };
+        };
+    };
+    stopsCsv: {
+        parameters: {
+            query?: {
+                from?: string | null;
+                to?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    summary: {
+        parameters: {
+            query?: {
+                from?: string | null;
+                to?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponseStoreReportResponse"];
                 };
             };
         };

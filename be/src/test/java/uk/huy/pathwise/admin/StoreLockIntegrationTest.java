@@ -89,6 +89,7 @@ class StoreLockIntegrationTest extends AbstractIntegrationTest {
                 Arguments.of("PUT", "/api/v1/plans/1/routes", "dispatcher", "{}"),
                 Arguments.of("POST", "/api/v1/plans/1/publish", "dispatcher", "{\"version\":0}"),
                 Arguments.of("POST", "/api/v1/plans/1/cancel", "dispatcher", "{\"version\":0}"),
+                Arguments.of("POST", "/api/v1/plans/1/copy", "dispatcher", "{\"planDate\":\"2026-12-01\",\"stops\":\"ALL\"}"),
                 Arguments.of("PATCH", "/api/v1/store/members/1", "owner", "{\"canDrive\":true}"),
                 Arguments.of("PATCH", "/api/v1/store/members/me/can-drive", "owner", "{\"canDrive\":true}"),
                 Arguments.of("POST", "/api/v1/store/invitations", "owner", "{\"email\":\"x@pathwise.test\",\"role\":\"DRIVER\"}"),
