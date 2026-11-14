@@ -25,6 +25,9 @@
 | `/plans/:id` (DRAFT, chế độ chỉnh tay) | Chỉnh tay tuyến | Kế hoạch — chỉnh tay tuyến (T28) | O, D | `PUT /plans/{id}/routes` | W10 |
 | (hộp thoại trên `/plans/:id`) | Xác nhận giao việc, trùng ca, huỷ | Xác nhận giao việc | O, D | `POST /plans/{id}/publish`, `POST /plans/{id}/cancel` | W06 |
 | `/plans/:id` (PUBLISHED trở đi) | Theo dõi tiến độ | Theo dõi tiến độ | O, D | `GET /plans/{id}` (30 s) | W06 |
+| `/plans/new`, `/plans/:id/edit` (hộp thoại) | Nhập điểm giao từ file `.xlsx`/`.csv`: chọn file, xem trước, thêm dòng hợp lệ | (vẽ ở W12) | O, D | `POST /plans/import`, `GET /plans/import/template.xlsx`, `.csv` (T61) | W12, chưa làm |
+| `/plans`, `/plans/:id` (hộp thoại) | Sao chép kế hoạch (ngày, tên, tất cả / chỉ điểm chưa giao được) | (vẽ ở W12) | O, D | `POST /plans/{id}/copy` (T62) | W12, chưa làm |
+| `/reports?from=&to=` | Báo cáo theo ngày hoặc khoảng ≤ 31 ngày, xuất CSV | (vẽ ở W12) | O, D | `GET /reports/summary`, `GET /reports/stops.csv` (T63) | W12, chưa làm |
 | `/admin` | Quản trị — tổng quan (thẻ số, biểu đồ 7/30/90 ngày, khối kỹ thuật); ADMIN đăng nhập vào đây | `AdminOverview` | AD | `GET /admin/metrics/business`, `GET /admin/metrics/technical` (T60) | W11 ✅ |
 | `/admin/stores` | Quản trị — danh sách cửa hàng (tìm, lọc trạng thái, phân trang) | `AdminStores` | AD | `GET /admin/stores` (T55) | W11 ✅ |
 | `/admin/stores/:id` | Quản trị — chi tiết cửa hàng (số tổng, 30 ngày, thành viên, nhật ký của cửa hàng, khoá/mở khoá, chuyển chủ) | `AdminStoreDetail` | AD | `GET /admin/stores/{id}` (T55; mỗi lần gọi ghi `STORE_VIEWED`, không tự gọi lại), `GET /admin/audit?storeId=` (T58), `POST /admin/stores/{id}/lock`, `/unlock` (T56), `POST /admin/stores/{id}/owner` (T57) | W11 ✅ |
