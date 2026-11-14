@@ -4,6 +4,22 @@
  */
 
 export interface paths {
+    "/api/v1/admin/audit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["listEvents_1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/stores": {
         parameters: {
             query?: never;
@@ -596,6 +612,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/store/audit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["listEvents"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/store/invitations": {
         parameters: {
             query?: never;
@@ -877,8 +909,16 @@ export interface components {
             data: components["schemas"]["PageResponseAdminStoreSummaryResponse"];
             message?: string;
         };
+        ApiResponsePageResponseAuditEventResponse: {
+            data: components["schemas"]["PageResponseAuditEventResponse"];
+            message?: string;
+        };
         ApiResponsePageResponsePlanSummaryResponse: {
             data: components["schemas"]["PageResponsePlanSummaryResponse"];
+            message?: string;
+        };
+        ApiResponsePageResponseStoreAuditEventResponse: {
+            data: components["schemas"]["PageResponseStoreAuditEventResponse"];
             message?: string;
         };
         ApiResponsePlanDetailResponse: {
@@ -912,6 +952,30 @@ export interface components {
             shiftStart: string;
             /** Format: int64 */
             vehicleId: number;
+        };
+        AuditEventResponse: {
+            /** @enum {string} */
+            action: "MEMBER_UPDATED" | "INVITATION_REVOKED" | "PLAN_PUBLISHED" | "PLAN_CANCELLED" | "PLAN_ROUTES_EDITED" | "STORE_VIEWED";
+            actorEmail: string | null;
+            /** Format: int64 */
+            actorId: number | null;
+            /** @enum {string|null} */
+            actorRole: "ADMIN" | "OWNER" | "DISPATCHER" | "DRIVER" | null;
+            details: {
+                [key: string]: unknown;
+            };
+            /** Format: int64 */
+            id: number;
+            ip: string | null;
+            /** Format: date-time */
+            occurredAt: string;
+            requestId: string | null;
+            /** Format: int64 */
+            storeId: number | null;
+            /** Format: int64 */
+            targetId: number | null;
+            /** @enum {string} */
+            targetType: "STORE" | "USER" | "INVITATION" | "PLAN";
         };
         AuthTokenResponse: {
             accessToken: string;
@@ -1234,8 +1298,30 @@ export interface components {
             /** Format: int32 */
             totalPages: number;
         };
+        PageResponseAuditEventResponse: {
+            items: components["schemas"]["AuditEventResponse"][];
+            /** Format: int32 */
+            page: number;
+            /** Format: int32 */
+            size: number;
+            /** Format: int64 */
+            totalElements: number;
+            /** Format: int32 */
+            totalPages: number;
+        };
         PageResponsePlanSummaryResponse: {
             items: components["schemas"]["PlanSummaryResponse"][];
+            /** Format: int32 */
+            page: number;
+            /** Format: int32 */
+            size: number;
+            /** Format: int64 */
+            totalElements: number;
+            /** Format: int32 */
+            totalPages: number;
+        };
+        PageResponseStoreAuditEventResponse: {
+            items: components["schemas"]["StoreAuditEventResponse"][];
             /** Format: int32 */
             page: number;
             /** Format: int32 */
@@ -1467,6 +1553,28 @@ export interface components {
             sessionId: string;
             userAgent: string | null;
         };
+        StoreAuditEventResponse: {
+            /** @enum {string} */
+            action: "MEMBER_UPDATED" | "INVITATION_REVOKED" | "PLAN_PUBLISHED" | "PLAN_CANCELLED" | "PLAN_ROUTES_EDITED" | "STORE_VIEWED";
+            actorEmail: string | null;
+            /** Format: int64 */
+            actorId: number | null;
+            /** @enum {string|null} */
+            actorRole: "ADMIN" | "OWNER" | "DISPATCHER" | "DRIVER" | null;
+            details: {
+                [key: string]: unknown;
+            };
+            /** Format: int64 */
+            id: number;
+            ip: string | null;
+            /** Format: date-time */
+            occurredAt: string;
+            requestId: string | null;
+            /** Format: int64 */
+            targetId: number | null;
+            /** @enum {string} */
+            targetType: "STORE" | "USER" | "INVITATION" | "PLAN";
+        };
         StorePeriodStatsResponse: {
             /** Format: double */
             deliveredRate: number | null;
@@ -1592,6 +1700,38 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    listEvents_1: {
+        parameters: {
+            query?: {
+                storeId?: number;
+                actorId?: number;
+                action?: "MEMBER_UPDATED" | "INVITATION_REVOKED" | "PLAN_PUBLISHED" | "PLAN_CANCELLED" | "PLAN_ROUTES_EDITED" | "STORE_VIEWED";
+                from?: string;
+                to?: string;
+                /** @description Zero-based page index (0..N) */
+                page?: number;
+                /** @description The size of the page to be returned */
+                size?: number;
+                /** @description Sorting criteria in the format: property,(asc|desc). Default sort order is ascending. Multiple sort criteria are supported. */
+                sort?: string[];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponsePageResponseAuditEventResponse"];
+                };
+            };
+        };
+    };
     listStores: {
         parameters: {
             query?: {
@@ -2543,6 +2683,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ApiResponseStoreResponse"];
+                };
+            };
+        };
+    };
+    listEvents: {
+        parameters: {
+            query?: {
+                actorId?: number;
+                action?: "MEMBER_UPDATED" | "INVITATION_REVOKED" | "PLAN_PUBLISHED" | "PLAN_CANCELLED" | "PLAN_ROUTES_EDITED" | "STORE_VIEWED";
+                from?: string;
+                to?: string;
+                /** @description Zero-based page index (0..N) */
+                page?: number;
+                /** @description The size of the page to be returned */
+                size?: number;
+                /** @description Sorting criteria in the format: property,(asc|desc). Default sort order is ascending. Multiple sort criteria are supported. */
+                sort?: string[];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponsePageResponseStoreAuditEventResponse"];
                 };
             };
         };

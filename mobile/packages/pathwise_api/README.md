@@ -48,14 +48,21 @@ Please follow the [installation procedure](#installation--usage) and then run th
 import 'package:pathwise_api/pathwise_api.dart';
 
 
-final api = PathwiseApi().getAdminStoreControllerApi();
-final int id = 789; // int | 
+final api = PathwiseApi().getAdminAuditControllerApi();
+final int storeId = 789; // int | 
+final int actorId = 789; // int | 
+final String action = action_example; // String | 
+final String from = 2013-10-20; // String | 
+final String to = 2013-10-20; // String | 
+final int page = 56; // int | Zero-based page index (0..N)
+final int size = 56; // int | The size of the page to be returned
+final List<String> sort = ; // List<String> | Sorting criteria in the format: property,(asc|desc). Default sort order is ascending. Multiple sort criteria are supported.
 
 try {
-    final response = await api.getStore1(id);
+    final response = await api.listEvents1(storeId, actorId, action, from, to, page, size, sort);
     print(response);
 } catch on DioException (e) {
-    print("Exception when calling AdminStoreControllerApi->getStore1: $e\n");
+    print("Exception when calling AdminAuditControllerApi->listEvents1: $e\n");
 }
 
 ```
@@ -66,6 +73,7 @@ All URIs are relative to *http://localhost*
 
 Class | Method | HTTP request | Description
 ------------ | ------------- | ------------- | -------------
+[*AdminAuditControllerApi*](doc/AdminAuditControllerApi.md) | [**listEvents1**](doc/AdminAuditControllerApi.md#listevents1) | **GET** /api/v1/admin/audit | 
 [*AdminStoreControllerApi*](doc/AdminStoreControllerApi.md) | [**getStore1**](doc/AdminStoreControllerApi.md#getstore1) | **GET** /api/v1/admin/stores/{id} | 
 [*AdminStoreControllerApi*](doc/AdminStoreControllerApi.md) | [**listStores**](doc/AdminStoreControllerApi.md#liststores) | **GET** /api/v1/admin/stores | 
 [*AdminUserControllerApi*](doc/AdminUserControllerApi.md) | [**getListUser**](doc/AdminUserControllerApi.md#getlistuser) | **GET** /api/v1/admin/users | 
@@ -104,6 +112,7 @@ Class | Method | HTTP request | Description
 [*PlanControllerApi*](doc/PlanControllerApi.md) | [**publishPlan**](doc/PlanControllerApi.md#publishplan) | **POST** /api/v1/plans/{id}/publish | 
 [*PlanControllerApi*](doc/PlanControllerApi.md) | [**replacePlan**](doc/PlanControllerApi.md#replaceplan) | **PUT** /api/v1/plans/{id} | 
 [*PlanControllerApi*](doc/PlanControllerApi.md) | [**replaceRoutes**](doc/PlanControllerApi.md#replaceroutes) | **PUT** /api/v1/plans/{id}/routes | 
+[*StoreAuditControllerApi*](doc/StoreAuditControllerApi.md) | [**listEvents**](doc/StoreAuditControllerApi.md#listevents) | **GET** /api/v1/store/audit | 
 [*StoreControllerApi*](doc/StoreControllerApi.md) | [**getStore**](doc/StoreControllerApi.md#getstore) | **GET** /api/v1/store | 
 [*StoreControllerApi*](doc/StoreControllerApi.md) | [**updateStore**](doc/StoreControllerApi.md#updatestore) | **PUT** /api/v1/store | 
 [*StoreInvitationControllerApi*](doc/StoreInvitationControllerApi.md) | [**createInvitation**](doc/StoreInvitationControllerApi.md#createinvitation) | **POST** /api/v1/store/invitations | 
@@ -146,13 +155,16 @@ Class | Method | HTTP request | Description
  - [ApiResponseMemberResponse](doc/ApiResponseMemberResponse.md)
  - [ApiResponsePageResponseAdminGetUserResponse](doc/ApiResponsePageResponseAdminGetUserResponse.md)
  - [ApiResponsePageResponseAdminStoreSummaryResponse](doc/ApiResponsePageResponseAdminStoreSummaryResponse.md)
+ - [ApiResponsePageResponseAuditEventResponse](doc/ApiResponsePageResponseAuditEventResponse.md)
  - [ApiResponsePageResponsePlanSummaryResponse](doc/ApiResponsePageResponsePlanSummaryResponse.md)
+ - [ApiResponsePageResponseStoreAuditEventResponse](doc/ApiResponsePageResponseStoreAuditEventResponse.md)
  - [ApiResponsePlanDetailResponse](doc/ApiResponsePlanDetailResponse.md)
  - [ApiResponseRegisterResponse](doc/ApiResponseRegisterResponse.md)
  - [ApiResponseResetTokenResponse](doc/ApiResponseResetTokenResponse.md)
  - [ApiResponseStoreResponse](doc/ApiResponseStoreResponse.md)
  - [ApiResponseVehicleResponse](doc/ApiResponseVehicleResponse.md)
  - [AssignmentRequest](doc/AssignmentRequest.md)
+ - [AuditEventResponse](doc/AuditEventResponse.md)
  - [AuthTokenResponse](doc/AuthTokenResponse.md)
  - [AuthUserResponse](doc/AuthUserResponse.md)
  - [ChangePasswordRequest](doc/ChangePasswordRequest.md)
@@ -186,7 +198,9 @@ Class | Method | HTTP request | Description
  - [MemberResponse](doc/MemberResponse.md)
  - [PageResponseAdminGetUserResponse](doc/PageResponseAdminGetUserResponse.md)
  - [PageResponseAdminStoreSummaryResponse](doc/PageResponseAdminStoreSummaryResponse.md)
+ - [PageResponseAuditEventResponse](doc/PageResponseAuditEventResponse.md)
  - [PageResponsePlanSummaryResponse](doc/PageResponsePlanSummaryResponse.md)
+ - [PageResponseStoreAuditEventResponse](doc/PageResponseStoreAuditEventResponse.md)
  - [PatchStopRequest](doc/PatchStopRequest.md)
  - [PlaceResponse](doc/PlaceResponse.md)
  - [PlanDetailResponse](doc/PlanDetailResponse.md)
@@ -206,6 +220,7 @@ Class | Method | HTTP request | Description
  - [ResetTokenResponse](doc/ResetTokenResponse.md)
  - [RouteStops](doc/RouteStops.md)
  - [SessionResponse](doc/SessionResponse.md)
+ - [StoreAuditEventResponse](doc/StoreAuditEventResponse.md)
  - [StorePeriodStatsResponse](doc/StorePeriodStatsResponse.md)
  - [StoreResponse](doc/StoreResponse.md)
  - [TimeWindowRequest](doc/TimeWindowRequest.md)

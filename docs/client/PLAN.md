@@ -207,7 +207,9 @@ File nóng của client (không hai task song song cùng sửa): `web/package.js
   - `GET /admin/users?storeId=&role=&status=&page=&size=&sort=`: trả thêm `storeId` (null với ADMIN) và `status`; sort `id`, `email`, `createdAt`, `updatedAt`.
   - Nhãn trạng thái cửa hàng: UX_BRIEF §5.2.
   - Tài khoản ADMIN để làm W11 trên máy dev: đặt `BOOTSTRAP_ADMIN_EMAIL` (và `BOOTSTRAP_ADMIN_PASSWORD`) cho backend rồi khởi động lại; app tạo ADMIN khi chưa có (T59, DEPLOYMENT §2). Không cần SQL.
-  - Chưa có (task backend còn lại): khoá/mở cửa hàng và user, buộc đăng xuất, mã `STORE_READ_ONLY` (T56); hỗ trợ tài khoản, chuyển chủ (T57); nhật ký (T58); thông số (T60). Màn hoặc nút dựa vào chúng hiện "Sắp có" tới khi task xong.
+  - **Nhật ký (T58, P-61):** `GET /admin/audit?storeId=&actorId=&action=&from=&to=` (ADMIN, mọi cửa hàng, có `ip`) và `GET /store/audit?actorId=&action=&from=&to=` (chỉ OWNER, cửa hàng của mình, `ip` null với hành động của ADMIN). `from`/`to` là ngày `YYYY-MM-DD`, cả hai ngày đều tính (giờ Asia/Ho_Chi_Minh ở `/admin/audit`, giờ của cửa hàng ở `/store/audit`); mặc định mới nhất trước; sort chỉ `occurredAt`, `id`. Mỗi dòng: `occurredAt`, `actorEmail`, `actorRole`, `action`, `targetType`, `targetId`, `details` (đối tượng, hình dạng theo `action`: API_SPEC §3a), `requestId`. Nhãn tiếng Việt: UX_BRIEF §5.4. `action` chỉ được thêm: giá trị lạ thì hiện mã.
+  - Mở chi tiết cửa hàng (`GET /admin/stores/{id}`) **ghi một dòng `STORE_VIEWED`** mà OWNER thấy: màn chi tiết không được gọi lại tự động (tắt refetch khi focus cửa sổ/polling cho query này), chỉ gọi khi ADMIN mở màn hoặc bấm tải lại.
+  - Chưa có (task backend còn lại): khoá/mở cửa hàng và user, buộc đăng xuất, mã `STORE_READ_ONLY` (T56); hỗ trợ tài khoản, chuyển chủ (T57); thông số (T60). Màn hoặc nút dựa vào chúng hiện "Sắp có" tới khi task xong.
 
 ### W08. Đóng gói và deploy web
 - **Ước lượng:** 0,5–1 ngày · **Điều kiện:** chủ dự án chốt reverse proxy và domain (đang để sau, xem P-47)

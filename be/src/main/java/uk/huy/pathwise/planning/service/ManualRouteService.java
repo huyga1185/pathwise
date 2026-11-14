@@ -19,6 +19,10 @@ import uk.huy.pathwise.routing.matrix.MatrixProvider;
 import uk.huy.pathwise.routing.matrix.TravelMatrix;
 import uk.huy.pathwise.routing.model.Coordinate;
 import uk.huy.pathwise.shared.identity.UserIdentity;
+import uk.huy.pathwise.audit.dto.AuditEntry;
+import uk.huy.pathwise.audit.model.AuditAction;
+import uk.huy.pathwise.audit.model.AuditTargetType;
+import uk.huy.pathwise.audit.service.AuditLog;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -49,6 +53,7 @@ public class ManualRouteService {
     private final MatrixProvider matrixProvider;
     private final PlanDetailAssembler planDetailAssembler;
     private final TransactionTemplate transactionTemplate;
+    private final AuditLog auditLog;
 
     /**
      * @throws AppException {@code NOT_FOUND}, {@code PLAN_NOT_EDITABLE} (not a DRAFT), {@code PLAN_BUSY},
@@ -66,7 +71,7 @@ public class ManualRouteService {
         for (RouteInput route : edit.routes()) {
             if (!route.stops().isEmpty()) times.put(route.id(), schedule(route, matrix));
         }
-        return transactionTemplate.execute(status -> write(storeId, planId, edit, times));
+        return transactionTemplate.execute(status -> write(actor, storeId, planId, edit, times));
     }
 
     /**
@@ -176,7 +181,8 @@ public class ManualRouteService {
         return ManualSchedule.compute(route.shiftStart().toSecondOfDay(), visits, durations, distances);
     }
 
-    private PlanDetailResponse write(long storeId, long planId, Edit edit, Map<Long, ManualSchedule.RouteTimes> times) {
+    private PlanDetailResponse write(UserIdentity actor, long storeId, long planId, Edit edit,
+                                     Map<Long, ManualSchedule.RouteTimes> times) {
         RoutePlan plan = planRepository.findByIdAndStoreIdForUpdate(planId, storeId)
                 .orElseThrow(() -> new AppException(ErrorCode.NOT_FOUND));
         // Changed while the matrix was asked (another edit, a new optimization): the edit was made on what it replaced.
@@ -226,7 +232,10 @@ public class ManualRouteService {
         // Routes and stops are outside the plan's optimistic lock: make the plan row dirty so the version moves once.
         plan.setUpdatedAt(Instant.now());
         planRepository.flush();
-        return planDetailAssembler.toDetail(plan);
+        PlanDetailResponse detail = planDetailAssembler.toDetail(plan);
+        auditLog.record(new AuditEntry(actor, storeId, AuditAction.PLAN_ROUTES_EDITED, AuditTargetType.PLAN, planId,
+                Map.of("violations", detail.violations().size())));
+        return detail;
     }
 
     private static void checkEditable(RoutePlan plan, Long version) {

@@ -563,10 +563,38 @@
         ],
         "type": "object"
       },
+      "ApiResponsePageResponseAuditEventResponse": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/PageResponseAuditEventResponse"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "type": "object"
+      },
       "ApiResponsePageResponsePlanSummaryResponse": {
         "properties": {
           "data": {
             "$ref": "#/components/schemas/PageResponsePlanSummaryResponse"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "type": "object"
+      },
+      "ApiResponsePageResponseStoreAuditEventResponse": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/PageResponseStoreAuditEventResponse"
           },
           "message": {
             "type": "string"
@@ -676,6 +704,108 @@
           "shiftEnd",
           "shiftStart",
           "vehicleId"
+        ],
+        "type": "object"
+      },
+      "AuditEventResponse": {
+        "properties": {
+          "action": {
+            "enum": [
+              "MEMBER_UPDATED",
+              "INVITATION_REVOKED",
+              "PLAN_PUBLISHED",
+              "PLAN_CANCELLED",
+              "PLAN_ROUTES_EDITED",
+              "STORE_VIEWED"
+            ],
+            "type": "string"
+          },
+          "actorEmail": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "actorId": {
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "actorRole": {
+            "enum": [
+              "ADMIN",
+              "OWNER",
+              "DISPATCHER",
+              "DRIVER"
+            ],
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "details": {
+            "additionalProperties": {},
+            "type": "object"
+          },
+          "id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "ip": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "occurredAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "requestId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "storeId": {
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "targetId": {
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "targetType": {
+            "enum": [
+              "STORE",
+              "USER",
+              "INVITATION",
+              "PLAN"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "action",
+          "actorEmail",
+          "actorId",
+          "actorRole",
+          "details",
+          "id",
+          "ip",
+          "occurredAt",
+          "requestId",
+          "storeId",
+          "targetId",
+          "targetType"
         ],
         "type": "object"
       },
@@ -1859,11 +1989,79 @@
         ],
         "type": "object"
       },
+      "PageResponseAuditEventResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/AuditEventResponse"
+            },
+            "type": "array"
+          },
+          "page": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "size": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "totalElements": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "totalPages": {
+            "format": "int32",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "page",
+          "size",
+          "totalElements",
+          "totalPages"
+        ],
+        "type": "object"
+      },
       "PageResponsePlanSummaryResponse": {
         "properties": {
           "items": {
             "items": {
               "$ref": "#/components/schemas/PlanSummaryResponse"
+            },
+            "type": "array"
+          },
+          "page": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "size": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "totalElements": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "totalPages": {
+            "format": "int32",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "page",
+          "size",
+          "totalElements",
+          "totalPages"
+        ],
+        "type": "object"
+      },
+      "PageResponseStoreAuditEventResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/StoreAuditEventResponse"
             },
             "type": "array"
           },
@@ -2782,6 +2980,100 @@
         ],
         "type": "object"
       },
+      "StoreAuditEventResponse": {
+        "properties": {
+          "action": {
+            "enum": [
+              "MEMBER_UPDATED",
+              "INVITATION_REVOKED",
+              "PLAN_PUBLISHED",
+              "PLAN_CANCELLED",
+              "PLAN_ROUTES_EDITED",
+              "STORE_VIEWED"
+            ],
+            "type": "string"
+          },
+          "actorEmail": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "actorId": {
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "actorRole": {
+            "enum": [
+              "ADMIN",
+              "OWNER",
+              "DISPATCHER",
+              "DRIVER"
+            ],
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "details": {
+            "additionalProperties": {},
+            "type": "object"
+          },
+          "id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "ip": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "occurredAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "requestId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "targetId": {
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "targetType": {
+            "enum": [
+              "STORE",
+              "USER",
+              "INVITATION",
+              "PLAN"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "action",
+          "actorEmail",
+          "actorId",
+          "actorRole",
+          "details",
+          "id",
+          "ip",
+          "occurredAt",
+          "requestId",
+          "targetId",
+          "targetType"
+        ],
+        "type": "object"
+      },
       "StorePeriodStatsResponse": {
         "properties": {
           "deliveredRate": {
@@ -3215,6 +3507,117 @@
   },
   "openapi": "3.1.0",
   "paths": {
+    "/api/v1/admin/audit": {
+      "get": {
+        "operationId": "listEvents_1",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "storeId",
+            "required": false,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "actorId",
+            "required": false,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "action",
+            "required": false,
+            "schema": {
+              "enum": [
+                "MEMBER_UPDATED",
+                "INVITATION_REVOKED",
+                "PLAN_PUBLISHED",
+                "PLAN_CANCELLED",
+                "PLAN_ROUTES_EDITED",
+                "STORE_VIEWED"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "from",
+            "required": false,
+            "schema": {
+              "format": "date",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "to",
+            "required": false,
+            "schema": {
+              "format": "date",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Zero-based page index (0..N)",
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "The size of the page to be returned",
+            "in": "query",
+            "name": "size",
+            "required": false,
+            "schema": {
+              "default": 10,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Sorting criteria in the format: property,(asc|desc). Default sort order is ascending. Multiple sort criteria are supported.",
+            "in": "query",
+            "name": "sort",
+            "required": false,
+            "schema": {
+              "default": [
+                "occurredAt,DESC"
+              ],
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponsePageResponseAuditEventResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "admin-audit-controller"
+        ]
+      }
+    },
     "/api/v1/admin/stores": {
       "get": {
         "operationId": "listStores",
@@ -4669,6 +5072,108 @@
         },
         "tags": [
           "store-controller"
+        ]
+      }
+    },
+    "/api/v1/store/audit": {
+      "get": {
+        "operationId": "listEvents",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "actorId",
+            "required": false,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "action",
+            "required": false,
+            "schema": {
+              "enum": [
+                "MEMBER_UPDATED",
+                "INVITATION_REVOKED",
+                "PLAN_PUBLISHED",
+                "PLAN_CANCELLED",
+                "PLAN_ROUTES_EDITED",
+                "STORE_VIEWED"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "from",
+            "required": false,
+            "schema": {
+              "format": "date",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "to",
+            "required": false,
+            "schema": {
+              "format": "date",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Zero-based page index (0..N)",
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "The size of the page to be returned",
+            "in": "query",
+            "name": "size",
+            "required": false,
+            "schema": {
+              "default": 10,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Sorting criteria in the format: property,(asc|desc). Default sort order is ascending. Multiple sort criteria are supported.",
+            "in": "query",
+            "name": "sort",
+            "required": false,
+            "schema": {
+              "default": [
+                "occurredAt,DESC"
+              ],
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponsePageResponseStoreAuditEventResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "store-audit-controller"
         ]
       }
     },

@@ -195,6 +195,27 @@ Bảng job dùng chung. MVP có 2 loại job: `GEOCODE_PLAN` (chạy nền) và 
 
 Index `(status, created_at)`, `(store_id, target_id)`. Tên ràng buộc trong V5: FK `fk_background_jobs_store_id`/`_created_by`, index `idx_background_jobs_status_created`/`_store_target`. Entity `job.model.BackgroundJob` và repository (module `job`; T24 đặt ở `core.job`, T29 tách ra, P-31); executor, `JobService`, khôi phục lúc khởi động (T29). Khi khởi động, job `QUEUED` cũng chuyển sang `FAILED/INTERRUPTED` như `RUNNING` (P-30). Khi ứng dụng khởi động, job đang `RUNNING` hoặc `QUEUED` được chuyển sang `FAILED` (`error_code = INTERRUPTED`) và plan tương ứng trả về `processing_status = IDLE`. MVP giả định chỉ chạy **một instance**; muốn chạy nhiều instance thì phải có cơ chế claim job (ghi vào Could).
 
+### 2.10 `audit_events` — New (V8, T58) (P-61)
+
+Nhật ký thao tác (FR-A14). Chỉ thêm, không sửa; **không có FK** để nhật ký còn sau khi đối tượng được mô tả thay đổi. Module `audit` (`audit.model.AuditEvent`).
+
+| Cột | Kiểu | Ràng buộc / ghi chú |
+|---|---|---|
+| id | BIGINT | PK |
+| occurred_at | DATETIME(6) | NOT NULL |
+| actor_id | BIGINT | NULL. Người làm |
+| actor_email | VARCHAR(255) | NULL. Email người làm lúc đó |
+| actor_role | VARCHAR(20) | NULL. `UserRole` lúc đó |
+| store_id | BIGINT | NULL. Cửa hàng liên quan; NULL nếu ngoài cửa hàng |
+| action | VARCHAR(50) | NOT NULL — `AuditAction` (`MEMBER_UPDATED, INVITATION_REVOKED, PLAN_PUBLISHED, PLAN_CANCELLED, PLAN_ROUTES_EDITED, STORE_VIEWED`; chỉ thêm) |
+| target_type | VARCHAR(30) | NOT NULL — `STORE, USER, INVITATION, PLAN` |
+| target_id | BIGINT | NULL |
+| details | VARCHAR(2000) | NULL. Đối tượng JSON nhỏ, không dữ liệu cá nhân ngoài email; dài hơn thì thành `{"truncated": "…"}` |
+| request_id | VARCHAR(64) | NULL. `requestId` của log (MDC) |
+| ip | VARCHAR(45) | NULL. IP client (sau proxy tin cậy, P-38) |
+
+Index `idx_audit_events_store_occurred (store_id, occurred_at)`, `idx_audit_events_actor_occurred (actor_id, occurred_at)`, `idx_audit_events_occurred (occurred_at)`.
+
 ## 3. Redis keys (mọi key có TTL)
 
 | Key | Giá trị | TTL | Module |
@@ -225,6 +246,7 @@ Version được cấp trước — agent **không** tự chọn số khác:
 | V5 | `V5__route_plans.sql` | T24 ✓ | `background_jobs`, `route_plans`, `route_plan_routes`, `route_plan_stops`, `route_plan_stop_demands` (D-36). **Đã tạo.** |
 | V6 | `V6__manual_route_edit.sql` | T28 ✓ | `route_plan_stops.manually_unassigned BOOLEAN NOT NULL DEFAULT FALSE`: stop dispatcher bỏ ra khỏi route bằng `PUT /plans/{id}/routes` (`dropReason = MANUAL`, P-58); optimize, `PUT /plans/{id}` và `PATCH` stop đặt lại `FALSE`. |
 | V7 | `V7__store_status.sql` | T55 | `stores.status` (`ACTIVE`/`READ_ONLY`, mặc định `ACTIVE`), `lock_reason`, `locked_at`, `locked_by` (FK users), CHECK `chk_stores_status`, index `idx_stores_status` (P-60). T55 chỉ đọc; T56 ghi khi khoá/mở khoá, không cần migration riêng. |
+| V8 | `V8__audit_events.sql` | T58 | Bảng `audit_events` (§2.10, P-61). |
 
 Task phát sinh cần migration mới lấy số tiếp theo **sau khi** cập nhật bảng này trong cùng PR.
 
@@ -244,5 +266,6 @@ Job `core.housekeeping` chạy mỗi đêm (`housekeeping.cron`, mặc định 0
 | `refresh-tokens` | `refresh_tokens` | `expires_at` quá hạn giữ, hoặc `REVOKED` và `updated_at` quá hạn giữ | 30 ngày | token còn hạn hoặc mới hết hạn/thu hồi (phát hiện dùng lại token cũ, P-07) |
 | `jobs` | `background_jobs` | `SUCCEEDED`/`FAILED` và `finished_at` quá hạn giữ | 30 ngày | job `QUEUED`/`RUNNING`; job còn là `route_plans.active_job_id` của một plan |
 | `invitations` | `store_invitations` | chưa `ACCEPTED` và (`expires_at` quá hạn giữ, hoặc `REVOKED` và `updated_at` quá hạn giữ) | 90 ngày | lời mời `ACCEPTED` (lịch sử ai mời ai); lời mời còn dùng được |
+| `audit-events` | `audit_events` (T58) | `occurred_at` quá hạn giữ | 365 ngày | sự kiện trong năm |
 
 Task thiếu cấu hình số ngày thì bị bỏ qua (log cảnh báo); một task lỗi không chặn task khác. Log mỗi lần chạy: số dòng đã xoá theo tên.

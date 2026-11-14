@@ -90,6 +90,19 @@ Một người có `canDrive` dùng cả hai: web để điều phối, mobile �
 - **502 `*_PROVIDER_ERROR`:** dịch vụ bản đồ lỗi; cho thử lại sau.
 - **Dữ liệu cũ bị dọn (T53, DATA_MODEL §6):** job đã xong quá 30 ngày bị xoá, `GET /jobs/{id}` trả 404 (client không còn theo dõi job cũ như vậy); lời mời chưa nhận đã hết hạn hoặc bị huỷ quá 90 ngày biến khỏi `GET /store/invitations` (lời mời đã nhận giữ lại).
 
+### 5.4 Nhật ký thao tác (T58)
+
+| `action` | Câu hiển thị (gợi ý) | Từ `details` |
+|---|---|---|
+| `MEMBER_UPDATED` | "{actorEmail} đổi thành viên {details.email}: {thay đổi}" | `changes.role` "vai trò Điều phối → Tài xế", `changes.status` "khoá" / "mở khoá", `changes.canDrive` "bật/tắt giao hàng" |
+| `INVITATION_REVOKED` | "{actorEmail} huỷ lời mời {details.email} ({vai trò})" | `email`, `role` |
+| `PLAN_PUBLISHED` | "{actorEmail} giao việc kế hoạch #{targetId}" | — |
+| `PLAN_CANCELLED` | "{actorEmail} huỷ kế hoạch #{targetId}" | `from`: trạng thái trước khi huỷ |
+| `PLAN_ROUTES_EDITED` | "{actorEmail} chỉnh tay tuyến kế hoạch #{targetId}" (+ "còn {n} vi phạm" khi `violations` > 0) | `violations` |
+| `STORE_VIEWED` | "Quản trị viên nền tảng xem thông tin cửa hàng" | — (với OWNER không có IP) |
+
+Giá trị `action` mới có thể xuất hiện (T56, T57): chưa có câu thì hiện mã. `details` có `truncated` nghĩa là chi tiết quá dài đã bị cắt: hiện "(chi tiết quá dài)".
+
 ## 6. Thông điệp lỗi
 
 ### 6.1 Mã lỗi (`code`)

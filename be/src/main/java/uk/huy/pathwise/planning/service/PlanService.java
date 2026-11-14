@@ -29,6 +29,10 @@ import uk.huy.pathwise.planning.infrastructure.mapper.PlanMapper;
 import uk.huy.pathwise.planning.model.*;
 import uk.huy.pathwise.planning.repository.RoutePlanRepository;
 import uk.huy.pathwise.shared.identity.UserIdentity;
+import uk.huy.pathwise.audit.dto.AuditEntry;
+import uk.huy.pathwise.audit.model.AuditAction;
+import uk.huy.pathwise.audit.model.AuditTargetType;
+import uk.huy.pathwise.audit.service.AuditLog;
 import uk.huy.pathwise.store.dto.StoreMember;
 import uk.huy.pathwise.store.dto.StoreProfile;
 import uk.huy.pathwise.store.service.StoreMemberQuery;
@@ -67,6 +71,7 @@ public class PlanService {
     private final PlanDetailAssembler planDetailAssembler;
     private final JobService jobService;
     private final TransactionTemplate transactionTemplate;
+    private final AuditLog auditLog;
 
     /**
      * @throws AppException {@code PLAN_TOO_LARGE}, {@code STORE_DEPOT_REQUIRED}, {@code INVALID_ASSIGNMENT}
@@ -256,10 +261,10 @@ public class PlanService {
         // changed since an earlier read of the same transaction, which is exactly a concurrent publish (F-44).
         LocalDate planDate = planRepository.findPlanDate(planId, storeId)
                 .orElseThrow(() -> new AppException(ErrorCode.NOT_FOUND));
-        return transactionTemplate.execute(status -> publishLocked(storeId, planId, planDate, request.version()));
+        return transactionTemplate.execute(status -> publishLocked(actor, storeId, planId, planDate, request.version()));
     }
 
-    private PlanDetailResponse publishLocked(long storeId, long planId, LocalDate planDate, Long version) {
+    private PlanDetailResponse publishLocked(UserIdentity actor, long storeId, long planId, LocalDate planDate, Long version) {
         List<RoutePlan> day = planRepository.findAllOfDayForUpdate(storeId, planDate);
         RoutePlan plan = day.stream()
                 .filter(candidate -> candidate.getId() == planId)
@@ -274,6 +279,7 @@ public class PlanService {
         plan.setPublishedAt(Instant.now());
         markModified(plan);
         planRepository.flush();
+        auditLog.record(AuditEntry.of(actor, storeId, AuditAction.PLAN_PUBLISHED, AuditTargetType.PLAN, planId));
         return planDetailAssembler.toDetail(plan);
     }
 
@@ -292,10 +298,13 @@ public class PlanService {
         if (!PlanLifecycle.canMove(plan.getStatus(), PlanStatus.CANCELLED)) throw new AppException(ErrorCode.PLAN_NOT_CANCELLABLE);
         if (plan.getProcessingStatus() != ProcessingStatus.IDLE) throw new AppException(ErrorCode.PLAN_BUSY);
         if (!Objects.equals(request.version(), plan.getVersion())) throw new AppException(ErrorCode.PLAN_MODIFIED);
+        PlanStatus before = plan.getStatus();
         plan.setStatus(PlanStatus.CANCELLED);
         plan.setCancelledAt(Instant.now());
         markModified(plan);
         planRepository.flush();
+        auditLog.record(new AuditEntry(actor, plan.getStoreId(), AuditAction.PLAN_CANCELLED, AuditTargetType.PLAN, planId,
+                Map.of("from", before)));
         return planDetailAssembler.toDetail(plan);
     }
 

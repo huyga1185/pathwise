@@ -10,6 +10,10 @@ import uk.huy.pathwise.admin.dto.response.AdminStoreDetailResponse;
 import uk.huy.pathwise.admin.dto.response.AdminStoreSummaryResponse;
 import uk.huy.pathwise.admin.dto.response.MemberCountsResponse;
 import uk.huy.pathwise.admin.dto.response.StorePeriodStatsResponse;
+import uk.huy.pathwise.audit.dto.AuditEntry;
+import uk.huy.pathwise.audit.model.AuditAction;
+import uk.huy.pathwise.audit.model.AuditTargetType;
+import uk.huy.pathwise.audit.service.AuditLog;
 import uk.huy.pathwise.core.exception.AppException;
 import uk.huy.pathwise.core.exception.ErrorCode;
 import uk.huy.pathwise.core.pagination.PageResponse;
@@ -17,6 +21,7 @@ import uk.huy.pathwise.fleet.service.VehicleQuery;
 import uk.huy.pathwise.planning.dto.PlanActivity;
 import uk.huy.pathwise.planning.dto.PlanPeriodStats;
 import uk.huy.pathwise.planning.service.PlanStatsQuery;
+import uk.huy.pathwise.shared.identity.UserIdentity;
 import uk.huy.pathwise.shared.identity.UserRole;
 import uk.huy.pathwise.store.dto.StoreRecord;
 import uk.huy.pathwise.store.model.StoreStatus;
@@ -43,6 +48,7 @@ public class AdminStoreService {
     private final UserDirectoryQuery userDirectory;
     private final VehicleQuery vehicleQuery;
     private final PlanStatsQuery planStats;
+    private final AuditLog auditLog;
 
     /**
      * @param text matched against the store name and the OWNER email; null or blank: every store
@@ -66,10 +72,13 @@ public class AdminStoreService {
     }
 
     /**
+     * Records the view in the audit log (STORE_VIEWED, P-61): the OWNER can see when the platform looked at the store.
+     *
      * @throws AppException {@code NOT_FOUND} if there is no such store
      */
-    public AdminStoreDetailResponse getStore(long storeId) {
+    public AdminStoreDetailResponse getStore(UserIdentity admin, long storeId) {
         StoreRecord store = storeDirectory.find(storeId).orElseThrow(() -> new AppException(ErrorCode.NOT_FOUND));
+        auditLog.record(AuditEntry.of(admin, storeId, AuditAction.STORE_VIEWED, AuditTargetType.STORE, storeId));
         List<Long> ids = List.of(storeId);
         PlanActivity plans = planStats.activityOf(ids).getOrDefault(storeId, NO_PLAN);
         Instant since = Instant.now().minus(RECENT);
