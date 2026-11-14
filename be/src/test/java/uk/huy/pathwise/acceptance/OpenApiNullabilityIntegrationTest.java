@@ -84,8 +84,10 @@ class OpenApiNullabilityIntegrationTest extends AbstractIntegrationTest {
     void openApi_marksRequiredAndNullableFields() {
         Map<String, Object> user = schema("GetUserResponse");
         assertThat(list(user.get("required")))
-                .containsExactlyInAnyOrder("id", "email", "fullName", "phoneNumber", "role", "storeId", "status", "canDrive");
+                .containsExactlyInAnyOrder("id", "email", "fullName", "phoneNumber", "role", "storeId", "status", "canDrive",
+                        "storeStatus", "storeLockReason");
         assertThat(types(property(user, "fullName"))).containsExactlyInAnyOrder("string", "null");
+        assertThat(types(property(user, "storeLockReason"))).containsExactlyInAnyOrder("string", "null");
         assertThat(types(property(user, "email"))).containsExactly("string");
 
         // NON_NULL: a missing value is left out, so the field is not required (API_SPEC §2).

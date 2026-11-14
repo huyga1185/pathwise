@@ -39,11 +39,11 @@ Package gốc `uk.huy.pathwise`. Mỗi module là một package cấp 1.
 | Module | Trách nhiệm | Trạng thái |
 |---|---|---|
 | `core` | Hạ tầng dùng chung, không chứa nghiệp vụ: envelope response, `ErrorCode`/`AppException`/handler, pagination, `StateStore`, `core.security` (`Hasher` SHA-256, `OpaqueTokenGenerator`; P-28), `core.phonenumber` (chuẩn hoá và validate số VN, P-29), rate limiter, `core.housekeeping` (dọn dữ liệu cũ theo lịch, §7.1; T53), `core.observability` (`FailureLog`, §10; T54), cấu hình web/JSON. | Có — mở rộng |
-| `shared` | Kiểu dữ liệu chia sẻ giữa module: `UserIdentity`, `UserRole`, `UserStatus`, principal `AuthenticatedUser` (P-25). Chỉ record/enum, **không** bean. | Có — sửa |
-| `user` | Tài khoản người dùng: entity `User`, mật khẩu, hồ sơ, trạng thái. | Có — mở rộng |
-| `auth` | Xác thực: đăng ký (orchestrate user + store), đăng nhập, token (access/refresh/OTP token), OTP, session, đổi/quên mật khẩu, security filter chain. | Có — sửa |
+| `shared` | Kiểu dữ liệu chia sẻ giữa module: `UserIdentity`, `UserRole`, `UserStatus`, principal `AuthenticatedUser` (P-25). Chỉ record/enum, **không** bean. `shared.store`: `StoreStatus`, `StoreState` (T56). | Có — sửa |
+| `user` | Tài khoản người dùng: entity `User`, mật khẩu, hồ sơ, trạng thái. Port `StoreStateLookup` (implement ở `store`) để `GET /users/me` trả trạng thái cửa hàng mà không phụ thuộc `store` (P-62); `UserStatusCommand` (khoá/mở cho admin). | Có — mở rộng |
+| `auth` | Xác thực: đăng ký (orchestrate user + store), đăng nhập, token (access/refresh/OTP token), OTP, session, đổi/quên mật khẩu, security filter chain. API công khai cho admin: `SessionRevoker` (thu hồi mọi phiên của một user, T56). | Có — sửa |
 | `notification` | Gửi email theo template (chuyển từ `auth.email.infrastructure` sang, để `store` gửi được lời mời mà không phụ thuộc `auth`). API công khai: `EmailNotificationService.send(templateName, to, variables)`, lỗi gửi là `EmailDeliveryException`. | Có (T12) |
-| `store` | Store, thành viên, lời mời. API công khai: `StoreProvisioningService.createStore(name)` (cho đăng ký, tham gia transaction của bên gọi), `StoreMemberQuery.findActiveMember(storeId, userId)` và `findMembers(storeId, ids)` (mọi trạng thái, để hiển thị), `StoreQuery.findStore(storeId)` → `StoreProfile` (depot, timezone), event `MemberDisabledEvent` (P-27, auth nghe để thu hồi session). Đọc và ghi user qua `StoreUserService` của `user`. | Có (T13, T16) |
+| `store` | Store, thành viên, lời mời. API công khai: `StoreProvisioningService.createStore(name)` (cho đăng ký, tham gia transaction của bên gọi), `StoreMemberQuery.findActiveMember(storeId, userId)` và `findMembers(storeId, ids)` (mọi trạng thái, để hiển thị), `StoreQuery.findStore(storeId)` → `StoreProfile` (depot, timezone), event `MemberDisabledEvent` (P-27, auth nghe để thu hồi session). Đọc và ghi user qua `StoreUserService` của `user`. Khoá chỉ đọc (T56, P-62): `StoreLockCommand` (cho admin), implement port `user.service.StoreStateLookup`, và `StoreReadOnlyInterceptor` chặn mọi request ghi của thành viên khi cửa hàng `READ_ONLY` (trừ handler `@AllowedWhenStoreReadOnly`). | Có (T13, T16, T56) |
 | `job` | Job chạy nền dùng chung (D-19, §8.4): bảng `background_jobs`, executor inline/async, khôi phục lúc khởi động, `GET /api/v1/jobs/{id}`. API công khai: `JobService` (`createJob`, `findJob`), interface `JobHandler` cho module sở hữu target implement, record `JobRef`, `JobResponse`. Không biết nghiệp vụ của target (P-31). | Có (T24 entity, T29) |
 | `fleet` | Xe. API công khai: `VehicleQuery.findActive(storeId, vehicleId)`, `listActive(storeId)`, `findAll(storeId, ids)` (cả xe đã tắt, để hiển thị) trả `FleetVehicle`. | Có (T20) |
 | `routing` | Adapter định tuyến **không có DB**: `GeocodingProvider`, `MatrixProvider`, `SolverProvider`, `DirectionsProvider`; endpoint geocoding search. Thay cho `routeoptimizer` (đã xoá ở T27). | Có — geocoding (T21), matrix (T22), solver (T23), directions (T33) |
@@ -64,7 +64,7 @@ routing       →  (core)
 job           →  (core, shared)
 audit         →  (core, shared)                (P-61)
 planning      →  store, fleet, routing, job, audit
-admin         →  store, user, fleet, planning, audit   (P-60, P-61)
+admin         →  store, user, fleet, planning, audit, auth   (P-60, P-61, P-62)
 ```
 
 - **Không có vòng phụ thuộc.** `user` không biết `auth`/`store`; `routing` không biết `planning`.
@@ -170,6 +170,7 @@ Hai lớp, **cả hai bắt buộc**:
 
 1. **Role** — `@PreAuthorize` ở controller.
 2. **Tenant + ownership** — ở service: mọi truy vấn dữ liệu store dùng `actor.storeId()`; DRIVER chỉ truy cập route có `driver_id = actor.id()`. Không tìm thấy trong store của actor → **404** (không tiết lộ tồn tại).
+3. **Cửa hàng bị khoá** (T56, P-62) — trước handler: `StoreReadOnlyInterceptor` trả 423 `STORE_READ_ONLY` cho mọi request ghi của thành viên cửa hàng `READ_ONLY`; endpoint được phép ghi khi khoá phải gắn `@AllowedWhenStoreReadOnly` (tài khoản cá nhân, việc của tài xế). Endpoint ghi mới **mặc định bị chặn**.
 
 | Hành động | ADMIN | OWNER | DISPATCHER | DRIVER |
 |---|---|---|---|---|

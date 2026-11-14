@@ -5,8 +5,10 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import uk.huy.pathwise.admin.dto.response.AdminMemberResponse;
 import uk.huy.pathwise.admin.dto.response.AdminStoreDetailResponse;
+import uk.huy.pathwise.admin.dto.response.AdminStoreStateResponse;
 import uk.huy.pathwise.admin.dto.response.AdminStoreSummaryResponse;
 import uk.huy.pathwise.admin.dto.response.MemberCountsResponse;
 import uk.huy.pathwise.admin.dto.response.StorePeriodStatsResponse;
@@ -24,8 +26,9 @@ import uk.huy.pathwise.planning.service.PlanStatsQuery;
 import uk.huy.pathwise.shared.identity.UserIdentity;
 import uk.huy.pathwise.shared.identity.UserRole;
 import uk.huy.pathwise.store.dto.StoreRecord;
-import uk.huy.pathwise.store.model.StoreStatus;
+import uk.huy.pathwise.shared.store.StoreStatus;
 import uk.huy.pathwise.store.service.StoreDirectoryQuery;
+import uk.huy.pathwise.store.service.StoreLockCommand;
 import uk.huy.pathwise.user.service.UserDirectoryQuery;
 
 import java.time.Duration;
@@ -49,6 +52,7 @@ public class AdminStoreService {
     private final VehicleQuery vehicleQuery;
     private final PlanStatsQuery planStats;
     private final AuditLog auditLog;
+    private final StoreLockCommand storeLock;
 
     /**
      * @param text matched against the store name and the OWNER email; null or blank: every store
@@ -91,6 +95,42 @@ public class AdminStoreService {
                 counts(userDirectory.countMembersByRole(ids).get(storeId)),
                 vehicleQuery.countActiveByStore(ids).getOrDefault(storeId, 0L), plans.plans(), plans.lastActivityAt(),
                 period(since, planStats.statsSince(storeId, since)), members);
+    }
+
+    /**
+     * Locks the store READ_ONLY (T56, P-59): its members can still log in and read, drivers can still report results
+     * and send their location; every other write gets {@code STORE_READ_ONLY}. Locking a locked store replaces the
+     * reason. Recorded in the audit log.
+     *
+     * @param reason trimmed; shown to the members
+     * @throws AppException {@code NOT_FOUND} if there is no such store
+     */
+    @Transactional
+    public AdminStoreStateResponse lock(UserIdentity admin, long storeId, String reason) {
+        String trimmed = reason.trim();
+        StoreRecord store = storeLock.lock(storeId, admin.id(), trimmed);
+        auditLog.record(new AuditEntry(admin, storeId, AuditAction.STORE_LOCKED, AuditTargetType.STORE, storeId,
+                Map.of("reason", trimmed)));
+        return state(store);
+    }
+
+    /**
+     * Unlocks the store; an ACTIVE store is left as it is and nothing is recorded.
+     *
+     * @throws AppException {@code NOT_FOUND} if there is no such store
+     */
+    @Transactional
+    public AdminStoreStateResponse unlock(UserIdentity admin, long storeId) {
+        StoreRecord before = storeDirectory.find(storeId).orElseThrow(() -> new AppException(ErrorCode.NOT_FOUND));
+        if (before.status() == StoreStatus.ACTIVE) return state(before);
+        StoreRecord store = storeLock.unlock(storeId);
+        auditLog.record(new AuditEntry(admin, storeId, AuditAction.STORE_UNLOCKED, AuditTargetType.STORE, storeId,
+                before.lockReason() == null ? Map.of() : Map.of("reason", before.lockReason())));
+        return state(store);
+    }
+
+    private static AdminStoreStateResponse state(StoreRecord store) {
+        return new AdminStoreStateResponse(store.id(), store.status(), store.lockReason(), store.lockedAt());
     }
 
     private static MemberCountsResponse counts(@Nullable Map<UserRole, Long> byRole) {

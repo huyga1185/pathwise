@@ -76,6 +76,11 @@ Class | Method | HTTP request | Description
 [*AdminAuditControllerApi*](doc/AdminAuditControllerApi.md) | [**listEvents1**](doc/AdminAuditControllerApi.md#listevents1) | **GET** /api/v1/admin/audit | 
 [*AdminStoreControllerApi*](doc/AdminStoreControllerApi.md) | [**getStore1**](doc/AdminStoreControllerApi.md#getstore1) | **GET** /api/v1/admin/stores/{id} | 
 [*AdminStoreControllerApi*](doc/AdminStoreControllerApi.md) | [**listStores**](doc/AdminStoreControllerApi.md#liststores) | **GET** /api/v1/admin/stores | 
+[*AdminStoreControllerApi*](doc/AdminStoreControllerApi.md) | [**lock**](doc/AdminStoreControllerApi.md#lock) | **POST** /api/v1/admin/stores/{id}/lock | 
+[*AdminStoreControllerApi*](doc/AdminStoreControllerApi.md) | [**unlock**](doc/AdminStoreControllerApi.md#unlock) | **POST** /api/v1/admin/stores/{id}/unlock | 
+[*AdminUserActionControllerApi*](doc/AdminUserActionControllerApi.md) | [**disable**](doc/AdminUserActionControllerApi.md#disable) | **POST** /api/v1/admin/users/{id}/disable | 
+[*AdminUserActionControllerApi*](doc/AdminUserActionControllerApi.md) | [**enable**](doc/AdminUserActionControllerApi.md#enable) | **POST** /api/v1/admin/users/{id}/enable | 
+[*AdminUserActionControllerApi*](doc/AdminUserActionControllerApi.md) | [**revokeSessions**](doc/AdminUserActionControllerApi.md#revokesessions) | **POST** /api/v1/admin/users/{id}/sessions/revoke | 
 [*AdminUserControllerApi*](doc/AdminUserControllerApi.md) | [**getListUser**](doc/AdminUserControllerApi.md#getlistuser) | **GET** /api/v1/admin/users | 
 [*AuthControllerApi*](doc/AuthControllerApi.md) | [**changePassword**](doc/AuthControllerApi.md#changepassword) | **PUT** /api/v1/auth/password | 
 [*AuthControllerApi*](doc/AuthControllerApi.md) | [**forgotPassword**](doc/AuthControllerApi.md#forgotpassword) | **POST** /api/v1/auth/password/forgot | 
@@ -135,8 +140,11 @@ Class | Method | HTTP request | Description
  - [AdminGetUserResponse](doc/AdminGetUserResponse.md)
  - [AdminMemberResponse](doc/AdminMemberResponse.md)
  - [AdminStoreDetailResponse](doc/AdminStoreDetailResponse.md)
+ - [AdminStoreStateResponse](doc/AdminStoreStateResponse.md)
  - [AdminStoreSummaryResponse](doc/AdminStoreSummaryResponse.md)
+ - [ApiResponseAdminGetUserResponse](doc/ApiResponseAdminGetUserResponse.md)
  - [ApiResponseAdminStoreDetailResponse](doc/ApiResponseAdminStoreDetailResponse.md)
+ - [ApiResponseAdminStoreStateResponse](doc/ApiResponseAdminStoreStateResponse.md)
  - [ApiResponseAuthTokenResponse](doc/ApiResponseAuthTokenResponse.md)
  - [ApiResponseDirectionsResponse](doc/ApiResponseDirectionsResponse.md)
  - [ApiResponseDriverRouteDetailResponse](doc/ApiResponseDriverRouteDetailResponse.md)
@@ -193,6 +201,7 @@ Class | Method | HTTP request | Description
  - [LocationBatchRequest](doc/LocationBatchRequest.md)
  - [LocationPointRequest](doc/LocationPointRequest.md)
  - [LocationResponse](doc/LocationResponse.md)
+ - [LockStoreRequest](doc/LockStoreRequest.md)
  - [LogInRequest](doc/LogInRequest.md)
  - [MemberCountsResponse](doc/MemberCountsResponse.md)
  - [MemberResponse](doc/MemberResponse.md)

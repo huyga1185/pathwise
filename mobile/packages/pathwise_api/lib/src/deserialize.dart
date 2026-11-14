@@ -2,8 +2,11 @@ import 'package:pathwise_api/src/model/accept_invitation_request.dart';
 import 'package:pathwise_api/src/model/admin_get_user_response.dart';
 import 'package:pathwise_api/src/model/admin_member_response.dart';
 import 'package:pathwise_api/src/model/admin_store_detail_response.dart';
+import 'package:pathwise_api/src/model/admin_store_state_response.dart';
 import 'package:pathwise_api/src/model/admin_store_summary_response.dart';
+import 'package:pathwise_api/src/model/api_response_admin_get_user_response.dart';
 import 'package:pathwise_api/src/model/api_response_admin_store_detail_response.dart';
+import 'package:pathwise_api/src/model/api_response_admin_store_state_response.dart';
 import 'package:pathwise_api/src/model/api_response_auth_token_response.dart';
 import 'package:pathwise_api/src/model/api_response_directions_response.dart';
 import 'package:pathwise_api/src/model/api_response_driver_route_detail_response.dart';
@@ -60,6 +63,7 @@ import 'package:pathwise_api/src/model/job_response.dart';
 import 'package:pathwise_api/src/model/location_batch_request.dart';
 import 'package:pathwise_api/src/model/location_point_request.dart';
 import 'package:pathwise_api/src/model/location_response.dart';
+import 'package:pathwise_api/src/model/lock_store_request.dart';
 import 'package:pathwise_api/src/model/log_in_request.dart';
 import 'package:pathwise_api/src/model/member_counts_response.dart';
 import 'package:pathwise_api/src/model/member_response.dart';
@@ -131,10 +135,16 @@ final _regMap = RegExp(r'^Map<String,(.*)>$');
           return AdminMemberResponse.fromJson(value as Map<String, dynamic>) as ReturnType;
         case 'AdminStoreDetailResponse':
           return AdminStoreDetailResponse.fromJson(value as Map<String, dynamic>) as ReturnType;
+        case 'AdminStoreStateResponse':
+          return AdminStoreStateResponse.fromJson(value as Map<String, dynamic>) as ReturnType;
         case 'AdminStoreSummaryResponse':
           return AdminStoreSummaryResponse.fromJson(value as Map<String, dynamic>) as ReturnType;
+        case 'ApiResponseAdminGetUserResponse':
+          return ApiResponseAdminGetUserResponse.fromJson(value as Map<String, dynamic>) as ReturnType;
         case 'ApiResponseAdminStoreDetailResponse':
           return ApiResponseAdminStoreDetailResponse.fromJson(value as Map<String, dynamic>) as ReturnType;
+        case 'ApiResponseAdminStoreStateResponse':
+          return ApiResponseAdminStoreStateResponse.fromJson(value as Map<String, dynamic>) as ReturnType;
         case 'ApiResponseAuthTokenResponse':
           return ApiResponseAuthTokenResponse.fromJson(value as Map<String, dynamic>) as ReturnType;
         case 'ApiResponseDirectionsResponse':
@@ -247,6 +257,8 @@ final _regMap = RegExp(r'^Map<String,(.*)>$');
           return LocationPointRequest.fromJson(value as Map<String, dynamic>) as ReturnType;
         case 'LocationResponse':
           return LocationResponse.fromJson(value as Map<String, dynamic>) as ReturnType;
+        case 'LockStoreRequest':
+          return LockStoreRequest.fromJson(value as Map<String, dynamic>) as ReturnType;
         case 'LogInRequest':
           return LogInRequest.fromJson(value as Map<String, dynamic>) as ReturnType;
         case 'MemberCountsResponse':

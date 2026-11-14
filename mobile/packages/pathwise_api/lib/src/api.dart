@@ -9,6 +9,7 @@ import 'package:pathwise_api/src/auth/bearer_auth.dart';
 import 'package:pathwise_api/src/auth/oauth.dart';
 import 'package:pathwise_api/src/api/admin_audit_controller_api.dart';
 import 'package:pathwise_api/src/api/admin_store_controller_api.dart';
+import 'package:pathwise_api/src/api/admin_user_action_controller_api.dart';
 import 'package:pathwise_api/src/api/admin_user_controller_api.dart';
 import 'package:pathwise_api/src/api/auth_controller_api.dart';
 import 'package:pathwise_api/src/api/driver_location_controller_api.dart';
@@ -85,6 +86,12 @@ class PathwiseApi {
   /// by doing that all interceptors will not be executed
   AdminStoreControllerApi getAdminStoreControllerApi() {
     return AdminStoreControllerApi(dio);
+  }
+
+  /// Get AdminUserActionControllerApi instance, base route and serializer can be overridden by a given but be careful,
+  /// by doing that all interceptors will not be executed
+  AdminUserActionControllerApi getAdminUserActionControllerApi() {
+    return AdminUserActionControllerApi(dio);
   }
 
   /// Get AdminUserControllerApi instance, base route and serializer can be overridden by a given but be careful,

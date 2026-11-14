@@ -84,6 +84,11 @@ const _$AuditEventResponseActionEnumEnumMap = {
   AuditEventResponseActionEnum.PLAN_CANCELLED: 'PLAN_CANCELLED',
   AuditEventResponseActionEnum.PLAN_ROUTES_EDITED: 'PLAN_ROUTES_EDITED',
   AuditEventResponseActionEnum.STORE_VIEWED: 'STORE_VIEWED',
+  AuditEventResponseActionEnum.STORE_LOCKED: 'STORE_LOCKED',
+  AuditEventResponseActionEnum.STORE_UNLOCKED: 'STORE_UNLOCKED',
+  AuditEventResponseActionEnum.USER_DISABLED: 'USER_DISABLED',
+  AuditEventResponseActionEnum.USER_ENABLED: 'USER_ENABLED',
+  AuditEventResponseActionEnum.USER_SESSIONS_REVOKED: 'USER_SESSIONS_REVOKED',
 };
 
 const _$AuditEventResponseActorRoleEnumEnumMap = {

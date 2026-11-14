@@ -4,7 +4,7 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import uk.huy.pathwise.store.dto.StoreRecord;
-import uk.huy.pathwise.store.model.StoreStatus;
+import uk.huy.pathwise.shared.store.StoreStatus;
 
 import java.util.Collection;
 import java.util.Optional;

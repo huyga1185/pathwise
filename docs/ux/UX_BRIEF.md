@@ -81,6 +81,7 @@ Một người có `canDrive` dùng cả hai: web để điều phối, mobile �
 | Route | `PENDING`, `IN_PROGRESS`, `COMPLETED` | tính riêng cho từng route (P-35); tài xế thấy ở `/driver/routes`, dispatcher thấy ở `PlanDetail.routes[].status` (P-39); client không tự tính |
 | Job | `QUEUED`, `RUNNING`, `SUCCEEDED`, `FAILED` (+ `errorCode`) | |
 | Cửa hàng (khu ADMIN, T55) | `ACTIVE` "Đang hoạt động", `READ_ONLY` "Tạm khoá (chỉ đọc)" kèm `lockReason` | khoá: cam/vàng, không dùng đỏ (vẫn đọc được, tài xế vẫn giao) |
+| Cửa hàng (phía thành viên, T56) | `GET /users/me`: `storeStatus` `READ_ONLY` + `storeLockReason` → băng "Cửa hàng đang tạm khoá: {lý do}" trên mọi màn web và app tài xế; web khoá nút ghi, app tài xế vẫn báo kết quả | băng cam/vàng, không đỏ |
 
 ### 5.3 Xung đột và giới hạn
 
@@ -100,8 +101,13 @@ Một người có `canDrive` dùng cả hai: web để điều phối, mobile �
 | `PLAN_CANCELLED` | "{actorEmail} huỷ kế hoạch #{targetId}" | `from`: trạng thái trước khi huỷ |
 | `PLAN_ROUTES_EDITED` | "{actorEmail} chỉnh tay tuyến kế hoạch #{targetId}" (+ "còn {n} vi phạm" khi `violations` > 0) | `violations` |
 | `STORE_VIEWED` | "Quản trị viên nền tảng xem thông tin cửa hàng" | — (với OWNER không có IP) |
+| `STORE_LOCKED` | "Quản trị viên tạm khoá cửa hàng: {details.reason}" | `reason` |
+| `STORE_UNLOCKED` | "Quản trị viên mở khoá cửa hàng" | `reason` (lý do lần khoá vừa gỡ) |
+| `USER_DISABLED` | "Quản trị viên khoá tài khoản {details.email}" | `email` |
+| `USER_ENABLED` | "Quản trị viên mở khoá tài khoản {details.email}" | `email`, `status` |
+| `USER_SESSIONS_REVOKED` | "Quản trị viên đăng xuất {details.email} khỏi mọi thiết bị" | `email` |
 
-Giá trị `action` mới có thể xuất hiện (T56, T57): chưa có câu thì hiện mã. `details` có `truncated` nghĩa là chi tiết quá dài đã bị cắt: hiện "(chi tiết quá dài)".
+Giá trị `action` mới có thể xuất hiện (T57): chưa có câu thì hiện mã. `details` có `truncated` nghĩa là chi tiết quá dài đã bị cắt: hiện "(chi tiết quá dài)".
 
 ## 6. Thông điệp lỗi
 
@@ -115,6 +121,8 @@ Giá trị `action` mới có thể xuất hiện (T56, T57): chưa có câu th�
 | `INVALID_EMAIL_OR_PASSWORD` | Email hoặc mật khẩu không đúng. | đăng nhập |
 | `EMAIL_NOT_VERIFIED` | Email chưa được xác thực. | đăng nhập |
 | `ACCOUNT_DISABLED` | Tài khoản đã bị vô hiệu hoá. Liên hệ chủ cửa hàng. | đăng nhập |
+| `STORE_READ_ONLY` (423) | Cửa hàng đang tạm khoá nên chưa thay đổi được. Bạn vẫn xem được dữ liệu. | mọi thao tác ghi của cửa hàng bị khoá (T56); tải lại `/users/me` để hiện băng |
+| `CANNOT_MODIFY_SELF` | Bạn không thể khoá tài khoản của chính mình. | ADMIN, khu quản trị (T56) |
 | `EMAIL_EXISTED` | Email này đã được dùng. | đăng ký, mời |
 | `EMAIL_ALREADY_VERIFIED` | Email đã được xác thực, bạn có thể đăng nhập. | xác thực |
 | `INVALID_OTP` | Mã OTP không đúng hoặc đã hết hạn. | OTP |

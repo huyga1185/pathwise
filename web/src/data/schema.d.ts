@@ -52,6 +52,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/stores/{id}/lock": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["lock"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/stores/{id}/unlock": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["unlock"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/users": {
         parameters: {
             query?: never;
@@ -62,6 +94,54 @@ export interface paths {
         get: operations["getListUser"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/users/{id}/disable": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["disable"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/users/{id}/enable": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["enable"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/users/{id}/sessions/revoke": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["revokeSessions"];
         delete?: never;
         options?: never;
         head?: never;
@@ -816,6 +896,15 @@ export interface components {
             /** Format: int64 */
             vehicles: number;
         };
+        AdminStoreStateResponse: {
+            /** Format: int64 */
+            id: number;
+            lockReason: string | null;
+            /** Format: date-time */
+            lockedAt: string | null;
+            /** @enum {string} */
+            status: "ACTIVE" | "READ_ONLY";
+        };
         AdminStoreSummaryResponse: {
             /** Format: date-time */
             createdAt: string;
@@ -833,8 +922,16 @@ export interface components {
             /** Format: int64 */
             vehicles: number;
         };
+        ApiResponseAdminGetUserResponse: {
+            data: components["schemas"]["AdminGetUserResponse"];
+            message?: string;
+        };
         ApiResponseAdminStoreDetailResponse: {
             data: components["schemas"]["AdminStoreDetailResponse"];
+            message?: string;
+        };
+        ApiResponseAdminStoreStateResponse: {
+            data: components["schemas"]["AdminStoreStateResponse"];
             message?: string;
         };
         ApiResponseAuthTokenResponse: {
@@ -955,7 +1052,7 @@ export interface components {
         };
         AuditEventResponse: {
             /** @enum {string} */
-            action: "MEMBER_UPDATED" | "INVITATION_REVOKED" | "PLAN_PUBLISHED" | "PLAN_CANCELLED" | "PLAN_ROUTES_EDITED" | "STORE_VIEWED";
+            action: "MEMBER_UPDATED" | "INVITATION_REVOKED" | "PLAN_PUBLISHED" | "PLAN_CANCELLED" | "PLAN_ROUTES_EDITED" | "STORE_VIEWED" | "STORE_LOCKED" | "STORE_UNLOCKED" | "USER_DISABLED" | "USER_ENABLED" | "USER_SESSIONS_REVOKED";
             actorEmail: string | null;
             /** Format: int64 */
             actorId: number | null;
@@ -1190,6 +1287,9 @@ export interface components {
             status: "PENDING_VERIFICATION" | "ACTIVE" | "DISABLED";
             /** Format: int64 */
             storeId: number | null;
+            storeLockReason: string | null;
+            /** @enum {string|null} */
+            storeStatus: "ACTIVE" | "READ_ONLY" | null;
         };
         InvitationPreviewResponse: {
             email: string;
@@ -1250,6 +1350,9 @@ export interface components {
             lat: number;
             /** Format: double */
             lon: number;
+        };
+        LockStoreRequest: {
+            reason: string;
         };
         LogInRequest: {
             /** Format: email */
@@ -1555,7 +1658,7 @@ export interface components {
         };
         StoreAuditEventResponse: {
             /** @enum {string} */
-            action: "MEMBER_UPDATED" | "INVITATION_REVOKED" | "PLAN_PUBLISHED" | "PLAN_CANCELLED" | "PLAN_ROUTES_EDITED" | "STORE_VIEWED";
+            action: "MEMBER_UPDATED" | "INVITATION_REVOKED" | "PLAN_PUBLISHED" | "PLAN_CANCELLED" | "PLAN_ROUTES_EDITED" | "STORE_VIEWED" | "STORE_LOCKED" | "STORE_UNLOCKED" | "USER_DISABLED" | "USER_ENABLED" | "USER_SESSIONS_REVOKED";
             actorEmail: string | null;
             /** Format: int64 */
             actorId: number | null;
@@ -1705,7 +1808,7 @@ export interface operations {
             query?: {
                 storeId?: number;
                 actorId?: number;
-                action?: "MEMBER_UPDATED" | "INVITATION_REVOKED" | "PLAN_PUBLISHED" | "PLAN_CANCELLED" | "PLAN_ROUTES_EDITED" | "STORE_VIEWED";
+                action?: "MEMBER_UPDATED" | "INVITATION_REVOKED" | "PLAN_PUBLISHED" | "PLAN_CANCELLED" | "PLAN_ROUTES_EDITED" | "STORE_VIEWED" | "STORE_LOCKED" | "STORE_UNLOCKED" | "USER_DISABLED" | "USER_ENABLED" | "USER_SESSIONS_REVOKED";
                 from?: string;
                 to?: string;
                 /** @description Zero-based page index (0..N) */
@@ -1783,6 +1886,54 @@ export interface operations {
             };
         };
     };
+    lock: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LockStoreRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponseAdminStoreStateResponse"];
+                };
+            };
+        };
+    };
+    unlock: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponseAdminStoreStateResponse"];
+                };
+            };
+        };
+    };
     getListUser: {
         parameters: {
             query?: {
@@ -1810,6 +1961,70 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["ApiResponsePageResponseAdminGetUserResponse"];
                 };
+            };
+        };
+    };
+    disable: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponseAdminGetUserResponse"];
+                };
+            };
+        };
+    };
+    enable: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponseAdminGetUserResponse"];
+                };
+            };
+        };
+    };
+    revokeSessions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -2691,7 +2906,7 @@ export interface operations {
         parameters: {
             query?: {
                 actorId?: number;
-                action?: "MEMBER_UPDATED" | "INVITATION_REVOKED" | "PLAN_PUBLISHED" | "PLAN_CANCELLED" | "PLAN_ROUTES_EDITED" | "STORE_VIEWED";
+                action?: "MEMBER_UPDATED" | "INVITATION_REVOKED" | "PLAN_PUBLISHED" | "PLAN_CANCELLED" | "PLAN_ROUTES_EDITED" | "STORE_VIEWED" | "STORE_LOCKED" | "STORE_UNLOCKED" | "USER_DISABLED" | "USER_ENABLED" | "USER_SESSIONS_REVOKED";
                 from?: string;
                 to?: string;
                 /** @description Zero-based page index (0..N) */

@@ -45,10 +45,10 @@ Index: `idx_users_store_role (store_id, role)`. Tên ràng buộc trong V2: FK `
 | depot_address | VARCHAR(500) | NULL |
 | depot_lat, depot_lon | DOUBLE | NULL (cả hai cùng NULL hoặc cùng có: CHECK `chk_stores_depot_coordinates`) |
 | timezone | VARCHAR(50) | NOT NULL DEFAULT `'Asia/Ho_Chi_Minh'` |
-| status | VARCHAR(20) | NOT NULL DEFAULT `'ACTIVE'` (V7, T55) — `ACTIVE, READ_ONLY`; CHECK `chk_stores_status`; index `idx_stores_status`. `READ_ONLY` do ADMIN khoá (T56, P-59) |
+| status | VARCHAR(20) | NOT NULL DEFAULT `'ACTIVE'` (V7, T55) — `ACTIVE, READ_ONLY`; CHECK `chk_stores_status`; index `idx_stores_status`. `READ_ONLY` do ADMIN khoá (T56, P-59); enum `shared.store.StoreStatus` (P-62) |
 | lock_reason | VARCHAR(500) | NULL (V7). Lý do khoá hiện tại; NULL khi `ACTIVE` |
 | locked_at | DATETIME(6) | NULL (V7) |
-| locked_by | BIGINT | NULL (V7), FK `fk_stores_locked_by` → users (ADMIN đã khoá) |
+| locked_by | BIGINT | NULL (V7), FK `fk_stores_locked_by` → users (ADMIN đã khoá). Khoá lại thì ghi đè lý do, thời điểm, người khoá; mở khoá đặt cả ba về NULL (T56) |
 | created_at, updated_at | DATETIME(6) | NOT NULL |
 
 OWNER của store = user có `role='OWNER' AND store_id=?` (đúng 1, BR-03, kiểm tra ở service).
@@ -207,7 +207,7 @@ Nhật ký thao tác (FR-A14). Chỉ thêm, không sửa; **không có FK** đ�
 | actor_email | VARCHAR(255) | NULL. Email người làm lúc đó |
 | actor_role | VARCHAR(20) | NULL. `UserRole` lúc đó |
 | store_id | BIGINT | NULL. Cửa hàng liên quan; NULL nếu ngoài cửa hàng |
-| action | VARCHAR(50) | NOT NULL — `AuditAction` (`MEMBER_UPDATED, INVITATION_REVOKED, PLAN_PUBLISHED, PLAN_CANCELLED, PLAN_ROUTES_EDITED, STORE_VIEWED`; chỉ thêm) |
+| action | VARCHAR(50) | NOT NULL — `AuditAction` (`MEMBER_UPDATED, INVITATION_REVOKED, PLAN_PUBLISHED, PLAN_CANCELLED, PLAN_ROUTES_EDITED, STORE_VIEWED`; T56 thêm `STORE_LOCKED, STORE_UNLOCKED, USER_DISABLED, USER_ENABLED, USER_SESSIONS_REVOKED`; chỉ thêm) |
 | target_type | VARCHAR(30) | NOT NULL — `STORE, USER, INVITATION, PLAN` |
 | target_id | BIGINT | NULL |
 | details | VARCHAR(2000) | NULL. Đối tượng JSON nhỏ, không dữ liệu cá nhân ngoài email; dài hơn thì thành `{"truncated": "…"}` |

@@ -64,6 +64,7 @@ public class InvitationService {
     private final TransactionTemplate transactionTemplate;
     private final RateLimiter rateLimiter;
     private final AuditLog auditLog;
+    private final StoreLockService storeLockService;
 
     public InvitationService(StoreInvitationRepository invitationRepository,
                              StoreRepository storeRepository,
@@ -73,7 +74,8 @@ public class InvitationService {
                              Hasher hasher,
                              PlatformTransactionManager transactionManager,
                              RateLimiter rateLimiter,
-                             AuditLog auditLog) {
+                             AuditLog auditLog,
+                             StoreLockService storeLockService) {
         this.invitationRepository = invitationRepository;
         this.storeRepository = storeRepository;
         this.storeUserService = storeUserService;
@@ -83,6 +85,7 @@ public class InvitationService {
         this.transactionTemplate = new TransactionTemplate(transactionManager);
         this.rateLimiter = rateLimiter;
         this.auditLog = auditLog;
+        this.storeLockService = storeLockService;
     }
 
     private record Created(StoreInvitation invitation, Store store, String code) {}
@@ -165,12 +168,14 @@ public class InvitationService {
      * one transaction (FR-S03). The member then logs in normally.
      *
      * @throws AppException {@code INVITATION_INVALID} if the code is unknown, used, revoked or expired;
-     *                      {@code EMAIL_EXISTED} if the email got an account since the invitation was sent
+     *                      {@code EMAIL_EXISTED} if the email got an account since the invitation was sent;
+     *                      {@code STORE_READ_ONLY} if the store is locked (T56): the code stays usable
      */
     @Transactional
     public void acceptInvitation(AcceptInvitationRequest request) {
         if (request == null) throw new NullPointerException("Accept invitation request could not be null");
         StoreInvitation invitation = findUsable(request.code());
+        storeLockService.checkWritable(invitation.getStoreId());
         StoreUser member = storeUserService.createMember(invitation.getStoreId(),
                 invitation.getEmail(),
                 request.password(),

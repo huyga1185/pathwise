@@ -218,6 +218,41 @@
         ],
         "type": "object"
       },
+      "AdminStoreStateResponse": {
+        "properties": {
+          "id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "lockReason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "lockedAt": {
+            "format": "date-time",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "status": {
+            "enum": [
+              "ACTIVE",
+              "READ_ONLY"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "lockReason",
+          "lockedAt",
+          "status"
+        ],
+        "type": "object"
+      },
       "AdminStoreSummaryResponse": {
         "properties": {
           "createdAt": {
@@ -276,10 +311,38 @@
         ],
         "type": "object"
       },
+      "ApiResponseAdminGetUserResponse": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/AdminGetUserResponse"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "type": "object"
+      },
       "ApiResponseAdminStoreDetailResponse": {
         "properties": {
           "data": {
             "$ref": "#/components/schemas/AdminStoreDetailResponse"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "type": "object"
+      },
+      "ApiResponseAdminStoreStateResponse": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/AdminStoreStateResponse"
           },
           "message": {
             "type": "string"
@@ -716,7 +779,12 @@
               "PLAN_PUBLISHED",
               "PLAN_CANCELLED",
               "PLAN_ROUTES_EDITED",
-              "STORE_VIEWED"
+              "STORE_VIEWED",
+              "STORE_LOCKED",
+              "STORE_UNLOCKED",
+              "USER_DISABLED",
+              "USER_ENABLED",
+              "USER_SESSIONS_REVOKED"
             ],
             "type": "string"
           },
@@ -1598,6 +1666,22 @@
               "integer",
               "null"
             ]
+          },
+          "storeLockReason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "storeStatus": {
+            "enum": [
+              "ACTIVE",
+              "READ_ONLY"
+            ],
+            "type": [
+              "string",
+              "null"
+            ]
           }
         },
         "required": [
@@ -1608,7 +1692,9 @@
           "phoneNumber",
           "role",
           "status",
-          "storeId"
+          "storeId",
+          "storeLockReason",
+          "storeStatus"
         ],
         "type": "object"
       },
@@ -1825,6 +1911,19 @@
           "address",
           "lat",
           "lon"
+        ],
+        "type": "object"
+      },
+      "LockStoreRequest": {
+        "properties": {
+          "reason": {
+            "maxLength": 500,
+            "minLength": 0,
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason"
         ],
         "type": "object"
       },
@@ -2989,7 +3088,12 @@
               "PLAN_PUBLISHED",
               "PLAN_CANCELLED",
               "PLAN_ROUTES_EDITED",
-              "STORE_VIEWED"
+              "STORE_VIEWED",
+              "STORE_LOCKED",
+              "STORE_UNLOCKED",
+              "USER_DISABLED",
+              "USER_ENABLED",
+              "USER_SESSIONS_REVOKED"
             ],
             "type": "string"
           },
@@ -3540,7 +3644,12 @@
                 "PLAN_PUBLISHED",
                 "PLAN_CANCELLED",
                 "PLAN_ROUTES_EDITED",
-                "STORE_VIEWED"
+                "STORE_VIEWED",
+                "STORE_LOCKED",
+                "STORE_UNLOCKED",
+                "USER_DISABLED",
+                "USER_ENABLED",
+                "USER_SESSIONS_REVOKED"
               ],
               "type": "string"
             }
@@ -3728,6 +3837,78 @@
         ]
       }
     },
+    "/api/v1/admin/stores/{id}/lock": {
+      "post": {
+        "operationId": "lock",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LockStoreRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseAdminStoreStateResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "admin-store-controller"
+        ]
+      }
+    },
+    "/api/v1/admin/stores/{id}/unlock": {
+      "post": {
+        "operationId": "unlock",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseAdminStoreStateResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "admin-store-controller"
+        ]
+      }
+    },
     "/api/v1/admin/users": {
       "get": {
         "operationId": "getListUser",
@@ -3820,6 +4001,92 @@
         },
         "tags": [
           "admin-user-controller"
+        ]
+      }
+    },
+    "/api/v1/admin/users/{id}/disable": {
+      "post": {
+        "operationId": "disable",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseAdminGetUserResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "admin-user-action-controller"
+        ]
+      }
+    },
+    "/api/v1/admin/users/{id}/enable": {
+      "post": {
+        "operationId": "enable",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseAdminGetUserResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "admin-user-action-controller"
+        ]
+      }
+    },
+    "/api/v1/admin/users/{id}/sessions/revoke": {
+      "post": {
+        "operationId": "revokeSessions",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        },
+        "tags": [
+          "admin-user-action-controller"
         ]
       }
     },
@@ -5099,7 +5366,12 @@
                 "PLAN_PUBLISHED",
                 "PLAN_CANCELLED",
                 "PLAN_ROUTES_EDITED",
-                "STORE_VIEWED"
+                "STORE_VIEWED",
+                "STORE_LOCKED",
+                "STORE_UNLOCKED",
+                "USER_DISABLED",
+                "USER_ENABLED",
+                "USER_SESSIONS_REVOKED"
               ],
               "type": "string"
             }
