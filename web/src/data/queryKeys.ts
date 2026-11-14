@@ -12,4 +12,13 @@ export const queryKeys = {
   plansAll: ['plans'] as const,
   plan: (id: number) => ['plan', id] as const,
   driverLocations: (planId: number) => ['driver-locations', planId] as const,
+  storeAudit: (filter: object) => ['store-audit', filter] as const,
+  // ADMIN area (W11).
+  adminStores: (filter: object) => ['admin', 'stores', filter] as const,
+  adminStore: (id: number) => ['admin', 'store', id] as const,
+  adminUsers: (filter: object) => ['admin', 'users', filter] as const,
+  adminUsersAll: ['admin', 'users'] as const,
+  adminAudit: (filter: object) => ['admin', 'audit', filter] as const,
+  adminBusiness: (filter: { from: string; to: string }) => ['admin', 'business', filter] as const,
+  adminTechnical: ['admin', 'technical'] as const,
 };

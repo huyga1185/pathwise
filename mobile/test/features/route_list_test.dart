@@ -195,4 +195,32 @@ void main() {
     expect(initials('lan@example.com'), 'L');
     expect(initials(''), '');
   });
+
+  testWidgets('cửa hàng tạm khoá: băng có lý do, tuyến vẫn mở được để giao (T56)', (tester) async {
+    final server = FakeServer((request) async {
+      if (request.path == '/api/v1/auth/refresh') return FakeReply.ok(tokens());
+      if (request.path == '/api/v1/users/me') {
+        return FakeReply.ok({
+          ...meOf(driverUser),
+          'storeStatus': 'READ_ONLY',
+          'storeLockReason': 'Chưa thanh toán phí tháng 11',
+        });
+      }
+      return FakeReply.ok(sampleRoutes());
+    });
+
+    await pumpApp(tester, server, refreshToken: 'refresh-1');
+
+    expect(find.text('Cửa hàng đang tạm khoá'), findsOneWidget);
+    expect(find.text('Lý do: Chưa thanh toán phí tháng 11'), findsOneWidget);
+    expect(find.text('Bạn vẫn giao và báo kết quả tuyến bình thường.'), findsOneWidget);
+    expect(find.text('Bắt đầu tuyến'), findsOneWidget);
+  });
+
+  testWidgets('cửa hàng bình thường thì không có băng khoá', (tester) async {
+    await pumpApp(tester, driverServer((request) async => FakeReply.ok(sampleRoutes())), refreshToken: 'refresh-1');
+
+    expect(find.text('Giao sáng 01/12'), findsOneWidget);
+    expect(find.text('Cửa hàng đang tạm khoá'), findsNothing);
+  });
 }

@@ -1,3 +1,4 @@
+import { useStoreReadOnly } from '@/data/meQuery';
 import { useRef, useState, type KeyboardEvent } from 'react';
 import { useForm } from 'react-hook-form';
 import { useSearchParams } from 'react-router';
@@ -47,6 +48,7 @@ export function MembersPage() {
   const { session } = useSession();
   const me = session.status === 'authenticated' ? session.user : null;
   const isOwner = me?.role === 'OWNER';
+  const { readOnly } = useStoreReadOnly();
   const [params, setParams] = useSearchParams();
   const tab: Tab = isOwner && params.get('tab') === 'invitations' ? 'invitations' : 'members';
   const members = useMembers();
@@ -118,7 +120,7 @@ export function MembersPage() {
             members={members.data ?? []}
             loading={members.isPending}
             meId={me?.id ?? null}
-            isOwner={isOwner}
+            isOwner={isOwner && !readOnly}
           />
           <p id="drive-hint" className="pw-muted">
             {vi.members.driveHint}
@@ -317,6 +319,7 @@ interface InviteFormValues {
 
 function InviteForm() {
   const memberApi = useMemberApi();
+  const { readOnly } = useStoreReadOnly();
   const lock = useCountdown();
   const [sent, setSent] = useState<string | null>(null);
   const [failure, setFailure] = useState<unknown>(null);
@@ -378,7 +381,7 @@ function InviteForm() {
       />
       <p className="pw-muted">{vi.members.inviteNote}</p>
       <div>
-        <Button type="submit" variant="primary" busy={isSubmitting} disabled={lock.remaining > 0}>
+        <Button type="submit" variant="primary" busy={isSubmitting} disabled={lock.remaining > 0 || readOnly}>
           {lock.remaining > 0 ? vi.auth.retryIn(formatWait(lock.remaining)) : vi.members.inviteSubmit}
         </Button>
       </div>
@@ -396,6 +399,7 @@ function InvitationsTable({
   timeZone: string;
 }) {
   const memberApi = useMemberApi();
+  const { readOnly } = useStoreReadOnly();
   const [pending, setPending] = useState<number | null>(null);
   const [failure, setFailure] = useState<unknown>(null);
 
@@ -429,6 +433,7 @@ function InvitationsTable({
           <Button
             variant="quiet"
             busy={pending === row.id}
+            disabled={readOnly}
             aria-label={vi.members.revokeLabel(row.email)}
             onClick={() => void revoke(row)}
           >

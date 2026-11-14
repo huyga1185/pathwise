@@ -2,16 +2,16 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo } from 'react';
 import { useApi } from '@/data/ApiContext';
 import { unwrap, unwrapEmpty } from '@/data/http';
+import { useMeQuery } from '@/data/meQuery';
 import { queryKeys } from '@/data/queryKeys';
 import type { Schemas } from '@/data/types';
 
 export type Me = Schemas['GetUserResponse'];
 export type DeviceSession = Schemas['SessionResponse'];
 
-/** The signed-in user (`GET /users/me`). */
+/** The signed-in user (`GET /users/me`), the cache entry shared with the lock banner. */
 export function useMe() {
-  const api = useApi();
-  return useQuery({ queryKey: queryKeys.me, queryFn: () => unwrap(api.GET('/api/v1/users/me')) });
+  return useMeQuery();
 }
 
 /** Signed-in devices of the user (`GET /auth/sessions`). */

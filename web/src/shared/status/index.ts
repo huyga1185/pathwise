@@ -4,7 +4,17 @@
  */
 export type Tone = 'muted' | 'info' | 'signal' | 'danger' | 'success' | 'route';
 export type StatusKind =
-  'plan' | 'route' | 'stop' | 'dropReason' | 'geocode' | 'processing' | 'invitation' | 'member' | 'vehicle' | 'job';
+  | 'plan'
+  | 'route'
+  | 'stop'
+  | 'dropReason'
+  | 'geocode'
+  | 'processing'
+  | 'invitation'
+  | 'member'
+  | 'vehicle'
+  | 'job'
+  | 'store';
 
 const STATUS: Record<StatusKind, Record<string, [string, Tone]>> = {
   plan: {
@@ -40,6 +50,8 @@ const STATUS: Record<StatusKind, Record<string, [string, Tone]>> = {
     DISABLED: ['ĐÃ VÔ HIỆU HOÁ', 'danger'],
   },
   vehicle: { ACTIVE: ['ĐANG DÙNG', 'success'], INACTIVE: ['ĐÃ TẮT', 'muted'] },
+  // T55, T56: a store locked by an ADMIN is read only, not broken (signal, not danger).
+  store: { ACTIVE: ['HOẠT ĐỘNG', 'success'], READ_ONLY: ['TẠM KHOÁ', 'signal'] },
   job: {
     QUEUED: ['ĐANG CHỜ', 'muted'],
     RUNNING: ['ĐANG CHẠY', 'info'],

@@ -32,6 +32,16 @@ if (hasDom && typeof SVGSVGElement !== 'undefined' && !('createSVGRect' in SVGSV
   });
 }
 
+// jsdom has no ResizeObserver; the chart platform (Recharts, W11) sizes itself with it.
+if (hasDom && !('ResizeObserver' in window)) {
+  class NoResizeObserver {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  }
+  Object.defineProperty(window, 'ResizeObserver', { writable: true, value: NoResizeObserver });
+}
+
 beforeAll(() => server.listen({ onUnhandledFrame: 'error' }));
 afterEach(() => {
   if (!hasDom) return;

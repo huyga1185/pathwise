@@ -39,7 +39,12 @@ class _RouteListScreenState extends ConsumerState<RouteListScreen> {
   @override
   void initState() {
     super.initState();
-    _lifecycle = AppLifecycleListener(onResume: () => ref.invalidate(driverRoutesProvider));
+    _lifecycle = AppLifecycleListener(
+      onResume: () {
+        ref.invalidate(driverRoutesProvider);
+        ref.invalidate(storeLockProvider);
+      },
+    );
   }
 
   @override
@@ -52,6 +57,7 @@ class _RouteListScreenState extends ConsumerState<RouteListScreen> {
   Widget build(BuildContext context) {
     final t = context.pw;
     final routes = ref.watch(driverRoutesProvider(_day));
+    final lockReason = ref.watch(storeLockProvider).value;
     final loaded = routes.value;
     if (loaded != null && loaded.isNotEmpty) _timezone = loaded.first.timezone;
 
@@ -66,6 +72,7 @@ class _RouteListScreenState extends ConsumerState<RouteListScreen> {
         child: Column(
           children: [
             const _Header(),
+            if (lockReason != null) _StoreLockBanner(reason: lockReason),
             _DaySwitcher(
               day: shown,
               today: today,
@@ -75,7 +82,10 @@ class _RouteListScreenState extends ConsumerState<RouteListScreen> {
             Expanded(
               child: RefreshIndicator(
                 color: t.route,
-                onRefresh: () => ref.refresh(driverRoutesProvider(_day).future).then((_) {}, onError: (_) {}),
+                onRefresh: () {
+                  ref.invalidate(storeLockProvider);
+                  return ref.refresh(driverRoutesProvider(_day).future).then((_) {}, onError: (_) {});
+                },
                 child: switch (routes) {
                   AsyncValue(:final value?) when value.isEmpty => const _Scroll(children: [_Empty()]),
                   AsyncValue(:final value?) => _Scroll(
@@ -101,6 +111,51 @@ class _RouteListScreenState extends ConsumerState<RouteListScreen> {
                 },
               ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// The store is locked by an ADMIN (T56, prototype "Tài xế — cửa hàng tạm khoá"): information only, the driver keeps
+/// delivering and reporting (P-59). `signal`, not `danger`: nothing is broken.
+class _StoreLockBanner extends StatelessWidget {
+  const _StoreLockBanner({required this.reason});
+
+  final String reason;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.pw;
+    return Semantics(
+      container: true,
+      liveRegion: true,
+      child: Container(
+        width: double.infinity,
+        margin: const EdgeInsets.fromLTRB(PwSpacing.space4, PwSpacing.space2, PwSpacing.space4, 0),
+        padding: const EdgeInsets.symmetric(horizontal: PwSpacing.space4, vertical: PwSpacing.space2 + 4),
+        decoration: BoxDecoration(
+          color: t.surfaceRaised,
+          borderRadius: BorderRadius.circular(PwRadius.radiusMd),
+          border: Border(
+            left: BorderSide(color: t.signal, width: 4),
+            top: BorderSide(color: t.signal),
+            right: BorderSide(color: t.signal),
+            bottom: BorderSide(color: t.signal),
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          spacing: PwSpacing.space1,
+          children: [
+            Text(
+              Vi.storeLocked,
+              style: PwTypeStyles.bodyTouch.copyWith(color: t.signal, fontWeight: FontWeight.w600),
+            ),
+            if (reason.isNotEmpty)
+              Text(Vi.storeLockReason(reason), style: PwTypeStyles.bodyTouch.copyWith(color: t.ink)),
+            Text(Vi.storeLockedDriver, style: PwTypeStyles.bodyTouch.copyWith(color: t.inkMuted)),
           ],
         ),
       ),
@@ -214,7 +269,8 @@ class _DaySwitcher extends StatelessWidget {
               child: Column(
                 children: [
                   Text(relative ?? formatDateLong(day), style: PwTypeStyles.heading.copyWith(color: t.ink)),
-                  if (relative != null) Text(formatDateLong(day), style: PwTypeStyles.body.copyWith(color: t.inkMuted)),
+                  if (relative != null)
+                    Text(formatDateLong(day), style: PwTypeStyles.bodyTouch.copyWith(color: t.inkMuted)),
                 ],
               ),
             ),
@@ -272,7 +328,7 @@ class _RouteCard extends StatelessWidget {
       _ => Vi.startRoute,
     };
     final start = route.plannedStart == null ? null : Vi.plannedStart(formatTime(route.plannedStart, route.timezone));
-    final muted = PwTypeStyles.body.copyWith(color: t.inkMuted);
+    final muted = PwTypeStyles.bodyTouch.copyWith(color: t.inkMuted);
     final label = [
       route.planName,
       statusInfo(StatusKind.route, status)?.label,
@@ -497,7 +553,7 @@ class _ThemeOption extends StatelessWidget {
                           fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
                         ),
                       ),
-                      if (hint != null) Text(hint!, style: PwTypeStyles.body.copyWith(color: t.inkMuted)),
+                      if (hint != null) Text(hint!, style: PwTypeStyles.bodyTouch.copyWith(color: t.inkMuted)),
                     ],
                   ),
                 ),

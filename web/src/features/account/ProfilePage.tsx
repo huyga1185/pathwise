@@ -18,8 +18,9 @@ const DEVICE_TIME_ZONE = Intl.DateTimeFormat().resolvedOptions().timeZone;
 /** Prototype "Hồ sơ và bảo mật" (SCREENS §1.1): profile, two-step password change, signed-in devices. */
 export function ProfilePage() {
   const me = useMe();
-  const store = useStoreQuery();
-  const { logOut } = useSession();
+  const { session, logOut } = useSession();
+  // An ADMIN has no store (W11): dates of their devices in the device's time zone.
+  const store = useStoreQuery(session.status === 'authenticated' && session.user.role !== 'ADMIN');
   const timeZone = store.data?.timezone ?? DEVICE_TIME_ZONE;
 
   return (

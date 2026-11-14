@@ -1,3 +1,4 @@
+import { useStoreReadOnly } from '@/data/meQuery';
 import { Link, useNavigate, useSearchParams } from 'react-router';
 import { useStoreQuery } from '@/data/storeQuery';
 import { messageFor } from '@/shared/errors';
@@ -31,6 +32,7 @@ function shortDate(localDate: string): string {
  */
 export function PlanListPage() {
   const [params, setParams] = useSearchParams();
+  const { readOnly } = useStoreReadOnly();
   const navigate = useNavigate();
   const date = /^\d{4}-\d{2}-\d{2}$/.test(params.get('date') ?? '') ? (params.get('date') as string) : undefined;
   const rawStatus = params.get('status') ?? '';
@@ -97,7 +99,7 @@ export function PlanListPage() {
         <h1 id="plans-title" className="pw-page-title">
           {vi.plans.title}
         </h1>
-        {!empty ? (
+        {!empty && !readOnly ? (
           <Link className={buttonClass('primary')} to="/plans/new">
             {vi.plans.create}
           </Link>
@@ -134,9 +136,11 @@ export function PlanListPage() {
             {date ? vi.plans.emptyTitleOn(shortDate(date)) : status ? vi.plans.emptyFiltered : vi.plans.emptyTitle}
           </h2>
           <p className="pw-muted">{vi.plans.emptyLead}</p>
-          <Link className={buttonClass('primary')} to="/plans/new">
-            {vi.plans.create}
-          </Link>
+          {!readOnly ? (
+            <Link className={buttonClass('primary')} to="/plans/new">
+              {vi.plans.create}
+            </Link>
+          ) : null}
         </section>
       ) : (
         <section className="pw-plans-list" aria-label={vi.plans.listLabel}>

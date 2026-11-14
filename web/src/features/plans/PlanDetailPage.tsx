@@ -1,3 +1,4 @@
+import { useStoreReadOnly } from '@/data/meQuery';
 import { useState, type ReactNode } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import { ApiError } from '@/data/apiError';
@@ -92,6 +93,7 @@ function PlanHeader({ plan, subtitle, actions }: { plan: PlanDetail; subtitle: s
 /** Prototype "Soạn plan — tìm toạ độ" (SCREENS §1.1). */
 function GeocodeView({ plan }: { plan: PlanDetail }) {
   const navigate = useNavigate();
+  const { readOnly } = useStoreReadOnly();
   const planApi = usePlanApi();
   const stops = allStops(plan).sort((a, b) => a.id - b.id);
   const summary = plan.geocodingSummary;
@@ -187,12 +189,16 @@ function GeocodeView({ plan }: { plan: PlanDetail }) {
         actions={
           <div className="pw-plan-header-actions">
             <div className="pw-plan-actions">
-              <Button variant="secondary" disabled={busy} onClick={() => navigate(`/plans/${plan.id}/edit`)}>
+              <Button
+                variant="secondary"
+                disabled={busy || readOnly}
+                onClick={() => navigate(`/plans/${plan.id}/edit`)}
+              >
                 {g.editStops}
               </Button>
               <Button
                 variant="primary"
-                disabled={!canOptimize || working}
+                disabled={!canOptimize || working || readOnly}
                 aria-describedby="optimize-why"
                 onClick={() => void run(() => planApi.optimize(plan.id, plan.version))}
               >
@@ -226,6 +232,7 @@ function GeocodeView({ plan }: { plan: PlanDetail }) {
           <Button
             variant="secondary"
             busy={working}
+            disabled={readOnly}
             onClick={() => void run(() => planApi.geocode(plan.id, plan.version))}
           >
             {g.retryAll}

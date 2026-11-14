@@ -80,7 +80,7 @@ Một người có `canDrive` dùng cả hai: web để điều phối, mobile �
 | Stop chưa xếp | `dropReason`: `NOT_OPTIMIZED` (chưa tối ưu), `INFEASIBLE` (solver không xếp được) | |
 | Route | `PENDING`, `IN_PROGRESS`, `COMPLETED` | tính riêng cho từng route (P-35); tài xế thấy ở `/driver/routes`, dispatcher thấy ở `PlanDetail.routes[].status` (P-39); client không tự tính |
 | Job | `QUEUED`, `RUNNING`, `SUCCEEDED`, `FAILED` (+ `errorCode`) | |
-| Cửa hàng (khu ADMIN, T55) | `ACTIVE` "Đang hoạt động", `READ_ONLY` "Tạm khoá (chỉ đọc)" kèm `lockReason` | khoá: cam/vàng, không dùng đỏ (vẫn đọc được, tài xế vẫn giao) |
+| Cửa hàng (khu ADMIN, T55) | `ACTIVE` "Đang hoạt động", `READ_ONLY` "Tạm khoá (chỉ đọc)" kèm `lockReason`; nhãn ngắn trên `StatusPill` (W11): "HOẠT ĐỘNG", "TẠM KHOÁ" | khoá: cam/vàng, không dùng đỏ (vẫn đọc được, tài xế vẫn giao) |
 | Cửa hàng (phía thành viên, T56) | `GET /users/me`: `storeStatus` `READ_ONLY` + `storeLockReason` → băng "Cửa hàng đang tạm khoá: {lý do}" trên mọi màn web và app tài xế; web khoá nút ghi, app tài xế vẫn báo kết quả | băng cam/vàng, không đỏ |
 
 ### 5.3 Xung đột và giới hạn
@@ -110,7 +110,7 @@ Một người có `canDrive` dùng cả hai: web để điều phối, mobile �
 | `PASSWORD_RESET_LINK_SENT` | "Quản trị viên gửi link đặt lại mật khẩu cho {details.email}" | `email` |
 | `STORE_OWNER_TRANSFERRED` | "Quản trị viên chuyển quyền chủ cửa hàng từ {details.from} sang {details.to}" | `from`, `to` |
 
-Giá trị `action` mới có thể xuất hiện sau này: chưa có câu thì hiện mã. `details` có `truncated` nghĩa là chi tiết quá dài đã bị cắt: hiện "(chi tiết quá dài)".
+Web (W11) hiện người làm (email; hành động của ADMIN mà OWNER xem hiện "Quản trị viên PathWise") ở cột riêng nên câu bỏ phần chủ ngữ. Giá trị `action` mới có thể xuất hiện sau này: chưa có câu thì hiện mã. `details` có `truncated` nghĩa là chi tiết quá dài đã bị cắt: hiện "(chi tiết quá dài)".
 
 ### 5.5 Thông số nền tảng (T60, khu ADMIN)
 

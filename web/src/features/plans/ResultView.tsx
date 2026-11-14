@@ -1,3 +1,4 @@
+import { useStoreReadOnly } from '@/data/meQuery';
 import { useState } from 'react';
 import { Link, useBlocker, useNavigate } from 'react-router';
 import { ApiError } from '@/data/apiError';
@@ -56,6 +57,7 @@ export function ResultView({
 }) {
   const navigate = useNavigate();
   const planApi = usePlanApi();
+  const { readOnly } = useStoreReadOnly();
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [collapsed, setCollapsed] = useState<Record<number, boolean>>({});
   const [job, setJob] = useState<Job | null>(null);
@@ -166,19 +168,19 @@ export function ResultView({
         </div>
         {!editing ? (
           <div className="pw-plan-actions">
-            <Button variant="quiet" disabled={busy} onClick={() => setDialog('cancel')}>
+            <Button variant="quiet" disabled={busy || readOnly} onClick={() => setDialog('cancel')}>
               {r.cancel}
             </Button>
-            <Button variant="secondary" disabled={busy} onClick={() => navigate(`/plans/${plan.id}/edit`)}>
+            <Button variant="secondary" disabled={busy || readOnly} onClick={() => navigate(`/plans/${plan.id}/edit`)}>
               {r.editStops}
             </Button>
-            <Button variant="secondary" disabled={busy} onClick={() => setDraft(draftOf(plan))}>
+            <Button variant="secondary" disabled={busy || readOnly} onClick={() => setDraft(draftOf(plan))}>
               {m.start}
             </Button>
-            <Button variant="secondary" busy={busy} onClick={askReoptimize}>
+            <Button variant="secondary" busy={busy} disabled={readOnly} onClick={askReoptimize}>
               {busy ? r.optimizing : r.reoptimize}
             </Button>
-            <Button variant="primary" disabled={busy || drivers === 0} onClick={() => setDialog('publish')}>
+            <Button variant="primary" disabled={busy || drivers === 0 || readOnly} onClick={() => setDialog('publish')}>
               {r.publish(drivers)}
             </Button>
           </div>
