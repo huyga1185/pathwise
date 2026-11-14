@@ -1,0 +1,99 @@
+package uk.huy.pathwise.admin.service;
+
+import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import uk.huy.pathwise.admin.dto.response.AdminMemberResponse;
+import uk.huy.pathwise.admin.dto.response.AdminStoreDetailResponse;
+import uk.huy.pathwise.admin.dto.response.AdminStoreSummaryResponse;
+import uk.huy.pathwise.admin.dto.response.MemberCountsResponse;
+import uk.huy.pathwise.admin.dto.response.StorePeriodStatsResponse;
+import uk.huy.pathwise.core.exception.AppException;
+import uk.huy.pathwise.core.exception.ErrorCode;
+import uk.huy.pathwise.core.pagination.PageResponse;
+import uk.huy.pathwise.fleet.service.VehicleQuery;
+import uk.huy.pathwise.planning.dto.PlanActivity;
+import uk.huy.pathwise.planning.dto.PlanPeriodStats;
+import uk.huy.pathwise.planning.service.PlanStatsQuery;
+import uk.huy.pathwise.shared.identity.UserRole;
+import uk.huy.pathwise.store.dto.StoreRecord;
+import uk.huy.pathwise.store.model.StoreStatus;
+import uk.huy.pathwise.store.service.StoreDirectoryQuery;
+import uk.huy.pathwise.user.service.UserDirectoryQuery;
+
+import java.time.Duration;
+import java.time.Instant;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+/**
+ * The stores for the ADMIN (T55, FR-A11): one page of stores, then one aggregate query per module for the whole page.
+ * Only totals and member accounts; never the content of a store (plans, vehicles, stops, recipients; P-59).
+ */
+@Service
+@RequiredArgsConstructor
+public class AdminStoreService {
+    static final Duration RECENT = Duration.ofDays(30);
+    private static final PlanActivity NO_PLAN = new PlanActivity(0, null);
+
+    private final StoreDirectoryQuery storeDirectory;
+    private final UserDirectoryQuery userDirectory;
+    private final VehicleQuery vehicleQuery;
+    private final PlanStatsQuery planStats;
+
+    /**
+     * @param text matched against the store name and the OWNER email; null or blank: every store
+     * @throws AppException {@code INVALID_SORT_FIELD} outside id, name, createdAt
+     */
+    public PageResponse<AdminStoreSummaryResponse> listStores(@Nullable String text, @Nullable StoreStatus status,
+                                                              Pageable pageable) {
+        Set<Long> byOwner = text == null || text.isBlank() ? Set.of() : userDirectory.findStoreIdsByOwnerEmail(text);
+        Page<StoreRecord> stores = storeDirectory.search(text, byOwner, status, pageable);
+        List<Long> ids = stores.getContent().stream().map(StoreRecord::id).toList();
+        Map<Long, String> owners = userDirectory.findOwnerEmails(ids);
+        Map<Long, Map<UserRole, Long>> members = userDirectory.countMembersByRole(ids);
+        Map<Long, Long> vehicles = vehicleQuery.countActiveByStore(ids);
+        Map<Long, PlanActivity> activity = planStats.activityOf(ids);
+        return PageResponse.from(stores.map(store -> {
+            PlanActivity plans = activity.getOrDefault(store.id(), NO_PLAN);
+            return new AdminStoreSummaryResponse(store.id(), store.name(), owners.get(store.id()), store.status(),
+                    store.createdAt(), counts(members.get(store.id())), vehicles.getOrDefault(store.id(), 0L),
+                    plans.plans(), plans.lastActivityAt());
+        }));
+    }
+
+    /**
+     * @throws AppException {@code NOT_FOUND} if there is no such store
+     */
+    public AdminStoreDetailResponse getStore(long storeId) {
+        StoreRecord store = storeDirectory.find(storeId).orElseThrow(() -> new AppException(ErrorCode.NOT_FOUND));
+        List<Long> ids = List.of(storeId);
+        PlanActivity plans = planStats.activityOf(ids).getOrDefault(storeId, NO_PLAN);
+        Instant since = Instant.now().minus(RECENT);
+        List<AdminMemberResponse> members = userDirectory.listMembers(storeId).stream()
+                .map(member -> new AdminMemberResponse(member.id(), member.email(), member.role(), member.status(),
+                        member.createdAt()))
+                .toList();
+        return new AdminStoreDetailResponse(store.id(), store.name(), userDirectory.findOwnerEmails(ids).get(storeId),
+                store.status(), store.lockReason(), store.lockedAt(), store.timezone(), store.createdAt(),
+                counts(userDirectory.countMembersByRole(ids).get(storeId)),
+                vehicleQuery.countActiveByStore(ids).getOrDefault(storeId, 0L), plans.plans(), plans.lastActivityAt(),
+                period(since, planStats.statsSince(storeId, since)), members);
+    }
+
+    private static MemberCountsResponse counts(@Nullable Map<UserRole, Long> byRole) {
+        if (byRole == null) return new MemberCountsResponse(0, 0, 0);
+        return new MemberCountsResponse(byRole.getOrDefault(UserRole.OWNER, 0L),
+                byRole.getOrDefault(UserRole.DISPATCHER, 0L), byRole.getOrDefault(UserRole.DRIVER, 0L));
+    }
+
+    private static StorePeriodStatsResponse period(Instant since, PlanPeriodStats stats) {
+        long reported = stats.stopsDelivered() + stats.stopsFailed() + stats.stopsSkipped();
+        Double rate = reported == 0 ? null : Math.round(stats.stopsDelivered() * 10000.0 / reported) / 10000.0;
+        return new StorePeriodStatsResponse(since, stats.plansCreated(), stats.plansPublished(), stats.plansCompleted(),
+                stats.stopsDelivered(), stats.stopsFailed(), stats.stopsSkipped(), rate);
+    }
+}

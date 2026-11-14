@@ -536,6 +536,8 @@ Làm **A trước B**. A giữ an toàn dữ liệu và VPS (2 GB, chạy cả r
 
 ADMIN **không xem nội dung** của cửa hàng (plan, xe, điểm giao, người nhận): chỉ số tổng và nhật ký (BR-01, P-59). Mọi endpoint ở `/api/v1/admin/**`, quyền **AD**; mọi hành động ghi audit log (T58).
 
+Endpoint ADMIN mới đặt ở module `admin` (P-60, từ T55); cột khoá của cửa hàng (`stores.status`, `lock_reason`, `locked_at`, `locked_by`) đã có từ V7 (T55).
+
 #### T59. Tạo ADMIN không qua SQL
 - **Ước lượng:** 0,5 ngày · **Phụ thuộc:** —
 - **Phạm vi:** khi khởi động, nếu chưa có ADMIN nào và có biến `BOOTSTRAP_ADMIN_EMAIL` (+ mật khẩu lấy từ biến hoặc sinh ngẫu nhiên gửi qua email đặt lại mật khẩu) thì tạo một ADMIN đã xác thực; đã có ADMIN thì bỏ qua và log cảnh báo nếu biến còn đặt; không log mật khẩu. DEPLOYMENT hướng dẫn.
@@ -546,6 +548,7 @@ ADMIN **không xem nội dung** của cửa hàng (plan, xe, điểm giao, ngư�
 - **Ước lượng:** 1 ngày · **Phụ thuộc:** T59
 - **Phạm vi:** `GET /admin/stores` (phân trang, tìm theo tên/email chủ, lọc trạng thái, sort whitelist): tên, chủ (email), ngày tạo, trạng thái (ACTIVE/READ_ONLY), số thành viên theo vai trò, số xe, số plan, lần hoạt động gần nhất; `GET /admin/stores/{id}`: thêm số liệu 30 ngày (plan, điểm giao, tỉ lệ giao được), thành viên (email, vai trò, trạng thái; không số điện thoại); `GET /admin/users` trả đủ `storeId`, `status` (đóng lệch ở API_SPEC §0), lọc theo store/vai trò/trạng thái. Truy vấn tổng hợp, không trả nội dung plan.
 - **Acceptance:** số liệu đúng trên dữ liệu test; OWNER/DISPATCHER/DRIVER → 403; không field nội dung plan/điểm giao nào trong response.
+- **Phát sinh khi làm (2026-11-14, P-60):** module mới `admin` (`admin → store, user, fleet, planning`); migration **V7** thêm `stores.status`, `lock_reason`, `locked_at`, `locked_by` (T56 dùng, không cần migration riêng); "lần hoạt động gần nhất" = mới nhất giữa plan tạo/sửa và tài xế báo kết quả. Tìm `q` khớp tên cửa hàng hoặc email OWNER; sort `id`, `name`, `createdAt` (sort theo số tổng để sau). Số liệu 30 ngày tính từ lúc gọi (UTC), không theo ngày của múi giờ cửa hàng.
 
 #### T56. Khoá cửa hàng (chỉ đọc), khoá user, buộc đăng xuất
 - **Ước lượng:** 1–1,5 ngày · **Phụ thuộc:** T55

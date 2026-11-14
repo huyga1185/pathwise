@@ -21,6 +21,9 @@ class AdminUserControllerApi {
   /// 
   ///
   /// Parameters:
+  /// * [storeId] 
+  /// * [role] 
+  /// * [status] 
   /// * [page] - Zero-based page index (0..N)
   /// * [size] - The size of the page to be returned
   /// * [sort] - Sorting criteria in the format: property,(asc|desc). Default sort order is ascending. Multiple sort criteria are supported.
@@ -34,6 +37,9 @@ class AdminUserControllerApi {
   /// Returns a [Future] containing a [Response] with a [ApiResponsePageResponseAdminGetUserResponse] as data
   /// Throws [DioException] if API call or serialization fails
   Future<Response<ApiResponsePageResponseAdminGetUserResponse>> getListUser({ 
+    int? storeId,
+    String? role,
+    String? status,
     int? page = 0,
     int? size = 10,
     List<String>? sort,
@@ -64,6 +70,9 @@ class AdminUserControllerApi {
     );
 
     final _queryParameters = <String, dynamic>{
+      if (storeId != null) r'storeId': storeId,
+      if (role != null) r'role': role,
+      if (status != null) r'status': status,
       if (page != null) r'page': page,
       if (size != null) r'size': size,
       if (sort != null) r'sort': sort,

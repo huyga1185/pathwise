@@ -48,16 +48,14 @@ Please follow the [installation procedure](#installation--usage) and then run th
 import 'package:pathwise_api/pathwise_api.dart';
 
 
-final api = PathwiseApi().getAdminUserControllerApi();
-final int page = 56; // int | Zero-based page index (0..N)
-final int size = 56; // int | The size of the page to be returned
-final List<String> sort = ; // List<String> | Sorting criteria in the format: property,(asc|desc). Default sort order is ascending. Multiple sort criteria are supported.
+final api = PathwiseApi().getAdminStoreControllerApi();
+final int id = 789; // int | 
 
 try {
-    final response = await api.getListUser(page, size, sort);
+    final response = await api.getStore1(id);
     print(response);
 } catch on DioException (e) {
-    print("Exception when calling AdminUserControllerApi->getListUser: $e\n");
+    print("Exception when calling AdminStoreControllerApi->getStore1: $e\n");
 }
 
 ```
@@ -68,6 +66,8 @@ All URIs are relative to *http://localhost*
 
 Class | Method | HTTP request | Description
 ------------ | ------------- | ------------- | -------------
+[*AdminStoreControllerApi*](doc/AdminStoreControllerApi.md) | [**getStore1**](doc/AdminStoreControllerApi.md#getstore1) | **GET** /api/v1/admin/stores/{id} | 
+[*AdminStoreControllerApi*](doc/AdminStoreControllerApi.md) | [**listStores**](doc/AdminStoreControllerApi.md#liststores) | **GET** /api/v1/admin/stores | 
 [*AdminUserControllerApi*](doc/AdminUserControllerApi.md) | [**getListUser**](doc/AdminUserControllerApi.md#getlistuser) | **GET** /api/v1/admin/users | 
 [*AuthControllerApi*](doc/AuthControllerApi.md) | [**changePassword**](doc/AuthControllerApi.md#changepassword) | **PUT** /api/v1/auth/password | 
 [*AuthControllerApi*](doc/AuthControllerApi.md) | [**forgotPassword**](doc/AuthControllerApi.md#forgotpassword) | **POST** /api/v1/auth/password/forgot | 
@@ -124,6 +124,10 @@ Class | Method | HTTP request | Description
 
  - [AcceptInvitationRequest](doc/AcceptInvitationRequest.md)
  - [AdminGetUserResponse](doc/AdminGetUserResponse.md)
+ - [AdminMemberResponse](doc/AdminMemberResponse.md)
+ - [AdminStoreDetailResponse](doc/AdminStoreDetailResponse.md)
+ - [AdminStoreSummaryResponse](doc/AdminStoreSummaryResponse.md)
+ - [ApiResponseAdminStoreDetailResponse](doc/ApiResponseAdminStoreDetailResponse.md)
  - [ApiResponseAuthTokenResponse](doc/ApiResponseAuthTokenResponse.md)
  - [ApiResponseDirectionsResponse](doc/ApiResponseDirectionsResponse.md)
  - [ApiResponseDriverRouteDetailResponse](doc/ApiResponseDriverRouteDetailResponse.md)
@@ -141,6 +145,7 @@ Class | Method | HTTP request | Description
  - [ApiResponseListVehicleResponse](doc/ApiResponseListVehicleResponse.md)
  - [ApiResponseMemberResponse](doc/ApiResponseMemberResponse.md)
  - [ApiResponsePageResponseAdminGetUserResponse](doc/ApiResponsePageResponseAdminGetUserResponse.md)
+ - [ApiResponsePageResponseAdminStoreSummaryResponse](doc/ApiResponsePageResponseAdminStoreSummaryResponse.md)
  - [ApiResponsePageResponsePlanSummaryResponse](doc/ApiResponsePageResponsePlanSummaryResponse.md)
  - [ApiResponsePlanDetailResponse](doc/ApiResponsePlanDetailResponse.md)
  - [ApiResponseRegisterResponse](doc/ApiResponseRegisterResponse.md)
@@ -177,8 +182,10 @@ Class | Method | HTTP request | Description
  - [LocationPointRequest](doc/LocationPointRequest.md)
  - [LocationResponse](doc/LocationResponse.md)
  - [LogInRequest](doc/LogInRequest.md)
+ - [MemberCountsResponse](doc/MemberCountsResponse.md)
  - [MemberResponse](doc/MemberResponse.md)
  - [PageResponseAdminGetUserResponse](doc/PageResponseAdminGetUserResponse.md)
+ - [PageResponseAdminStoreSummaryResponse](doc/PageResponseAdminStoreSummaryResponse.md)
  - [PageResponsePlanSummaryResponse](doc/PageResponsePlanSummaryResponse.md)
  - [PatchStopRequest](doc/PatchStopRequest.md)
  - [PlaceResponse](doc/PlaceResponse.md)
@@ -199,6 +206,7 @@ Class | Method | HTTP request | Description
  - [ResetTokenResponse](doc/ResetTokenResponse.md)
  - [RouteStops](doc/RouteStops.md)
  - [SessionResponse](doc/SessionResponse.md)
+ - [StorePeriodStatsResponse](doc/StorePeriodStatsResponse.md)
  - [StoreResponse](doc/StoreResponse.md)
  - [TimeWindowRequest](doc/TimeWindowRequest.md)
  - [TimeWindowResponse](doc/TimeWindowResponse.md)

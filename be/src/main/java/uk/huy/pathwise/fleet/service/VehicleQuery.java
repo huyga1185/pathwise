@@ -4,10 +4,12 @@ import uk.huy.pathwise.fleet.dto.FleetVehicle;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /**
- * Public API of the {@code fleet} module, for {@code planning} to check the vehicles of a plan (BR-07).
+ * Public API of the {@code fleet} module, for {@code planning} to check the vehicles of a plan (BR-07), and for
+ * {@code admin} to count them (T55).
  */
 public interface VehicleQuery {
     /**
@@ -29,4 +31,11 @@ public interface VehicleQuery {
      * stores' vehicles are left out
      */
     List<FleetVehicle> findAll(long storeId, Collection<Long> vehicleIds);
+
+    /**
+     * Across stores, for ADMIN endpoints only (T55).
+     *
+     * @return the number of active vehicles of each of {@code storeIds} that has any
+     */
+    Map<Long, Long> countActiveByStore(Collection<Long> storeIds);
 }

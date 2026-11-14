@@ -40,6 +40,21 @@ public class Store {
     @Column(nullable = false)
     private String timezone;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    @Builder.Default
+    private StoreStatus status = StoreStatus.ACTIVE;
+
+    // The current lock (T56); null while ACTIVE.
+    @Column(name = "lock_reason")
+    private String lockReason;
+
+    @Column(name = "locked_at")
+    private Instant lockedAt;
+
+    @Column(name = "locked_by")
+    private Long lockedBy;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     @CreationTimestamp
     private Instant createdAt;

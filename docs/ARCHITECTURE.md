@@ -48,6 +48,7 @@ Package gốc `uk.huy.pathwise`. Mỗi module là một package cấp 1.
 | `fleet` | Xe. API công khai: `VehicleQuery.findActive(storeId, vehicleId)`, `listActive(storeId)`, `findAll(storeId, ids)` (cả xe đã tắt, để hiển thị) trả `FleetVehicle`. | Có (T20) |
 | `routing` | Adapter định tuyến **không có DB**: `GeocodingProvider`, `MatrixProvider`, `SolverProvider`, `DirectionsProvider`; endpoint geocoding search. Thay cho `routeoptimizer` (đã xoá ở T27). | Có — geocoding (T21), matrix (T22), solver (T23), directions (T33) |
 | `planning` | Route plan, route, stop; geocode nền, optimize, publish, trạng thái; API cho dispatcher **và** API cho driver; vị trí tài xế. | Có — draft CRUD (T24), geocode nền (T29); T25+ |
+| `admin` | Khu quản trị nền tảng cho ADMIN (P-59, P-60): `/api/v1/admin/stores` (T55), sau này khoá, hỗ trợ, audit, thông số (T56–T58, T60). Không có bảng riêng ở T55; ghép số liệu từ `StoreDirectoryQuery` (store), `UserDirectoryQuery` (user), `VehicleQuery.countActiveByStore` (fleet), `PlanStatsQuery` (planning). Chỉ số tổng và tài khoản thành viên, không nội dung cửa hàng. | Có (T55) |
 
 ### 2.1 Quy tắc phụ thuộc giữa module (bắt buộc)
 
@@ -61,6 +62,7 @@ fleet         →  (core, shared)
 routing       →  (core)
 job           →  (core, shared)
 planning      →  store, fleet, routing, job
+admin         →  store, user, fleet, planning   (P-60)
 ```
 
 - **Không có vòng phụ thuộc.** `user` không biết `auth`/`store`; `routing` không biết `planning`.
