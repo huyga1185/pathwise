@@ -7,12 +7,16 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import uk.huy.pathwise.store.model.Store;
-import uk.huy.pathwise.store.model.StoreStatus;
+import uk.huy.pathwise.shared.store.StoreStatus;
 
 import java.util.Collection;
+import java.util.Optional;
 
 @Repository
 public interface StoreRepository extends JpaRepository<Store, Long> {
+    @Query("SELECT s.status FROM Store s WHERE s.id = :id")
+    Optional<StoreStatus> findStatusById(@Param("id") long id);
+
     /**
      * Every store (ADMIN, T55): by state, and when {@code filtered} by name pattern or id.
      */

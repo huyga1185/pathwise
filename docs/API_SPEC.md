@@ -44,6 +44,12 @@
 - 404: tài nguyên trên path không tồn tại hoặc thuộc store khác → `NOT_FOUND`. Mã 404 riêng chỉ dùng khi client phải xử lý khác đi (P-24), hiện chỉ có `INVITATION_INVALID` (P-32).
 - Mã HTTP chuẩn: JSON hỏng hoặc giá trị enum lạ → 400 `MALFORMED_REQUEST`; path không tồn tại → 404 `NOT_FOUND`; sai method → 405 `METHOD_NOT_ALLOWED`; vi phạm ràng buộc DB không có mã riêng → 409 `CONFLICT`.
 
+**Cửa hàng bị khoá** (T56, P-59, P-62)
+- Khi cửa hàng `READ_ONLY` (ADMIN khoá, §3a), mọi request ghi (POST, PUT, PATCH, DELETE) của thành viên → **423 `STORE_READ_ONLY`**, kiểm trước cả validation và quyền theo đối tượng. Đọc vẫn bình thường.
+- Vẫn ghi được: tài khoản cá nhân (`/auth/*`: đăng xuất, phiên, đổi mật khẩu; `PATCH /users/me`) và việc của tài xế để giao nốt (`PATCH /driver/routes/{routeId}/stops/{stopId}/status`, `POST /driver/location`, `PUT /driver/location/sharing`).
+- `POST /invitations/accept` (công khai) cho lời mời của cửa hàng bị khoá → 423; mã mời vẫn dùng được sau khi mở khoá.
+- Client biết trạng thái qua `GET /users/me` (`storeStatus`, `storeLockReason`) để hiện băng "Cửa hàng đang tạm khoá: {lý do}".
+
 **Rate limit** (P-16, P-37)
 - Áp dụng cho `POST /auth/log-in` (theo IP và email), `/auth/register` (IP), `/auth/email/verify/resend` và `/auth/password/forgot` (IP và email), `/auth/password/change/otp` (user), `POST /store/invitations` (store). Fixed window; ngưỡng ở `rate-limit.rules.*`, mặc định ghi ở P-37. Mọi request đều được đếm, kể cả thành công, và được đếm trước khi xử lý.
 - Vượt ngưỡng → 429 `RATE_LIMITED`, header `Retry-After` = số giây tới khi hết window (làm tròn lên). `/email/verify/resend`, `/password/forgot` vẫn trả 429 với email không tồn tại, nên không lộ email nào đã đăng ký.
@@ -108,11 +114,15 @@ Ghi chú:
 | `GET /users/me` | A | — | `User` | — | ✅ |
 | `PATCH /users/me` | A | merge patch `{fullName?, phoneNumber?}`; `null` xoá giá trị | 200 `User` | 400 (`FULL_NAME_REQUIRED` khi chuỗi trắng, `INVALID_FULL_NAME_LENGTH` ≤ 100, `PHONE_NUMBER_*`) | ✅ |
 | `GET /admin/users` | AD | `storeId?`, `role?` (`ADMIN\|OWNER\|DISPATCHER\|DRIVER`), `status?` (`PENDING_VERIFICATION\|ACTIVE\|DISABLED`), paging; sort `id` (mặc định), `email`, `createdAt`, `updatedAt` | Page `{id, email, phoneNumber, role, storeId, status, createdAt, updatedAt}`; `storeId` là `null` với ADMIN | 400 `INVALID_SORT_FIELD` · 400 `MALFORMED_REQUEST` (giá trị enum sai) | ✅ (lọc và `storeId`, `status` từ T55) |
+| `POST /admin/users/{id}/disable` | AD | — | 200 `{id, email, phoneNumber, role, storeId, status: DISABLED, createdAt, updatedAt}`; thu hồi mọi phiên; ghi `USER_DISABLED` | 404 · 422 `CANNOT_MODIFY_SELF` (tự khoá mình, nên luôn còn ADMIN) | ✅ (T56) |
+| `POST /admin/users/{id}/enable` | AD | — | 200 như trên; `status` về `ACTIVE`, hoặc `PENDING_VERIFICATION` nếu email chưa từng xác thực; ghi `USER_ENABLED` | 404 | ✅ (T56) |
+| `POST /admin/users/{id}/sessions/revoke` | AD | — | 204; mọi refresh token bị thu hồi (buộc đăng xuất; access token cũ hết hạn trong ≤ 15 phút); ghi `USER_SESSIONS_REVOKED` | 404 | ✅ (T56) |
 
 ```jsonc
 // User
 { "id": 12, "email": "a@b.vn", "fullName": "An", "phoneNumber": "+84905123456", "role": "OWNER", "storeId": 3,
-  "status": "ACTIVE", "canDrive": false }   // canDrive luôn true với DRIVER (D-21)
+  "status": "ACTIVE", "canDrive": false,     // canDrive luôn true với DRIVER (D-21)
+  "storeStatus": "ACTIVE", "storeLockReason": null }   // T56: trạng thái cửa hàng của user; cả hai null với ADMIN
 ```
 
 ## 3a. Quản trị (ADMIN) — `/api/v1/admin/stores`, `/api/v1/admin/audit`
@@ -123,6 +133,8 @@ Module `admin` (P-60). ADMIN chỉ thấy **số tổng và tài khoản thành 
 |---|---|---|---|---|---|
 | `GET /admin/stores` | AD | `q?` (chứa trong tên cửa hàng **hoặc** email OWNER, không phân biệt hoa thường; `%`, `_` khớp đúng ký tự), `status?` (`ACTIVE\|READ_ONLY`), paging; sort `id` (mặc định), `name`, `createdAt` | Page `AdminStoreSummary` | 400 `INVALID_SORT_FIELD` · 400 `MALFORMED_REQUEST` | ✅ (T55) |
 | `GET /admin/stores/{id}` | AD | — | `AdminStoreDetail`; ghi nhật ký `STORE_VIEWED` (T58, P-61) | 404 `NOT_FOUND` | ✅ (T55) |
+| `POST /admin/stores/{id}/lock` | AD | `{reason}` (bắt buộc, cắt khoảng trắng, ≤ 500) | 200 `{id, status: READ_ONLY, lockReason, lockedAt}`; khoá lại thì thay lý do; ghi `STORE_LOCKED` | 400 `LOCK_REASON_REQUIRED`, `INVALID_LOCK_REASON_LENGTH` · 404 | ✅ (T56) |
+| `POST /admin/stores/{id}/unlock` | AD | — | 200 `{id, status: ACTIVE, lockReason: null, lockedAt: null}`; cửa hàng đang ACTIVE thì không đổi, không ghi nhật ký; ghi `STORE_UNLOCKED` | 404 | ✅ (T56) |
 | `GET /admin/audit` | AD | `storeId?`, `actorId?`, `action?` (`AuditAction`), `from?`, `to?` (`YYYY-MM-DD`, cả hai ngày tính, giờ Asia/Ho_Chi_Minh), paging; sort `occurredAt` (mặc định, mới nhất trước), `id` | Page `AuditEvent` | 400 `INVALID_SORT_FIELD` · 400 `MALFORMED_REQUEST` | ✅ (T58) |
 
 ```jsonc
@@ -155,6 +167,11 @@ Ghi chú:
 | `PLAN_CANCELLED` | OWNER/DISPATCHER, `POST /plans/{id}/cancel` | `PLAN` | `{from}` (trạng thái trước khi huỷ) |
 | `PLAN_ROUTES_EDITED` | OWNER/DISPATCHER, `PUT /plans/{id}/routes` | `PLAN` | `{violations}` (số vi phạm sau khi chỉnh) |
 | `STORE_VIEWED` | ADMIN, `GET /admin/stores/{id}` (danh sách thì không) | `STORE` | `{}` |
+| `STORE_LOCKED` | ADMIN, `POST /admin/stores/{id}/lock` | `STORE` | `{reason}` |
+| `STORE_UNLOCKED` | ADMIN, `POST /admin/stores/{id}/unlock` | `STORE` | `{reason}` (lý do của lần khoá vừa gỡ) |
+| `USER_DISABLED` | ADMIN, `POST /admin/users/{id}/disable` | `USER` | `{email}` |
+| `USER_ENABLED` | ADMIN, `POST /admin/users/{id}/enable` | `USER` | `{email, status}` |
+| `USER_SESSIONS_REVOKED` | ADMIN, `POST /admin/users/{id}/sessions/revoke` | `USER` | `{email}` |
 
 ```jsonc
 // AuditEvent
@@ -165,7 +182,8 @@ Ghi chú:
 ```
 
 - `details` không chứa dữ liệu cá nhân ngoài email; quá 2000 ký tự thì thành `{"truncated": "<đầu chuỗi JSON>"}` và thao tác vẫn thành công.
-- Danh sách `action` chỉ được thêm (T56, T57 sẽ thêm hành động của ADMIN); client gặp giá trị lạ thì hiện mã.
+- Hành động trên user ghi kèm `storeId` của user đó, nên OWNER thấy ADMIN đã làm gì với thành viên của mình.
+- Danh sách `action` chỉ được thêm (T57 sẽ thêm); client gặp giá trị lạ thì hiện mã.
 
 ## 4. Store — `/api/v1/store`, `/api/v1/invitations`
 
@@ -183,7 +201,7 @@ Store luôn là store của actor (không có `storeId` trong path).
 | `POST /store/invitations/{id}/revoke` | O | — | 204; lời mời thành `REVOKED`, vẫn có trong danh sách | 404 · 422 `INVITATION_NOT_PENDING` | ✅ |
 | `GET /store/audit` | O | `actorId?`, `action?`, `from?`, `to?` (`YYYY-MM-DD`, cả hai ngày tính, theo `timezone` của cửa hàng), paging; sort `occurredAt` (mặc định, mới nhất trước), `id` | Page `StoreAuditEvent` = `AuditEvent` bỏ `storeId`; `ip` là `null` với hành động của ADMIN (P-59) | 400 `INVALID_SORT_FIELD` · 400 `MALFORMED_REQUEST` | ✅ (T58) |
 | `GET /invitations/{code}` | P | — | `{storeName, email, role, expiresAt}` | 404 `INVITATION_INVALID` | ✅ |
-| `POST /invitations/accept` | P | `{code, password, fullName, phoneNumber?}` | 204 (user ACTIVE, email đã xác thực; sau đó log-in) | 404 `INVITATION_INVALID` · 409 `EMAIL_EXISTED` · 400 `INVALID_PHONE_NUMBER` | ✅ |
+| `POST /invitations/accept` | P | `{code, password, fullName, phoneNumber?}` | 204 (user ACTIVE, email đã xác thực; sau đó log-in) | 404 `INVITATION_INVALID` · 409 `EMAIL_EXISTED` · 400 `INVALID_PHONE_NUMBER` · 423 `STORE_READ_ONLY` (cửa hàng bị khoá, T56) | ✅ |
 
 ```jsonc
 // Store
@@ -456,10 +474,11 @@ Người gọi phải có `role=DRIVER` hoặc `canDrive=true` (D-21); người 
 | Xác thực | `UNAUTHORIZED`, `INVALID_TOKEN`, `INVALID_EMAIL_OR_PASSWORD` | 401 |
 | Xác thực | `INVALID_OTP`, `INVALID_CURRENT_PASSWORD`, `INVALID_RESET_TOKEN` | 400 |
 | Quyền | `FORBIDDEN`, `EMAIL_NOT_VERIFIED`, `ACCOUNT_DISABLED` | 403 |
+| Cửa hàng bị khoá | `STORE_READ_ONLY` (T56, P-62) | 423 |
 | Không tìm thấy | `NOT_FOUND`, `INVITATION_INVALID` | 404 |
 | Method | `METHOD_NOT_ALLOWED` | 405 |
 | Xung đột | `EMAIL_EXISTED`, `EMAIL_ALREADY_VERIFIED`, `VEHICLE_NAME_EXISTED`, `PLAN_MODIFIED`, `PLAN_BUSY`, `CONFLICT` | 409 |
-| Nghiệp vụ | `CANNOT_MODIFY_OWNER`, `INVITATION_NOT_PENDING`, `STORE_DEPOT_REQUIRED`, `INVALID_ASSIGNMENT`, `PLAN_TOO_LARGE`, `PLAN_NOT_EDITABLE`, `NOTHING_TO_GEOCODE`, `PLAN_INCOMPLETE`, `STOPS_NOT_GEOCODED`, `PLAN_NOT_OPTIMIZED`, `PLAN_NOT_CANCELLABLE`, `PLAN_NOT_ACTIVE`, `SHIFT_OVERLAP`, `INVALID_STOP_TRANSITION`, `FAILURE_REASON_REQUIRED` | 422 |
+| Nghiệp vụ | `CANNOT_MODIFY_OWNER`, `CANNOT_MODIFY_SELF`, `INVITATION_NOT_PENDING`, `STORE_DEPOT_REQUIRED`, `INVALID_ASSIGNMENT`, `PLAN_TOO_LARGE`, `PLAN_NOT_EDITABLE`, `NOTHING_TO_GEOCODE`, `PLAN_INCOMPLETE`, `STOPS_NOT_GEOCODED`, `PLAN_NOT_OPTIMIZED`, `PLAN_NOT_CANCELLABLE`, `PLAN_NOT_ACTIVE`, `SHIFT_OVERLAP`, `INVALID_STOP_TRANSITION`, `FAILURE_REASON_REQUIRED` | 422 |
 | Giới hạn | `OTP_COOLDOWN`, `RATE_LIMITED` | 429 |
 | Provider | `GEOCODING_PROVIDER_ERROR`, `ROUTING_PROVIDER_ERROR` | 502 |
 | Provider / hạ tầng | `GEOCODING_BUSY`, `SERVICE_UNAVAILABLE` | 503 |

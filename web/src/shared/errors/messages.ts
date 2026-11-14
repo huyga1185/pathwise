@@ -9,6 +9,8 @@ export const errorMessages: Record<string, string> = {
   INVALID_EMAIL_OR_PASSWORD: 'Email hoặc mật khẩu không đúng.',
   EMAIL_NOT_VERIFIED: 'Email chưa được xác thực.',
   ACCOUNT_DISABLED: 'Tài khoản đã bị vô hiệu hoá. Liên hệ chủ cửa hàng.',
+  STORE_READ_ONLY: 'Cửa hàng đang tạm khoá nên chưa thay đổi được. Bạn vẫn xem được dữ liệu.',
+  CANNOT_MODIFY_SELF: 'Bạn không thể khoá tài khoản của chính mình.',
   EMAIL_EXISTED: 'Email này đã được dùng.',
   EMAIL_ALREADY_VERIFIED: 'Email đã được xác thực, bạn có thể đăng nhập.',
   INVALID_OTP: 'Mã OTP không đúng hoặc đã hết hạn.',

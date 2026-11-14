@@ -10,7 +10,7 @@ import uk.huy.pathwise.core.pagination.PaginationValidator;
 import uk.huy.pathwise.core.search.LikePattern;
 import uk.huy.pathwise.store.dto.StoreRecord;
 import uk.huy.pathwise.store.model.Store;
-import uk.huy.pathwise.store.model.StoreStatus;
+import uk.huy.pathwise.shared.store.StoreStatus;
 import uk.huy.pathwise.store.repository.StoreRepository;
 
 import java.util.Collection;
@@ -43,7 +43,7 @@ public class StoreDirectoryService implements StoreDirectoryQuery {
         return storeRepository.findById(storeId).map(StoreDirectoryService::toRecord);
     }
 
-    private static StoreRecord toRecord(Store store) {
+    static StoreRecord toRecord(Store store) {
         return new StoreRecord(store.getId(), store.getName(), store.getStatus(), store.getTimezone(),
                 store.getLockReason(), store.getLockedAt(), store.getCreatedAt());
     }

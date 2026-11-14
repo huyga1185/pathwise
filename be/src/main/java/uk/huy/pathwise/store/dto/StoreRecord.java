@@ -1,7 +1,7 @@
 package uk.huy.pathwise.store.dto;
 
 import org.jspecify.annotations.Nullable;
-import uk.huy.pathwise.store.model.StoreStatus;
+import uk.huy.pathwise.shared.store.StoreStatus;
 
 import java.time.Instant;
 

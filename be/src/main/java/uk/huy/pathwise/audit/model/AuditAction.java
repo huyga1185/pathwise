@@ -18,5 +18,15 @@ public enum AuditAction {
 
     // By a platform ADMIN.
     /** The ADMIN opened the detail of a store (GET /admin/stores/{id}). */
-    STORE_VIEWED
+    STORE_VIEWED,
+    /** The ADMIN locked a store READ_ONLY (T56); details: reason. */
+    STORE_LOCKED,
+    /** The ADMIN unlocked a store (T56); details: the reason of the lock. */
+    STORE_UNLOCKED,
+    /** The ADMIN disabled an account and ended its sessions (T56); details: email. */
+    USER_DISABLED,
+    /** The ADMIN enabled an account (T56); details: email, the new status. */
+    USER_ENABLED,
+    /** The ADMIN ended every session of an account (T56); details: email. */
+    USER_SESSIONS_REVOKED
 }

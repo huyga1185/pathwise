@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import uk.huy.pathwise.core.web.AllowedWhenStoreReadOnly;
 import uk.huy.pathwise.planning.dto.request.LocationBatchRequest;
 import uk.huy.pathwise.planning.dto.request.UpdateLocationSharingRequest;
 import uk.huy.pathwise.planning.service.DriverLocationService;
@@ -15,6 +16,8 @@ import uk.huy.pathwise.shared.identity.AuthenticatedUser;
 /**
  * The driver's position (API_SPEC §8, D-26, P-53): a DRIVER, or an OWNER/DISPATCHER with {@code canDrive} (D-21).
  */
+// Drivers keep sending their location in a locked store, to finish running deliveries (T56, P-59).
+@AllowedWhenStoreReadOnly
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/driver/location")

@@ -5,12 +5,15 @@ import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import uk.huy.pathwise.core.web.AllowedWhenStoreReadOnly;
 import uk.huy.pathwise.core.apiresponse.ApiResponse;
 import uk.huy.pathwise.user.dto.request.UpdateProfileRequest;
 import uk.huy.pathwise.user.dto.response.GetUserResponse;
 import uk.huy.pathwise.shared.identity.AuthenticatedUser;
 import uk.huy.pathwise.user.service.UserProfileService;
 
+// The user's own profile stays editable in a locked store (T56).
+@AllowedWhenStoreReadOnly
 @RestController
 @AllArgsConstructor
 @RequestMapping("/api/v1/users")

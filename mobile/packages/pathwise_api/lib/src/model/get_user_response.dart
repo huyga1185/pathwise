@@ -33,6 +33,10 @@ class GetUserResponse {
     required  this.status,
 
     required  this.storeId,
+
+    required  this.storeLockReason,
+
+    required  this.storeStatus,
   });
 
   @JsonKey(
@@ -131,6 +135,30 @@ class GetUserResponse {
 
 
 
+  @JsonKey(
+    
+    name: r'storeLockReason',
+    required: true,
+    includeIfNull: true,
+  )
+
+
+  final String? storeLockReason;
+
+
+
+  @JsonKey(
+    
+    name: r'storeStatus',
+    required: true,
+    includeIfNull: true,
+  )
+
+
+  final GetUserResponseStoreStatusEnum? storeStatus;
+
+
+
 
 
     @override
@@ -142,7 +170,9 @@ class GetUserResponse {
       other.phoneNumber == phoneNumber &&
       other.role == role &&
       other.status == status &&
-      other.storeId == storeId;
+      other.storeId == storeId &&
+      other.storeLockReason == storeLockReason &&
+      other.storeStatus == storeStatus;
 
     @override
     int get hashCode =>
@@ -153,7 +183,9 @@ class GetUserResponse {
         (phoneNumber == null ? 0 : phoneNumber.hashCode) +
         role.hashCode +
         status.hashCode +
-        (storeId == null ? 0 : storeId.hashCode);
+        (storeId == null ? 0 : storeId.hashCode) +
+        (storeLockReason == null ? 0 : storeLockReason.hashCode) +
+        (storeStatus == null ? 0 : storeStatus.hashCode);
 
   factory GetUserResponse.fromJson(Map<String, dynamic> json) => _$GetUserResponseFromJson(json);
 
@@ -196,6 +228,22 @@ ACTIVE(r'ACTIVE'),
 DISABLED(r'DISABLED');
 
 const GetUserResponseStatusEnum(this.value);
+
+final String value;
+
+@override
+String toString() => value;
+}
+
+
+
+enum GetUserResponseStoreStatusEnum {
+@JsonValue(r'ACTIVE')
+ACTIVE(r'ACTIVE'),
+@JsonValue(r'READ_ONLY')
+READ_ONLY(r'READ_ONLY');
+
+const GetUserResponseStoreStatusEnum(this.value);
 
 final String value;
 

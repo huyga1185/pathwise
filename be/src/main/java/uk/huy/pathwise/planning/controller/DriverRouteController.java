@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import uk.huy.pathwise.core.web.AllowedWhenStoreReadOnly;
 import uk.huy.pathwise.core.apiresponse.ApiResponse;
 import uk.huy.pathwise.planning.dto.request.UpdateStopStatusRequest;
 import uk.huy.pathwise.planning.dto.response.DirectionsResponse;
@@ -25,6 +26,8 @@ import java.util.List;
 /**
  * Driver API (API_SPEC §8): a DRIVER, or an OWNER/DISPATCHER with {@code canDrive} (D-21, ARCHITECTURE.md §6.3).
  */
+// Drivers keep reporting stop results in a locked store, to finish running deliveries (T56, P-59).
+@AllowedWhenStoreReadOnly
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/driver/routes")
