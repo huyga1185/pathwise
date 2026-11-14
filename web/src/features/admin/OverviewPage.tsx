@@ -1,12 +1,11 @@
 import { useState } from 'react';
 import { DailyBarChart } from '@/platform/charts';
 import { messageFor } from '@/shared/errors';
-import { formatDayTime, formatDuration, todayIn } from '@/shared/format';
+import { formatDayTime, formatDuration, formatRate, shortDate, todayIn } from '@/shared/format';
 import { vi } from '@/shared/i18n/vi';
-import { ErrorBanner, DataTable } from '@/shared/ui';
+import { ErrorBanner, DataTable, Stat } from '@/shared/ui';
 import { useBusinessMetrics, useTechnicalMetrics, type BusinessMetrics, type TechnicalMetrics } from './adminApi';
-import { formatBytes, formatRate, shortDate } from './adminFormat';
-import { Stat } from './Stat';
+import { formatBytes } from './adminFormat';
 
 const ZONE = 'Asia/Ho_Chi_Minh';
 const RANGES = [7, 30, 90] as const;
@@ -35,12 +34,12 @@ export function OverviewPage() {
           </h1>
           {business.data ? <p className="pw-muted">{t.lead(formatDayTime(business.data.computedAt, ZONE))}</p> : null}
         </div>
-        <div className="pw-admin-seg" role="group" aria-label={t.range}>
+        <div className="pw-segmented" role="group" aria-label={t.range}>
           {RANGES.map((n) => (
             <button
               key={n}
               type="button"
-              className="pw-admin-seg-btn"
+              className="pw-segmented-btn"
               aria-pressed={range === n}
               onClick={() => setRange(n)}
             >

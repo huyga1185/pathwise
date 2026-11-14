@@ -1,0 +1,63 @@
+/* Store reports (W12, prototype "Báo cáo"). Tokens only. */
+.pw-reports-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+.pw-reports-intro {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+}
+.pw-reports-intro p {
+  margin: 0;
+}
+.pw-reports-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-4);
+}
+.pw-reports-filters .pw-field {
+  flex: 0 1 200px;
+}
+.pw-reports-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--space-4);
+}
+.pw-reports-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface-raised);
+}
+.pw-reports-h2 {
+  margin: 0 0 var(--space-2);
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 600;
+}
+.pw-reports-card .pw-reports-h2 {
+  margin: 0;
+}
+.pw-reports-tables {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  gap: var(--space-4);
+  align-items: start;
+}
+@media (max-width: 1024px) {
+  .pw-reports-tables {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.pw-reports-drivers .pw-table {
+  min-width: 860px;
+}

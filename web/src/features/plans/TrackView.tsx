@@ -4,6 +4,8 @@ import { DriverIcon, RouteMap, routeColour, type MapDriver } from '@/platform/ma
 import { formatDateLong, formatPhone, formatTime } from '@/shared/format';
 import { vi } from '@/shared/i18n/vi';
 import { Button, buttonClass, StatusPill } from '@/shared/ui';
+import { useStoreReadOnly } from '@/data/meQuery';
+import { CopyDialog } from './CopyDialog';
 import { CancelDialog } from './PlanDialogs';
 import { allStops, useDriverLocations, type DriverLocation, type PlanDetail, type PlanStop } from './planApi';
 import { describeSelection } from './ResultView';
@@ -87,6 +89,8 @@ function describeDriver(route: PlanRoute, found: DriverLocation, timeZone: strin
 export function TrackView({ plan, updatedAt }: { plan: PlanDetail; updatedAt: number }) {
   const [selectedId, setSelectedId] = useState<number | string | null>(null);
   const [cancelling, setCancelling] = useState(false);
+  const [copying, setCopying] = useState(false);
+  const { readOnly } = useStoreReadOnly();
   const live = plan.status === 'PUBLISHED' || plan.status === 'IN_PROGRESS';
   const locationsQuery = useDriverLocations(plan.id, live);
   // Unknown until read: no line rather than "no position" while loading or when the request failed.
@@ -141,6 +145,11 @@ export function TrackView({ plan, updatedAt }: { plan: PlanDetail; updatedAt: nu
           <p className="pw-muted">{headline}</p>
         </div>
         <div className="pw-plan-actions">
+          {!readOnly ? (
+            <Button variant="secondary" onClick={() => setCopying(true)}>
+              {vi.planCopy.action}
+            </Button>
+          ) : null}
           {plan.status === 'PUBLISHED' ? (
             <Button variant="quiet" onClick={() => setCancelling(true)}>
               {vi.result.cancel}
@@ -153,6 +162,8 @@ export function TrackView({ plan, updatedAt }: { plan: PlanDetail; updatedAt: nu
           ) : null}
         </div>
       </div>
+
+      {copying ? <CopyDialog planId={plan.id} planName={plan.name} open onClose={() => setCopying(false)} /> : null}
 
       {plan.status === 'CANCELLED' ? (
         <section role="status" className="pw-cancelled">
