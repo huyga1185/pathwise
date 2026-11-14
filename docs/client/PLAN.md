@@ -201,6 +201,13 @@ File nóng của client (không hai task song song cùng sửa): `web/package.js
   - **Nhật ký** (T58): bảng lọc theo cửa hàng, người làm, hành động, khoảng ngày.
   - Phía cửa hàng: khi store READ_ONLY, băng "Cửa hàng đang tạm khoá: {lý do}" trên mọi màn, các nút ghi khoá; mã lỗi khoá có câu ở UX_BRIEF §6. App tài xế: băng tương tự, báo kết quả vẫn được (P-59). OWNER có màn "Nhật ký" trong Cửa hàng (T58).
 - **Acceptance:** test từng màn với fixture từ API; ADMIN thấy `/admin`, role khác bị chuyển; khoá cửa hàng hiện băng và khoá nút; E2E: ADMIN khoá rồi mở khoá một cửa hàng; `pnpm lint/typecheck/test/build` xanh.
+- **API đã có (cập nhật 2026-11-14, sau T55, T59):** client sinh từ `api/openapi.json` đã gồm các endpoint dưới (`web/src/data/schema.d.ts`). Chi tiết ở API_SPEC §3 và §3a.
+  - `GET /admin/stores?q=&status=&page=&size=&sort=`: `q` tìm trong tên cửa hàng **hoặc** email chủ (không phân biệt hoa thường; `%`, `_` là ký tự thường); `status` `ACTIVE|READ_ONLY`; sort chỉ `id` (mặc định), `name`, `createdAt` (sort khác → 400 `INVALID_SORT_FIELD`; **chưa sort được theo số tổng** như số xe, lần hoạt động). Mỗi dòng: `ownerEmail` (có thể null), `status`, `createdAt`, `memberCounts {owners, dispatchers, drivers}` (mọi trạng thái), `vehicles` (xe đang dùng), `plans` (mọi trạng thái), `lastActivityAt` (null khi chưa có plan; = mới nhất giữa plan tạo/sửa và tài xế báo kết quả, P-60).
+  - `GET /admin/stores/{id}`: thêm `lockReason`, `lockedAt` (null khi `ACTIVE`; T56 mới ghi), `timezone`, `last30Days` (`since` = lúc gọi − 30 ngày theo giờ thực, **không** theo ngày lịch; plan tạo/publish/hoàn thành; điểm giao giao được/thất bại/bỏ qua; `deliveredRate` 0–1 hoặc null khi chưa có kết quả), `members[]` chỉ `id, email, role, status, createdAt` (không tên, không số điện thoại). 404 khi không có cửa hàng.
+  - `GET /admin/users?storeId=&role=&status=&page=&size=&sort=`: trả thêm `storeId` (null với ADMIN) và `status`; sort `id`, `email`, `createdAt`, `updatedAt`.
+  - Nhãn trạng thái cửa hàng: UX_BRIEF §5.2.
+  - Tài khoản ADMIN để làm W11 trên máy dev: đặt `BOOTSTRAP_ADMIN_EMAIL` (và `BOOTSTRAP_ADMIN_PASSWORD`) cho backend rồi khởi động lại; app tạo ADMIN khi chưa có (T59, DEPLOYMENT §2). Không cần SQL.
+  - Chưa có (task backend còn lại): khoá/mở cửa hàng và user, buộc đăng xuất, mã `STORE_READ_ONLY` (T56); hỗ trợ tài khoản, chuyển chủ (T57); nhật ký (T58); thông số (T60). Màn hoặc nút dựa vào chúng hiện "Sắp có" tới khi task xong.
 
 ### W08. Đóng gói và deploy web
 - **Ước lượng:** 0,5–1 ngày · **Điều kiện:** chủ dự án chốt reverse proxy và domain (đang để sau, xem P-47)
@@ -211,6 +218,7 @@ File nóng của client (không hai task song song cùng sửa): `web/package.js
   - Image `pathwise-web` (`web/Dockerfile`, context là gốc repo vì Vite chép `brand/logo`; `web/Dockerfile.dockerignore`): Node 24.11.1 build, Caddy 2.10.2 chạy, `caddy validate` trong lúc build; ~84 MB. Sau merge, workflow `image` chặn image vì Trivy thấy CRITICAL đã có bản sửa (Alpine 3.22 của Caddy 2.10.2: OpenSSL; binary Caddy build bằng Go 1.25.0) và khoá CA nội bộ do `caddy validate` tạo nằm trong image: đổi sang Caddy 2.11.7 + `apk upgrade`, `validate` ghi dữ liệu vào thư mục tạm rồi xoá. pnpm cài bằng `npm install -g` vì corepack của Node 24.11 không chạy được pnpm 12. Workflow `image` build theo matrix cùng image app; job `web` của CI build thêm image (bộ lọc thay đổi gồm `deploy/caddy/`).
   - `compose.web.yaml` (service `web`, cổng 80/443/443-udp, volume chứng chỉ); workflow `release` đính `pathwise-web-<tag>.tar.gz` (`app/` + `Caddyfile`) khi publish release, cho Caddy trên host.
   - Kiểm tay trên máy dev (`localhost`, chứng chỉ nội bộ của Caddy): container và Caddy kiểu host đều chạy đúng redirect, SPA fallback, cache header, `config.js`, `/api` qua Caddy; `/actuator` 404.
+- **Thay đổi sau W08 (2026-11-14, T54):** Caddyfile mở thêm đúng một đường `/actuator/health` (`{"status":"UP"}` hoặc 503) cho dịch vụ uptime bên ngoài; `/actuator/health/*` và mọi `/actuator` khác vẫn 404 (DEPLOYMENT §9). Web không dùng đường này.
 
 ## 3. App tài xế
 
