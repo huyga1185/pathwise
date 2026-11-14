@@ -64,7 +64,7 @@ routing       →  (core)
 job           →  (core, shared)
 audit         →  (core, shared)                (P-61)
 planning      →  store, fleet, routing, job, audit
-admin         →  store, user, fleet, planning, audit, auth, job   (P-60, P-61, P-62; job: P-65 Proposed)
+admin         →  store, user, fleet, planning, audit, auth, job   (P-60, P-61, P-62, P-65)
 ```
 
 - **Không có vòng phụ thuộc.** `user` không biết `auth`/`store`; `routing` không biết `planning`.
