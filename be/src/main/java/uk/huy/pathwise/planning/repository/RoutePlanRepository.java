@@ -79,6 +79,21 @@ public interface RoutePlanRepository extends JpaRepository<RoutePlan, Long> {
     @Query("SELECT r.plan.id, COUNT(r) FROM PlanRoute r WHERE r.plan.id IN :planIds GROUP BY r.plan.id")
     List<Object[]> countRoutes(@Param("planIds") Collection<Long> planIds);
 
+    /**
+     * @return {@code [status, count]} of the store's plans with {@code planDate} in {@code [from, to]} (T63)
+     */
+    @Query("SELECT p.status, COUNT(p) FROM RoutePlan p WHERE p.storeId = :storeId AND p.planDate BETWEEN :from AND :to "
+            + "GROUP BY p.status")
+    List<Object[]> countByStatusBetween(@Param("storeId") long storeId, @Param("from") LocalDate from, @Param("to") LocalDate to);
+
+    /**
+     * The store's plans with {@code planDate} in {@code [from, to]} and one of {@code statuses}, by day then id (T63).
+     */
+    @Query("SELECT p FROM RoutePlan p WHERE p.storeId = :storeId AND p.planDate BETWEEN :from AND :to "
+            + "AND p.status IN :statuses ORDER BY p.planDate, p.id")
+    List<RoutePlan> findInPeriod(@Param("storeId") long storeId, @Param("from") LocalDate from, @Param("to") LocalDate to,
+                                 @Param("statuses") Collection<PlanStatus> statuses);
+
     // --- Across stores, for the ADMIN area (T55). Never for a store member's request.
 
     /**

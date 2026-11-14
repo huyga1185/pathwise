@@ -128,6 +128,8 @@ Class | Method | HTTP request | Description
 [*PlanImportControllerApi*](doc/PlanImportControllerApi.md) | [**csvTemplate**](doc/PlanImportControllerApi.md#csvtemplate) | **GET** /api/v1/plans/import/template.csv | 
 [*PlanImportControllerApi*](doc/PlanImportControllerApi.md) | [**importStops**](doc/PlanImportControllerApi.md#importstops) | **POST** /api/v1/plans/import | 
 [*PlanImportControllerApi*](doc/PlanImportControllerApi.md) | [**xlsxTemplate**](doc/PlanImportControllerApi.md#xlsxtemplate) | **GET** /api/v1/plans/import/template.xlsx | 
+[*ReportControllerApi*](doc/ReportControllerApi.md) | [**stopsCsv**](doc/ReportControllerApi.md#stopscsv) | **GET** /api/v1/reports/stops.csv | 
+[*ReportControllerApi*](doc/ReportControllerApi.md) | [**summary**](doc/ReportControllerApi.md#summary) | **GET** /api/v1/reports/summary | 
 [*StoreAuditControllerApi*](doc/StoreAuditControllerApi.md) | [**listEvents**](doc/StoreAuditControllerApi.md#listevents) | **GET** /api/v1/store/audit | 
 [*StoreControllerApi*](doc/StoreControllerApi.md) | [**getStore**](doc/StoreControllerApi.md#getstore) | **GET** /api/v1/store | 
 [*StoreControllerApi*](doc/StoreControllerApi.md) | [**updateStore**](doc/StoreControllerApi.md#updatestore) | **PUT** /api/v1/store | 
@@ -183,6 +185,7 @@ Class | Method | HTTP request | Description
  - [ApiResponsePlanImportResponse](doc/ApiResponsePlanImportResponse.md)
  - [ApiResponseRegisterResponse](doc/ApiResponseRegisterResponse.md)
  - [ApiResponseResetTokenResponse](doc/ApiResponseResetTokenResponse.md)
+ - [ApiResponseStoreReportResponse](doc/ApiResponseStoreReportResponse.md)
  - [ApiResponseStoreResponse](doc/ApiResponseStoreResponse.md)
  - [ApiResponseTechnicalMetricsResponse](doc/ApiResponseTechnicalMetricsResponse.md)
  - [ApiResponseTransferOwnerResponse](doc/ApiResponseTransferOwnerResponse.md)
@@ -254,6 +257,11 @@ Class | Method | HTTP request | Description
  - [RegisterRequest](doc/RegisterRequest.md)
  - [RegisterResponse](doc/RegisterResponse.md)
  - [ReplaceRoutesRequest](doc/ReplaceRoutesRequest.md)
+ - [ReportDay](doc/ReportDay.md)
+ - [ReportDriver](doc/ReportDriver.md)
+ - [ReportFailureReason](doc/ReportFailureReason.md)
+ - [ReportPlanCounts](doc/ReportPlanCounts.md)
+ - [ReportStopCounts](doc/ReportStopCounts.md)
  - [RequestPasswordChangeOtpRequest](doc/RequestPasswordChangeOtpRequest.md)
  - [ResendVerificationRequest](doc/ResendVerificationRequest.md)
  - [ResetLinkOtpRequest](doc/ResetLinkOtpRequest.md)
@@ -265,6 +273,7 @@ Class | Method | HTTP request | Description
  - [SkippedAssignmentResponse](doc/SkippedAssignmentResponse.md)
  - [StoreAuditEventResponse](doc/StoreAuditEventResponse.md)
  - [StorePeriodStatsResponse](doc/StorePeriodStatsResponse.md)
+ - [StoreReportResponse](doc/StoreReportResponse.md)
  - [StoreResponse](doc/StoreResponse.md)
  - [Table](doc/Table.md)
  - [TechnicalMetricsResponse](doc/TechnicalMetricsResponse.md)

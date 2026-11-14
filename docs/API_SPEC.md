@@ -5,7 +5,7 @@
 > Cột "Hiện trạng" ở mọi bảng: ✅ khớp spec và có test · 🟡 có nhưng còn lệch (ghi rõ lệch gì) · ❌ chưa có. Lịch sử triển khai theo task nằm ở `CURRENT_STATE.md` §5, không ghi ở đây.
 > Lần rà soát contract gần nhất: T44 (2026-10-29, P-32).
 
-## 0. Lệch hiện tại so với spec (cập nhật 2026-11-14, sau T62)
+## 0. Lệch hiện tại so với spec (cập nhật 2026-11-14, sau T63)
 
 - Không còn lệch nào đã biết giữa endpoint và spec (`GET /admin/users` đủ `storeId`, `status` từ T55).
 - Request không phải `multipart/form-data` gửi tới endpoint nhận file, hoặc `Content-Type` không được hỗ trợ, trả 400 `MALFORMED_REQUEST` (T61; trước đó rơi vào handler chung).
@@ -479,6 +479,29 @@ Ghi chú:
 **Cancel (T26):** được từ DRAFT và PUBLISHED; IN_PROGRESS, COMPLETED, CANCELLED → 422 `PLAN_NOT_CANCELLABLE`. Kiểm tra theo thứ tự: 404 → `PLAN_NOT_CANCELLABLE` → `PLAN_BUSY` → `PLAN_MODIFIED`. Kết quả tối ưu giữ lại để tra cứu; `version` tăng 1.
 
 **Mã validation (`details[].code`) của plan:** `STOPS_REQUIRED`, `ASSIGNMENTS_REQUIRED` (trong `PLAN_INCOMPLETE`), `PLAN_NAME_REQUIRED`, `INVALID_PLAN_NAME_LENGTH` (≤ 150), `PLAN_DATE_REQUIRED`, `VERSION_REQUIRED` (`PUT`, `PATCH`, `POST /geocode`), `LATITUDE_REQUIRED`, `LONGITUDE_REQUIRED`, `INVALID_LATITUDE`, `INVALID_LONGITUDE`, `INVALID_ADDRESS_LENGTH` (≤ 500), `STOP_LABEL_REQUIRED`, `INVALID_STOP_LABEL_LENGTH` (≤ 150), `INVALID_RECIPIENT_NAME_LENGTH` (≤ 100), `PHONE_NUMBER_*`, `COORDINATES_INCOMPLETE` (trên field còn thiếu, `lat` hoặc `lon`), `ADDRESS_OR_COORDINATES_REQUIRED` (trên `address`), `INVALID_DEMAND` (số nguyên ≥ 0), `ORDER_DEMAND_NOT_ALLOWED` (trên `demands`), `INVALID_SERVICE_TIME` (0–86400), `TIME_WINDOW_START_REQUIRED`, `TIME_WINDOW_END_REQUIRED`, `INVALID_TIME_WINDOW` (trên `timeWindow.end`, `start < end`), `INVALID_NOTE_LENGTH` (≤ 500), `DRIVER_REQUIRED`, `VEHICLE_REQUIRED`, `SHIFT_START_REQUIRED`, `SHIFT_END_REQUIRED`, `INVALID_SHIFT` (trên `shiftEnd`, `shiftStart < shiftEnd`), `INVALID_MAX_DISTANCE` (> 0), `INVALID_STOP_ID`, `NOT_NULLABLE`, `INVALID_ASSIGNMENT` (trong `INVALID_ASSIGNMENT` của optimize).
+
+## 7a. Báo cáo cửa hàng — `/api/v1/reports` (T63, P-67, P-68)
+
+| Method & path | Quyền | Request | Response | Lỗi chính | Hiện trạng |
+|---|---|---|---|---|---|
+| `GET /reports/summary` | O, D | `from?`, `to?` (`YYYY-MM-DD`, theo `planDate`, cả hai ngày tính; thiếu cả hai = hôm nay theo timezone cửa hàng; chỉ có một thì khoảng một ngày đó; tối đa 31 ngày) | `StoreReport` (xem dưới) | 400 `VALIDATION_ERROR` trên `from`: `INVALID_DATE_RANGE` (from > to), `DATE_RANGE_TOO_LONG` | ✅ T63 |
+| `GET /reports/stops.csv` | O, D | như trên | 200 `text/csv; charset=UTF-8`, `Content-Disposition: attachment; filename="pathwise-YYYYMMDD-YYYYMMDD.csv"` | như trên (lỗi vẫn là JSON, kiểm khoảng trước khi ghi) | ✅ T63 |
+
+- Chỉ đọc, dùng được khi cửa hàng bị khoá (P-62). Dữ liệu của cửa hàng trong token (BR-01); không ghi nhật ký.
+- **Summary:** `plans` đếm mọi plan của khoảng theo trạng thái (kể cả CANCELLED). `stops`, `plannedDistanceMeters`, `days`, `drivers`, `failureReasons` chỉ tính plan **đã giao việc** (PUBLISHED, IN_PROGRESS, COMPLETED): plan DRAFT và CANCELLED không phải việc giao hàng. `deliveredRate` = đã giao / (đã giao + không giao được + bỏ qua), `null` khi chưa có kết quả. `plannedDistanceMeters` = tổng quãng đường dự kiến của các route có stop. `days` đủ mọi ngày của khoảng (ngày không có plan là 0). `drivers` là tài xế có route có stop, theo tên; `firstResultAt`/`lastResultAt` là lần báo kết quả đầu/cuối của tài xế trong khoảng (UTC, `null` khi chưa báo). `failureReasons`: 10 lý do thất bại hay gặp nhất, gom theo chuỗi đã cắt khoảng trắng không phân biệt hoa thường, hiện theo cách viết của lần đầu gặp.
+- **CSV:** UTF-8 có BOM (Excel đọc đúng dấu), RFC 4180, CRLF. Mỗi dòng một stop của plan **không bị huỷ** (gồm DRAFT) theo ngày, plan, route, thứ tự. Cột: Ngày (`dd/MM/yyyy`), Kế hoạch, Trạng thái kế hoạch (Nháp, Đã giao việc, Đang giao, Hoàn thành), Tài xế, Xe, Thứ tự, Nhãn / mã đơn, Người nhận, Số điện thoại (`0905 123 456`), Địa chỉ, Giờ dự kiến (`HH:mm`), Kết quả (Chờ giao, Đã giao, Không giao được, Bỏ qua), Lý do, Giờ báo (`dd/MM/yyyy HH:mm`); giờ theo timezone của plan. Ô bắt đầu bằng `=`, `+`, `-`, `@`, tab hoặc CR có thêm `'` phía trước (chống CSV injection).
+
+```jsonc
+// StoreReport
+{ "from": "2026-12-01", "to": "2026-12-07",
+  "plans": { "total": 9, "draft": 1, "published": 1, "inProgress": 0, "completed": 6, "cancelled": 1 },
+  "stops": { "total": 210, "delivered": 190, "failed": 12, "skipped": 3, "pending": 5, "deliveredRate": 0.9268 },
+  "plannedDistanceMeters": 412300,
+  "days": [ { "date": "2026-12-01", "plans": 1, "delivered": 30, "failed": 2, "skipped": 0, "pending": 0 }, … ],
+  "drivers": [ { "driverId": 21, "fullName": "Tùng", "routes": 6, "delivered": 95, "failed": 5, "skipped": 1, "pending": 0,
+                 "plannedDistanceMeters": 201000, "firstResultAt": "2026-12-01T01:12:00Z", "lastResultAt": "2026-12-07T09:40:00Z" } ],
+  "failureReasons": [ { "reason": "Vắng nhà", "count": 7 } ] }
+```
 
 ## 8. Driver — `/api/v1/driver`
 

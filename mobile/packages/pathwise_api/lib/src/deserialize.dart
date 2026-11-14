@@ -34,6 +34,7 @@ import 'package:pathwise_api/src/model/api_response_plan_detail_response.dart';
 import 'package:pathwise_api/src/model/api_response_plan_import_response.dart';
 import 'package:pathwise_api/src/model/api_response_register_response.dart';
 import 'package:pathwise_api/src/model/api_response_reset_token_response.dart';
+import 'package:pathwise_api/src/model/api_response_store_report_response.dart';
 import 'package:pathwise_api/src/model/api_response_store_response.dart';
 import 'package:pathwise_api/src/model/api_response_technical_metrics_response.dart';
 import 'package:pathwise_api/src/model/api_response_transfer_owner_response.dart';
@@ -105,6 +106,11 @@ import 'package:pathwise_api/src/model/refresh_token_request.dart';
 import 'package:pathwise_api/src/model/register_request.dart';
 import 'package:pathwise_api/src/model/register_response.dart';
 import 'package:pathwise_api/src/model/replace_routes_request.dart';
+import 'package:pathwise_api/src/model/report_day.dart';
+import 'package:pathwise_api/src/model/report_driver.dart';
+import 'package:pathwise_api/src/model/report_failure_reason.dart';
+import 'package:pathwise_api/src/model/report_plan_counts.dart';
+import 'package:pathwise_api/src/model/report_stop_counts.dart';
 import 'package:pathwise_api/src/model/request_password_change_otp_request.dart';
 import 'package:pathwise_api/src/model/resend_verification_request.dart';
 import 'package:pathwise_api/src/model/reset_link_otp_request.dart';
@@ -116,6 +122,7 @@ import 'package:pathwise_api/src/model/session_response.dart';
 import 'package:pathwise_api/src/model/skipped_assignment_response.dart';
 import 'package:pathwise_api/src/model/store_audit_event_response.dart';
 import 'package:pathwise_api/src/model/store_period_stats_response.dart';
+import 'package:pathwise_api/src/model/store_report_response.dart';
 import 'package:pathwise_api/src/model/store_response.dart';
 import 'package:pathwise_api/src/model/table.dart';
 import 'package:pathwise_api/src/model/technical_metrics_response.dart';
@@ -227,6 +234,8 @@ final _regMap = RegExp(r'^Map<String,(.*)>$');
           return ApiResponseRegisterResponse.fromJson(value as Map<String, dynamic>) as ReturnType;
         case 'ApiResponseResetTokenResponse':
           return ApiResponseResetTokenResponse.fromJson(value as Map<String, dynamic>) as ReturnType;
+        case 'ApiResponseStoreReportResponse':
+          return ApiResponseStoreReportResponse.fromJson(value as Map<String, dynamic>) as ReturnType;
         case 'ApiResponseStoreResponse':
           return ApiResponseStoreResponse.fromJson(value as Map<String, dynamic>) as ReturnType;
         case 'ApiResponseTechnicalMetricsResponse':
@@ -369,6 +378,16 @@ final _regMap = RegExp(r'^Map<String,(.*)>$');
           return RegisterResponse.fromJson(value as Map<String, dynamic>) as ReturnType;
         case 'ReplaceRoutesRequest':
           return ReplaceRoutesRequest.fromJson(value as Map<String, dynamic>) as ReturnType;
+        case 'ReportDay':
+          return ReportDay.fromJson(value as Map<String, dynamic>) as ReturnType;
+        case 'ReportDriver':
+          return ReportDriver.fromJson(value as Map<String, dynamic>) as ReturnType;
+        case 'ReportFailureReason':
+          return ReportFailureReason.fromJson(value as Map<String, dynamic>) as ReturnType;
+        case 'ReportPlanCounts':
+          return ReportPlanCounts.fromJson(value as Map<String, dynamic>) as ReturnType;
+        case 'ReportStopCounts':
+          return ReportStopCounts.fromJson(value as Map<String, dynamic>) as ReturnType;
         case 'RequestPasswordChangeOtpRequest':
           return RequestPasswordChangeOtpRequest.fromJson(value as Map<String, dynamic>) as ReturnType;
         case 'ResendVerificationRequest':
@@ -391,6 +410,8 @@ final _regMap = RegExp(r'^Map<String,(.*)>$');
           return StoreAuditEventResponse.fromJson(value as Map<String, dynamic>) as ReturnType;
         case 'StorePeriodStatsResponse':
           return StorePeriodStatsResponse.fromJson(value as Map<String, dynamic>) as ReturnType;
+        case 'StoreReportResponse':
+          return StoreReportResponse.fromJson(value as Map<String, dynamic>) as ReturnType;
         case 'StoreResponse':
           return StoreResponse.fromJson(value as Map<String, dynamic>) as ReturnType;
         case 'Table':

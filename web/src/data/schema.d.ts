@@ -852,6 +852,38 @@ export interface paths {
         patch: operations["patchStop"];
         trace?: never;
     };
+    "/api/v1/reports/stops.csv": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["stopsCsv"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/reports/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["summary"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/store": {
         parameters: {
             query?: never;
@@ -1216,6 +1248,10 @@ export interface components {
         };
         ApiResponseResetTokenResponse: {
             data: components["schemas"]["ResetTokenResponse"];
+            message?: string;
+        };
+        ApiResponseStoreReportResponse: {
+            data: components["schemas"]["StoreReportResponse"];
             message?: string;
         };
         ApiResponseStoreResponse: {
@@ -1970,6 +2006,74 @@ export interface components {
             /** Format: int64 */
             version: number;
         };
+        ReportDay: {
+            /** Format: date */
+            date: string;
+            /** Format: int64 */
+            delivered: number;
+            /** Format: int64 */
+            failed: number;
+            /** Format: int64 */
+            pending: number;
+            /** Format: int64 */
+            plans: number;
+            /** Format: int64 */
+            skipped: number;
+        };
+        ReportDriver: {
+            /** Format: int64 */
+            delivered: number;
+            /** Format: int64 */
+            driverId: number;
+            /** Format: int64 */
+            failed: number;
+            /** Format: date-time */
+            firstResultAt: string | null;
+            fullName: string;
+            /** Format: date-time */
+            lastResultAt: string | null;
+            /** Format: int64 */
+            pending: number;
+            /** Format: int64 */
+            plannedDistanceMeters: number;
+            /** Format: int64 */
+            routes: number;
+            /** Format: int64 */
+            skipped: number;
+        };
+        ReportFailureReason: {
+            /** Format: int64 */
+            count: number;
+            reason: string;
+        };
+        ReportPlanCounts: {
+            /** Format: int64 */
+            cancelled: number;
+            /** Format: int64 */
+            completed: number;
+            /** Format: int64 */
+            draft: number;
+            /** Format: int64 */
+            inProgress: number;
+            /** Format: int64 */
+            published: number;
+            /** Format: int64 */
+            total: number;
+        };
+        ReportStopCounts: {
+            /** Format: int64 */
+            delivered: number;
+            /** Format: double */
+            deliveredRate: number | null;
+            /** Format: int64 */
+            failed: number;
+            /** Format: int64 */
+            pending: number;
+            /** Format: int64 */
+            skipped: number;
+            /** Format: int64 */
+            total: number;
+        };
         RequestPasswordChangeOtpRequest: {
             currentPassword: string;
         };
@@ -2056,6 +2160,19 @@ export interface components {
             stopsFailed: number;
             /** Format: int64 */
             stopsSkipped: number;
+        };
+        StoreReportResponse: {
+            days: components["schemas"]["ReportDay"][];
+            drivers: components["schemas"]["ReportDriver"][];
+            failureReasons: components["schemas"]["ReportFailureReason"][];
+            /** Format: date */
+            from: string;
+            /** Format: int64 */
+            plannedDistanceMeters: number;
+            plans: components["schemas"]["ReportPlanCounts"];
+            stops: components["schemas"]["ReportStopCounts"];
+            /** Format: date */
+            to: string;
         };
         StoreResponse: {
             depot: components["schemas"]["DepotResponse"] | null;
@@ -3526,6 +3643,50 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ApiResponsePlanDetailResponse"];
+                };
+            };
+        };
+    };
+    stopsCsv: {
+        parameters: {
+            query?: {
+                from?: string | null;
+                to?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    summary: {
+        parameters: {
+            query?: {
+                from?: string | null;
+                to?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponseStoreReportResponse"];
                 };
             };
         };
