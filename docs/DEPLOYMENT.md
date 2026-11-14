@@ -17,7 +17,7 @@
    - `APP_IMAGE_TAG`: `0.1.0` cho prod, `develop` hoặc `develop-<sha>` cho staging.
    - `SPRING_PROFILES_ACTIVE`: `prod` hoặc `staging`.
    - Thay **mọi** giá trị `change-me`. JWT secret: `openssl rand -base64 32`. Mật khẩu DB: `openssl rand -base64 24`.
-   - SMTP thật (ví dụ Brevo) và các `SERVICE_IDENTITY_*`.
+   - SMTP thật (ví dụ Brevo) và các `SERVICE_IDENTITY_*`. `SERVICE_IDENTITY_APP_URL` là gốc của domain, ví dụ `https://pathwise.example.com` (không thêm `/app`): link đặt lại mật khẩu ADMIN gửi (T57) là `{SERVICE_IDENTITY_APP_URL}/app/reset-password?token=…`.
    - `PATHWISE_DOMAIN` (domain trỏ về VPS, ví dụ `pathwise.example.com`), `MAPTILER_KEY` (key bản đồ nền của web, giới hạn domain trong trang quản lý MapTiler): xem §8.
    - `CORS_ALLOWED_ORIGINS`: web chạy cùng origin với API (P-47) nên để trống; chỉ điền khi có web ở origin khác (đúng scheme và domain, nhiều origin cách nhau dấu phẩy). App mobile không bị ảnh hưởng.
    - `chmod 600 .env`. Không commit file này ở bất kỳ đâu.

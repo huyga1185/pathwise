@@ -9,6 +9,10 @@ import org.springframework.transaction.annotation.Transactional;
 import uk.huy.pathwise.admin.dto.response.AdminMemberResponse;
 import uk.huy.pathwise.admin.dto.response.AdminStoreDetailResponse;
 import uk.huy.pathwise.admin.dto.response.AdminStoreStateResponse;
+import uk.huy.pathwise.admin.dto.response.TransferOwnerResponse;
+import uk.huy.pathwise.auth.service.SessionRevoker;
+import uk.huy.pathwise.store.dto.OwnerTransfer;
+import uk.huy.pathwise.store.service.StoreOwnershipCommand;
 import uk.huy.pathwise.admin.dto.response.AdminStoreSummaryResponse;
 import uk.huy.pathwise.admin.dto.response.MemberCountsResponse;
 import uk.huy.pathwise.admin.dto.response.StorePeriodStatsResponse;
@@ -53,6 +57,8 @@ public class AdminStoreService {
     private final PlanStatsQuery planStats;
     private final AuditLog auditLog;
     private final StoreLockCommand storeLock;
+    private final StoreOwnershipCommand storeOwnership;
+    private final SessionRevoker sessionRevoker;
 
     /**
      * @param text matched against the store name and the OWNER email; null or blank: every store
@@ -127,6 +133,28 @@ public class AdminStoreService {
         auditLog.record(new AuditEntry(admin, storeId, AuditAction.STORE_UNLOCKED, AuditTargetType.STORE, storeId,
                 before.lockReason() == null ? Map.of() : Map.of("reason", before.lockReason())));
         return state(store);
+    }
+
+    /**
+     * Makes another member the OWNER (T57, FR-A13, P-63), for example when the OWNER lost their email. The previous
+     * OWNER becomes a DISPATCHER and is logged out everywhere (their account may be compromised); a DRIVER who becomes
+     * OWNER keeps driving. Both are emailed after the commit. Recorded in the audit log.
+     *
+     * @throws AppException {@code NOT_FOUND} for an unknown store or a user of another store; {@code VALIDATION_ERROR}
+     *                      ({@code NEW_OWNER_NOT_ACTIVE}, {@code ALREADY_OWNER})
+     */
+    @Transactional
+    public TransferOwnerResponse transferOwner(UserIdentity admin, long storeId, long userId) {
+        // First: the store row is locked by the first read of the transaction (F-44).
+        OwnerTransfer transfer = storeOwnership.transferOwner(storeId, userId);
+        if (transfer.previousOwnerId() != null) sessionRevoker.revokeAllSessions(transfer.previousOwnerId());
+        Map<String, Object> details = new java.util.LinkedHashMap<>();
+        if (transfer.previousOwnerEmail() != null) details.put("from", transfer.previousOwnerEmail());
+        details.put("to", transfer.newOwnerEmail());
+        auditLog.record(new AuditEntry(admin, storeId, AuditAction.STORE_OWNER_TRANSFERRED, AuditTargetType.USER,
+                transfer.newOwnerId(), details));
+        return new TransferOwnerResponse(storeId, transfer.newOwnerId(), transfer.newOwnerEmail(),
+                transfer.newOwnerCanDrive(), transfer.previousOwnerId(), transfer.previousOwnerEmail());
     }
 
     private static AdminStoreStateResponse state(StoreRecord store) {

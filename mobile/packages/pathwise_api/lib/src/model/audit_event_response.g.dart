@@ -89,6 +89,12 @@ const _$AuditEventResponseActionEnumEnumMap = {
   AuditEventResponseActionEnum.USER_DISABLED: 'USER_DISABLED',
   AuditEventResponseActionEnum.USER_ENABLED: 'USER_ENABLED',
   AuditEventResponseActionEnum.USER_SESSIONS_REVOKED: 'USER_SESSIONS_REVOKED',
+  AuditEventResponseActionEnum.VERIFICATION_EMAIL_SENT:
+      'VERIFICATION_EMAIL_SENT',
+  AuditEventResponseActionEnum.PASSWORD_RESET_LINK_SENT:
+      'PASSWORD_RESET_LINK_SENT',
+  AuditEventResponseActionEnum.STORE_OWNER_TRANSFERRED:
+      'STORE_OWNER_TRANSFERRED',
 };
 
 const _$AuditEventResponseActorRoleEnumEnumMap = {

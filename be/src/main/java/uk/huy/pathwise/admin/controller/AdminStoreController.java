@@ -16,6 +16,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import uk.huy.pathwise.admin.dto.request.LockStoreRequest;
+import uk.huy.pathwise.admin.dto.request.TransferOwnerRequest;
+import uk.huy.pathwise.admin.dto.response.TransferOwnerResponse;
 import uk.huy.pathwise.admin.dto.response.AdminStoreDetailResponse;
 import uk.huy.pathwise.admin.dto.response.AdminStoreStateResponse;
 import uk.huy.pathwise.admin.dto.response.AdminStoreSummaryResponse;
@@ -66,5 +68,15 @@ public class AdminStoreController {
     public ResponseEntity<ApiResponse<AdminStoreStateResponse>> unlock(@AuthenticationPrincipal AuthenticatedUser actor,
                                                                        @PathVariable long id) {
         return ResponseEntity.ok(new ApiResponse<>(adminStoreService.unlock(actor.identity(), id)));
+    }
+
+    /**
+     * Makes another member the OWNER (T57); the previous OWNER becomes a DISPATCHER.
+     */
+    @PostMapping("/{id}/owner")
+    public ResponseEntity<ApiResponse<TransferOwnerResponse>> transferOwner(@AuthenticationPrincipal AuthenticatedUser actor,
+                                                                            @PathVariable long id,
+                                                                            @Valid @RequestBody TransferOwnerRequest request) {
+        return ResponseEntity.ok(new ApiResponse<>(adminStoreService.transferOwner(actor.identity(), id, request.userId())));
     }
 }

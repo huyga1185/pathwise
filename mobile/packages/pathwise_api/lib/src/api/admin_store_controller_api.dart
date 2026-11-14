@@ -12,7 +12,9 @@ import 'package:dio/dio.dart';
 import 'package:pathwise_api/src/model/api_response_admin_store_detail_response.dart';
 import 'package:pathwise_api/src/model/api_response_admin_store_state_response.dart';
 import 'package:pathwise_api/src/model/api_response_page_response_admin_store_summary_response.dart';
+import 'package:pathwise_api/src/model/api_response_transfer_owner_response.dart';
 import 'package:pathwise_api/src/model/lock_store_request.dart';
+import 'package:pathwise_api/src/model/transfer_owner_request.dart';
 
 class AdminStoreControllerApi {
 
@@ -277,6 +279,103 @@ _responseData = rawData == null ? null : deserialize<ApiResponseAdminStoreStateR
     }
 
     return Response<ApiResponseAdminStoreStateResponse>(
+      data: _responseData,
+      headers: _response.headers,
+      isRedirect: _response.isRedirect,
+      requestOptions: _response.requestOptions,
+      redirects: _response.redirects,
+      statusCode: _response.statusCode,
+      statusMessage: _response.statusMessage,
+      extra: _response.extra,
+    );
+  }
+
+  /// transferOwner
+  /// 
+  ///
+  /// Parameters:
+  /// * [id] 
+  /// * [transferOwnerRequest] 
+  /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
+  /// * [headers] - Can be used to add additional headers to the request
+  /// * [extras] - Can be used to add flags to the request
+  /// * [validateStatus] - A [ValidateStatus] callback that can be used to determine request success based on the HTTP status of the response
+  /// * [onSendProgress] - A [ProgressCallback] that can be used to get the send progress
+  /// * [onReceiveProgress] - A [ProgressCallback] that can be used to get the receive progress
+  ///
+  /// Returns a [Future] containing a [Response] with a [ApiResponseTransferOwnerResponse] as data
+  /// Throws [DioException] if API call or serialization fails
+  Future<Response<ApiResponseTransferOwnerResponse>> transferOwner({ 
+    required int id,
+    required TransferOwnerRequest transferOwnerRequest,
+    CancelToken? cancelToken,
+    Map<String, dynamic>? headers,
+    Map<String, dynamic>? extra,
+    ValidateStatus? validateStatus,
+    ProgressCallback? onSendProgress,
+    ProgressCallback? onReceiveProgress,
+  }) async {
+    final _path = r'/api/v1/admin/stores/{id}/owner'.replaceAll('{' r'id' '}', id.toString());
+    final _options = Options(
+      method: r'POST',
+      headers: <String, dynamic>{
+        ...?headers,
+      },
+      extra: <String, dynamic>{
+        'secure': <Map<String, String>>[
+          {
+            'type': 'http',
+            'scheme': 'bearer',
+            'name': 'bearer',
+          },
+        ],
+        ...?extra,
+      },
+      contentType: 'application/json',
+      validateStatus: validateStatus,
+    );
+
+    dynamic _bodyData;
+
+    try {
+_bodyData=jsonEncode(transferOwnerRequest);
+    } catch(error, stackTrace) {
+      throw DioException(
+         requestOptions: _options.compose(
+          _dio.options,
+          _path,
+        ),
+        type: DioExceptionType.unknown,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+
+    final _response = await _dio.request<Object>(
+      _path,
+      data: _bodyData,
+      options: _options,
+      cancelToken: cancelToken,
+      onSendProgress: onSendProgress,
+      onReceiveProgress: onReceiveProgress,
+    );
+
+    ApiResponseTransferOwnerResponse? _responseData;
+
+    try {
+final rawData = _response.data;
+_responseData = rawData == null ? null : deserialize<ApiResponseTransferOwnerResponse, ApiResponseTransferOwnerResponse>(rawData, 'ApiResponseTransferOwnerResponse', growable: true);
+    } catch (error, stackTrace) {
+      throw DioException(
+        requestOptions: _response.requestOptions,
+        response: _response,
+        type: DioExceptionType.unknown,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+
+    return Response<ApiResponseTransferOwnerResponse>(
       data: _responseData,
       headers: _response.headers,
       isRedirect: _response.isRedirect,

@@ -17,6 +17,7 @@ import 'package:pathwise_api/src/api/driver_route_controller_api.dart';
 import 'package:pathwise_api/src/api/geocoding_controller_api.dart';
 import 'package:pathwise_api/src/api/invitation_controller_api.dart';
 import 'package:pathwise_api/src/api/job_controller_api.dart';
+import 'package:pathwise_api/src/api/password_reset_link_controller_api.dart';
 import 'package:pathwise_api/src/api/plan_controller_api.dart';
 import 'package:pathwise_api/src/api/store_audit_controller_api.dart';
 import 'package:pathwise_api/src/api/store_controller_api.dart';
@@ -134,6 +135,12 @@ class PathwiseApi {
   /// by doing that all interceptors will not be executed
   JobControllerApi getJobControllerApi() {
     return JobControllerApi(dio);
+  }
+
+  /// Get PasswordResetLinkControllerApi instance, base route and serializer can be overridden by a given but be careful,
+  /// by doing that all interceptors will not be executed
+  PasswordResetLinkControllerApi getPasswordResetLinkControllerApi() {
+    return PasswordResetLinkControllerApi(dio);
   }
 
   /// Get PlanControllerApi instance, base route and serializer can be overridden by a given but be careful,
