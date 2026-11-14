@@ -1,6 +1,6 @@
 import { useStoreReadOnly } from '@/data/meQuery';
 import { useState, type ReactNode } from 'react';
-import { Link, useNavigate, useParams } from 'react-router';
+import { Link, useLocation, useNavigate, useParams } from 'react-router';
 import { ApiError } from '@/data/apiError';
 import { useGeocodingSearch } from '@/data/geocoding';
 import { formatCoordinates } from '@/features/store';
@@ -23,6 +23,7 @@ import { PinPickerDialog } from '@/shared/ui/PinPicker';
 import { allStops, usePlan, usePlanApi, type PlanDetail, type PlanStop } from './planApi';
 import { ResultView } from './ResultView';
 import { TrackView } from './TrackView';
+import type { CopiedNotice } from './CopyDialog';
 import './plans.css';
 
 const g = vi.geocode;
@@ -35,6 +36,9 @@ export function PlanDetailPage() {
   const id = Number(useParams().id);
   const plan = usePlan(id);
   const [toast, setToast] = useState<string | null>(null);
+  const location = useLocation();
+  const navigate = useNavigate();
+  const copied = (location.state as { copied?: CopiedNotice } | null)?.copied ?? null;
   if (plan.isError) {
     return (
       <section className="pw-page-section">
@@ -59,6 +63,7 @@ export function PlanDetailPage() {
     );
   return (
     <>
+      {copied ? <CopiedBanner notice={copied} onClose={() => navigate('.', { replace: true, state: null })} /> : null}
       {view}
       {toast ? (
         <div className="pw-toast-dock">
@@ -382,6 +387,21 @@ function FixStop({ plan, stop, busy }: { plan: PlanDetail; stop: PlanStop; busy:
           onClose={() => setEnlarge(false)}
         />
       ) : null}
+    </section>
+  );
+}
+
+/** Once, after a copy (W12, prototype "Kế hoạch — sao chép"): what was copied and the assignments left out. */
+function CopiedBanner({ notice, onClose }: { notice: CopiedNotice; onClose: () => void }) {
+  return (
+    <section role="status" className="pw-copy-notice">
+      <div className="pw-copy-notice-text">
+        <strong>{vi.planCopy.done(notice.from, notice.stops, notice.all)}</strong>
+        {notice.skipped.length > 0 ? <span>{vi.planCopy.skipped(notice.skipped.join(', '))}</span> : null}
+      </div>
+      <Button variant="quiet" onClick={onClose}>
+        {vi.planCopy.close}
+      </Button>
     </section>
   );
 }

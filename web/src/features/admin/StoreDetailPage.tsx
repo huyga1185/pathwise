@@ -3,12 +3,10 @@ import { Link, useParams } from 'react-router';
 import { ApiError } from '@/data/apiError';
 import { auditSentence } from '@/shared/audit';
 import { messageFor } from '@/shared/errors';
-import { formatDate, formatDayTime } from '@/shared/format';
+import { formatDate, formatDayTime, formatRate } from '@/shared/format';
 import { vi } from '@/shared/i18n/vi';
-import { Button, DataTable, Dialog, EmptyState, ErrorBanner, SelectField, StatusPill } from '@/shared/ui';
+import { Button, DataTable, Dialog, EmptyState, ErrorBanner, SelectField, Stat, StatusPill } from '@/shared/ui';
 import { useAdminApi, useAdminAudit, useAdminStore, type AdminStoreDetail } from './adminApi';
-import { formatRate } from './adminFormat';
-import { Stat } from './Stat';
 
 const ZONE = 'Asia/Ho_Chi_Minh';
 type DialogKind = 'lock' | 'unlock' | 'transfer' | null;

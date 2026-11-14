@@ -115,3 +115,31 @@ export async function unwrapEmpty(call: Promise<{ error?: unknown; response: Res
   const { error, response } = await call;
   if (error !== undefined || !response.ok) throw await ApiError.fromResponse(response, error);
 }
+
+/** A file the server sends (`Content-Disposition: attachment`), with the name it gives. */
+export interface DownloadedFile {
+  blob: Blob;
+  filename: string;
+}
+
+/**
+ * Like {@link unwrap} for a file response (call made with `parseAs: 'blob'`): the body and the file name of its
+ * `Content-Disposition`, `fallbackName` without one. An error response still throws an {@link ApiError}.
+ */
+export async function unwrapFile(
+  call: Promise<{ data?: unknown; error?: unknown; response: Response }>,
+  fallbackName: string,
+): Promise<DownloadedFile> {
+  const { data, error, response } = await call;
+  if (error !== undefined || !response.ok) throw await ApiError.fromResponse(response, error);
+  return { blob: data as Blob, filename: filenameOf(response.headers.get('Content-Disposition')) ?? fallbackName };
+}
+
+/** `attachment; filename="a.csv"` or `filename*=UTF-8''a.csv` → `a.csv`. */
+export function filenameOf(disposition: string | null): string | null {
+  if (!disposition) return null;
+  const encoded = /filename\*=UTF-8''([^;]+)/i.exec(disposition);
+  if (encoded?.[1]) return decodeURIComponent(encoded[1]);
+  const plain = /filename="?([^";]+)"?/i.exec(disposition);
+  return plain?.[1] ?? null;
+}

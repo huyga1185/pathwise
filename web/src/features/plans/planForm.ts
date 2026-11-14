@@ -1,6 +1,7 @@
 import type { CapacityUnit } from '@/features/fleet';
 import { fieldMessage } from '@/shared/errors';
-import type { PlanDetail, PlanDraft } from './planApi';
+import { formatPhone } from '@/shared/format';
+import type { ImportedStop, PlanDetail, PlanDraft } from './planApi';
 
 /** Units a stop's demand can be given in (ORDER is every stop counting one, never entered; D-36). */
 export const DEMAND_UNITS = ['KG', 'BOX', 'PACKAGE'] as const;
@@ -193,4 +194,41 @@ export function validatePlan(values: PlanFormValues, labels: Record<string, stri
     });
   });
   return errors;
+}
+
+/**
+ * A stop read from an import file (T61) as a row of the form. Coordinates from the file are kept like ones the user
+ * gave (`providedAt`): sent again while the address does not change.
+ */
+export function importedToRow(stop: ImportedStop): StopRow {
+  const amount = (unit: DemandUnit) => (stop.demands[unit] !== undefined ? String(stop.demands[unit]) : '');
+  return {
+    ...emptyStop(),
+    label: stop.label ?? '',
+    recipientName: stop.recipientName ?? '',
+    recipientPhone: formatPhone(stop.recipientPhone),
+    address: stop.address ?? '',
+    timeWindow: { start: stop.timeWindow?.start ?? '', end: stop.timeWindow?.end ?? '' },
+    demands: { KG: amount('KG'), BOX: amount('BOX'), PACKAGE: amount('PACKAGE') },
+    note: stop.note ?? '',
+    serviceTimeSeconds: stop.serviceTimeSeconds ?? null,
+    providedAt:
+      stop.lat != null && stop.lon != null ? { lat: stop.lat, lon: stop.lon, address: stop.address ?? '' } : null,
+  };
+}
+
+/** A row nobody has typed in: the first row of a new plan, replaced by imported stops. */
+export function isBlankStop(row: StopRow): boolean {
+  return (
+    row.id === null &&
+    !row.label.trim() &&
+    !row.recipientName.trim() &&
+    !row.recipientPhone.trim() &&
+    !row.address.trim() &&
+    !row.note.trim() &&
+    !row.timeWindow.start &&
+    !row.timeWindow.end &&
+    DEMAND_UNITS.every((unit) => !row.demands[unit].trim()) &&
+    row.providedAt === null
+  );
 }

@@ -8,6 +8,7 @@ import { AppHeader, Button, MoonIcon, SunIcon } from '@/shared/ui';
 
 const NAV = [
   { to: '/plans', label: vi.nav.plans },
+  { to: '/reports', label: vi.nav.reports },
   { to: '/vehicles', label: vi.nav.vehicles },
   { to: '/members', label: vi.nav.members },
   { to: '/store', label: vi.nav.store },

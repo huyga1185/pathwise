@@ -1,4 +1,5 @@
 import { useStoreReadOnly } from '@/data/meQuery';
+import { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router';
 import { useStoreQuery } from '@/data/storeQuery';
 import { messageFor } from '@/shared/errors';
@@ -15,6 +16,7 @@ import {
   type DataTableColumn,
 } from '@/shared/ui';
 import { PAGE_SIZE, usePlans, type PlanStatus, type PlanSummary } from './planApi';
+import { CopyDialog } from './CopyDialog';
 import './plans.css';
 
 const STATUSES = new Set<string>(vi.plans.statusOptions.map((option) => option.value));
@@ -33,6 +35,7 @@ function shortDate(localDate: string): string {
 export function PlanListPage() {
   const [params, setParams] = useSearchParams();
   const { readOnly } = useStoreReadOnly();
+  const [copying, setCopying] = useState<PlanSummary | null>(null);
   const navigate = useNavigate();
   const date = /^\d{4}-\d{2}-\d{2}$/.test(params.get('date') ?? '') ? (params.get('date') as string) : undefined;
   const rawStatus = params.get('status') ?? '';
@@ -85,6 +88,27 @@ export function PlanListPage() {
       numeric: true,
       render: (row) => (row.optimizedAt ? formatDayTime(row.optimizedAt, timeZone) : '—'),
     },
+    ...(readOnly
+      ? []
+      : [
+          {
+            key: 'actions',
+            header: <span className="pw-visually-hidden">{vi.plans.actions}</span>,
+            align: 'end' as const,
+            render: (row: PlanSummary) => (
+              <Button
+                variant="quiet"
+                aria-label={vi.planCopy.actionOf(row.name)}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  setCopying(row);
+                }}
+              >
+                {vi.planCopy.action}
+              </Button>
+            ),
+          },
+        ]),
   ];
 
   const data = plans.data;
@@ -171,6 +195,9 @@ export function PlanListPage() {
           ) : null}
         </section>
       )}
+      {copying ? (
+        <CopyDialog planId={copying.id} planName={copying.name} open onClose={() => setCopying(null)} />
+      ) : null}
     </section>
   );
 }

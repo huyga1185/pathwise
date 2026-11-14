@@ -23,6 +23,8 @@ import {
   emptyAssignment,
   emptyStop,
   formPath,
+  importedToRow,
+  isBlankStop,
   MAX_ASSIGNMENTS,
   MAX_STOPS,
   newPlanValues,
@@ -32,6 +34,7 @@ import {
   type DemandUnit,
   type PlanFormValues,
 } from './planForm';
+import { ImportDialog } from './ImportDialog';
 import './plans.css';
 
 const f = vi.planForm;
@@ -96,6 +99,8 @@ function PlanForm({ plan }: { plan: PlanDetail | null }) {
   const vehicles = useActiveVehicles();
   const [failure, setFailure] = useState<unknown>(null);
   const [modified, setModified] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [imported, setImported] = useState<number | null>(null);
   const live = usePlan(plan?.id ?? 0, plan !== null);
   const timeZone = store.data?.timezone ?? 'Asia/Ho_Chi_Minh';
   const {
@@ -105,6 +110,7 @@ function PlanForm({ plan }: { plan: PlanDetail | null }) {
     setError,
     clearErrors,
     reset,
+    getValues,
     formState: { errors, isSubmitting },
   } = useForm<PlanFormValues>({
     defaultValues: plan ? planToValues(plan) : newPlanValues(todayIn(timeZone)),
@@ -476,8 +482,29 @@ function PlanForm({ plan }: { plan: PlanDetail | null }) {
           <Button variant="quiet" disabled={stops.fields.length >= MAX_STOPS} onClick={() => stops.append(emptyStop())}>
             {f.addStop}
           </Button>
+          {!readOnly ? (
+            <Button variant="secondary" onClick={() => setImporting(true)}>
+              {vi.planImport.open}
+            </Button>
+          ) : null}
           <span className="pw-muted">{f.addressTip}</span>
         </div>
+        {imported !== null ? (
+          <p role="status" className="pw-import-added">
+            {vi.planImport.added(imported)}
+          </p>
+        ) : null}
+        <ImportDialog
+          open={importing}
+          keptStops={(watchedStops ?? []).filter((row) => !isBlankStop(row)).length}
+          onClose={() => setImporting(false)}
+          onAdd={(rows) => {
+            // Blank rows (the first row of a new plan) give way to the file's stops.
+            const kept = getValues('stops').filter((row) => !isBlankStop(row));
+            stops.replace([...kept, ...rows.map((row) => importedToRow(row.stop))]);
+            setImported(rows.length);
+          }}
+        />
       </section>
 
       <div className="pw-plan-footer">

@@ -32,6 +32,7 @@ const AdminUsersPage = lazyPage(() => import('@/features/admin').then((m) => ({ 
 const AdminAuditPage = lazyPage(() => import('@/features/admin').then((m) => ({ default: m.AuditPage })));
 const PlanListPage = lazyPage(() => import('@/features/plans').then((m) => ({ default: m.PlanListPage })));
 const PlanFormPage = lazyPage(() => import('@/features/plans').then((m) => ({ default: m.PlanFormPage })));
+const ReportsPage = lazyPage(() => import('@/features/reports').then((m) => ({ default: m.ReportsPage })));
 const PlanDetailPage = lazyPage(() => import('@/features/plans').then((m) => ({ default: m.PlanDetailPage })));
 
 /** Routes of docs/client/SCREENS.md §1. */
@@ -72,6 +73,7 @@ export const routes: RouteObject[] = [
       { path: '/plans/new', lazy: PlanFormPage },
       { path: '/plans/:id', lazy: PlanDetailPage },
       { path: '/plans/:id/edit', lazy: PlanFormPage },
+      { path: '/reports', lazy: ReportsPage },
       { path: '/vehicles', lazy: VehiclesPage },
       { path: '/members', lazy: MembersPage },
       { path: '/store', lazy: StorePage },

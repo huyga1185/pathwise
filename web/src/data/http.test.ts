@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { MemoryTokenStore } from '@/platform/tokenStore';
 import { ApiError } from './apiError';
-import { createApi, unwrap } from './http';
+import { createApi, filenameOf, unwrap } from './http';
 
 const ORIGIN = 'http://localhost';
 const json = (status: number, body: unknown, headers: Record<string, string> = {}) =>
@@ -109,5 +109,13 @@ describe('createApi', () => {
     });
 
     await expect(unwrap(api.client.GET('/api/v1/users/me'))).rejects.toMatchObject({ code: 'NETWORK_ERROR' });
+  });
+});
+
+describe('filenameOf', () => {
+  it('đọc tên file của Content-Disposition, cả dạng filename*', () => {
+    expect(filenameOf('attachment; filename="pathwise-20261201-20261207.csv"')).toBe('pathwise-20261201-20261207.csv');
+    expect(filenameOf("attachment; filename*=UTF-8''m%E1%BA%ABu.csv")).toBe('mẫu.csv');
+    expect(filenameOf(null)).toBeNull();
   });
 });
