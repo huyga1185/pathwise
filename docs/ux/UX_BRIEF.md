@@ -11,7 +11,7 @@
 | OWNER | Web | Mọi việc của DISPATCHER, cộng: thông tin store và depot, mời và quản lý thành viên, bật `canDrive` cho mình. |
 | DISPATCHER | Web | Xe; soạn plan, sửa stop geocode lỗi, optimize, publish, huỷ; theo dõi tiến độ giao. |
 | DRIVER (hoặc OWNER/DISPATCHER có `canDrive`) | Mobile (Flutter) | Xem route trong ngày, mở bản đồ dẫn đường, báo kết quả từng stop. |
-| ADMIN | Web (tối thiểu) | Danh sách user. Không cần thiết kế kỹ. |
+| ADMIN | Web, khu `/admin` (W11, M5, P-59) | Xem cửa hàng (số tổng, không nội dung), người dùng; sau T56–T58, T60: khoá chỉ đọc, hỗ trợ tài khoản, nhật ký, thông số. |
 
 Một người có `canDrive` dùng cả hai: web để điều phối, mobile để đi giao. `GET /users/me` trả `role`, `canDrive` để client chọn menu.
 
@@ -80,6 +80,7 @@ Một người có `canDrive` dùng cả hai: web để điều phối, mobile �
 | Stop chưa xếp | `dropReason`: `NOT_OPTIMIZED` (chưa tối ưu), `INFEASIBLE` (solver không xếp được) | |
 | Route | `PENDING`, `IN_PROGRESS`, `COMPLETED` | tính riêng cho từng route (P-35); tài xế thấy ở `/driver/routes`, dispatcher thấy ở `PlanDetail.routes[].status` (P-39); client không tự tính |
 | Job | `QUEUED`, `RUNNING`, `SUCCEEDED`, `FAILED` (+ `errorCode`) | |
+| Cửa hàng (khu ADMIN, T55) | `ACTIVE` "Đang hoạt động", `READ_ONLY` "Tạm khoá (chỉ đọc)" kèm `lockReason` | khoá: cam/vàng, không dùng đỏ (vẫn đọc được, tài xế vẫn giao) |
 
 ### 5.3 Xung đột và giới hạn
 
@@ -87,6 +88,7 @@ Một người có `canDrive` dùng cả hai: web để điều phối, mobile �
 - **429 `RATE_LIMITED`:** đọc header `Retry-After` (giây), khoá nút và đếm ngược.
 - **503 `SERVICE_UNAVAILABLE`, `GEOCODING_BUSY`:** tạm thời; cho thử lại.
 - **502 `*_PROVIDER_ERROR`:** dịch vụ bản đồ lỗi; cho thử lại sau.
+- **Dữ liệu cũ bị dọn (T53, DATA_MODEL §6):** job đã xong quá 30 ngày bị xoá, `GET /jobs/{id}` trả 404 (client không còn theo dõi job cũ như vậy); lời mời chưa nhận đã hết hạn hoặc bị huỷ quá 90 ngày biến khỏi `GET /store/invitations` (lời mời đã nhận giữ lại).
 
 ## 6. Thông điệp lỗi
 
