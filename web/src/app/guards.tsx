@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { Navigate, useLocation, useSearchParams } from 'react-router';
-import { canUseWeb, useSession } from '@/features/auth';
+import { canUseWeb, homeOf, useSession } from '@/features/auth';
 import { vi } from '@/shared/i18n/vi';
 
 /** Signed-in pages: wait for the session to be restored, send anonymous users to /login with ?next=. */
@@ -25,7 +25,15 @@ export function RequireAuth({ children }: { children: ReactNode }) {
 export function RequireDispatcher({ children }: { children: ReactNode }) {
   const { session } = useSession();
   if (session.status !== 'authenticated') return null;
-  if (!canUseWeb(session.user)) return <Navigate to="/driver" replace />;
+  if (!canUseWeb(session.user)) return <Navigate to={homeOf(session.user)} replace />;
+  return <>{children}</>;
+}
+
+/** The ADMIN area (W11): anyone else goes back to their own home. Not a security check. */
+export function RequireAdmin({ children }: { children: ReactNode }) {
+  const { session } = useSession();
+  if (session.status !== 'authenticated') return null;
+  if (session.user.role !== 'ADMIN') return <Navigate to={homeOf(session.user)} replace />;
   return <>{children}</>;
 }
 
@@ -47,8 +55,12 @@ export function RedirectIfSignedIn({ children }: { children: ReactNode }) {
   const { session } = useSession();
   const [params] = useSearchParams();
   if (session.status === 'authenticated') {
-    const home = canUseWeb(session.user) ? (safeNext(params.get('next')) ?? '/plans') : '/driver';
-    return <Navigate to={home} replace />;
+    const next = safeNext(params.get('next'));
+    const home = homeOf(session.user);
+    // ?next= only within the user's own area: an ADMIN never lands on a dispatcher page, nor the reverse.
+    const sameArea = next !== null && next.startsWith('/admin') === (session.user.role === 'ADMIN');
+    const destination = canUseWeb(session.user) || session.user.role === 'ADMIN' ? (sameArea ? next : home) : home;
+    return <Navigate to={destination} replace />;
   }
   return <>{children}</>;
 }

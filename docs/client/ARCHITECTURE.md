@@ -74,7 +74,7 @@ Quy tắc cứng:
 | `DirectionsSource` (đường đi, T33) | — | `features/navigation/directions_source.dart`: `GET /driver/routes/{routeId}/directions` từ vị trí hiện tại (P-57), lỗi đổi sang kiểu lỗi của app; test dùng `FakeDirectionsSource` | Đổi nguồn đường đi (ví dụ tính trên máy) mà không sửa màn hình |
 | `ScreenAwake` (giữ màn hình sáng, M05) | — | `platform/screen_awake.dart` (`wakelock_plus`); bật khi màn dẫn đường mở, tắt khi rời màn; test dùng bản giả | Đổi thư viện |
 | `SortableBoard` (kéo thả, T28) | `platform/dnd/SortableBoard.tsx` (`@dnd-kit/core` + `sortable`, P-58): cột và danh sách id, `renderItem`, `onChange(columns)`, bàn phím và câu đọc tiếng Việt; feature không import `@dnd-kit` | — | Đổi thư viện kéo thả |
-| `Charts` (biểu đồ, M5 W11) | `platform/charts` (thư viện ngoài, đề xuất Recharts, chốt ở W11; P-59): component trung tính nhận dữ liệu, nhãn, token màu; ESLint cấm import thư viện ngoài thư mục này | — | Đổi thư viện biểu đồ |
+| `Charts` (biểu đồ, M5 W11) | `platform/charts/DailyBarChart` (Recharts 3.10.1, P-59, P-66): component trung tính nhận dữ liệu, nhãn, tên token màu (màu đọc lại khi đổi theme); ESLint cấm import `recharts` ngoài thư mục này | — | Đổi thư viện biểu đồ |
 | `Messages` (chuỗi giao diện) | `shared/i18n/vi.ts` | `shared/i18n/vi.dart` | Thêm ngôn ngữ: thêm file, không sửa màn hình |
 
 Mỗi port là một `interface` (TS) hoặc `abstract interface class` (Dart). Code ngoài `platform/` chỉ phụ thuộc vào interface, implementation được chọn ở `app/` (composition root) theo cấu hình. Test thay implementation bằng fake.

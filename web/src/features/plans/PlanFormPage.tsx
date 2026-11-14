@@ -1,3 +1,4 @@
+import { useStoreReadOnly } from '@/data/meQuery';
 import { useMemo, useState, type ReactNode } from 'react';
 import { useFieldArray, useForm, useWatch, type FieldPath, type UseFormRegister } from 'react-hook-form';
 import { Link, useNavigate, useParams } from 'react-router';
@@ -88,6 +89,7 @@ function EditPlan({ id }: { id: number }) {
 
 function PlanForm({ plan }: { plan: PlanDetail | null }) {
   const navigate = useNavigate();
+  const { readOnly } = useStoreReadOnly();
   const planApi = usePlanApi();
   const store = useStoreQuery();
   const members = useAssignableMembers();
@@ -189,7 +191,7 @@ function PlanForm({ plan }: { plan: PlanDetail | null }) {
             {plan ? f.editTitle(plan.name) : f.createTitle}
           </h1>
         </div>
-        <FormActions plan={plan} disabled={noDepot || busy} busy={isSubmitting} />
+        <FormActions plan={plan} disabled={noDepot || busy || readOnly} busy={isSubmitting} />
       </div>
 
       {noDepot || (failure instanceof ApiError && failure.code === 'STORE_DEPOT_REQUIRED') ? (
@@ -479,7 +481,7 @@ function PlanForm({ plan }: { plan: PlanDetail | null }) {
       </section>
 
       <div className="pw-plan-footer">
-        <FormActions plan={plan} disabled={noDepot || busy} busy={isSubmitting} />
+        <FormActions plan={plan} disabled={noDepot || busy || readOnly} busy={isSubmitting} />
       </div>
 
       <Dialog

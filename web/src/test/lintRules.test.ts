@@ -20,3 +20,20 @@ describe('ESLint: thư viện bản đồ', () => {
     expect(await lint('src/platform/map/Example.ts', "import 'leaflet';\n")).not.toContain('no-restricted-imports');
   });
 });
+
+/** The chart library stays inside src/platform/charts (P-59, W11). */
+describe('ESLint: thư viện biểu đồ', () => {
+  const lint = async (filePath: string, code: string) => {
+    const [result] = await new ESLint().lintText(code, { filePath });
+    return (result?.messages ?? []).map((message) => message.ruleId);
+  };
+
+  it('chặn import recharts ngoài platform/charts, cho phép trong đó', async () => {
+    expect(await lint('src/features/admin/Example.tsx', "export { BarChart } from 'recharts';\n")).toContain(
+      'no-restricted-imports',
+    );
+    expect(await lint('src/platform/charts/Example.tsx', "export { BarChart } from 'recharts';\n")).not.toContain(
+      'no-restricted-imports',
+    );
+  });
+});

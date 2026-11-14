@@ -120,6 +120,12 @@ export function useSession(): SessionValue {
   return value;
 }
 
+/** Where a signed-in user starts (W11): the ADMIN area, the dispatcher pages, or "Dùng app tài xế". */
+export function homeOf(user: SessionUser): string {
+  if (user.role === 'ADMIN') return '/admin';
+  return canUseWeb(user) ? '/plans' : '/driver';
+}
+
 /** Who may use the dispatcher web (P-46): OWNER and DISPATCHER. A DRIVER is sent to the app. */
 export function canUseWeb(user: SessionUser): boolean {
   return user.role === 'OWNER' || user.role === 'DISPATCHER';

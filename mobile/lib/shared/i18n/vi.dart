@@ -77,6 +77,10 @@ abstract final class Vi {
   static const noRoutesTitle = 'Chưa có tuyến nào';
   static const noRoutesLead = 'Tuyến hiện ở đây khi điều phối viên giao việc cho bạn. Kéo xuống để tải lại.';
   static const routesLoadFailed = 'Không tải được danh sách tuyến.';
+  // T56, W11: the store is locked by an ADMIN; the driver still delivers.
+  static const storeLocked = 'Cửa hàng đang tạm khoá';
+  static String storeLockReason(String reason) => 'Lý do: $reason';
+  static const storeLockedDriver = 'Bạn vẫn giao và báo kết quả tuyến bình thường.';
 
   // Chi tiết tuyến (M01)
   static const backToRoutes = 'Về danh sách tuyến';

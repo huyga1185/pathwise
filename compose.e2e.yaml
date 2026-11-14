@@ -51,6 +51,9 @@ services:
       ROUTING_MATRIX_OSRM_BASEURL: http://map-stub:8090
       # A short solver run keeps the E2E fast (the default is 10 s, NFR-02).
       ROUTING_SOLVER_TIMELIMIT: 2s
+      # First ADMIN of the stack (T59), for the ADMIN area E2E (W11).
+      BOOTSTRAP_ADMIN_EMAIL: admin@pathwise.test
+      BOOTSTRAP_ADMIN_PASSWORD: matkhau-admin-e2e
     depends_on:
       map-stub:
         condition: service_healthy

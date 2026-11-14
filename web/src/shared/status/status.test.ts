@@ -39,6 +39,7 @@ const ALL: Record<StatusKind, string[]> = {
   member: ['PENDING_VERIFICATION', 'ACTIVE', 'DISABLED'],
   vehicle: ['ACTIVE', 'INACTIVE'],
   job: ['QUEUED', 'RUNNING', 'SUCCEEDED', 'FAILED'],
+  store: ['ACTIVE', 'READ_ONLY'],
 };
 
 describe('statusInfo', () => {

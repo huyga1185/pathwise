@@ -1,4 +1,5 @@
 import { Outlet } from 'react-router';
+import { useStoreReadOnly } from '@/data/meQuery';
 import { useStoreQuery } from '@/data/storeQuery';
 import { useSession } from '@/features/auth';
 import { vi } from '@/shared/i18n/vi';
@@ -17,6 +18,7 @@ export function AppLayout() {
   const { session, logOut } = useSession();
   const { theme, setPreference } = useTheme();
   const store = useStoreQuery();
+  const lock = useStoreReadOnly();
   const user = session.status === 'authenticated' ? session.user : null;
   return (
     <div className="pw-app">
@@ -45,6 +47,13 @@ export function AppLayout() {
         }
       />
       <main className="pw-page">
+        {lock.readOnly ? (
+          <div className="pw-lock-banner" role="status">
+            <strong>{vi.storeLock.banner}</strong>
+            <span>{lock.reason ?? vi.storeLock.noReason}</span>
+            <span className="pw-muted">{vi.storeLock.readOnly}</span>
+          </div>
+        ) : null}
         <Outlet />
       </main>
     </div>

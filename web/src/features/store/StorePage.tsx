@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { useForm } from 'react-hook-form';
 import { useGeocodingSearch } from '@/data/geocoding';
+import { useStoreReadOnly } from '@/data/meQuery';
 import { useStoreQuery } from '@/data/storeQuery';
 import { useSession } from '@/features/auth';
 import type { LatLng } from '@/platform/map';
@@ -11,6 +12,7 @@ import { vi } from '@/shared/i18n/vi';
 import { Button, ErrorBanner, SelectField, TextField } from '@/shared/ui';
 import { PinPicker } from '@/shared/ui/PinPicker';
 import { useStoreApi, type Store } from './storeApi';
+import { StoreTabs } from './StoreTabs';
 import './store.css';
 
 /** "16,06110 / 108,21175": coordinates with five decimals (about one metre), vi-VN decimal comma. */
@@ -28,11 +30,17 @@ export function StorePage() {
   const store = useStoreQuery();
   const { session } = useSession();
   const isOwner = session.status === 'authenticated' && session.user.role === 'OWNER';
+  const { readOnly } = useStoreReadOnly();
 
   return (
     <section className="pw-page-section" aria-labelledby="store-title">
       {store.data ? (
-        <StoreForm key={store.data.id} store={store.data} editable={isOwner} />
+        <StoreForm
+          key={store.data.id}
+          store={store.data}
+          editable={isOwner && !readOnly}
+          tabs={isOwner ? <StoreTabs /> : null}
+        />
       ) : (
         <>
           <h1 id="store-title" className="pw-page-title">
@@ -58,7 +66,7 @@ interface StoreFormValues {
 const FIELDS = ['name', 'timezone', 'address'] as const;
 const LABELS = { name: vi.store.name, timezone: vi.store.timezone, address: vi.store.depotAddress };
 
-function StoreForm({ store, editable }: { store: Store; editable: boolean }) {
+function StoreForm({ store, editable, tabs }: { store: Store; editable: boolean; tabs: ReactNode }) {
   const storeApi = useStoreApi();
   const search = useGeocodingSearch();
   const [pin, setPin] = useState<LatLng | null>(store.depot ? { lat: store.depot.lat, lon: store.depot.lon } : null);
@@ -122,6 +130,7 @@ function StoreForm({ store, editable }: { store: Store; editable: boolean }) {
           </Button>
         ) : null}
       </div>
+      {tabs}
 
       {!pin ? (
         <section role="alert" className="pw-store-warning">

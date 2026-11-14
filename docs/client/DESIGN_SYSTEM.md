@@ -1,6 +1,6 @@
 # DESIGN_SYSTEM — Brand book và component của PathWise
 
-> Bản trong repo của design system PathWise (Claude Design, artifact `https://claude.ai/artifact/CBQwFPSiBSH6JavBwHgutU`, chép ngày 2026-11-03, version artifact 15). **Repo là nguồn đúng cho code**; artifact là nơi chủ dự án xem và góp ý trực quan. Đổi token hay quy tắc thì sửa cả hai trong cùng PR (xem `docs/client/README.md` §4).
+> Bản trong repo của design system PathWise (Claude Design, artifact `https://claude.ai/artifact/CBQwFPSiBSH6JavBwHgutU`, chép ngày 2026-11-03, version artifact 15; W11 thêm trạng thái cửa hàng vào README, `StatusPill` và `bundle.js` của artifact, version 16). **Repo là nguồn đúng cho code**; artifact là nơi chủ dự án xem và góp ý trực quan. Đổi token hay quy tắc thì sửa cả hai trong cùng PR (xem `docs/client/README.md` §4).
 >
 > File đi kèm trong `brand/design-system/`:
 > - `tokens.json`: mọi token (màu theo theme sáng/tối, chữ, khoảng cách, bo góc, bóng, gradient). Code sinh CSS variables (web) và Dart theme (mobile) từ file này, không chép tay giá trị.
@@ -62,6 +62,7 @@ Mỗi trạng thái hiện bằng **pill**: nhãn `label` viết hoa, chữ `on-
 | Thành viên `PENDING_VERIFICATION` / `ACTIVE` / `DISABLED` | CHƯA XÁC THỰC / ĐANG HOẠT ĐỘNG / ĐÃ VÔ HIỆU HOÁ | `ink-muted` / `success` / `danger` |
 | Xe `active` `true` / `false` (client gọi `statusInfo('vehicle', active ? 'ACTIVE' : 'INACTIVE')`, W03) | ĐANG DÙNG / ĐÃ TẮT | `success` / `ink-muted` |
 | Job `QUEUED` / `RUNNING` / `SUCCEEDED` / `FAILED` | ĐANG CHỜ / ĐANG CHẠY / XONG / LỖI | `ink-muted` / `info` / `success` / `danger` |
+| Cửa hàng `ACTIVE` / `READ_ONLY` (khu quản trị, W11) | HOẠT ĐỘNG / TẠM KHOÁ | `success` / `signal` |
 
 `geocodeStatus` `PROVIDED` / `RESOLVED` và `processingStatus` `IDLE` không hiện pill. Component `StatusPill` giữ đúng bảng này (`kind` + `status` của API); client không tự viết nhãn.
 
