@@ -124,6 +124,9 @@ Class | Method | HTTP request | Description
 [*PlanControllerApi*](doc/PlanControllerApi.md) | [**publishPlan**](doc/PlanControllerApi.md#publishplan) | **POST** /api/v1/plans/{id}/publish | 
 [*PlanControllerApi*](doc/PlanControllerApi.md) | [**replacePlan**](doc/PlanControllerApi.md#replaceplan) | **PUT** /api/v1/plans/{id} | 
 [*PlanControllerApi*](doc/PlanControllerApi.md) | [**replaceRoutes**](doc/PlanControllerApi.md#replaceroutes) | **PUT** /api/v1/plans/{id}/routes | 
+[*PlanImportControllerApi*](doc/PlanImportControllerApi.md) | [**csvTemplate**](doc/PlanImportControllerApi.md#csvtemplate) | **GET** /api/v1/plans/import/template.csv | 
+[*PlanImportControllerApi*](doc/PlanImportControllerApi.md) | [**importStops**](doc/PlanImportControllerApi.md#importstops) | **POST** /api/v1/plans/import | 
+[*PlanImportControllerApi*](doc/PlanImportControllerApi.md) | [**xlsxTemplate**](doc/PlanImportControllerApi.md#xlsxtemplate) | **GET** /api/v1/plans/import/template.xlsx | 
 [*StoreAuditControllerApi*](doc/StoreAuditControllerApi.md) | [**listEvents**](doc/StoreAuditControllerApi.md#listevents) | **GET** /api/v1/store/audit | 
 [*StoreControllerApi*](doc/StoreControllerApi.md) | [**getStore**](doc/StoreControllerApi.md#getstore) | **GET** /api/v1/store | 
 [*StoreControllerApi*](doc/StoreControllerApi.md) | [**updateStore**](doc/StoreControllerApi.md#updatestore) | **PUT** /api/v1/store | 
@@ -175,6 +178,7 @@ Class | Method | HTTP request | Description
  - [ApiResponsePageResponsePlanSummaryResponse](doc/ApiResponsePageResponsePlanSummaryResponse.md)
  - [ApiResponsePageResponseStoreAuditEventResponse](doc/ApiResponsePageResponseStoreAuditEventResponse.md)
  - [ApiResponsePlanDetailResponse](doc/ApiResponsePlanDetailResponse.md)
+ - [ApiResponsePlanImportResponse](doc/ApiResponsePlanImportResponse.md)
  - [ApiResponseRegisterResponse](doc/ApiResponseRegisterResponse.md)
  - [ApiResponseResetTokenResponse](doc/ApiResponseResetTokenResponse.md)
  - [ApiResponseStoreResponse](doc/ApiResponseStoreResponse.md)
@@ -206,11 +210,14 @@ Class | Method | HTTP request | Description
  - [DriverStopResponse](doc/DriverStopResponse.md)
  - [DriverStopUpdateResponse](doc/DriverStopUpdateResponse.md)
  - [Failures](doc/Failures.md)
+ - [FieldErrorDetail](doc/FieldErrorDetail.md)
  - [ForgotPasswordRequest](doc/ForgotPasswordRequest.md)
  - [GeocodingSummaryResponse](doc/GeocodingSummaryResponse.md)
  - [GetUserResponse](doc/GetUserResponse.md)
  - [Group](doc/Group.md)
  - [Http](doc/Http.md)
+ - [ImportedRowResponse](doc/ImportedRowResponse.md)
+ - [ImportedStopResponse](doc/ImportedStopResponse.md)
  - [InvitationPreviewResponse](doc/InvitationPreviewResponse.md)
  - [InvitationResponse](doc/InvitationResponse.md)
  - [JobResponse](doc/JobResponse.md)
@@ -233,6 +240,7 @@ Class | Method | HTTP request | Description
  - [PlaceResponse](doc/PlaceResponse.md)
  - [PlanDetailResponse](doc/PlanDetailResponse.md)
  - [PlanDraftRequest](doc/PlanDraftRequest.md)
+ - [PlanImportResponse](doc/PlanImportResponse.md)
  - [PlanRouteResponse](doc/PlanRouteResponse.md)
  - [PlanStopRequest](doc/PlanStopRequest.md)
  - [PlanStopResponse](doc/PlanStopResponse.md)

@@ -696,6 +696,20 @@
         ],
         "type": "object"
       },
+      "ApiResponsePlanImportResponse": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/PlanImportResponse"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "type": "object"
+      },
       "ApiResponseRegisterResponse": {
         "properties": {
           "data": {
@@ -1787,6 +1801,17 @@
         ],
         "type": "object"
       },
+      "FieldErrorDetail": {
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "field": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "ForgotPasswordRequest": {
         "properties": {
           "email": {
@@ -1972,6 +1997,114 @@
           "requestsLastHour",
           "requestsPerMinute",
           "serverErrorRate"
+        ],
+        "type": "object"
+      },
+      "ImportedRowResponse": {
+        "properties": {
+          "errors": {
+            "items": {
+              "$ref": "#/components/schemas/FieldErrorDetail"
+            },
+            "type": "array"
+          },
+          "row": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "stop": {
+            "$ref": "#/components/schemas/ImportedStopResponse"
+          }
+        },
+        "required": [
+          "errors",
+          "row",
+          "stop"
+        ],
+        "type": "object"
+      },
+      "ImportedStopResponse": {
+        "properties": {
+          "address": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "demands": {
+            "additionalProperties": {
+              "format": "int32",
+              "type": "integer"
+            },
+            "type": "object"
+          },
+          "label": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "lat": {
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "lon": {
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "recipientName": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "recipientPhone": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "serviceTimeSeconds": {
+            "format": "int32",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "timeWindow": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TimeWindowResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "address",
+          "demands",
+          "label",
+          "lat",
+          "lon",
+          "note",
+          "recipientName",
+          "recipientPhone",
+          "serviceTimeSeconds",
+          "timeWindow"
         ],
         "type": "object"
       },
@@ -2815,6 +2948,37 @@
           "name",
           "planDate",
           "version"
+        ],
+        "type": "object"
+      },
+      "PlanImportResponse": {
+        "properties": {
+          "errorCount": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "ignoredColumns": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/ImportedRowResponse"
+            },
+            "type": "array"
+          },
+          "validCount": {
+            "format": "int32",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "errorCount",
+          "ignoredColumns",
+          "rows",
+          "validCount"
         ],
         "type": "object"
       },
@@ -5737,6 +5901,86 @@
         },
         "tags": [
           "plan-controller"
+        ]
+      }
+    },
+    "/api/v1/plans/import": {
+      "post": {
+        "operationId": "importStops",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "properties": {
+                  "file": {
+                    "format": "binary",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "file"
+                ],
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponsePlanImportResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "plan-import-controller"
+        ]
+      }
+    },
+    "/api/v1/plans/import/template.csv": {
+      "get": {
+        "operationId": "csvTemplate",
+        "responses": {
+          "200": {
+            "content": {
+              "text/csv": {
+                "schema": {
+                  "format": "byte",
+                  "type": "string"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "plan-import-controller"
+        ]
+      }
+    },
+    "/api/v1/plans/import/template.xlsx": {
+      "get": {
+        "operationId": "xlsxTemplate",
+        "responses": {
+          "200": {
+            "content": {
+              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": {
+                "schema": {
+                  "format": "byte",
+                  "type": "string"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "plan-import-controller"
         ]
       }
     },

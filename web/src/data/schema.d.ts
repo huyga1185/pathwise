@@ -660,6 +660,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/plans/import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["importStops"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/plans/import/template.csv": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["csvTemplate"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/plans/import/template.xlsx": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["xlsxTemplate"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/plans/{id}": {
         parameters: {
             query?: never;
@@ -1138,6 +1186,10 @@ export interface components {
             data: components["schemas"]["PlanDetailResponse"];
             message?: string;
         };
+        ApiResponsePlanImportResponse: {
+            data: components["schemas"]["PlanImportResponse"];
+            message?: string;
+        };
         ApiResponseRegisterResponse: {
             data: components["schemas"]["RegisterResponse"];
             message?: string;
@@ -1437,6 +1489,10 @@ export interface components {
             /** Format: int64 */
             routing: number;
         };
+        FieldErrorDetail: {
+            code?: string;
+            field?: string;
+        };
         ForgotPasswordRequest: {
             /** Format: email */
             email: string;
@@ -1487,6 +1543,29 @@ export interface components {
             requestsPerMinute: number;
             /** Format: double */
             serverErrorRate: number | null;
+        };
+        ImportedRowResponse: {
+            errors: components["schemas"]["FieldErrorDetail"][];
+            /** Format: int32 */
+            row: number;
+            stop: components["schemas"]["ImportedStopResponse"];
+        };
+        ImportedStopResponse: {
+            address: string | null;
+            demands: {
+                [key: string]: number;
+            };
+            label: string | null;
+            /** Format: double */
+            lat: number | null;
+            /** Format: double */
+            lon: number | null;
+            note: string | null;
+            recipientName: string | null;
+            recipientPhone: string | null;
+            /** Format: int32 */
+            serviceTimeSeconds: number | null;
+            timeWindow: components["schemas"]["TimeWindowResponse"] | null;
         };
         InvitationPreviewResponse: {
             email: string;
@@ -1722,6 +1801,14 @@ export interface components {
             stops?: components["schemas"]["PlanStopRequest"][];
             /** Format: int64 */
             version: number;
+        };
+        PlanImportResponse: {
+            /** Format: int32 */
+            errorCount: number;
+            ignoredColumns: string[];
+            rows: components["schemas"]["ImportedRowResponse"][];
+            /** Format: int32 */
+            validCount: number;
         };
         PlanRouteResponse: {
             driver: components["schemas"]["Driver"];
@@ -3080,6 +3167,73 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ApiResponsePlanDetailResponse"];
+                };
+            };
+        };
+    };
+    importStops: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "multipart/form-data": {
+                    /** Format: binary */
+                    file: string;
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponsePlanImportResponse"];
+                };
+            };
+        };
+    };
+    csvTemplate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/csv": string;
+                };
+            };
+        };
+    };
+    xlsxTemplate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": string;
                 };
             };
         };

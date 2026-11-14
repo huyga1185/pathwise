@@ -107,7 +107,12 @@ class AuthorizationMatrixIntegrationTest extends AbstractIntegrationTest {
                 Arguments.of("GET", "/api/v1/admin/metrics/business", "ADMIN", 200),
                 Arguments.of("GET", "/api/v1/admin/metrics/business", "OWNER", 403),
                 Arguments.of("GET", "/api/v1/admin/metrics/technical", "ADMIN", 200),
-                Arguments.of("GET", "/api/v1/admin/metrics/technical", "DISPATCHER", 403));
+                Arguments.of("GET", "/api/v1/admin/metrics/technical", "DISPATCHER", 403),
+                // Stop import template (T61): OWNER and DISPATCHER.
+                Arguments.of("GET", "/api/v1/plans/import/template.xlsx", "ADMIN", 403),
+                Arguments.of("GET", "/api/v1/plans/import/template.xlsx", "OWNER", 200),
+                Arguments.of("GET", "/api/v1/plans/import/template.csv", "DISPATCHER", 200),
+                Arguments.of("GET", "/api/v1/plans/import/template.csv", "DRIVER", 403));
     }
 
     @ParameterizedTest(name = "{2} {0} {1} -> {3}")

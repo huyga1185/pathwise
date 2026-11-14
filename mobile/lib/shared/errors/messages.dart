@@ -26,6 +26,8 @@ const errorMessages = <String, String>{
   'STORE_DEPOT_REQUIRED': 'Cửa hàng chưa có kho xuất phát. Cập nhật trong phần Cửa hàng.',
   'INVALID_ASSIGNMENT': 'Tài xế hoặc xe không còn dùng được (`details` chỉ ra phân công nào).',
   'PLAN_TOO_LARGE': 'Plan vượt giới hạn 100 điểm giao hoặc 20 phân công.',
+  'INVALID_IMPORT_FILE': 'Không đọc được file. Dùng file Excel (.xlsx) hoặc CSV theo file mẫu.',
+  'IMPORT_FILE_TOO_LARGE': 'File quá lớn, tối đa 1 MB.',
   'PLAN_NOT_EDITABLE': 'Plan đã giao việc, không sửa được nữa.',
   'PLAN_BUSY': 'Plan đang được xử lý, vui lòng chờ.',
   'PLAN_MODIFIED': 'Plan vừa được người khác thay đổi. Tải lại để xem bản mới.',
