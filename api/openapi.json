@@ -58,6 +58,21 @@
             ],
             "type": "string"
           },
+          "status": {
+            "enum": [
+              "PENDING_VERIFICATION",
+              "ACTIVE",
+              "DISABLED"
+            ],
+            "type": "string"
+          },
+          "storeId": {
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
           "updatedAt": {
             "format": "date-time",
             "type": "string"
@@ -69,7 +84,209 @@
           "id",
           "phoneNumber",
           "role",
+          "status",
+          "storeId",
           "updatedAt"
+        ],
+        "type": "object"
+      },
+      "AdminMemberResponse": {
+        "properties": {
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "role": {
+            "enum": [
+              "ADMIN",
+              "OWNER",
+              "DISPATCHER",
+              "DRIVER"
+            ],
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "PENDING_VERIFICATION",
+              "ACTIVE",
+              "DISABLED"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "createdAt",
+          "email",
+          "id",
+          "role",
+          "status"
+        ],
+        "type": "object"
+      },
+      "AdminStoreDetailResponse": {
+        "properties": {
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "last30Days": {
+            "$ref": "#/components/schemas/StorePeriodStatsResponse"
+          },
+          "lastActivityAt": {
+            "format": "date-time",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "lockReason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "lockedAt": {
+            "format": "date-time",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "memberCounts": {
+            "$ref": "#/components/schemas/MemberCountsResponse"
+          },
+          "members": {
+            "items": {
+              "$ref": "#/components/schemas/AdminMemberResponse"
+            },
+            "type": "array"
+          },
+          "name": {
+            "type": "string"
+          },
+          "ownerEmail": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "plans": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "status": {
+            "enum": [
+              "ACTIVE",
+              "READ_ONLY"
+            ],
+            "type": "string"
+          },
+          "timezone": {
+            "type": "string"
+          },
+          "vehicles": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "createdAt",
+          "id",
+          "last30Days",
+          "lastActivityAt",
+          "lockReason",
+          "lockedAt",
+          "memberCounts",
+          "members",
+          "name",
+          "ownerEmail",
+          "plans",
+          "status",
+          "timezone",
+          "vehicles"
+        ],
+        "type": "object"
+      },
+      "AdminStoreSummaryResponse": {
+        "properties": {
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "lastActivityAt": {
+            "format": "date-time",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "memberCounts": {
+            "$ref": "#/components/schemas/MemberCountsResponse"
+          },
+          "name": {
+            "type": "string"
+          },
+          "ownerEmail": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "plans": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "status": {
+            "enum": [
+              "ACTIVE",
+              "READ_ONLY"
+            ],
+            "type": "string"
+          },
+          "vehicles": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "createdAt",
+          "id",
+          "lastActivityAt",
+          "memberCounts",
+          "name",
+          "ownerEmail",
+          "plans",
+          "status",
+          "vehicles"
+        ],
+        "type": "object"
+      },
+      "ApiResponseAdminStoreDetailResponse": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/AdminStoreDetailResponse"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "data"
         ],
         "type": "object"
       },
@@ -322,6 +539,20 @@
         "properties": {
           "data": {
             "$ref": "#/components/schemas/PageResponseAdminGetUserResponse"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "type": "object"
+      },
+      "ApiResponsePageResponseAdminStoreSummaryResponse": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/PageResponseAdminStoreSummaryResponse"
           },
           "message": {
             "type": "string"
@@ -1485,6 +1716,28 @@
         ],
         "type": "object"
       },
+      "MemberCountsResponse": {
+        "properties": {
+          "dispatchers": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "drivers": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "owners": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "dispatchers",
+          "drivers",
+          "owners"
+        ],
+        "type": "object"
+      },
       "MemberResponse": {
         "properties": {
           "canDrive": {
@@ -1543,6 +1796,40 @@
           "items": {
             "items": {
               "$ref": "#/components/schemas/AdminGetUserResponse"
+            },
+            "type": "array"
+          },
+          "page": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "size": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "totalElements": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "totalPages": {
+            "format": "int32",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "page",
+          "size",
+          "totalElements",
+          "totalPages"
+        ],
+        "type": "object"
+      },
+      "PageResponseAdminStoreSummaryResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/AdminStoreSummaryResponse"
             },
             "type": "array"
           },
@@ -2495,6 +2782,56 @@
         ],
         "type": "object"
       },
+      "StorePeriodStatsResponse": {
+        "properties": {
+          "deliveredRate": {
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "plansCompleted": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "plansCreated": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "plansPublished": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "since": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "stopsDelivered": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "stopsFailed": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "stopsSkipped": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "deliveredRate",
+          "plansCompleted",
+          "plansCreated",
+          "plansPublished",
+          "since",
+          "stopsDelivered",
+          "stopsFailed",
+          "stopsSkipped"
+        ],
+        "type": "object"
+      },
       "StoreResponse": {
         "properties": {
           "depot": {
@@ -2878,10 +3215,156 @@
   },
   "openapi": "3.1.0",
   "paths": {
+    "/api/v1/admin/stores": {
+      "get": {
+        "operationId": "listStores",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "enum": [
+                "ACTIVE",
+                "READ_ONLY"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Zero-based page index (0..N)",
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "The size of the page to be returned",
+            "in": "query",
+            "name": "size",
+            "required": false,
+            "schema": {
+              "default": 10,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Sorting criteria in the format: property,(asc|desc). Default sort order is ascending. Multiple sort criteria are supported.",
+            "in": "query",
+            "name": "sort",
+            "required": false,
+            "schema": {
+              "default": [
+                "id,ASC"
+              ],
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponsePageResponseAdminStoreSummaryResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "admin-store-controller"
+        ]
+      }
+    },
+    "/api/v1/admin/stores/{id}": {
+      "get": {
+        "operationId": "getStore_1",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseAdminStoreDetailResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "admin-store-controller"
+        ]
+      }
+    },
     "/api/v1/admin/users": {
       "get": {
         "operationId": "getListUser",
         "parameters": [
+          {
+            "in": "query",
+            "name": "storeId",
+            "required": false,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "role",
+            "required": false,
+            "schema": {
+              "enum": [
+                "ADMIN",
+                "OWNER",
+                "DISPATCHER",
+                "DRIVER"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "enum": [
+                "PENDING_VERIFICATION",
+                "ACTIVE",
+                "DISABLED"
+              ],
+              "type": "string"
+            }
+          },
           {
             "description": "Zero-based page index (0..N)",
             "in": "query",

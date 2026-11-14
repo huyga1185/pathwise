@@ -4,6 +4,38 @@
  */
 
 export interface paths {
+    "/api/v1/admin/stores": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["listStores"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/stores/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getStore_1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/users": {
         parameters: {
             query?: never;
@@ -711,8 +743,67 @@ export interface components {
             phoneNumber: string | null;
             /** @enum {string} */
             role: "ADMIN" | "OWNER" | "DISPATCHER" | "DRIVER";
+            /** @enum {string} */
+            status: "PENDING_VERIFICATION" | "ACTIVE" | "DISABLED";
+            /** Format: int64 */
+            storeId: number | null;
             /** Format: date-time */
             updatedAt: string;
+        };
+        AdminMemberResponse: {
+            /** Format: date-time */
+            createdAt: string;
+            email: string;
+            /** Format: int64 */
+            id: number;
+            /** @enum {string} */
+            role: "ADMIN" | "OWNER" | "DISPATCHER" | "DRIVER";
+            /** @enum {string} */
+            status: "PENDING_VERIFICATION" | "ACTIVE" | "DISABLED";
+        };
+        AdminStoreDetailResponse: {
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: int64 */
+            id: number;
+            last30Days: components["schemas"]["StorePeriodStatsResponse"];
+            /** Format: date-time */
+            lastActivityAt: string | null;
+            lockReason: string | null;
+            /** Format: date-time */
+            lockedAt: string | null;
+            memberCounts: components["schemas"]["MemberCountsResponse"];
+            members: components["schemas"]["AdminMemberResponse"][];
+            name: string;
+            ownerEmail: string | null;
+            /** Format: int64 */
+            plans: number;
+            /** @enum {string} */
+            status: "ACTIVE" | "READ_ONLY";
+            timezone: string;
+            /** Format: int64 */
+            vehicles: number;
+        };
+        AdminStoreSummaryResponse: {
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: int64 */
+            id: number;
+            /** Format: date-time */
+            lastActivityAt: string | null;
+            memberCounts: components["schemas"]["MemberCountsResponse"];
+            name: string;
+            ownerEmail: string | null;
+            /** Format: int64 */
+            plans: number;
+            /** @enum {string} */
+            status: "ACTIVE" | "READ_ONLY";
+            /** Format: int64 */
+            vehicles: number;
+        };
+        ApiResponseAdminStoreDetailResponse: {
+            data: components["schemas"]["AdminStoreDetailResponse"];
+            message?: string;
         };
         ApiResponseAuthTokenResponse: {
             data: components["schemas"]["AuthTokenResponse"];
@@ -780,6 +871,10 @@ export interface components {
         };
         ApiResponsePageResponseAdminGetUserResponse: {
             data: components["schemas"]["PageResponseAdminGetUserResponse"];
+            message?: string;
+        };
+        ApiResponsePageResponseAdminStoreSummaryResponse: {
+            data: components["schemas"]["PageResponseAdminStoreSummaryResponse"];
             message?: string;
         };
         ApiResponsePageResponsePlanSummaryResponse: {
@@ -1097,6 +1192,14 @@ export interface components {
             email: string;
             password: string;
         };
+        MemberCountsResponse: {
+            /** Format: int64 */
+            dispatchers: number;
+            /** Format: int64 */
+            drivers: number;
+            /** Format: int64 */
+            owners: number;
+        };
         MemberResponse: {
             canDrive: boolean;
             email: string;
@@ -1111,6 +1214,17 @@ export interface components {
         };
         PageResponseAdminGetUserResponse: {
             items: components["schemas"]["AdminGetUserResponse"][];
+            /** Format: int32 */
+            page: number;
+            /** Format: int32 */
+            size: number;
+            /** Format: int64 */
+            totalElements: number;
+            /** Format: int32 */
+            totalPages: number;
+        };
+        PageResponseAdminStoreSummaryResponse: {
+            items: components["schemas"]["AdminStoreSummaryResponse"][];
             /** Format: int32 */
             page: number;
             /** Format: int32 */
@@ -1353,6 +1467,24 @@ export interface components {
             sessionId: string;
             userAgent: string | null;
         };
+        StorePeriodStatsResponse: {
+            /** Format: double */
+            deliveredRate: number | null;
+            /** Format: int64 */
+            plansCompleted: number;
+            /** Format: int64 */
+            plansCreated: number;
+            /** Format: int64 */
+            plansPublished: number;
+            /** Format: date-time */
+            since: string;
+            /** Format: int64 */
+            stopsDelivered: number;
+            /** Format: int64 */
+            stopsFailed: number;
+            /** Format: int64 */
+            stopsSkipped: number;
+        };
         StoreResponse: {
             depot: components["schemas"]["DepotResponse"] | null;
             /** Format: int64 */
@@ -1460,9 +1592,63 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    listStores: {
+        parameters: {
+            query?: {
+                q?: string;
+                status?: "ACTIVE" | "READ_ONLY";
+                /** @description Zero-based page index (0..N) */
+                page?: number;
+                /** @description The size of the page to be returned */
+                size?: number;
+                /** @description Sorting criteria in the format: property,(asc|desc). Default sort order is ascending. Multiple sort criteria are supported. */
+                sort?: string[];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponsePageResponseAdminStoreSummaryResponse"];
+                };
+            };
+        };
+    };
+    getStore_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponseAdminStoreDetailResponse"];
+                };
+            };
+        };
+    };
     getListUser: {
         parameters: {
             query?: {
+                storeId?: number;
+                role?: "ADMIN" | "OWNER" | "DISPATCHER" | "DRIVER";
+                status?: "PENDING_VERIFICATION" | "ACTIVE" | "DISABLED";
                 /** @description Zero-based page index (0..N) */
                 page?: number;
                 /** @description The size of the page to be returned */

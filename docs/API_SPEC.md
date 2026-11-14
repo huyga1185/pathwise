@@ -5,9 +5,9 @@
 > Cột "Hiện trạng" ở mọi bảng: ✅ khớp spec và có test · 🟡 có nhưng còn lệch (ghi rõ lệch gì) · ❌ chưa có. Lịch sử triển khai theo task nằm ở `CURRENT_STATE.md` §5, không ghi ở đây.
 > Lần rà soát contract gần nhất: T44 (2026-10-29, P-32).
 
-## 0. Lệch hiện tại so với spec (cập nhật 2026-11-13, sau T33)
+## 0. Lệch hiện tại so với spec (cập nhật 2026-11-14, sau T55)
 
-- `GET /admin/users` chưa trả `storeId`, `status`.
+- Không còn lệch nào đã biết giữa endpoint và spec (`GET /admin/users` đủ `storeId`, `status` từ T55).
 - Tài liệu OpenAPI sinh tự động (`/v3/api-docs` ở dev/staging; CI xuất artifact `api-contract` gồm `openapi.json` và dữ liệu mẫu) dùng để sinh code client; endpoint (method + path) được kiểm tự động khớp spec (`ApiSpecContractIntegrationTest`). Từ T46 (P-48): mã thành công đúng như spec (201, 202, 204); field response luôn có mặt là `required`, field có thể `null` có kiểu kèm `null`; field của request PATCH gửi `null` để xoá có kiểu kèm `null`. Response thật được kiểm khớp schema đó (`OpenApiNullabilityIntegrationTest`, trên `docs/ux/samples` và các response tài khoản). OpenAPI chưa mô tả response lỗi (dùng §1 và §9). Spec này vẫn là hợp đồng; hướng dẫn cho client ở `docs/ux/UX_BRIEF.md`.
 - Endpoint vận hành ngoài `/api/v1`, giữ có chủ đích: `GET /actuator/health` (kèm `/liveness`, `/readiness`), Public, chỉ trả `status` và tên các `groups` (T05, `ARCHITECTURE.md` §12.1). Mọi endpoint actuator khác tắt. Caddy chỉ mở `/actuator/health` (không mở `/liveness`, `/readiness`) ra internet cho dịch vụ uptime bên ngoài (T54, DEPLOYMENT §9).
 
@@ -107,13 +107,42 @@ Ghi chú:
 |---|---|---|---|---|---|
 | `GET /users/me` | A | — | `User` | — | ✅ |
 | `PATCH /users/me` | A | merge patch `{fullName?, phoneNumber?}`; `null` xoá giá trị | 200 `User` | 400 (`FULL_NAME_REQUIRED` khi chuỗi trắng, `INVALID_FULL_NAME_LENGTH` ≤ 100, `PHONE_NUMBER_*`) | ✅ |
-| `GET /admin/users` | AD | paging; sort `id`, `email`, `createdAt`, `updatedAt` | Page `{id, email, phoneNumber, role, storeId, status, createdAt, updatedAt}` | 400 `INVALID_SORT_FIELD` | 🟡 chưa trả `storeId`, `status` |
+| `GET /admin/users` | AD | `storeId?`, `role?` (`ADMIN\|OWNER\|DISPATCHER\|DRIVER`), `status?` (`PENDING_VERIFICATION\|ACTIVE\|DISABLED`), paging; sort `id` (mặc định), `email`, `createdAt`, `updatedAt` | Page `{id, email, phoneNumber, role, storeId, status, createdAt, updatedAt}`; `storeId` là `null` với ADMIN | 400 `INVALID_SORT_FIELD` · 400 `MALFORMED_REQUEST` (giá trị enum sai) | ✅ (lọc và `storeId`, `status` từ T55) |
 
 ```jsonc
 // User
 { "id": 12, "email": "a@b.vn", "fullName": "An", "phoneNumber": "+84905123456", "role": "OWNER", "storeId": 3,
   "status": "ACTIVE", "canDrive": false }   // canDrive luôn true với DRIVER (D-21)
 ```
+
+## 3a. Quản trị cửa hàng (ADMIN) — `/api/v1/admin/stores`
+
+Module `admin` (P-60). ADMIN chỉ thấy **số tổng và tài khoản thành viên**, không thấy nội dung của cửa hàng: không depot, plan, xe, điểm giao, người nhận, tên hay số điện thoại của thành viên (P-59, BR-01).
+
+| Method & path | Quyền | Request | Response | Lỗi chính | Hiện trạng |
+|---|---|---|---|---|---|
+| `GET /admin/stores` | AD | `q?` (chứa trong tên cửa hàng **hoặc** email OWNER, không phân biệt hoa thường; `%`, `_` khớp đúng ký tự), `status?` (`ACTIVE\|READ_ONLY`), paging; sort `id` (mặc định), `name`, `createdAt` | Page `AdminStoreSummary` | 400 `INVALID_SORT_FIELD` · 400 `MALFORMED_REQUEST` | ✅ (T55) |
+| `GET /admin/stores/{id}` | AD | — | `AdminStoreDetail` | 404 `NOT_FOUND` | ✅ (T55) |
+
+```jsonc
+// AdminStoreSummary
+{ "id": 3, "name": "Tiệm Hoa", "ownerEmail": "chu@tiem.vn", "status": "ACTIVE", "createdAt": "2026-11-01T02:00:00Z",
+  "memberCounts": { "owners": 1, "dispatchers": 2, "drivers": 5 },
+  "vehicles": 4, "plans": 37, "lastActivityAt": "2026-11-14T09:12:30.123456Z" }   // null khi chưa có plan
+
+// AdminStoreDetail = AdminStoreSummary, thêm:
+{ "lockReason": null, "lockedAt": null,            // có giá trị khi READ_ONLY (T56)
+  "timezone": "Asia/Ho_Chi_Minh",
+  "last30Days": { "since": "2026-10-15T09:20:00Z", "plansCreated": 22, "plansPublished": 20, "plansCompleted": 19,
+                  "stopsDelivered": 410, "stopsFailed": 12, "stopsSkipped": 3, "deliveredRate": 0.9647 },  // null khi chưa có kết quả
+  "members": [ { "id": 12, "email": "chu@tiem.vn", "role": "OWNER", "status": "ACTIVE", "createdAt": "2026-11-01T02:00:00Z" } ] }
+```
+
+Ghi chú:
+- `memberCounts` đếm thành viên mọi trạng thái; `members` liệt kê theo id, mọi trạng thái. `vehicles` chỉ đếm xe đang dùng (`active`). `plans` đếm plan mọi trạng thái.
+- `lastActivityAt` (P-60): mốc mới nhất giữa plan được tạo hoặc sửa (`route_plans.updated_at`) và tài xế báo kết quả điểm giao (`status_updated_at`).
+- `last30Days`: từ `since` (= lúc gọi − 30 ngày) tới nay. Plan đếm theo thời điểm tạo, publish, hoàn thành; điểm giao đếm theo lúc tài xế báo kết quả. `deliveredRate` = delivered / (delivered + failed + skipped), làm tròn 4 chữ số.
+- Store không tồn tại → 404. OWNER, DISPATCHER, DRIVER → 403.
 
 ## 4. Store — `/api/v1/store`, `/api/v1/invitations`
 

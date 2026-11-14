@@ -45,6 +45,10 @@ Index: `idx_users_store_role (store_id, role)`. Tên ràng buộc trong V2: FK `
 | depot_address | VARCHAR(500) | NULL |
 | depot_lat, depot_lon | DOUBLE | NULL (cả hai cùng NULL hoặc cùng có: CHECK `chk_stores_depot_coordinates`) |
 | timezone | VARCHAR(50) | NOT NULL DEFAULT `'Asia/Ho_Chi_Minh'` |
+| status | VARCHAR(20) | NOT NULL DEFAULT `'ACTIVE'` (V7, T55) — `ACTIVE, READ_ONLY`; CHECK `chk_stores_status`; index `idx_stores_status`. `READ_ONLY` do ADMIN khoá (T56, P-59) |
+| lock_reason | VARCHAR(500) | NULL (V7). Lý do khoá hiện tại; NULL khi `ACTIVE` |
+| locked_at | DATETIME(6) | NULL (V7) |
+| locked_by | BIGINT | NULL (V7), FK `fk_stores_locked_by` → users (ADMIN đã khoá) |
 | created_at, updated_at | DATETIME(6) | NOT NULL |
 
 OWNER của store = user có `role='OWNER' AND store_id=?` (đúng 1, BR-03, kiểm tra ở service).
@@ -219,7 +223,8 @@ Version được cấp trước — agent **không** tự chọn số khác:
 | V3 | `V3__store_invitations.sql` | T16 ✓ | Bảng `store_invitations`. **Đã tạo.** |
 | V4 | `V4__vehicles.sql` | T20 ✓ | Bảng `vehicles`. **Đã tạo.** |
 | V5 | `V5__route_plans.sql` | T24 ✓ | `background_jobs`, `route_plans`, `route_plan_routes`, `route_plan_stops`, `route_plan_stop_demands` (D-36). **Đã tạo.** |
-| V6 | `V6__manual_route_edit.sql` | T28 | `route_plan_stops.manually_unassigned BOOLEAN NOT NULL DEFAULT FALSE`: stop dispatcher bỏ ra khỏi route bằng `PUT /plans/{id}/routes` (`dropReason = MANUAL`, P-58); optimize, `PUT /plans/{id}` và `PATCH` stop đặt lại `FALSE`. |
+| V6 | `V6__manual_route_edit.sql` | T28 ✓ | `route_plan_stops.manually_unassigned BOOLEAN NOT NULL DEFAULT FALSE`: stop dispatcher bỏ ra khỏi route bằng `PUT /plans/{id}/routes` (`dropReason = MANUAL`, P-58); optimize, `PUT /plans/{id}` và `PATCH` stop đặt lại `FALSE`. |
+| V7 | `V7__store_status.sql` | T55 | `stores.status` (`ACTIVE`/`READ_ONLY`, mặc định `ACTIVE`), `lock_reason`, `locked_at`, `locked_by` (FK users), CHECK `chk_stores_status`, index `idx_stores_status` (P-60). T55 chỉ đọc; T56 ghi khi khoá/mở khoá, không cần migration riêng. |
 
 Task phát sinh cần migration mới lấy số tiếp theo **sau khi** cập nhật bảng này trong cùng PR.
 

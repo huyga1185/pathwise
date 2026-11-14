@@ -17,6 +17,8 @@ AdminGetUserResponse _$AdminGetUserResponseFromJson(
       'id',
       'phoneNumber',
       'role',
+      'status',
+      'storeId',
       'updatedAt',
     ],
   );
@@ -29,6 +31,11 @@ AdminGetUserResponse _$AdminGetUserResponseFromJson(
       'role',
       (v) => $enumDecode(_$AdminGetUserResponseRoleEnumEnumMap, v),
     ),
+    status: $checkedConvert(
+      'status',
+      (v) => $enumDecode(_$AdminGetUserResponseStatusEnumEnumMap, v),
+    ),
+    storeId: $checkedConvert('storeId', (v) => (v as num?)?.toInt()),
     updatedAt: $checkedConvert('updatedAt', (v) => DateTime.parse(v as String)),
   );
   return val;
@@ -42,6 +49,8 @@ Map<String, dynamic> _$AdminGetUserResponseToJson(
   'id': instance.id,
   'phoneNumber': instance.phoneNumber,
   'role': _$AdminGetUserResponseRoleEnumEnumMap[instance.role]!,
+  'status': _$AdminGetUserResponseStatusEnumEnumMap[instance.status]!,
+  'storeId': instance.storeId,
   'updatedAt': instance.updatedAt.toIso8601String(),
 };
 
@@ -50,4 +59,10 @@ const _$AdminGetUserResponseRoleEnumEnumMap = {
   AdminGetUserResponseRoleEnum.OWNER: 'OWNER',
   AdminGetUserResponseRoleEnum.DISPATCHER: 'DISPATCHER',
   AdminGetUserResponseRoleEnum.DRIVER: 'DRIVER',
+};
+
+const _$AdminGetUserResponseStatusEnumEnumMap = {
+  AdminGetUserResponseStatusEnum.PENDING_VERIFICATION: 'PENDING_VERIFICATION',
+  AdminGetUserResponseStatusEnum.ACTIVE: 'ACTIVE',
+  AdminGetUserResponseStatusEnum.DISABLED: 'DISABLED',
 };

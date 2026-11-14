@@ -78,4 +78,35 @@ public interface RoutePlanRepository extends JpaRepository<RoutePlan, Long> {
      */
     @Query("SELECT r.plan.id, COUNT(r) FROM PlanRoute r WHERE r.plan.id IN :planIds GROUP BY r.plan.id")
     List<Object[]> countRoutes(@Param("planIds") Collection<Long> planIds);
+
+    // --- Across stores, for the ADMIN area (T55). Never for a store member's request.
+
+    /**
+     * @return {@code [storeId, plan count, latest updatedAt]} rows, only for stores that have plans
+     */
+    @Query("SELECT p.storeId, COUNT(p), MAX(p.updatedAt) FROM RoutePlan p WHERE p.storeId IN :storeIds GROUP BY p.storeId")
+    List<Object[]> summarizeByStore(@Param("storeIds") Collection<Long> storeIds);
+
+    /**
+     * @return {@code [storeId, latest statusUpdatedAt]} rows, only for stores with a reported stop
+     */
+    @Query("SELECT s.storeId, MAX(s.statusUpdatedAt) FROM PlanStop s "
+            + "WHERE s.storeId IN :storeIds AND s.statusUpdatedAt IS NOT NULL GROUP BY s.storeId")
+    List<Object[]> lastStopResultByStore(@Param("storeIds") Collection<Long> storeIds);
+
+    @Query("SELECT COUNT(p) FROM RoutePlan p WHERE p.storeId = :storeId AND p.createdAt >= :since")
+    long countCreatedSince(@Param("storeId") long storeId, @Param("since") Instant since);
+
+    @Query("SELECT COUNT(p) FROM RoutePlan p WHERE p.storeId = :storeId AND p.publishedAt >= :since")
+    long countPublishedSince(@Param("storeId") long storeId, @Param("since") Instant since);
+
+    @Query("SELECT COUNT(p) FROM RoutePlan p WHERE p.storeId = :storeId AND p.completedAt >= :since")
+    long countCompletedSince(@Param("storeId") long storeId, @Param("since") Instant since);
+
+    /**
+     * @return {@code [status, count]} rows of the stop results reported since {@code since}
+     */
+    @Query("SELECT s.status, COUNT(s) FROM PlanStop s WHERE s.storeId = :storeId AND s.statusUpdatedAt >= :since "
+            + "GROUP BY s.status")
+    List<Object[]> countStopResultsSince(@Param("storeId") long storeId, @Param("since") Instant since);
 }

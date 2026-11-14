@@ -253,9 +253,10 @@ public class UserService implements UserAccountService, UserProfileService, Stor
     }
 
     @Override
-    public PageResponse<AdminGetUserResponse> getListUser(Pageable pageable) {
+    @Transactional(readOnly = true)
+    public PageResponse<AdminGetUserResponse> getListUser(Long storeId, UserRole role, UserStatus status, Pageable pageable) {
         PaginationValidator.validateSort(pageable, USER_SORT_WHITELIST);
-        Page<User> users = userRepository.findAll(pageable);
+        Page<User> users = userRepository.search(storeId, role, status, pageable);
         return PageResponse.from(users.map(userMapper::toAdminGetUserResponse));
     }
 }

@@ -15,7 +15,9 @@ import uk.huy.pathwise.fleet.repository.VehicleRepository;
 import uk.huy.pathwise.shared.identity.UserIdentity;
 
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -108,6 +110,15 @@ public class VehicleService implements VehicleQuery {
         return vehicleRepository.findAllByStoreIdAndIdIn(storeId, vehicleIds).stream()
                 .map(vehicleMapper::toFleetVehicle)
                 .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Map<Long, Long> countActiveByStore(Collection<Long> storeIds) {
+        Map<Long, Long> counts = new HashMap<>();
+        if (storeIds.isEmpty()) return counts;
+        for (Object[] row : vehicleRepository.countActiveByStore(storeIds)) counts.put((Long) row[0], (Long) row[1]);
+        return counts;
     }
 
     private Vehicle getVehicleOf(UserIdentity actor, long vehicleId) {

@@ -28,6 +28,10 @@ class AdminGetUserResponse {
 
     required  this.role,
 
+    required  this.status,
+
+    required  this.storeId,
+
     required  this.updatedAt,
   });
 
@@ -93,6 +97,30 @@ class AdminGetUserResponse {
 
   @JsonKey(
     
+    name: r'status',
+    required: true,
+    includeIfNull: false,
+  )
+
+
+  final AdminGetUserResponseStatusEnum status;
+
+
+
+  @JsonKey(
+    
+    name: r'storeId',
+    required: true,
+    includeIfNull: true,
+  )
+
+
+  final int? storeId;
+
+
+
+  @JsonKey(
+    
     name: r'updatedAt',
     required: true,
     includeIfNull: false,
@@ -112,6 +140,8 @@ class AdminGetUserResponse {
       other.id == id &&
       other.phoneNumber == phoneNumber &&
       other.role == role &&
+      other.status == status &&
+      other.storeId == storeId &&
       other.updatedAt == updatedAt;
 
     @override
@@ -121,6 +151,8 @@ class AdminGetUserResponse {
         id.hashCode +
         (phoneNumber == null ? 0 : phoneNumber.hashCode) +
         role.hashCode +
+        status.hashCode +
+        (storeId == null ? 0 : storeId.hashCode) +
         updatedAt.hashCode;
 
   factory AdminGetUserResponse.fromJson(Map<String, dynamic> json) => _$AdminGetUserResponseFromJson(json);
@@ -146,6 +178,24 @@ DISPATCHER(r'DISPATCHER'),
 DRIVER(r'DRIVER');
 
 const AdminGetUserResponseRoleEnum(this.value);
+
+final String value;
+
+@override
+String toString() => value;
+}
+
+
+
+enum AdminGetUserResponseStatusEnum {
+@JsonValue(r'PENDING_VERIFICATION')
+PENDING_VERIFICATION(r'PENDING_VERIFICATION'),
+@JsonValue(r'ACTIVE')
+ACTIVE(r'ACTIVE'),
+@JsonValue(r'DISABLED')
+DISABLED(r'DISABLED');
+
+const AdminGetUserResponseStatusEnum(this.value);
 
 final String value;
 
