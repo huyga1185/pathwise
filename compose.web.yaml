@@ -22,6 +22,8 @@ services:
       PATHWISE_DOMAIN: ${PATHWISE_DOMAIN:?set in .env, e.g. pathwise.example.com}
       PATHWISE_MAPTILER_KEY: ${MAPTILER_KEY:-}
       PATHWISE_BASEMAP: ${WEB_BASEMAP:-maptiler}
+      # Cloudflare (or another proxy) in front of Caddy: its ranges, so the app gets the user's IP (F-59, DEPLOYMENT §8.3).
+      PATHWISE_TRUSTED_PROXIES: ${TRUSTED_PROXIES:-}
     ports:
       - "80:80"
       - "443:443"
