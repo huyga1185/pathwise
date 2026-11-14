@@ -31,4 +31,9 @@ public interface UserDirectoryQuery {
      * @return the members of the store, by id
      */
     List<MemberAccount> listMembers(long storeId);
+
+    /**
+     * @return every user of the platform by role, whatever their status (T60)
+     */
+    Map<UserRole, Long> countByRole();
 }

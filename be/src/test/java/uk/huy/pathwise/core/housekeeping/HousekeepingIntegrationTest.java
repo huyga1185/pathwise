@@ -84,11 +84,13 @@ class HousekeepingIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     void run_whenJobsFinishedLongAgo_deleteThemButKeepRunningRecentAndActiveOnes() {
-        long succeededOld = job("SUCCEEDED", now.minus(DAY.multipliedBy(31)));
-        long failedOld = job("FAILED", now.minus(DAY.multipliedBy(45)));
+        // Jobs are kept 100 days (T60, P-64).
+        long succeededOld = job("SUCCEEDED", now.minus(DAY.multipliedBy(101)));
+        long failedOld = job("FAILED", now.minus(DAY.multipliedBy(145)));
         long succeededRecent = job("SUCCEEDED", now.minus(DAY.multipliedBy(5)));
         long running = job("RUNNING", null);
-        long activeOfPlan = job("SUCCEEDED", now.minus(DAY.multipliedBy(60)));
+        long succeededWithinRetention = job("SUCCEEDED", now.minus(DAY.multipliedBy(60)));
+        long activeOfPlan = job("SUCCEEDED", now.minus(DAY.multipliedBy(160)));
         long planId = plan(activeOfPlan);
 
         housekeepingService.run();
@@ -97,6 +99,7 @@ class HousekeepingIntegrationTest extends AbstractIntegrationTest {
         assertThat(exists("background_jobs", failedOld)).isFalse();
         assertThat(exists("background_jobs", succeededRecent)).isTrue();
         assertThat(exists("background_jobs", running)).isTrue();
+        assertThat(exists("background_jobs", succeededWithinRetention)).isTrue();
         assertThat(exists("background_jobs", activeOfPlan)).as("still the active job of plan %d", planId).isTrue();
     }
 

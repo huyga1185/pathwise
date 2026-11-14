@@ -13,7 +13,13 @@ import uk.huy.pathwise.store.model.Store;
 import uk.huy.pathwise.shared.store.StoreStatus;
 import uk.huy.pathwise.store.repository.StoreRepository;
 
+import uk.huy.pathwise.core.observability.DailyCounts;
+
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.Collection;
+import java.util.Map;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -41,6 +47,16 @@ public class StoreDirectoryService implements StoreDirectoryQuery {
     @Override
     public Optional<StoreRecord> find(long storeId) {
         return storeRepository.findById(storeId).map(StoreDirectoryService::toRecord);
+    }
+
+    @Override
+    public Map<LocalDate, Long> countCreatedByDay(Instant from, Instant to, ZoneOffset offset) {
+        return DailyCounts.byDay(storeRepository.countCreatedByDay(from, to, DailyCounts.offsetSeconds(offset)));
+    }
+
+    @Override
+    public StoreTotals totals() {
+        return new StoreTotals(storeRepository.count(), storeRepository.countByStatus(StoreStatus.READ_ONLY));
     }
 
     static StoreRecord toRecord(Store store) {

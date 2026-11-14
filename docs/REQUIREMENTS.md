@@ -42,7 +42,7 @@ Mỗi user thuộc tối đa 1 store và có đúng 1 role (D-02). OWNER hoặc 
 | FR-A13 | ADMIN hỗ trợ tài khoản: gửi lại email xác thực, email đặt lại mật khẩu, chuyển chủ cửa hàng. | Should (M5) | ✅ T57 (màn ở W11) |
 | FR-A14 | Audit log: hành động của ADMIN và hành động nhạy cảm trong cửa hàng; ADMIN xem toàn bộ, OWNER xem của cửa hàng mình. | Should (M5) | ✅ T58 (hành động ADMIN của T56, T57 thêm khi làm các task đó) |
 | FR-A15 | Tạo ADMIN đầu tiên bằng biến môi trường lúc khởi động, không qua SQL. | Should (M5) | ✅ T59 |
-| FR-A16 | ADMIN xem thông số nền tảng: nghiệp vụ (cửa hàng, user, plan, điểm giao, tối ưu) và kỹ thuật (request, lỗi, thời gian phản hồi, job, provider, JVM, DB, backup). | Should (M5) | ❌ T60 |
+| FR-A16 | ADMIN xem thông số nền tảng: nghiệp vụ (cửa hàng, user, plan, điểm giao, tối ưu) và kỹ thuật (request, lỗi, thời gian phản hồi, job, provider, JVM, DB, backup). | Should (M5) | ✅ T60 (trừ backup: theo dõi bằng script T54, P-64; màn ở W11) |
 
 ### 3.2 Cửa hàng & thành viên (D-02, D-03, D-16)
 

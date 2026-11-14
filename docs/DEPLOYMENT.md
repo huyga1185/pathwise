@@ -135,7 +135,7 @@ Redis không cần backup: mọi key đều có TTL.
 
 ### 5.5 Dọn dữ liệu cũ (T53)
 
-App tự xoá dòng cũ mỗi đêm lúc 03:30 giờ Việt Nam (sau backup 02:30): refresh token hết hạn hoặc bị thu hồi quá 30 ngày, job nền đã kết thúc quá 30 ngày, lời mời hết hạn hoặc bị huỷ quá 90 ngày (lời mời đã nhận giữ lại), nhật ký thao tác quá 1 năm (T58). Quy tắc đủ ở DATA_MODEL §6. Mỗi lần chạy log số dòng đã xoá của từng loại:
+App tự xoá dòng cũ mỗi đêm lúc 03:30 giờ Việt Nam (sau backup 02:30): refresh token hết hạn hoặc bị thu hồi quá 30 ngày, job nền đã kết thúc quá 100 ngày (T60: đủ cho biểu đồ 90 ngày), lời mời hết hạn hoặc bị huỷ quá 90 ngày (lời mời đã nhận giữ lại), nhật ký thao tác quá 1 năm (T58). Quy tắc đủ ở DATA_MODEL §6. Mỗi lần chạy log số dòng đã xoá của từng loại:
 
 ```bash
 docker compose -f compose.prod.yaml logs app | grep -i housekeeping

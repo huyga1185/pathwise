@@ -231,6 +231,7 @@ Index `idx_audit_events_store_occurred (store_id, occurred_at)`, `idx_audit_even
 | `housekeeping:lock` | token ngẫu nhiên của lần chạy giữ khoá; `SET NX`, nhả bằng Lua so token (chỉ xoá khoá của mình) (T53) | `housekeeping.lock-ttl` (30 phút) | core |
 | `resetLink:{sha256(token)}` | userId của link đặt lại mật khẩu ADMIN gửi (T57, P-63) | `auth.reset-link.ttl` (24 giờ) | auth |
 | `resetLink:user:{userId}` | sha256(token) của link còn hiệu lực của user; link mới xoá link cũ | như trên | auth |
+| `metrics:business:{from}:{to}` | JSON của `GET /admin/metrics/business` cho khoảng ngày đó (T60) | 60 giây | admin |
 | `directions:route:{routeId}:{planVersion}` (Should) | JSON geometry/steps | 24 h | planning |
 
 Key OTP dùng **userId** (T12), không dùng email. OTP bị xoá khi đúng (dùng một lần) hoặc khi sai đủ `otp.max-attempts` (mặc định 3) lần.
@@ -266,7 +267,7 @@ Job `core.housekeeping` chạy mỗi đêm (`housekeeping.cron`, mặc định 0
 | Tên | Bảng | Xoá khi | Mặc định | Giữ lại |
 |---|---|---|---|---|
 | `refresh-tokens` | `refresh_tokens` | `expires_at` quá hạn giữ, hoặc `REVOKED` và `updated_at` quá hạn giữ | 30 ngày | token còn hạn hoặc mới hết hạn/thu hồi (phát hiện dùng lại token cũ, P-07) |
-| `jobs` | `background_jobs` | `SUCCEEDED`/`FAILED` và `finished_at` quá hạn giữ | 30 ngày | job `QUEUED`/`RUNNING`; job còn là `route_plans.active_job_id` của một plan |
+| `jobs` | `background_jobs` | `SUCCEEDED`/`FAILED` và `finished_at` quá hạn giữ | 100 ngày (30 ở T53; T60, P-64: biểu đồ tối ưu 90 ngày) | job `QUEUED`/`RUNNING`; job còn là `route_plans.active_job_id` của một plan |
 | `invitations` | `store_invitations` | chưa `ACCEPTED` và (`expires_at` quá hạn giữ, hoặc `REVOKED` và `updated_at` quá hạn giữ) | 90 ngày | lời mời `ACCEPTED` (lịch sử ai mời ai); lời mời còn dùng được |
 | `audit-events` | `audit_events` (T58) | `occurred_at` quá hạn giữ | 365 ngày | sự kiện trong năm |
 

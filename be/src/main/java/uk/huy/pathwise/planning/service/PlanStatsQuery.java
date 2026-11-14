@@ -1,9 +1,12 @@
 package uk.huy.pathwise.planning.service;
 
+import uk.huy.pathwise.planning.dto.DailyPlanStats;
 import uk.huy.pathwise.planning.dto.PlanActivity;
 import uk.huy.pathwise.planning.dto.PlanPeriodStats;
 
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.Collection;
 import java.util.Map;
 
@@ -21,4 +24,15 @@ public interface PlanStatsQuery {
      * @return the counts of the store from {@code since} (inclusive) until now
      */
     PlanPeriodStats statsSince(long storeId, Instant since);
+
+    /**
+     * @return the whole platform's counts in {@code [from, to)} by local day at {@code offset} (T60); days without
+     * anything are absent
+     */
+    Map<LocalDate, DailyPlanStats> dailyStats(Instant from, Instant to, ZoneOffset offset);
+
+    /**
+     * @return stores that published a plan since {@code since} (T60)
+     */
+    long countStoresPublishingSince(Instant since);
 }

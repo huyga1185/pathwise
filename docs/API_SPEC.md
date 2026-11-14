@@ -130,7 +130,7 @@ Ghi chú:
   "storeStatus": "ACTIVE", "storeLockReason": null }   // T56: trạng thái cửa hàng của user; cả hai null với ADMIN
 ```
 
-## 3a. Quản trị (ADMIN) — `/api/v1/admin/stores`, `/api/v1/admin/audit`
+## 3a. Quản trị (ADMIN) — `/api/v1/admin/stores`, `/api/v1/admin/audit`, `/api/v1/admin/metrics`
 
 Module `admin` (P-60). ADMIN chỉ thấy **số tổng và tài khoản thành viên**, không thấy nội dung của cửa hàng: không depot, plan, xe, điểm giao, người nhận, tên hay số điện thoại của thành viên (P-59, BR-01).
 
@@ -142,6 +142,8 @@ Module `admin` (P-60). ADMIN chỉ thấy **số tổng và tài khoản thành 
 | `POST /admin/stores/{id}/unlock` | AD | — | 200 `{id, status: ACTIVE, lockReason: null, lockedAt: null}`; cửa hàng đang ACTIVE thì không đổi, không ghi nhật ký; ghi `STORE_UNLOCKED` | 404 | ✅ (T56) |
 | `POST /admin/stores/{id}/owner` | AD | `{userId}` (thành viên ACTIVE của cửa hàng) | 200 `{storeId, ownerId, ownerEmail, ownerCanDrive, previousOwnerId, previousOwnerEmail}`; OWNER cũ thành DISPATCHER và bị đăng xuất mọi nơi; DRIVER thành OWNER thì `canDrive = true`; email báo cả chủ mới và chủ cũ (thư cho chủ cũ không nêu chủ mới); ghi `STORE_OWNER_TRANSFERRED` (P-63) | 404 (cửa hàng không có, user không thuộc cửa hàng) · 400 `VALIDATION_ERROR` trên `userId`: `USER_ID_REQUIRED`, `NEW_OWNER_NOT_ACTIVE`, `ALREADY_OWNER` | ✅ (T57) |
 | `GET /admin/audit` | AD | `storeId?`, `actorId?`, `action?` (`AuditAction`), `from?`, `to?` (`YYYY-MM-DD`, cả hai ngày tính, giờ Asia/Ho_Chi_Minh), paging; sort `occurredAt` (mặc định, mới nhất trước), `id` | Page `AuditEvent` | 400 `INVALID_SORT_FIELD` · 400 `MALFORMED_REQUEST` | ✅ (T58) |
+| `GET /admin/metrics/business` | AD | `from?`, `to?` (`YYYY-MM-DD`, cả hai ngày tính, giờ Asia/Ho_Chi_Minh; mặc định 30 ngày tới hôm nay; tối đa 92 ngày) | `BusinessMetrics` (cache ~60 s, `computedAt`) | 400 `VALIDATION_ERROR` trên `from`: `INVALID_DATE_RANGE`, `DATE_RANGE_TOO_LONG` | ✅ (T60) |
+| `GET /admin/metrics/technical` | AD | — | `TechnicalMetrics` (số của instance đang chạy) | — | ✅ (T60) |
 
 ```jsonc
 // AdminStoreSummary
@@ -162,6 +164,36 @@ Ghi chú:
 - `lastActivityAt` (P-60): mốc mới nhất giữa plan được tạo hoặc sửa (`route_plans.updated_at`) và tài xế báo kết quả điểm giao (`status_updated_at`).
 - `last30Days`: từ `since` (= lúc gọi − 30 ngày) tới nay. Plan đếm theo thời điểm tạo, publish, hoàn thành; điểm giao đếm theo lúc tài xế báo kết quả. `deliveredRate` = delivered / (delivered + failed + skipped), làm tròn 4 chữ số.
 - Store không tồn tại → 404. OWNER, DISPATCHER, DRIVER → 403.
+
+**Thông số nền tảng (T60, P-64, FR-A16).** Chỉ số tổng, không nội dung cửa hàng.
+
+```jsonc
+// BusinessMetrics: từ DB, theo ngày ở `timezone`
+{ "from": "2026-10-16", "to": "2026-11-14", "timezone": "Asia/Ho_Chi_Minh", "computedAt": "2026-11-14T03:00:00Z",
+  "now": { "stores": 12, "activeStores7d": 8, "activeStores30d": 10, "lockedStores": 1,   // hoạt động = có plan publish
+           "admins": 1, "owners": 12, "dispatchers": 9, "drivers": 40 },                 // user mọi trạng thái
+  "totals": { "newStores": 3, "plansCreated": 210, "plansPublished": 200, "plansCompleted": 190,
+              "stopsDelivered": 4100, "stopsFailed": 120, "stopsSkipped": 30,
+              "deliveredRate": 0.9647, "failedRate": 0.0282, "skippedRate": 0.0071,          // 0–1; null khi chưa có kết quả
+              "optimizations": 260, "optimizationsFailed": 4, "optimizationFailureRate": 0.0154 },
+  "days": [ { "date": "2026-10-16", "newStores": 0, "plansCreated": 7, "plansPublished": 7, "plansCompleted": 6,
+              "stopsDelivered": 140, "stopsFailed": 4, "stopsSkipped": 1, "optimizations": 9, "optimizationsFailed": 0 } ] }  // đủ mọi ngày, kể cả 0
+
+// TechnicalMetrics: request, lỗi, rate limit là của instance này từ `startedAt` (về 0 khi app khởi động lại)
+{ "startedAt": "2026-11-14T01:00:00Z", "uptimeSeconds": 7200, "measuredAt": "2026-11-14T03:00:00Z",
+  "http": { "requestsPerMinute": 12.4,      // trung bình 15 phút gần nhất
+            "requestsLastHour": 744, "clientErrorRate": 0.012, "serverErrorRate": 0.0,   // trên request của 60 phút; null khi chưa có
+            "groups": [ { "group": "plans", "requestsLastHour": 320, "p95Millis": 85.3 } ] },  // group = đoạn đầu sau /api/v1; p95 khoảng 1 giờ gần nhất
+  "jobs": { "unfinished": 0, "failedLast24h": 1 },                 // từ DB
+  "failuresLast24h": { "email": 0, "routing": 1, "geocoding": 0, "job": 1 },   // FailureLog (T54)
+  "rateLimitedLast24h": 3,
+  "jvm": { "heapUsedBytes": 180000000, "heapMaxBytes": 402653184 },
+  "database": { "activeConnections": 1, "idleConnections": 9, "maxConnections": 10, "sizeBytes": 52428800,
+                "largestTables": [ { "name": "route_plan_stops", "bytes": 20971520, "rows": 41000 } ] } }   // 5 bảng lớn nhất; rows là ước lượng
+```
+
+- Không có tuổi bản backup: script giám sát T54 đã cảnh báo backup cũ (chủ dự án chọn, P-64).
+- Số lần tối ưu lấy từ job; job được giữ 100 ngày (T53, P-64) nên biểu đồ 90 ngày đủ dữ liệu.
 
 **Nhật ký thao tác (T58, P-61, FR-A14).** Mỗi thao tác dưới ghi đúng một dòng, trong cùng transaction với thay đổi (thao tác lỗi thì không có dòng nào); giữ 1 năm (DATA_MODEL §6).
 
@@ -261,7 +293,7 @@ Ghi chú:
 ```
 
 - `startedAt`, `finishedAt` là `null` khi chưa tới bước đó.
-- Job đã kết thúc quá 30 ngày bị xoá (T53, DATA_MODEL §6), trừ job còn là job hiện tại của plan: `GET /jobs/{id}` của job đó → 404.
+- Job đã kết thúc quá 100 ngày bị xoá (T53; 100 ngày từ T60, DATA_MODEL §6), trừ job còn là job hiện tại của plan: `GET /jobs/{id}` của job đó → 404.
 - Plan về `processingStatus = IDLE` ngay trước khi job ghi trạng thái cuối, nên với job chạy nền có thể có một khoảng rất ngắn plan đã `IDLE` mà job vẫn `RUNNING` (F-45). Client theo dõi job thì polling `GET /jobs/{id}` tới khi `status` là `SUCCEEDED` hoặc `FAILED`; client theo dõi plan thì dừng khi `processingStatus = IDLE`.
 - `errorCode` khi `FAILED`: `ROUTING_PROVIDER_ERROR`, `GEOCODING_PROVIDER_ERROR`, `INTERRUPTED` (app khởi động lại khi job còn `QUEUED`/`RUNNING`), `JOB_QUEUE_FULL` (hàng đợi job nền đầy, thử lại sau) (P-30), `PLAN_MODIFIED` (plan đổi trong lúc optimize), `NO_SOLUTION` (solver không tìm được lời giải nào, P-33) hoặc `INTERNAL_ERROR`. Job lỗi thì plan quay về `processingStatus = IDLE` và kết quả tối ưu cũ giữ nguyên.
 

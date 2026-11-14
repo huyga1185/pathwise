@@ -38,6 +38,12 @@ public interface UserRepository extends JpaRepository<User, Long> {
                       @Param("status") UserStatus status,
                       Pageable pageable);
 
+    /**
+     * @return rows {@code [role, count]} of every user (T60)
+     */
+    @Query("SELECT u.role, COUNT(u) FROM User u GROUP BY u.role")
+    List<Object[]> countByRole();
+
     @Query("SELECT DISTINCT u.storeId FROM User u WHERE u.role = 'OWNER' AND LOWER(u.email) LIKE :pattern ESCAPE '\\'")
     List<Long> findOwnerStoreIdsByEmailLike(@Param("pattern") String pattern);
 

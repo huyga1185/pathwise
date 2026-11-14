@@ -89,7 +89,7 @@ Một người có `canDrive` dùng cả hai: web để điều phối, mobile �
 - **429 `RATE_LIMITED`:** đọc header `Retry-After` (giây), khoá nút và đếm ngược.
 - **503 `SERVICE_UNAVAILABLE`, `GEOCODING_BUSY`:** tạm thời; cho thử lại.
 - **502 `*_PROVIDER_ERROR`:** dịch vụ bản đồ lỗi; cho thử lại sau.
-- **Dữ liệu cũ bị dọn (T53, DATA_MODEL §6):** job đã xong quá 30 ngày bị xoá, `GET /jobs/{id}` trả 404 (client không còn theo dõi job cũ như vậy); lời mời chưa nhận đã hết hạn hoặc bị huỷ quá 90 ngày biến khỏi `GET /store/invitations` (lời mời đã nhận giữ lại).
+- **Dữ liệu cũ bị dọn (T53, DATA_MODEL §6):** job đã xong quá 100 ngày bị xoá, `GET /jobs/{id}` trả 404 (client không còn theo dõi job cũ như vậy); lời mời chưa nhận đã hết hạn hoặc bị huỷ quá 90 ngày biến khỏi `GET /store/invitations` (lời mời đã nhận giữ lại).
 
 ### 5.4 Nhật ký thao tác (T58)
 
@@ -111,6 +111,13 @@ Một người có `canDrive` dùng cả hai: web để điều phối, mobile �
 | `STORE_OWNER_TRANSFERRED` | "Quản trị viên chuyển quyền chủ cửa hàng từ {details.from} sang {details.to}" | `from`, `to` |
 
 Giá trị `action` mới có thể xuất hiện sau này: chưa có câu thì hiện mã. `details` có `truncated` nghĩa là chi tiết quá dài đã bị cắt: hiện "(chi tiết quá dài)".
+
+### 5.5 Thông số nền tảng (T60, khu ADMIN)
+
+- Nhãn: "Cửa hàng mới", "Cửa hàng hoạt động (7 ngày / 30 ngày)" (có giao việc ít nhất một kế hoạch), "Đang tạm khoá", "Người dùng" theo vai trò, "Kế hoạch tạo / giao việc / hoàn thành", "Điểm giao: đã giao / không giao được / bỏ qua" kèm tỉ lệ %, "Lần tối ưu" và "Tỉ lệ tối ưu lỗi".
+- Tỉ lệ `null` (chưa có gì để chia): hiện "—", không hiện 0 %.
+- Khối kỹ thuật ghi "Số của máy chủ đang chạy, tính từ {startedAt}; về 0 khi khởi động lại." Nhóm endpoint hiện tên đoạn path (`plans`, `driver`…), không cần dịch.
+- Số nghiệp vụ có thể trễ tới 1 phút (cache): ghi "Cập nhật lúc {computedAt}".
 
 ## 6. Thông điệp lỗi
 

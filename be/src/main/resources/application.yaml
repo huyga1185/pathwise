@@ -75,7 +75,8 @@ housekeeping:
   lock-ttl: 30m
   retention:
     refresh-tokens: 30d
-    jobs: 30d
+    # 100 days, so the 90-day charts of the ADMIN overview have every optimization (T60, P-64).
+    jobs: 100d
     invitations: 90d
     audit-events: 365d
 
