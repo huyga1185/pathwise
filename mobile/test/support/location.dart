@@ -59,6 +59,16 @@ class FakeLocationSource implements LocationSource {
     }
   }
 
+  /// What [current] answers: the phone's position now, null when it has none.
+  LocationFix? currentFix;
+  int currentRequests = 0;
+
+  @override
+  Future<LocationFix?> current({required Duration maxAge, required Duration timeLimit}) async {
+    currentRequests++;
+    return currentFix;
+  }
+
   @override
   Future<bool> openAppSettings() async {
     settingsOpened++;

@@ -64,6 +64,11 @@ abstract interface class LocationSource {
 
   /// The phone's location settings (GPS off).
   Future<bool> openLocationSettings();
+
+  /// One position now, without waiting for [watch] to move: the last one the phone knows if it is at most [maxAge]
+  /// old, otherwise a fresh one within [timeLimit]; null if there is none in time. A stream filtered by distance may
+  /// not deliver its first position while the phone stands still, so turn-by-turn directions start from this one.
+  Future<LocationFix?> current({required Duration maxAge, required Duration timeLimit});
 }
 
 /// Positions with one settings: [precise] or not, and the Android notification.
@@ -196,19 +201,34 @@ class GeolocatorLocationSource implements LocationSource {
           ),
           test: (error) => error is LocationServiceDisabledException || error is PermissionDeniedException,
         )
-        .map(
-          (position) => LocationFix(
-            lat: position.latitude,
-            lon: position.longitude,
-            recordedAt: position.timestamp.toUtc(),
-            accuracyMeters: position.accuracy < 0 ? null : position.accuracy,
-            // -1 when unknown (iOS); standing still, the platforms report 0 or the last bearing, which says nothing.
-            headingDegrees: position.heading < 0 || (position.speed >= 0 && position.speed < _movingMps)
-                ? null
-                : position.heading % 360,
-            speedMps: position.speed < 0 ? null : position.speed,
-          ),
-        );
+        .map(_fixOf);
+  }
+
+  static LocationFix _fixOf(Position position) => LocationFix(
+    lat: position.latitude,
+    lon: position.longitude,
+    recordedAt: position.timestamp.toUtc(),
+    accuracyMeters: position.accuracy < 0 ? null : position.accuracy,
+    // -1 when unknown (iOS); standing still, the platforms report 0 or the last bearing, which says nothing.
+    headingDegrees: position.heading < 0 || (position.speed >= 0 && position.speed < _movingMps)
+        ? null
+        : position.heading % 360,
+    speedMps: position.speed < 0 ? null : position.speed,
+  );
+
+  @override
+  Future<LocationFix?> current({required Duration maxAge, required Duration timeLimit}) async {
+    try {
+      final last = await Geolocator.getLastKnownPosition();
+      if (last != null && DateTime.now().difference(last.timestamp) <= maxAge) return _fixOf(last);
+      final fresh = await Geolocator.getCurrentPosition(
+        locationSettings: LocationSettings(accuracy: LocationAccuracy.high, timeLimit: timeLimit),
+      );
+      return _fixOf(fresh);
+    } on Exception {
+      // No position in time, GPS off, permission withdrawn: the stream reports those; here, nothing to start from.
+      return null;
+    }
   }
 
   @override
