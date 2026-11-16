@@ -18,8 +18,16 @@
 .pw-reports-filters {
   display: flex;
   flex-wrap: wrap;
-  align-items: flex-end;
+  /* Top, not bottom: a hint or an error under one field must not push the others up (fb_1). */
+  align-items: flex-start;
   gap: var(--space-4);
+}
+/* The quick choices have no label: they start one label line lower and are as tall as a date input (40px). */
+.pw-reports-filters > .pw-segmented {
+  margin-top: calc(20px + var(--space-1));
+}
+.pw-reports-filters .pw-segmented-btn {
+  min-height: 38px;
 }
 .pw-reports-filters .pw-field {
   flex: 0 1 200px;

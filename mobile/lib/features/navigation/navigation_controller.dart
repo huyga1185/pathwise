@@ -96,6 +96,12 @@ class NavigationController extends Notifier<NavigationState> {
   bool _requesting = false;
   bool _disposed = false;
 
+  /// Each start counts one: a one-off position that arrives after "Thử lại" belongs to the previous start.
+  int _attempt = 0;
+
+  /// The last position the phone knows is used if it is at most this old.
+  static const lastKnownMaxAge = Duration(minutes: 2);
+
   @override
   NavigationState build() {
     // Read now: providers cannot be read while this one is being disposed.
@@ -133,6 +139,16 @@ class NavigationController extends Notifier<NavigationState> {
     _fixes = _source
         .watch(title: Vi.navigationNotificationTitle, text: Vi.navigationNotificationText, precise: true)
         .listen(_onFix, onError: _onLocationError);
+    unawaited(_startFromCurrent(++_attempt));
+  }
+
+  /// The stream may not give a first position while the driver stands still (it is filtered by distance): ask the
+  /// phone for one directly, so the directions do not wait for the driver to move.
+  Future<void> _startFromCurrent(int attempt) async {
+    final fix = await _source.current(maxAge: lastKnownMaxAge, timeLimit: gpsWait);
+    if (_disposed || attempt != _attempt || fix == null || _lastFix != null) return;
+    if (state is! NavigationStarting) return;
+    _onFix(fix);
   }
 
   /// The phone's settings (permission refused for good) or its location settings (GPS off).
