@@ -23,6 +23,8 @@ Không có nhãn "agent tự suy": thứ gì không thuộc ba nhãn trên thì 
 | [356] | WWDC25 *Get to know the new design system* — https://developer.apple.com/videos/play/wwdc2025/356/ (transcript chính thức) |
 | HIG Text fields | https://developer.apple.com/design/human-interface-guidelines/text-fields |
 | HIG Branding | https://developer.apple.com/design/human-interface-guidelines/branding |
+| HIG Buttons | https://developer.apple.com/design/human-interface-guidelines/buttons |
+| HIG Accessibility | https://developer.apple.com/design/human-interface-guidelines/accessibility |
 
 [RES] chỉ có UI kit, Icon Composer, SF Symbols và font SF cho nền tảng Apple, không ghi điều khoản dùng ngoài nền tảng Apple: không dùng tài sản nào từ đó; giữ font Be Vietnam Pro của DESIGN_SYSTEM.
 
@@ -132,4 +134,6 @@ Tương phản đo theo T4: chụp ảnh thật, ẩn chữ, lấy nền sau ch�
 | Form đăng ký | Tên cửa hàng, email, mật khẩu; **không có ô họ tên** (đặt sau ở Hồ sơ) | [Chủ dự án] |
 | Chữ logo | "Path" + "**Wise**" có màu: bạc hà `#9ff0d3` trên nền tối/xanh thương hiệu (màn tài khoản, dải email, đăng nhập app tài xế), `route` trên nền sáng (header, trang lỗi) | [Chủ dự án]; HIG Branding (màu thương hiệu ở lớp nội dung) |
 
-Còn biết (CURRENT_STATE): hoạt ảnh trong ảnh lặp vô hạn (WCAG 2.2.2), ghim nhún hơi răng cưa trong `<img>`.
+| Nút tạm dừng hoạt ảnh (WCAG 2.2.2) | Nút tròn 44px, Liquid Glass của web: nhoè 14px, chỉnh độ sáng (tối đi trên ảnh sáng ở hai cột, sáng lên trên lớp tối của panel điện thoại), viền sáng, mép trên sáng, bóng mềm; không khúc xạ (thử chỉ Chromium, ở 44px không thấy khác biệt). Biểu tượng ⏸/▶ ≥ 4,95:1; nền nút tách ảnh 3,3–3,7:1 (hai cột), viền 4,3:1 (panel). Nhấn: đậm hơn, thu 94%. Dừng = ảnh tĩnh; nhớ lựa chọn; ẩn khi giảm chuyển động; nền đặc khi giảm trong suốt hoặc tăng tương phản | [Apple] Materials ("functional layer for controls"), Buttons (44×44, press state, "discernible background shape and fill"), Accessibility (Reduce Motion, khoảng cách ~12pt); [Web] số đo, WCAG 2.2.2; [Chủ dự án] chọn nút |
+
+Còn biết (CURRENT_STATE): ghim nhún hơi răng cưa trong `<img>` (F-64).

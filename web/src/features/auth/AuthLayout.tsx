@@ -1,7 +1,7 @@
-import type { ReactNode } from 'react';
+import { useSyncExternalStore, type ReactNode } from 'react';
 import { Link, Outlet } from 'react-router';
 import { vi } from '@/shared/i18n/vi';
-import { LogoMark, Wordmark } from '@/shared/ui';
+import { LogoMark, PauseIcon, PlayIcon, Wordmark } from '@/shared/ui';
 import './login.css';
 // The picture of "Đăng nhập" / "Đăng ký cửa hàng" (map, route, pins, city; docs/client/LIQUID_GLASS.md §9), and the
 // same picture without its animations for reduced motion.
@@ -85,17 +85,71 @@ const BRAND = '#0b6a5c';
 const MINT = '#9ff0d3';
 
 /**
- * The picture of the wide brand panel, with a dark veil (login.css) so the white logo and text stay readable on its light
- * greens. Reduced motion swaps in the still copy.
+ * Whether the picture's animations are paused (WCAG 2.2.2 Pause, Stop, Hide: they loop next to the form). One value for
+ * the full-screen picture and the panel's, kept for the next visit; storage may be unavailable (private window), then
+ * it only lasts for the page.
  */
-export function MapArt() {
+const MOTION_KEY = 'pw.auth.mapPaused';
+let mapPaused = readPaused();
+const motionListeners = new Set<() => void>();
+function readPaused(): boolean {
+  try {
+    return window.localStorage.getItem(MOTION_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+function setMapPaused(paused: boolean) {
+  mapPaused = paused;
+  try {
+    window.localStorage.setItem(MOTION_KEY, paused ? '1' : '0');
+  } catch {
+    // The choice still holds until the page is left.
+  }
+  motionListeners.forEach((listener) => listener());
+}
+function useMapPaused(): boolean {
+  return useSyncExternalStore(
+    (listener) => {
+      motionListeners.add(listener);
+      return () => motionListeners.delete(listener);
+    },
+    () => mapPaused,
+  );
+}
+
+/** Pauses or plays the picture's animations: paused shows the still copy of the picture. */
+function MapMotionToggle({ className }: { className: string }) {
+  const paused = useMapPaused();
+  const label = paused ? vi.auth.playMotion : vi.auth.pauseMotion;
+  return (
+    <button
+      type="button"
+      className={`pw-auth-motion ${className}`}
+      aria-label={label}
+      title={label}
+      onClick={() => setMapPaused(!paused)}
+    >
+      {paused ? <PlayIcon /> : <PauseIcon />}
+    </button>
+  );
+}
+
+/**
+ * The picture of the wide brand panel, with a dark veil (login.css) so the white logo and text stay readable on its light
+ * greens. Reduced motion or the pause button swap in the still copy. In the panel (phone, tablet) it carries its own
+ * pause button; the full-screen copy of {@link AuthStage} is decorative and the stage holds the button.
+ */
+export function MapArt({ toggle = true }: { toggle?: boolean }) {
+  const paused = useMapPaused();
   return (
     <>
       <picture>
         <source media="(prefers-reduced-motion: reduce)" srcSet={mapRouteStill} />
-        <img className="pw-auth-art pw-auth-map" src={mapRoute} alt="" decoding="sync" />
+        <img className="pw-auth-art pw-auth-map" src={paused ? mapRouteStill : mapRoute} alt="" decoding="sync" />
       </picture>
       <span className="pw-auth-veil" aria-hidden="true" />
+      {toggle ? <MapMotionToggle className="pw-auth-motion-panel" /> : null}
     </>
   );
 }
@@ -109,9 +163,11 @@ export function AuthStage() {
   return (
     <div className="pw-auth-stage">
       <div className="pw-auth-stage-art" aria-hidden="true">
-        <MapArt />
+        <MapArt toggle={false} />
       </div>
       <Outlet />
+      {/* After the page in the tab order: the form comes first. */}
+      <MapMotionToggle className="pw-auth-motion-stage" />
     </div>
   );
 }

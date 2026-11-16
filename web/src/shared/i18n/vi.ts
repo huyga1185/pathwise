@@ -14,6 +14,8 @@ export const vi = {
     email: 'Email',
     password: 'Mật khẩu',
     showPassword: 'Hiện mật khẩu',
+    pauseMotion: 'Tạm dừng hoạt ảnh',
+    playMotion: 'Chạy hoạt ảnh',
     hidePassword: 'Ẩn mật khẩu',
     submit: 'Đăng nhập',
     forgot: 'Quên mật khẩu?',
