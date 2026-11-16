@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:pathwise_driver/app/theme_mode.dart';
 import 'package:pathwise_driver/features/driver_routes/route_list_screen.dart';
 import 'package:pathwise_driver/platform/preferences.dart';
+import 'package:pathwise_driver/shared/theme/tokens.g.dart';
 
 import '../support/app.dart';
 import '../support/fake_api.dart';
@@ -161,9 +162,17 @@ void main() {
 
     await tester.tap(find.text('TA'));
     await tester.pumpAndSettle();
+    Color sheetColor() => tester.widget<Material>(
+      find.descendant(of: find.byType(BottomSheet), matching: find.byType(Material)).first,
+    ).color!;
+    await tester.tap(find.text('Sáng'));
+    await tester.pumpAndSettle();
+    expect(sheetColor(), PwColorTokens.light.surfaceRaised);
     await tester.tap(find.text('Tối'));
     await tester.pumpAndSettle();
     expect(mode(), ThemeMode.dark);
+    // The open sheet itself turns dark, not only the screen behind it.
+    expect(sheetColor(), PwColorTokens.dark.surfaceRaised);
     expect(preferences.values, {'pw-theme': 'dark'});
     expect(
       tester.getSemantics(find.bySemanticsLabel('Tối')),

@@ -55,6 +55,9 @@ ThemeData pwTheme(Brightness brightness) {
     fontFamily: 'Be Vietnam Pro',
     textTheme: text,
     extensions: [PwColors(t)],
+    // In the theme, not passed when the sheet opens: a colour passed then stays the old theme's when the user switches
+    // light/dark from inside the sheet (the account sheet).
+    bottomSheetTheme: BottomSheetThemeData(backgroundColor: t.surfaceRaised, modalBackgroundColor: t.surfaceRaised),
     focusColor: t.route.withValues(alpha: 0.24),
   );
 }
