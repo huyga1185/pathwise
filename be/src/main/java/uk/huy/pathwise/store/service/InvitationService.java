@@ -33,6 +33,8 @@ import uk.huy.pathwise.store.repository.StoreRepository;
 import uk.huy.pathwise.user.dto.StoreUser;
 import uk.huy.pathwise.user.service.StoreUserService;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
@@ -53,6 +55,8 @@ import java.util.function.Supplier;
 @Slf4j
 public class InvitationService {
     static final Duration INVITATION_TTL = Duration.ofDays(7);
+    /** Page of the web app that accepts an invitation, after {@code service-identity.app-url}; the code is filled in. */
+    static final String ACCEPT_PATH = "/app/invite";
     private static final DateTimeFormatter EMAIL_DATE = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
 
     private final StoreInvitationRepository invitationRepository;
@@ -203,6 +207,9 @@ public class InvitationService {
                     "storeName", created.store().getName(),
                     "roleName", invitation.getRole() == UserRole.DRIVER ? "tài xế" : "điều phối viên",
                     "code", created.code(),
+                    // The code is long (an opaque token): the link opens the page with it filled in, nothing to type.
+                    "link", emailNotificationService.appUrl().replaceAll("/+$", "") + ACCEPT_PATH + "?code="
+                            + URLEncoder.encode(created.code(), StandardCharsets.UTF_8),
                     "expiresAt", EMAIL_DATE.format(invitation.getExpiresAt().atZone(zone)),
                     "validDays", INVITATION_TTL.toDays()));
         } catch (EmailDeliveryException e) {

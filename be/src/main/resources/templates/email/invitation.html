@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!--/* Invitation to join a store (T16). Variables: storeName, roleName, code, expiresAt (dd/MM/yyyy HH:mm, store time),
+<!--/* Invitation to join a store (T16). Variables: storeName, roleName, code, link (accept page with the code), expiresAt (dd/MM/yyyy HH:mm, store time),
        validDays, to, appName, appUrl, companyName, companyUrl, companyAddress (the last five are added by
        EmailNotificationService). */-->
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
@@ -17,9 +17,15 @@
     <p>
         Bạn được mời tham gia cửa hàng <strong th:text="${storeName}">Cửa hàng An</strong>
         trên <span th:text="${appName}">PathWise</span> với vai trò <strong th:text="${roleName}">tài xế</strong>.
-        Để nhận lời mời, mở ứng dụng, chọn nhận lời mời và nhập mã dưới đây, rồi đặt mật khẩu cho tài khoản của bạn:
+        Bấm nút dưới đây để nhận lời mời và đặt mật khẩu cho tài khoản của bạn:
     </p>
-    <p style="background: #00bc88; margin: 0 auto; width: max-content; max-width: 100%; padding: 10px 20px; color: #fff; border-radius: 4px; font-family: monospace; font-size: 1.1em; word-break: break-all; text-align: center;"
+    <p style="text-align: center;">
+        <a th:href="${link}" style="display: inline-block; background: #00bc88; color: #fff; padding: 10px 20px; border-radius: 4px; text-decoration: none; font-weight: 600;">Nhận lời mời</a>
+    </p>
+    <p style="font-size: 0.9em;">
+        Không mở được nút? Trong ứng dụng, chọn "Nhập mã mời" rồi dán mã này:
+    </p>
+    <p style="background: #f2f4f3; margin: 0 auto; width: max-content; max-width: 100%; padding: 8px 16px; color: #1c2321; border-radius: 4px; font-family: monospace; font-size: 0.95em; word-break: break-all; text-align: center;"
        th:text="${code}">mã-mời</p>
     <p style="font-size: 0.9em;">
         Mã có hiệu lực trong <strong th:text="${validDays}">7</strong> ngày (đến <span th:text="${expiresAt}">01/01/2026 08:00</span>)

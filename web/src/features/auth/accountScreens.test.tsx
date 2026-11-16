@@ -2,6 +2,7 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { describe, expect, it } from 'vitest';
+import { vi } from '@/shared/i18n/vi';
 import { renderApp } from '@/test/renderApp';
 import { anonymousHandlers, API, fail, ok, server } from '@/test/server';
 
@@ -348,6 +349,33 @@ describe('Nhận lời mời', () => {
     expiresAt: '2026-11-10T03:00:00Z',
   };
   const CODE = 'a'.repeat(43);
+
+  it('mở từ link trong email: mã điền sẵn và kiểm tra luôn, không phải bấm', async () => {
+    const asked: string[] = [];
+    server.use(
+      http.get(`${API}/invitations/:code`, ({ params }) => {
+        asked.push(String(params.code));
+        return params.code === CODE ? ok(preview) : fail(404, 'INVITATION_INVALID');
+      }),
+      ...anonymousHandlers(),
+    );
+    renderApp(`/invite?code=${CODE}`);
+
+    expect(await screen.findByRole('heading', { name: 'Tạo tài khoản' })).toBeInTheDocument();
+    expect(screen.getByText('Tiệm bánh Cô Lan')).toBeInTheDocument();
+    expect(asked).toEqual([CODE]);
+  });
+
+  it('link có mã không còn dùng được thì báo dưới ô mã, mã vẫn điền sẵn để kiểm tra lại', async () => {
+    server.use(
+      http.get(`${API}/invitations/:code`, () => fail(404, 'INVITATION_INVALID')),
+      ...anonymousHandlers(),
+    );
+    renderApp(`/invite?code=${CODE}`);
+
+    expect(await screen.findByText(vi.invite.invalid)).toBeInTheDocument();
+    expect(screen.getByLabelText(/^Mã mời/)).toHaveValue(CODE);
+  });
 
   it('kiểm tra mã, tạo tài khoản, tài xế được hướng dẫn mở app', async () => {
     let body: unknown;

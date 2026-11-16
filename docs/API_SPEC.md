@@ -238,7 +238,7 @@ Store luôn là store của actor (không có `storeId` trong path).
 | `GET /store/members` | O, D | query `role?`, `status?`, `assignable?` (true: chỉ người được gán route, tức DRIVER hoặc `canDrive`, đang ACTIVE) | `[Member]` | — | ✅ |
 | `PATCH /store/members/{userId}` | O | merge patch `{status?: ACTIVE\|DISABLED, role?: DISPATCHER\|DRIVER, canDrive?}`; không field nào xoá được (`null` → `NOT_NULLABLE`). DISABLED thì thu hồi mọi session. | 200 `Member` | 404 · 422 `CANNOT_MODIFY_OWNER` | ✅ |
 | `PATCH /store/members/me/can-drive` | O | `{canDrive}`: OWNER tự bật/tắt việc tự đi giao | 200 `Member` | — | ✅ |
-| `POST /store/invitations` | O | `{email, role: DISPATCHER\|DRIVER}` | 201 `Invitation`; gửi email mã mời | 409 `EMAIL_EXISTED` · 429 `RATE_LIMITED` | ✅ |
+| `POST /store/invitations` | O | `{email, role: DISPATCHER\|DRIVER}` | 201 `Invitation`; gửi email có nút link `<service-identity.app-url>/app/invite?code=<mã>` và mã mời (P-69) | 409 `EMAIL_EXISTED` · 429 `RATE_LIMITED` | ✅ |
 | `GET /store/invitations` | O | query `status?` | `[Invitation]` | — | ✅ |
 | `POST /store/invitations/{id}/revoke` | O | — | 204; lời mời thành `REVOKED`, vẫn có trong danh sách | 404 · 422 `INVITATION_NOT_PENDING` | ✅ |
 | `GET /store/audit` | O | `actorId?`, `action?`, `from?`, `to?` (`YYYY-MM-DD`, cả hai ngày tính, theo `timezone` của cửa hàng), paging; sort `occurredAt` (mặc định, mới nhất trước), `id` | Page `StoreAuditEvent` = `AuditEvent` bỏ `storeId`; `ip` là `null` với hành động của ADMIN (P-59) | 400 `INVALID_SORT_FIELD` · 400 `MALFORMED_REQUEST` | ✅ (T58) |
