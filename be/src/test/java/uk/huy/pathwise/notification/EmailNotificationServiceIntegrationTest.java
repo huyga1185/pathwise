@@ -41,6 +41,37 @@ class EmailNotificationServiceIntegrationTest extends AbstractIntegrationTest {
                 .doesNotContain("${", "seconds", "login request");
     }
 
+    @ParameterizedTest
+    @CsvSource({"verify-email", "reset-password", "change-password", "invitation", "reset-link", "owner-granted",
+            "owner-transferred"})
+    void send_whenAnyTemplate_carryTheLogoInlineAndUseTheSharedFrame(String template) {
+        String to = "logo-" + UUID.randomUUID() + "@pathwise.test";
+
+        emailNotificationService.send(template, to, Map.of("otp", "004217", "validMinutes", 5L, "storeName", "Tiệm An",
+                "roleName", "tài xế", "code", "c".repeat(43), "link", "http://localhost/app/x", "expiresAt",
+                "01/01/2027 08:00", "validDays", 7L, "validHours", 24L));
+
+        FakeEmailSender.SentEmail sent = emailSender.sentTo(to).getFirst();
+        assertThat(sent.inlineImages()).singleElement().satisfies(image -> {
+            assertThat(image.contentId()).isEqualTo("logo");
+            assertThat(image.contentType()).isEqualTo("image/png");
+            assertThat(image.resource().exists()).isTrue();
+        });
+        assertThat(sent.content())
+                .contains("src=\"cid:logo\"", "Email này được gửi tự động", "Xin chào <strong>" + to + "</strong>")
+                .doesNotContain("${", "th:text", "th:replace", "~{");
+    }
+
+    @Test
+    void send_whenOwnerGranted_linkTheButtonToTheWebApp() {
+        String to = "owner-" + UUID.randomUUID() + "@pathwise.test";
+
+        emailNotificationService.send("owner-granted", to, Map.of("storeName", "Tiệm An"));
+
+        assertThat(emailSender.sentTo(to).getFirst().content())
+                .contains("href=\"http://localhost/app/\"", "Bạn là chủ cửa hàng Tiệm An");
+    }
+
     @Test
     void send_whenUnknownTemplate_throwIllegalArgument() {
         assertThatThrownBy(() -> emailNotificationService.send("no-such-template", "a@pathwise.test", Map.of()))
