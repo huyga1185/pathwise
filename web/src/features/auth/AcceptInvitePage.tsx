@@ -1,6 +1,6 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useForm } from 'react-hook-form';
-import { Link } from 'react-router';
+import { Link, useSearchParams } from 'react-router';
 import type { Schemas } from '@/data/types';
 import { errorMessages, fieldMessage, messageFor } from '@/shared/errors';
 import { applyServerErrors, errorCode } from '@/shared/forms/serverErrors';
@@ -24,13 +24,16 @@ const FIELDS = ['fullName', 'phoneNumber', 'password'] as const;
 const LABELS = { fullName: vi.form.fullName, phoneNumber: vi.form.phone, password: vi.auth.password };
 
 /**
- * Prototype "Nhận lời mời" (SCREENS §1.1): the email holds only a 43-character code, so the code is pasted here; the
- * invitation is shown, then the invited person sets a name and password. Afterwards a DRIVER is told to open the app.
+ * Prototype "Nhận lời mời" (SCREENS §1.1): the invitation email links here with the code (`?code=`), filled in and
+ * checked at once; the code can also be pasted. The invitation is shown, then the invited person sets a name and
+ * password. Afterwards a DRIVER is told to open the app.
  */
 export function AcceptInvitePage() {
   const accountApi = useAccountApi();
+  const [params] = useSearchParams();
+  const linkCode = (params.get('code') ?? '').replace(/\s+/g, '');
   const [step, setStep] = useState<Step>('code');
-  const [code, setCode] = useState('');
+  const [code, setCode] = useState(linkCode);
   const [codeError, setCodeError] = useState<string | null>(null);
   const [preview, setPreview] = useState<Preview | null>(null);
   const [failure, setFailure] = useState<unknown>(null);
@@ -44,16 +47,15 @@ export function AcceptInvitePage() {
 
   const cleanCode = code.replace(/\s+/g, '');
 
-  const onCheck = async (event: FormEvent) => {
-    event.preventDefault();
+  const check = async (value: string) => {
     setFailure(null);
-    if (!cleanCode) {
+    if (!value) {
       setCodeError(fieldMessage('INVITATION_CODE_REQUIRED', vi.invite.code));
       return;
     }
     setChecking(true);
     try {
-      setPreview(await accountApi.previewInvitation(cleanCode));
+      setPreview(await accountApi.previewInvitation(value));
       setCodeError(null);
       setStep('form');
     } catch (error) {
@@ -63,6 +65,18 @@ export function AcceptInvitePage() {
       setChecking(false);
     }
   };
+  const onCheck = (event: FormEvent) => {
+    event.preventDefault();
+    void check(cleanCode);
+  };
+  // Opened from the link of the email: check the code once, no need to press "Tiếp tục".
+  const checkedLink = useRef(false);
+  useEffect(() => {
+    if (!linkCode || checkedLink.current) return;
+    checkedLink.current = true;
+    void check(linkCode);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- once, for the code of the link
+  }, [linkCode]);
 
   const onAccept = handleSubmit(async (form) => {
     setFailure(null);
