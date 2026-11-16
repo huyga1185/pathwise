@@ -39,6 +39,25 @@ describe('Đăng ký cửa hàng', () => {
     expect(await screen.findByRole('button', { name: /Gửi lại mã sau (1:00|0:5\d)/ })).toBeDisabled();
   });
 
+  it('email sai báo khi rời ô; mật khẩu quá ngắn báo ngay khi gõ', async () => {
+    server.use(...anonymousHandlers());
+    renderApp('/register');
+    const user = userEvent.setup();
+
+    await user.type(await screen.findByLabelText(/^Email/), 'lan@');
+
+    expect(screen.getByLabelText(/^Email/)).not.toHaveAttribute('aria-invalid', 'true');
+
+    await user.click(screen.getByLabelText(/^Mật khẩu/));
+
+    expect(screen.getByLabelText(/^Email/)).toHaveAttribute('aria-invalid', 'true');
+
+    await user.type(screen.getByLabelText(/^Mật khẩu/), 'ngan');
+
+    expect(screen.getByLabelText(/^Mật khẩu/)).toHaveFocus();
+    expect(screen.getByLabelText(/^Mật khẩu/)).toHaveAttribute('aria-invalid', 'true');
+  });
+
   it('báo lỗi ngay dưới ô khi bỏ trống và không gửi request', async () => {
     let called = false;
     server.use(
@@ -411,6 +430,39 @@ describe('Nhận lời mời', () => {
     ).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'Đăng nhập trên web' })).not.toBeInTheDocument();
     expect(body).toEqual({ code: CODE, fullName: 'Tài xế B', password: 'matkhau123' });
+  });
+
+  it('qua bước mới thì focus về tiêu đề thẻ, để trình đọc màn hình báo thay đổi', async () => {
+    server.use(
+      http.get(`${API}/invitations/:code`, () => ok(preview)),
+      ...anonymousHandlers(),
+    );
+    renderApp('/invite');
+    const user = userEvent.setup();
+
+    await user.type(await screen.findByLabelText(/^Mã mời/), CODE);
+    await user.click(screen.getByRole('button', { name: 'Kiểm tra mã' }));
+
+    const title = await screen.findByRole('heading', { name: 'Tạo tài khoản' });
+    await waitFor(() => expect(title).toHaveFocus());
+  });
+
+  it('mật khẩu quá ngắn báo lỗi ngay khi gõ, trước khi rời ô', async () => {
+    server.use(
+      http.get(`${API}/invitations/:code`, () => ok(preview)),
+      ...anonymousHandlers(),
+    );
+    renderApp(`/invite?code=${CODE}`);
+    const user = userEvent.setup();
+
+    await user.type(await screen.findByLabelText(/^Mật khẩu/), 'ngan');
+
+    expect(screen.getByLabelText(/^Mật khẩu/)).toHaveFocus();
+    expect(screen.getByLabelText(/^Mật khẩu/)).toHaveAttribute('aria-invalid', 'true');
+
+    await user.type(screen.getByLabelText(/^Mật khẩu/), 'hon8kytu');
+
+    expect(screen.getByLabelText(/^Mật khẩu/)).not.toHaveAttribute('aria-invalid', 'true');
   });
 
   it('điều phối viên nhận lời mời xong thì được mời đăng nhập web', async () => {

@@ -42,6 +42,7 @@ export const vi = {
     string
   >,
   form: {
+    clear: 'Xoá nội dung',
     storeName: 'Tên cửa hàng',
     fullName: 'Họ tên',
     phone: 'Số điện thoại',

@@ -125,7 +125,11 @@ Nhận lời mời theo cùng thiết kế (chủ dự án yêu cầu 2026-11-17
 
 - Ô mã mời là **text field một dòng** (HIG Text fields: "Use a text field to request a small amount of information"; mã 43 ký tự là thông tin ngắn), trước đây là ô nhiều dòng. Dán mã có xuống dòng thì trình duyệt tự bỏ, client bỏ khoảng trắng như cũ.
 - Khối thông tin lời mời (cửa hàng, email, vai trò, hạn) và khối "Bạn đã tham gia…" là nhóm lồng trong thẻ: bo đồng tâm 22px như khung báo lỗi; khối thông tin dùng fill nhạt của ô nhập thay cho bề mặt thứ hai. [Apple] S1, S2
-- Chữ giới thiệu: tiêu đề, câu phụ và 3 bước như Đăng ký. [Chủ dự án] (nội dung chữ chờ duyệt)
+- Kiểm tra ô: mật khẩu kiểm ngay khi gõ, các ô khác khi rời ô (HIG Text fields: "when creating a user name or password, validation needs to happen before people switch to another field"). [Apple]
+- Đổi bước (mã → tạo tài khoản → xong) thì focus chuyển về tiêu đề thẻ, để trình đọc màn hình báo thay đổi và bàn phím không kẹt ở nút đã mất (HIG VoiceOver: "Inform VoiceOver when visible content or layout changes occur"). [Apple]
+- Nút xoá nội dung ⓧ ở cuối ô (trừ mật khẩu) khi ô có chữ, ở mọi màn tài khoản (`TextField clearable`, HIG Text fields iOS: "Display a Clear button in the trailing end of a text field"). [Apple]
+- Logo là link về Đăng nhập: vùng bấm vừa logo, capsule cho hover/nhấn/focus (HIG Buttons: "Always include a press state for a custom button"). [Apple]
+- Chữ giới thiệu: tiêu đề, câu phụ và 3 bước như Đăng ký. [Chủ dự án]
 
 
 | Thành phần | Thiết kế | Nhãn |
@@ -138,7 +142,7 @@ Nhận lời mời theo cùng thiết kế (chủ dự án yêu cầu 2026-11-17
 | Focus, hover | Focus: viền ô sáng màu `route` 2px (bóng trong) + quầng sáng, không vòng ngoài (ngoại lệ DESIGN_SYSTEM, chỉ hai thẻ này; forced colors vẫn có vòng `Highlight`); hover: viền đậm, nền sáng nhẹ | [Apple] A1 ("illuminates from within") ; [Web] |
 | Ảnh nền | `map-route.svg` phủ kín màn (hai cột) hoặc trong panel (điện thoại, tablet); lớp tối sau chữ giới thiệu; ảnh tĩnh `map-route-static.svg` khi giảm chuyển động | [Chủ dự án]; [Web] T4; [Apple] §6 |
 | Chuyển trang | View Transitions: thẻ đứng yên, nội dung cũ mờ đi rồi nội dung mới hiện (hai cột), mờ chéo đồng thời (điện thoại); ảnh nền dùng chung qua layout route `AuthStage` nên hoạt ảnh không chạy lại; tắt khi giảm chuyển động | [Apple] (WWDC25 219: biến hình giữa các trạng thái); [Web] thời lượng |
-| Form đăng ký | Tên cửa hàng, email, mật khẩu; **không có ô họ tên** (đặt sau ở Hồ sơ) | [Chủ dự án] |
+| Form đăng ký | Tên cửa hàng, email, mật khẩu; **không có ô họ tên** (đặt sau ở Hồ sơ). Email và tên cửa hàng kiểm khi rời ô, mật khẩu kiểm khi gõ (HIG Text fields: email "when people switch to another field", mật khẩu mới "before people switch to another field") | [Chủ dự án]; [Apple] |
 | Chữ logo | "Path" + "**Wise**" có màu: bạc hà `#9ff0d3` trên nền tối/xanh thương hiệu (màn tài khoản, dải email, đăng nhập app tài xế), `route` trên nền sáng (header, trang lỗi) | [Chủ dự án]; HIG Branding (màu thương hiệu ở lớp nội dung) |
 
 | Nút tạm dừng hoạt ảnh (WCAG 2.2.2) | Nút tròn 44px, Liquid Glass của web: nhoè 14px, chỉnh độ sáng (tối đi trên ảnh sáng ở hai cột, sáng lên trên lớp tối của panel điện thoại), viền sáng, mép trên sáng, bóng mềm; không khúc xạ (thử chỉ Chromium, ở 44px không thấy khác biệt). Biểu tượng ⏸/▶ ≥ 4,95:1; nền nút tách ảnh 3,3–3,7:1 (hai cột), viền 4,3:1 (panel). Nhấn: đậm hơn, thu 94%. Dừng = ảnh tĩnh; nhớ lựa chọn; ẩn khi giảm chuyển động; nền đặc khi giảm trong suốt hoặc tăng tương phản | [Apple] Materials ("functional layer for controls"), Buttons (44×44, press state, "discernible background shape and fill"), Accessibility (Reduce Motion, khoảng cách ~12pt); [Web] số đo, WCAG 2.2.2; [Chủ dự án] chọn nút |

@@ -1,4 +1,4 @@
-import { useSyncExternalStore, type ReactNode } from 'react';
+import { useSyncExternalStore, type ReactNode, type Ref } from 'react';
 import { Link, Outlet } from 'react-router';
 import { vi } from '@/shared/i18n/vi';
 import { LogoMark, PauseIcon, PlayIcon, Wordmark } from '@/shared/ui';
@@ -64,15 +64,20 @@ export function AuthCardHead({
   title,
   lead,
   accent = true,
+  headingRef,
 }: {
   id: string;
   title: ReactNode;
   lead?: ReactNode;
   accent?: boolean;
+  /** For a card that changes its content in place: the page moves focus to the title (tabIndex −1) after a change. */
+  headingRef?: Ref<HTMLHeadingElement>;
 }) {
   return (
     <div className="pw-auth-card-head">
-      <h1 id={id}>{title}</h1>
+      <h1 id={id} ref={headingRef} tabIndex={headingRef ? -1 : undefined}>
+        {title}
+      </h1>
       {lead ? <p>{lead}</p> : null}
       {accent ? <span className="pw-auth-accent" aria-hidden="true" /> : null}
     </div>

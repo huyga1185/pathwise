@@ -47,8 +47,14 @@ export function RegisterPage() {
     register,
     handleSubmit,
     setError,
+    trigger,
     formState: { errors, isSubmitting },
-  } = useForm<RegisterForm>({ defaultValues: { storeName: '', email: '', password: '' } });
+  } = useForm<RegisterForm>({
+    // HIG Text fields: an email is best checked "when people switch to another field"; a new password "before people
+    // switch to another field" (it checks itself while typed, below).
+    mode: 'onTouched',
+    defaultValues: { storeName: '', email: '', password: '' },
+  });
 
   const onSubmit = handleSubmit(async (form) => {
     setFailure(null);
@@ -122,6 +128,7 @@ export function RegisterPage() {
 
         <TextField
           label={vi.form.storeName}
+          clearable
           required
           size="lg"
           maxLength={150}
@@ -132,6 +139,7 @@ export function RegisterPage() {
         />
         <TextField
           label={vi.auth.email}
+          clearable
           type="email"
           required
           size="lg"
@@ -152,7 +160,10 @@ export function RegisterPage() {
           hint={vi.form.passwordHint}
           startIcon={<LockIcon />}
           error={errors.password?.message}
-          {...register('password', passwordRules(vi.auth.password))}
+          {...register('password', {
+            ...passwordRules(vi.auth.password),
+            onChange: () => void trigger('password'),
+          })}
         />
 
         <Button type="submit" variant="primary" size="lg" block busy={isSubmitting} disabled={lock.remaining > 0}>

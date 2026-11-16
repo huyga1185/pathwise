@@ -108,6 +108,7 @@ export function LoginPage() {
 
         <TextField
           label={vi.auth.email}
+          clearable
           type="email"
           autoComplete="email"
           inputMode="email"

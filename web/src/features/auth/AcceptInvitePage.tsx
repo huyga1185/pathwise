@@ -55,8 +55,25 @@ export function AcceptInvitePage() {
     register,
     handleSubmit,
     setError,
+    trigger,
     formState: { errors, isSubmitting },
-  } = useForm<AcceptForm>({ defaultValues: { fullName: '', phoneNumber: '', password: '' } });
+  } = useForm<AcceptForm>({
+    // HIG Text fields: "when creating a user name or password, validation needs to happen before people switch to
+    // another field" (the password checks itself while typed, below); the other fields when people leave them.
+    mode: 'onTouched',
+    defaultValues: { fullName: '', phoneNumber: '', password: '' },
+  });
+
+  // The card changes its content in place (code → form → done): move focus to the new title, so VoiceOver and other
+  // screen readers report the change (HIG VoiceOver: "Inform VoiceOver when visible content or layout changes occur")
+  // and the keyboard does not stay on a button that is gone.
+  const heading = useRef<HTMLHeadingElement>(null);
+  const shownStep = useRef(step);
+  useEffect(() => {
+    if (shownStep.current === step) return;
+    shownStep.current = step;
+    heading.current?.focus();
+  }, [step]);
 
   const cleanCode = code.replace(/\s+/g, '');
 
@@ -153,7 +170,7 @@ export function AcceptInvitePage() {
         onSubmit={step === 'code' ? (event) => void onCheck(event) : (event) => void onAccept(event)}
         noValidate
       >
-        <AuthCardHead id="i-title" title={vi.invite.titles[step]} accent={false} />
+        <AuthCardHead id="i-title" title={vi.invite.titles[step]} accent={false} headingRef={heading} />
         {failure ? (
           <ErrorBanner title={messageFor(failure)}>
             {errorCode(failure) === 'EMAIL_EXISTED' ? (
@@ -168,6 +185,7 @@ export function AcceptInvitePage() {
           <>
             <TextField
               label={vi.invite.code}
+              clearable
               required
               size="lg"
               spellCheck={false}
@@ -203,6 +221,7 @@ export function AcceptInvitePage() {
             </dl>
             <TextField
               label={vi.form.fullName}
+              clearable
               required
               size="lg"
               maxLength={100}
@@ -213,6 +232,7 @@ export function AcceptInvitePage() {
             />
             <TextField
               label={vi.form.phone}
+              clearable
               type="tel"
               size="lg"
               autoComplete="tel"
@@ -233,7 +253,10 @@ export function AcceptInvitePage() {
               hint={vi.form.passwordHint}
               startIcon={<LockIcon />}
               error={errors.password?.message}
-              {...register('password', passwordRules(vi.auth.password))}
+              {...register('password', {
+                ...passwordRules(vi.auth.password),
+                onChange: () => void trigger('password'),
+              })}
             />
             <Button type="submit" variant="primary" size="lg" block busy={isSubmitting}>
               {vi.invite.submit}

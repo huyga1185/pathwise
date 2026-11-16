@@ -208,13 +208,38 @@
   flex: 1 1 520px;
   overflow: visible;
 }
+/* The logo as a link back to "Đăng nhập": as wide as the logo, not the whole panel row; a capsule around it (padding
+   taken back by the negative margin, so the logo does not move) gives the hover, press and focus their shape
+   (HIG Buttons: "Always include a press state"). No square tap highlight of the browser. */
 a.pw-auth-logo {
+  width: fit-content;
+  align-self: flex-start;
+  margin: -6px -14px -6px -6px;
+  padding: 6px 14px 6px 6px;
+  border-radius: var(--radius-full);
   color: #ffffff;
   text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    background-color 0.15s ease,
+    transform 0.15s ease;
+}
+/* The base link hover colour (base.css) would turn "Path" dark: the logo stays white. */
+a.pw-auth-logo:hover {
+  color: #ffffff;
+}
+@media (hover: hover) {
+  a.pw-auth-logo:hover {
+    background: rgba(255, 255, 255, 0.12);
+  }
+}
+a.pw-auth-logo:active {
+  background: rgba(255, 255, 255, 0.2);
+  transform: scale(0.97);
 }
 a.pw-auth-logo:focus-visible {
   outline: 2px solid #ffffff;
-  outline-offset: 4px;
+  outline-offset: 2px;
 }
 .pw-auth-note {
   position: relative;
@@ -840,4 +865,9 @@ a.pw-auth-logo:focus-visible {
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
   }
+}
+
+/* A card title receives focus from script after the card changes (AcceptInvitePage): not a control, no ring. */
+.pw-auth-card-head h1:focus {
+  outline: none;
 }

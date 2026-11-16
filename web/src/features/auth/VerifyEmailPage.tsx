@@ -146,6 +146,7 @@ export function VerifyEmailPage() {
             {!emailFromUrl ? (
               <TextField
                 label={vi.auth.email}
+                clearable
                 type="email"
                 required
                 size="lg"
