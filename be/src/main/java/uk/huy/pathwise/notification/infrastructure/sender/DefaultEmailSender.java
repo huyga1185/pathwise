@@ -13,6 +13,7 @@ import uk.huy.pathwise.core.observability.FailureSource;
 
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 
 /**
  * Sends through the SMTP server of {@code spring.mail.*}. Failures are reported to {@link FailureLog} (T54) without
@@ -30,7 +31,8 @@ public class DefaultEmailSender implements EmailSender {
     }
 
     @Override
-    public void send(String from, String name, String to, String subject, String content, boolean isHtml) {
+    public void send(String from, String name, String to, String subject, String content, boolean isHtml,
+                     List<InlineImage> inlineImages) {
         if (from == null) throw new NullPointerException("From could not be null");
         if (from.isEmpty()) throw new IllegalArgumentException("From could not be empty");
 
@@ -47,12 +49,18 @@ public class DefaultEmailSender implements EmailSender {
         // UTF-8: templates are Vietnamese.
         MimeMessageHelper mimeMessageHelper;
         try {
-            mimeMessageHelper = new MimeMessageHelper(mimeMessage, StandardCharsets.UTF_8.name());
+            // multipart/related keeps inline images out of the attachment list of most clients.
+            mimeMessageHelper = inlineImages.isEmpty()
+                    ? new MimeMessageHelper(mimeMessage, StandardCharsets.UTF_8.name())
+                    : new MimeMessageHelper(mimeMessage, MimeMessageHelper.MULTIPART_MODE_RELATED, StandardCharsets.UTF_8.name());
             if (name == null || name.isBlank()) mimeMessageHelper.setFrom(from);
             else mimeMessageHelper.setFrom(from, name);
             mimeMessageHelper.setTo(to);
             mimeMessageHelper.setSubject(subject);
             mimeMessageHelper.setText(content, isHtml);
+            for (InlineImage image : inlineImages) {
+                mimeMessageHelper.addInline(image.contentId(), image.resource(), image.contentType());
+            }
         } catch (MessagingException | UnsupportedEncodingException e) {
             failureLog.record(FailureSource.EMAIL, OPERATION, "invalid_message", "", e);
             throw new EmailSenderException("Could not create mime message");

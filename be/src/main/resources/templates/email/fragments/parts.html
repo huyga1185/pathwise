@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<!--/* Pieces of the card (W13): heading, greeting, button, side-ruled note, facts table, OTP box. Colours are the light
+       tokens of the design system: route #0b6a5c, ink #18231f, muted #56635e, line #c9d1cd, tint #dcebe6. */-->
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<h1 th:fragment="heading(text)" th:text="${text}"
+    style="margin: 0 0 16px; font-size: 24px; line-height: 32px; font-weight: 700; letter-spacing: -0.01em; color: #18231f;">Tiêu đề</h1>
+
+<p th:fragment="hello" style="margin: 0 0 16px;">Xin chào <strong th:text="${to}">ban@example.com</strong>,</p>
+
+<table th:fragment="button(href, label)" role="presentation" cellpadding="0" cellspacing="0" style="margin: 8px 0 24px;">
+    <tr>
+        <td bgcolor="#0b6a5c" style="background-color: #0b6a5c; border-radius: 8px;">
+            <a th:href="${href}" th:text="${label}" href="#"
+               style="display: inline-block; padding: 14px 28px; font-size: 16px; line-height: 20px; font-weight: 700; color: #ffffff; text-decoration: none; border-radius: 8px;">Nút</a>
+        </td>
+    </tr>
+</table>
+
+<!--/* color: signal #9a5200 for safety advice, danger #b02a22 for a warning, info #2a5aa8 for a hint. */-->
+<table th:fragment="note(title, text, color)" role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin: 0 0 8px;">
+    <tr>
+        <td th:style="'background-color: #f4f6f3; border-left: 4px solid ' + ${color} + '; border-radius: 0 8px 8px 0; padding: 12px 16px; font-size: 14px; line-height: 21px; color: #18231f;'">
+            <strong th:style="'color: ' + ${color} + ';'" th:text="${title}">Lưu ý</strong><br /><span th:text="${text}">Nội dung</span>
+        </td>
+    </tr>
+</table>
+
+<!--/* Three label/value rows on a tinted panel. */-->
+<table th:fragment="facts(l1, v1, l2, v2, l3, v3)" role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#f4f6f3"
+       style="margin: 0 0 24px; background-color: #f4f6f3; border: 1px solid #c9d1cd; border-radius: 8px;">
+    <tr>
+        <td style="padding: 10px 16px;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                    <td th:text="${l1}" style="padding: 6px 0; width: 120px; color: #56635e; font-size: 14px; vertical-align: top;">Nhãn</td>
+                    <td th:text="${v1}" style="padding: 6px 0; font-weight: 600; font-size: 15px; vertical-align: top;">Giá trị</td>
+                </tr>
+                <tr>
+                    <td th:text="${l2}" style="padding: 6px 0; width: 120px; color: #56635e; font-size: 14px; vertical-align: top;">Nhãn</td>
+                    <td th:text="${v2}" style="padding: 6px 0; font-weight: 600; font-size: 15px; vertical-align: top;">Giá trị</td>
+                </tr>
+                <tr>
+                    <td th:text="${l3}" style="padding: 6px 0; width: 120px; color: #56635e; font-size: 14px; vertical-align: top;">Nhãn</td>
+                    <td th:text="${v3}" style="padding: 6px 0; font-weight: 600; font-size: 15px; vertical-align: top;">Giá trị</td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+</table>
+
+</body>
+</html>

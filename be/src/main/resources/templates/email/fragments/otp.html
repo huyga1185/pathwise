@@ -1,36 +1,29 @@
 <!DOCTYPE html>
-<!--/* Shared layout of OTP emails. Parameters: title, intro. Variables: otp, validMinutes, to, appName, appUrl,
-       companyName, companyUrl, companyAddress (the last five are added by EmailNotificationService). */-->
-<html lang="vi" xmlns:th="http://www.thymeleaf.org" th:fragment="email(title, intro)">
-<head>
-    <meta charset="UTF-8" />
-    <title th:text="${title}">Mã xác thực</title>
-</head>
-<body style="margin: 0; padding: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #333; background-color: #fff;">
-<div style="margin: 0 auto; width: 100%; max-width: 600px; padding-bottom: 10px; line-height: 1.8;">
-    <div style="border-bottom: 1px solid #eee; padding-bottom: 10px;">
-        <a style="font-size: 1.4em; color: #000; text-decoration: none; font-weight: 600;"
-           th:href="${appUrl}" th:text="${appName}">PathWise</a>
-    </div>
-    <p>Xin chào <strong th:text="${to}">ban@example.com</strong>,</p>
-    <p th:text="${intro}">Mã xác thực của bạn là:</p>
-    <h2 style="background: #00bc88; margin: 0 auto; width: max-content; padding: 10px 30px; color: #fff; border-radius: 4px; font-size: 2em; letter-spacing: 4px; text-align: center;"
-        th:text="${otp}">123456</h2>
-    <p style="font-size: 0.9em;">
-        Mã có hiệu lực trong <strong th:text="${validMinutes}">5</strong> phút và chỉ dùng được một lần.
-        Nhập sai quá số lần cho phép thì mã bị huỷ, bạn cần yêu cầu mã mới.
-        <br /><br />
-        <strong>Không chia sẻ mã này với bất kỳ ai</strong>, kể cả nhân viên của
-        <span th:text="${companyName}">PathWise</span>.
-        Nếu bạn không thực hiện yêu cầu này, hãy bỏ qua email.
-    </p>
-    <p>Trân trọng,<br /><strong th:text="${companyName}">PathWise</strong></p>
-    <hr style="border: none; border-top: 0.5px solid #ccc;" />
-    <div style="color: #999; font-size: 0.8em; line-height: 1.4;">
-        <p>Email này được gửi tự động, vui lòng không trả lời.</p>
-        <p><span th:text="${companyName}">PathWise</span> · <span th:text="${companyAddress}">Địa chỉ</span> ·
-            <a th:href="${companyUrl}" th:text="${companyUrl}">https://example.com</a></p>
-    </div>
-</div>
+<!--/* Card of the OTP emails (verify email, reset and change password). Parameters: heading, intro, codeLabel, ignore
+       (what to do if the reader did not ask). Variables: otp, validMinutes, to, companyName. The code stays alone in
+       its element: tests read it with >(\d{6})<. Digits are spread by letter-spacing, so a copy gives 6 digits. */-->
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<body>
+<th:block th:fragment="card(heading, intro, codeLabel, ignore)">
+    <h1 th:replace="~{email/fragments/parts :: heading(${heading})}">Tiêu đề</h1>
+    <p th:replace="~{email/fragments/parts :: hello}">Xin chào</p>
+    <p style="margin: 0 0 16px;" th:text="${intro}">Nhập mã dưới đây:</p>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin: 0 0 24px;">
+        <tr>
+            <td align="center" bgcolor="#dcebe6" style="background-color: #dcebe6; border-radius: 12px; padding: 20px 16px; text-align: center;">
+                <div th:text="${codeLabel}"
+                     style="font-size: 12px; line-height: 16px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #56635e;">Mã xác thực</div>
+                <div th:text="${otp}"
+                     style="margin: 8px 0; padding-left: 10px; font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', 'Courier New', monospace; font-size: 36px; line-height: 44px; font-weight: 700; letter-spacing: 10px; color: #0b6a5c;">123456</div>
+                <div style="font-size: 13px; line-height: 18px; color: #56635e;">
+                    Hết hạn sau <strong th:text="${validMinutes}">5</strong> phút · chỉ dùng một lần</div>
+            </td>
+        </tr>
+    </table>
+    <p style="margin: 0 0 16px; font-size: 14px; color: #56635e;">
+        Nhập sai quá số lần cho phép thì mã bị huỷ và bạn cần yêu cầu mã mới.</p>
+    <table th:replace="~{email/fragments/parts :: note('Không chia sẻ mã này với bất kỳ ai',
+            'Kể cả người tự xưng là nhân viên ' + ${companyName} + '. ' + ${ignore}, '#9a5200')}"></table>
+</th:block>
 </body>
 </html>

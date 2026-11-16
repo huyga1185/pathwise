@@ -1,46 +1,30 @@
 <!DOCTYPE html>
-<!--/* Invitation to join a store (T16). Variables: storeName, roleName, code, link (accept page with the code), expiresAt (dd/MM/yyyy HH:mm, store time),
-       validDays, to, appName, appUrl, companyName, companyUrl, companyAddress (the last five are added by
-       EmailNotificationService). */-->
-<html lang="vi" xmlns:th="http://www.thymeleaf.org">
-<head>
-    <meta charset="UTF-8" />
-    <title>Lời mời tham gia cửa hàng</title>
-</head>
-<body style="margin: 0; padding: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #333; background-color: #fff;">
-<div style="margin: 0 auto; width: 100%; max-width: 600px; padding-bottom: 10px; line-height: 1.8;">
-    <div style="border-bottom: 1px solid #eee; padding-bottom: 10px;">
-        <a style="font-size: 1.4em; color: #000; text-decoration: none; font-weight: 600;"
-           th:href="${appUrl}" th:text="${appName}">PathWise</a>
-    </div>
-    <p>Xin chào <strong th:text="${to}">ban@example.com</strong>,</p>
-    <p>
-        Bạn được mời tham gia cửa hàng <strong th:text="${storeName}">Cửa hàng An</strong>
-        trên <span th:text="${appName}">PathWise</span> với vai trò <strong th:text="${roleName}">tài xế</strong>.
-        Bấm nút dưới đây để nhận lời mời và đặt mật khẩu cho tài khoản của bạn:
-    </p>
-    <p style="text-align: center;">
-        <a th:href="${link}" style="display: inline-block; background: #00bc88; color: #fff; padding: 10px 20px; border-radius: 4px; text-decoration: none; font-weight: 600;">Nhận lời mời</a>
-    </p>
-    <p style="font-size: 0.9em;">
-        Không mở được nút? Trong ứng dụng, chọn "Nhập mã mời" rồi dán mã này:
-    </p>
-    <p style="background: #f2f4f3; margin: 0 auto; width: max-content; max-width: 100%; padding: 8px 16px; color: #1c2321; border-radius: 4px; font-family: monospace; font-size: 0.95em; word-break: break-all; text-align: center;"
-       th:text="${code}">mã-mời</p>
-    <p style="font-size: 0.9em;">
-        Mã có hiệu lực trong <strong th:text="${validDays}">7</strong> ngày (đến <span th:text="${expiresAt}">01/01/2026 08:00</span>)
-        và chỉ dùng được một lần.
-        <br /><br />
-        <strong>Không chia sẻ mã này với bất kỳ ai.</strong>
-        Nếu bạn không biết cửa hàng này, hãy bỏ qua email.
-    </p>
-    <p>Trân trọng,<br /><strong th:text="${companyName}">PathWise</strong></p>
-    <hr style="border: none; border-top: 0.5px solid #ccc;" />
-    <div style="color: #999; font-size: 0.8em; line-height: 1.4;">
-        <p>Email này được gửi tự động, vui lòng không trả lời.</p>
-        <p><span th:text="${companyName}">PathWise</span> · <span th:text="${companyAddress}">Địa chỉ</span> ·
-            <a th:href="${companyUrl}" th:text="${companyUrl}">https://example.com</a></p>
-    </div>
-</div>
+<!--/* Invitation to join a store (T16, P-69). Variables: storeName, roleName (lower case), code, link (accept page with
+       the code), expiresAt (dd/MM/yyyy HH:mm, store time), validDays, to, appName, webUrl and the service identity
+       (added by EmailNotificationService). The code stays alone in its element: tests read it with >(43 chars)<. */-->
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{email/fragments/layout :: email(title='Lời mời tham gia cửa hàng', tag='Lời mời', content=~{::content})}">
+<body>
+<th:block th:fragment="content">
+    <h1 th:replace="~{email/fragments/parts :: heading('Bạn được mời tham gia ' + ${storeName})}">Tiêu đề</h1>
+    <p th:replace="~{email/fragments/parts :: hello}">Xin chào</p>
+    <p style="margin: 0 0 16px;">
+        Cửa hàng <strong th:text="${storeName}">Cửa hàng An</strong> mời bạn dùng <span th:text="${appName}">PathWise</span>
+        với vai trò <strong th:text="${roleName}">tài xế</strong>.
+        Bấm nút dưới đây để nhận lời mời và đặt mật khẩu cho tài khoản của bạn.</p>
+    <table th:replace="~{email/fragments/parts :: facts('Cửa hàng', ${storeName}, 'Vai trò', ${#strings.capitalize(roleName)},
+            'Hết hạn', ${expiresAt} + ' (' + ${validDays} + ' ngày)')}"></table>
+    <table th:replace="~{email/fragments/parts :: button(${link}, 'Nhận lời mời')}"></table>
+    <p style="margin: 0 0 16px; font-size: 14px; color: #56635e;">
+        Không bấm được nút? Mở <span th:text="${appName}">PathWise</span>, chọn <strong>Nhập mã mời</strong> rồi dán mã này:</p>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin: 0 0 24px;">
+        <tr>
+            <td th:text="${code}" bgcolor="#f4f6f3"
+                style="background-color: #f4f6f3; border: 1px dashed #c9d1cd; border-radius: 8px; padding: 12px 16px; font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', 'Courier New', monospace; font-size: 14px; line-height: 20px; word-break: break-all; color: #18231f;">mã-mời</td>
+        </tr>
+    </table>
+    <table th:replace="~{email/fragments/parts :: note('Mã chỉ dùng được một lần',
+            'Không chia sẻ mã hay chuyển tiếp email này. Nếu bạn không biết cửa hàng này, hãy bỏ qua email.', '#9a5200')}"></table>
+</th:block>
 </body>
 </html>
