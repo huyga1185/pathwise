@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { NavLink, Link } from 'react-router';
 import { LogoMark } from './icons';
+import { Wordmark } from './Wordmark';
 
 export interface NavItem {
   to: string;
@@ -37,7 +38,7 @@ export function AppHeader({
       <div className="pw-header-inner">
         <Link to={homeTo} className="pw-header-brand" aria-label="PathWise — trang chính">
           <LogoMark white={darkLogo} dashes={false} />
-          <span>PathWise</span>
+          <Wordmark />
         </Link>
         <nav aria-label={navLabel} className="pw-header-nav">
           {items.map((item) => (

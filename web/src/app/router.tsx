@@ -1,6 +1,7 @@
 import { createBrowserRouter, Navigate, Outlet, type RouteObject } from 'react-router';
 import {
   AcceptInvitePage,
+  AuthStage,
   ForgotPasswordPage,
   LoginPage,
   RegisterPage,
@@ -38,14 +39,20 @@ const PlanDetailPage = lazyPage(() => import('@/features/plans').then((m) => ({ 
 /** Routes of docs/client/SCREENS.md §1. */
 export const routes: RouteObject[] = [
   {
-    path: '/login',
-    element: (
-      <RedirectIfSignedIn>
-        <LoginPage />
-      </RedirectIfSignedIn>
-    ),
+    // One picture for both pages, kept while moving between them (AuthStage).
+    element: <AuthStage />,
+    children: [
+      {
+        path: '/login',
+        element: (
+          <RedirectIfSignedIn>
+            <LoginPage />
+          </RedirectIfSignedIn>
+        ),
+      },
+      { path: '/register', element: <RegisterPage /> },
+    ],
   },
-  { path: '/register', element: <RegisterPage /> },
   { path: '/verify-email', element: <VerifyEmailPage /> },
   { path: '/forgot-password', element: <ForgotPasswordPage /> },
   { path: '/invite', element: <AcceptInvitePage /> },

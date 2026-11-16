@@ -1,5 +1,7 @@
 /* Account screens layout (prototype "Đăng nhập"): brand panel and a raised card. */
 .pw-auth {
+  container: auth / inline-size;
+  position: relative;
   min-height: 100vh;
   display: flex;
   flex-wrap: wrap;
@@ -24,6 +26,24 @@
   inset: 0;
   width: 100%;
   height: 100%;
+}
+.pw-auth-map {
+  object-fit: cover;
+  /* The route and its pin sit in the upper middle of the picture: keep them in view, away from the text. */
+  object-position: 55% 20%;
+}
+.pw-auth-veil {
+  position: absolute;
+  inset: 0;
+  /* Panel above the card (phone, tablet): the text sits in the lower half, so the veil darkens it enough for white
+     text on the bright picture; the route and pin above stay clear. */
+  background: linear-gradient(
+    to bottom,
+    rgba(4, 58, 44, 0.45) 0%,
+    rgba(4, 58, 44, 0) 14%,
+    rgba(4, 58, 44, 0.72) 34%,
+    rgba(4, 58, 44, 0.92) 52%
+  );
 }
 .pw-auth-logo {
   position: relative;
@@ -52,6 +72,7 @@
 .pw-auth-headline span {
   color: #9ff0d3;
 }
+
 .pw-auth-lead {
   max-width: 460px;
   margin: 0;
@@ -335,5 +356,480 @@ a.pw-auth-logo:focus-visible {
     padding-right: 0;
     margin-right: 0;
     border-right: 0;
+  }
+}
+
+/* Two columns ("Đăng nhập", "Đăng ký cửa hàng"): the picture covers the whole screen and the card stands on it
+   (docs/client/LIQUID_GLASS.md §9). */
+.pw-auth-hero {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+/* Scoped to AuthStage (login, register): the other account screens keep their own panel. */
+@container auth (min-width: 960px) {
+  .pw-auth-stage .pw-auth-brand {
+    position: static;
+    justify-content: center;
+    background: transparent;
+  }
+  .pw-auth-stage .pw-auth-brand > .pw-auth-logo {
+    position: absolute;
+    z-index: 1;
+    top: clamp(24px, 4vw, 48px);
+    left: clamp(24px, 4vw, 48px);
+  }
+  .pw-auth-stage .pw-auth-brand > .pw-auth-logo {
+    gap: 12px;
+    font-size: 32px;
+    line-height: 40px;
+  }
+  .pw-auth-stage .pw-auth-brand > .pw-auth-logo svg {
+    width: 56px;
+    height: auto;
+  }
+  .pw-auth-stage .pw-auth-hero {
+    z-index: 1;
+  }
+  .pw-auth-stage .pw-auth-headline {
+    max-width: 640px;
+    font-size: clamp(40px, 3.6vw, 64px);
+    line-height: 1.12;
+  }
+  .pw-auth-stage .pw-auth-lead {
+    max-width: 560px;
+    font-size: 19px;
+    line-height: 30px;
+  }
+  .pw-auth-stage .pw-auth-features {
+    font-size: 16px;
+    line-height: 24px;
+  }
+  .pw-auth-stage .pw-auth-features svg {
+    width: 28px;
+    height: 28px;
+  }
+  .pw-auth-stage .pw-auth-veil {
+    /* Only behind the text on the left: the white pin and stops on the right stay bright. */
+    background: linear-gradient(90deg, rgba(4, 58, 44, 0.86) 0%, rgba(4, 58, 44, 0.62) 34%, rgba(4, 58, 44, 0) 58%);
+  }
+  /* The card is centred; the picture's destination pin was moved left in map-route.svg so that, at rest, the card
+     does not cover it (WWDC25 219: "reposition or scale the content to maintain separation"). */
+  .pw-auth-stage .pw-auth-main {
+    z-index: 1;
+  }
+  .pw-auth-stage .pw-auth-main > .pw-auth-art {
+    display: none;
+  }
+  /* Both cards start just below the destination pin (picture y ≈ 175, scaled like the cover image:
+     max(width / 1672, height / 941)), so they never cover it and sit at the same place on both pages. */
+  .pw-auth-stage .pw-auth-main {
+    align-items: flex-start;
+    padding-top: calc(max(100vw / 1672, 100vh / 941) * 175 + 16px);
+  }
+  /* Anchored at the top: the destination pin sits near the picture's top edge (fb_4). */
+  .pw-auth-stage .pw-auth-map {
+    object-position: 55% 0%;
+  }
+  /* The card is content, not Liquid Glass (HIG Materials: "Don't use Liquid Glass in the content layer"): an opaque
+     surface (surface-raised, line, shadow-raised). It is drawn by .pw-auth-surface around the form, so a page change
+     can keep the surface in place and fade only the content. One size and place for both pages: 420 wide, under the
+     pin. */
+  .pw-auth-stage .pw-auth .pw-auth-surface {
+    position: relative;
+    display: block;
+    width: 100%;
+    max-width: 420px;
+    background: var(--surface-raised);
+    border: 1px solid var(--line);
+    box-shadow: var(--shadow-raised);
+  }
+  /* The form itself only lays out its content on that surface. */
+  .pw-auth-stage .pw-auth .pw-auth-surface > .pw-auth-card {
+    max-width: none;
+    border-color: transparent;
+    background: transparent;
+    box-shadow: none;
+  }
+}
+
+/* Fill of the fields on the card: a light tint instead of a second surface (project value). */
+.pw-auth {
+  --auth-field-fill: rgba(24, 35, 31, 0.06);
+}
+[data-theme='dark'] .pw-auth {
+  --auth-field-fill: rgba(228, 235, 232, 0.08);
+}
+@media (forced-colors: active) {
+  .pw-auth .pw-auth-surface {
+    border: 1px solid CanvasText;
+  }
+}
+
+/* Forced colours drop borders' colours and shadows: keep a system ring there so focus stays visible. */
+@media (forced-colors: active) {
+  .pw-auth-card .pw-field-input:focus-visible {
+    outline: 2px solid Highlight;
+    outline-offset: 2px;
+  }
+}
+
+/* Moving between "Đăng nhập" and "Đăng ký cửa hàng" (links with viewTransition): the card keeps its place and only its
+   content changes, instead of the page being rebuilt (after WWDC25 219: "Liquid Glass dynamically morphs between the
+   controls in each context"). The picture, veil and logo are the same on both pages and stay in the root snapshot
+   (naming the picture would lift it above the veil); the intro text fades. Durations and easing are the project's;
+   browsers without View Transitions just switch pages. */
+.pw-auth-card {
+  view-transition-name: auth-card;
+}
+.pw-auth-hero {
+  view-transition-name: auth-intro;
+}
+::view-transition-group(auth-card),
+::view-transition-group(auth-intro) {
+  animation-duration: 0.4s;
+  animation-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+/* Content never overlaps (no cross-fade, WWDC25 219: "Instead of fading…"): the old form leaves in the first part,
+   the new one comes in after. */
+::view-transition-old(auth-intro) {
+  animation: pw-vt-out 0.16s ease-in both;
+}
+::view-transition-new(auth-intro) {
+  animation: pw-vt-in 0.26s ease-out 0.04s both;
+}
+/* Two columns: the card's content carries no background (.pw-auth-surface has it), so it leaves, then the new one
+   comes in, never overlapping. On a phone the card's own background is in its snapshots: keep the browser's
+   simultaneous cross-fade there, which holds what both cards share (the white surface) steady. */
+@media (min-width: 960px) {
+  ::view-transition-old(auth-card) {
+    animation: pw-vt-out 0.16s ease-in both;
+  }
+  ::view-transition-new(auth-card) {
+    /* Starts while the old content is still fading, so the card is never empty for a frame. */
+    animation: pw-vt-in 0.26s ease-out 0.04s both;
+  }
+}
+@keyframes pw-vt-out {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes pw-vt-in {
+  from {
+    opacity: 0;
+  }
+}
+/* Two columns: the surface (its own group) is drawn by the group itself and stays where it is (both cards have the
+   same place and size; only a height change, e.g. an error banner, makes it grow or shrink in place); its frozen
+   snapshots are not shown. The content group is clipped to the same corners and only fades. The groups sit outside the
+   .pw-auth container: media query on the same 960px step, literal token values. */
+.pw-auth-surface {
+  view-transition-name: auth-surface;
+}
+@media (min-width: 960px) {
+  ::view-transition-group(auth-surface) {
+    border-radius: 46px;
+    /* Same opaque surface as the card (surface-raised, line, shadow-raised of the light theme). */
+    background: #ffffff;
+    box-shadow:
+      inset 0 0 0 1px #c9d1cd,
+      0 12px 32px rgba(11, 106, 92, 0.1);
+    /* A little overshoot when the height changes ("gel-like flexibility", WWDC25 219); reduced motion removes it. */
+    animation-duration: 0.45s;
+    animation-timing-function: cubic-bezier(0.34, 1.32, 0.64, 1);
+  }
+  [data-theme='dark']::view-transition-group(auth-surface) {
+    background: #18201d;
+    box-shadow:
+      inset 0 0 0 1px #33403b,
+      0 12px 32px rgba(0, 0, 0, 0.45);
+  }
+  ::view-transition-old(auth-surface),
+  ::view-transition-new(auth-surface) {
+    display: none;
+  }
+  ::view-transition-group(auth-card) {
+    overflow: hidden;
+    border-radius: 46px;
+    animation-duration: 0.45s;
+    animation-timing-function: cubic-bezier(0.34, 1.32, 0.64, 1);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+}
+
+/* AuthStage: on two columns the picture is the stage's, behind the page, and the page's own copy is hidden; on a
+   phone the stage's copy is hidden and each page shows the picture in its panel. Media query, same 960px step (the
+   stage is outside the .pw-auth container). */
+.pw-auth-stage {
+  position: relative;
+}
+.pw-auth-surface {
+  display: contents;
+}
+/* <picture> (still copy for reduced motion) is laid over the whole panel like its <img>, out of the panel's column:
+   as a flex item it took a slot (and a 32px gap) and pushed the logo down on a phone. */
+.pw-auth-brand > picture,
+.pw-auth-stage-art > picture {
+  position: absolute;
+  inset: 0;
+}
+.pw-auth-stage-art {
+  display: none;
+}
+@media (min-width: 960px) {
+  .pw-auth-stage-art {
+    position: absolute;
+    inset: 0;
+    display: block;
+    overflow: hidden;
+  }
+  .pw-auth-stage-art .pw-auth-map {
+    object-position: 55% 0%;
+  }
+  .pw-auth-stage-art .pw-auth-veil {
+    background: linear-gradient(90deg, rgba(4, 58, 44, 0.86) 0%, rgba(4, 58, 44, 0.62) 34%, rgba(4, 58, 44, 0) 58%);
+  }
+  .pw-auth-stage > .pw-auth {
+    position: relative;
+    background: transparent;
+  }
+  .pw-auth-stage > .pw-auth .pw-auth-brand > .pw-auth-map,
+  .pw-auth-stage > .pw-auth .pw-auth-brand > picture,
+  .pw-auth-stage > .pw-auth .pw-auth-brand > .pw-auth-veil {
+    display: none;
+  }
+}
+/* The background is the same on both pages and keeps running: show the new page's root at once instead of a
+   cross-fade between a frozen picture and a moving one. */
+::view-transition-old(root) {
+  display: none;
+}
+::view-transition-new(root) {
+  animation: none;
+}
+
+/* The card's controls and spacing at every width (login, register): same capsules, concentric corners, grouping,
+   focus, hover and eye button on a phone, a tablet and two columns. */
+.pw-auth-stage .pw-auth-card-head p,
+.pw-auth-stage .pw-auth-card .pw-auth-or,
+.pw-auth-stage .pw-auth-card .pw-auth-links,
+.pw-auth-stage .pw-auth-card .pw-field-msg:not(.pw-field-msg-error),
+.pw-auth-stage .pw-auth-card .pw-field-start,
+.pw-auth-stage .pw-auth-card .pw-field-end,
+.pw-auth-stage .pw-auth-card .pw-field-input::placeholder {
+  color: var(--ink-muted);
+}
+.pw-auth-stage .pw-auth .pw-auth-card a:not(.pw-btn) {
+  color: var(--route);
+}
+.pw-auth-stage .pw-auth-card .pw-field-input::placeholder {
+  color: var(--ink-muted);
+}
+.pw-auth-stage .pw-auth-card .pw-field-input {
+  background: var(--auth-field-fill);
+}
+/* Large controls use capsule shapes (WWDC25 356): fields and buttons here are 44px high (Apple's minimum hit target,
+   44pt), so a capsule (radius 22). Concentric (radius = parent radius − padding): card 22 + padding 24 = 46; the error
+   banner, a nested shape, takes 46 − 24 = 22. Sheets also take "an increased corner radius" (Adopting Liquid Glass). */
+.pw-auth-stage .pw-auth-card .pw-field-lg .pw-field-input {
+  min-height: 44px;
+}
+.pw-auth-stage .pw-auth-card .pw-btn-lg {
+  height: 44px;
+}
+.pw-auth-stage .pw-auth .pw-auth-card {
+  padding: 24px;
+}
+.pw-auth-stage .pw-auth-surface,
+.pw-auth-stage .pw-auth .pw-auth-surface > .pw-auth-card {
+  border-radius: 46px;
+}
+.pw-auth-stage .pw-auth-card .pw-field-input,
+.pw-auth-stage .pw-auth-card .pw-btn {
+  border-radius: var(--radius-full);
+}
+.pw-auth-stage .pw-auth-card .pw-banner {
+  border-radius: 22px;
+}
+/* Grouping by spacing (WWDC25 356: "hierarchy should be expressed through layout and grouping"; forms get more room,
+   Adopting Liquid Glass): heading group and primary action 24 apart from the fields, label 8 from its field; field
+   to field stays 16, the hint and "Quên mật khẩu?" stay close to their field. Steps of DESIGN_SYSTEM only. */
+.pw-auth-stage .pw-auth-card .pw-auth-card-head {
+  margin-bottom: 8px;
+}
+.pw-auth-stage .pw-auth-card .pw-field-label {
+  margin-bottom: 4px;
+}
+.pw-auth-stage .pw-auth-card > .pw-btn {
+  margin-top: 8px;
+}
+/* Focus on a field: its own rim lights up (route, 2px through an inset shadow so nothing moves, a soft glow and a
+   brighter fill) instead of the ring outside — after "illuminates from within as a form of feedback" (WWDC25 219).
+   Exception to DESIGN_SYSTEM's 2px ring, only for the fields of these two cards. */
+/* Hover on a field: half of the focus light — a slightly brighter fill and a darker rim. No Apple rule for hover:
+   project choice, same idea as focus. */
+.pw-auth-stage .pw-auth-card .pw-field-input:hover {
+  border-color: var(--ink);
+  background: color-mix(in srgb, var(--surface-raised) 22%, transparent);
+}
+/* The eye button (40px) sits 2px inside the 44px capsule: concentric radius 22 − 2 = 20, a circle; its hover is a clear
+   fill, not an opaque patch. */
+.pw-auth-stage .pw-auth-card .pw-field-end .pw-icon-button {
+  border-radius: 50%;
+  color: var(--ink-muted);
+}
+.pw-auth-stage .pw-auth-card .pw-field-end .pw-icon-button:hover {
+  background: color-mix(in srgb, var(--ink) 10%, transparent);
+  color: var(--ink);
+}
+.pw-auth-stage .pw-auth-card .pw-field-input:focus-visible {
+  outline: none;
+  border-color: var(--route);
+  background: color-mix(in srgb, var(--surface-raised) 40%, transparent);
+  box-shadow:
+    inset 0 0 0 1px var(--route),
+    0 0 14px color-mix(in srgb, var(--route) 40%, transparent);
+}
+.pw-auth-stage .pw-auth-card .pw-field-error .pw-field-input:focus-visible {
+  border-color: var(--danger);
+  box-shadow:
+    inset 0 0 0 1px var(--danger),
+    0 0 14px color-mix(in srgb, var(--danger) 35%, transparent);
+}
+
+/* Phone: the card title takes the design system's `display` size (28/34) so "Đăng ký cửa hàng" stays on one line. */
+@container auth (max-width: 600px) {
+  .pw-auth-stage .pw-auth-card-head h1 {
+    font-size: 28px;
+    line-height: 34px;
+  }
+}
+
+/* The field hint (e.g. "Từ 8 đến 72 ký tự.") sits on the label row, at the right, instead of a row of its own under
+   the field: the rule is still read before typing; an error still shows under the field. */
+.pw-auth-stage .pw-auth-card .pw-field:has(> .pw-field-msg:not(.pw-field-msg-error)) {
+  position: relative;
+}
+.pw-auth-stage .pw-auth-card .pw-field > .pw-field-msg:not(.pw-field-msg-error) {
+  position: absolute;
+  top: 2px;
+  right: 0;
+}
+
+/* Same card width on both pages at every size (the register card was 440): no sideways slide when switching. */
+.pw-auth-stage .pw-auth-card-md {
+  max-width: 420px;
+}
+
+/* Pause button of the picture's animations (WCAG 2.2.2 Pause, Stop, Hide). A control floating on the picture: 44px
+   (Apple's minimum hit target), circle, dark translucent fill so the white icon reads on the bright greens. Two columns:
+   top-right corner of the screen (the logo holds the top-left one); the panel's button shows below 960px. */
+.pw-auth-motion {
+  position: absolute;
+  top: clamp(24px, 4vw, 48px);
+  right: clamp(24px, 4vw, 48px);
+  z-index: 2;
+  display: inline-grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  /* Liquid Glass for a control floating on content (HIG Materials: "a distinct functional layer for controls"):
+     the picture behind is blurred and darkened, a dark tint keeps the white icon at 4.5:1 or more, a light rim and a
+     sheen at the top draw the edge (highlights), a soft shadow lifts it off the picture. Values measured (§9). */
+  --motion-tint: rgba(2, 40, 30, 0.48);
+  border: 1px solid rgba(255, 255, 255, 0.62);
+  border-radius: 50%;
+  background:
+    radial-gradient(120% 70% at 50% 0%, rgba(255, 255, 255, 0.24), rgba(255, 255, 255, 0) 60%), var(--motion-tint);
+  -webkit-backdrop-filter: blur(14px) brightness(0.75) saturate(1.3);
+  backdrop-filter: blur(14px) brightness(0.75) saturate(1.3);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.35),
+    0 4px 14px rgba(0, 30, 22, 0.35);
+  color: #ffffff;
+  cursor: pointer;
+  /* Phones draw a square tap highlight that ignores the circle: drop it, the button shows its own pressed state. */
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    background-color 0.15s ease,
+    transform 0.15s ease;
+}
+/* Hover only with a real pointer: on a touch screen it would stay after the tap. */
+@media (hover: hover) {
+  .pw-auth-motion:hover {
+    --motion-tint: rgba(2, 40, 30, 0.6);
+  }
+  .pw-auth-motion-panel:hover {
+    --motion-tint: rgba(255, 255, 255, 0.22);
+  }
+}
+/* Pressed: darker and a little smaller (HIG Buttons: "Always include a press state for a custom button"). */
+.pw-auth-motion:active {
+  --motion-tint: rgba(2, 40, 30, 0.72);
+  transform: scale(0.94);
+}
+.pw-auth-motion-panel:active {
+  --motion-tint: rgba(255, 255, 255, 0.3);
+}
+.pw-auth-motion:focus-visible {
+  outline: 2px solid #ffffff;
+  outline-offset: 2px;
+}
+/* In the panel (phone, tablet) the destination pin sits top-right: the button takes the free bottom-right corner. It
+   sits on the dark veil there, so the glass turns lighter instead of darker (Liquid Glass adapts to what is behind,
+   WWDC25 219), which keeps its shape visible. */
+.pw-auth-motion-panel {
+  --motion-tint: rgba(255, 255, 255, 0.14);
+  -webkit-backdrop-filter: blur(14px) brightness(1.15) saturate(1.3);
+  backdrop-filter: blur(14px) brightness(1.15) saturate(1.3);
+  top: auto;
+  bottom: clamp(24px, 4vw, 48px);
+}
+/* The intro's last row (features, steps) keeps clear of the button: 44 + 12px. */
+@container auth (max-width: 959.98px) {
+  .pw-auth-stage .pw-auth-features,
+  .pw-auth-stage .pw-auth-steps-inline {
+    padding-right: 56px;
+  }
+}
+.pw-auth-motion-stage {
+  display: none;
+}
+@media (min-width: 960px) {
+  .pw-auth-motion-stage {
+    position: fixed;
+    display: inline-grid;
+  }
+  .pw-auth-stage > .pw-auth .pw-auth-motion-panel {
+    display: none;
+  }
+}
+/* Reduced motion already shows the still picture: nothing to pause. */
+@media (prefers-reduced-motion: reduce) {
+  .pw-auth-motion {
+    display: none !important;
+  }
+}
+@media (forced-colors: active) {
+  .pw-auth-motion {
+    border-color: ButtonText;
+  }
+}
+/* Less transparency, more contrast: a solid fill instead of the glass. */
+@media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
+  .pw-auth-motion,
+  .pw-auth-motion-panel {
+    background: #043a2c;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
   }
 }

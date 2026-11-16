@@ -1,13 +1,17 @@
-import type { ReactNode } from 'react';
-import { Link } from 'react-router';
+import { useSyncExternalStore, type ReactNode } from 'react';
+import { Link, Outlet } from 'react-router';
 import { vi } from '@/shared/i18n/vi';
-import { LogoMark } from '@/shared/ui';
+import { LogoMark, PauseIcon, PlayIcon, Wordmark } from '@/shared/ui';
 import './login.css';
+// The picture of "Đăng nhập" / "Đăng ký cửa hàng" (map, route, pins, city; docs/client/LIQUID_GLASS.md §9), and the
+// same picture without its animations for reduced motion.
+import mapRoute from './map-route.svg';
+import mapRouteStill from './map-route-static.svg';
 
 export interface AuthLayoutProps {
   /** wide: the large brand panel of "Đăng nhập" and "Đăng ký"; compact: the smaller one of the other account screens. */
   panel: 'wide' | 'compact';
-  /** Decorative drawing covering the brand panel ({@link RouteArt} or {@link CompactArt}). */
+  /** Decorative drawing covering the brand panel ({@link MapArt} or {@link CompactArt}). */
   art: ReactNode;
   /** Text at the bottom of the brand panel. */
   pitch: ReactNode;
@@ -25,7 +29,7 @@ export function AuthLayout({ panel, art, pitch, logoToLogin, mainArt, children }
   const logo = (
     <>
       <LogoMark white size={40} />
-      <span>{vi.appName}</span>
+      <Wordmark onBrand />
     </>
   );
   return (
@@ -36,17 +40,19 @@ export function AuthLayout({ panel, art, pitch, logoToLogin, mainArt, children }
       >
         {art}
         {logoToLogin ? (
-          <Link to="/login" className="pw-auth-logo" aria-label={vi.form.toLoginLabel}>
+          <Link to="/login" viewTransition className="pw-auth-logo" aria-label={vi.form.toLoginLabel}>
             {logo}
           </Link>
         ) : (
           <div className="pw-auth-logo">{logo}</div>
         )}
-        {pitch}
+        <div className="pw-auth-hero">{pitch}</div>
       </section>
       <main className={compact ? 'pw-auth-main pw-auth-main-compact' : 'pw-auth-main'}>
         {mainArt}
-        {children}
+        {/* Holds the card's surface on two columns (login.css), apart from the card's content, so a page change can
+            keep the surface in place and fade the content alone. A plain pass-through elsewhere (display: contents). */}
+        <div className="pw-auth-surface">{children}</div>
       </main>
     </div>
   );
@@ -75,78 +81,94 @@ export function AuthCardHead({
 
 const GRID_THICK =
   'M-200 120 H920M-200 300 H920M-200 480 H920M-200 660 H920M60 -200 V920M260 -200 V920M460 -200 V920M660 -200 V920';
-const GRID_THIN = 'M-200 210 H920M-200 390 H920M-200 570 H920M160 -200 V920M360 -200 V920M560 -200 V920';
 const BRAND = '#0b6a5c';
 const MINT = '#9ff0d3';
 
-function NumberedStop({ x, y, n }: { x: number; y: number; n: number }) {
+/**
+ * Whether the picture's animations are paused (WCAG 2.2.2 Pause, Stop, Hide: they loop next to the form). One value for
+ * the full-screen picture and the panel's, kept for the next visit; storage may be unavailable (private window), then
+ * it only lasts for the page.
+ */
+const MOTION_KEY = 'pw.auth.mapPaused';
+let mapPaused = readPaused();
+const motionListeners = new Set<() => void>();
+function readPaused(): boolean {
+  try {
+    return window.localStorage.getItem(MOTION_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+function setMapPaused(paused: boolean) {
+  mapPaused = paused;
+  try {
+    window.localStorage.setItem(MOTION_KEY, paused ? '1' : '0');
+  } catch {
+    // The choice still holds until the page is left.
+  }
+  motionListeners.forEach((listener) => listener());
+}
+function useMapPaused(): boolean {
+  return useSyncExternalStore(
+    (listener) => {
+      motionListeners.add(listener);
+      return () => motionListeners.delete(listener);
+    },
+    () => mapPaused,
+  );
+}
+
+/** Pauses or plays the picture's animations: paused shows the still copy of the picture. */
+function MapMotionToggle({ className }: { className: string }) {
+  const paused = useMapPaused();
+  const label = paused ? vi.auth.playMotion : vi.auth.pauseMotion;
+  return (
+    <button
+      type="button"
+      className={`pw-auth-motion ${className}`}
+      aria-label={label}
+      title={label}
+      onClick={() => setMapPaused(!paused)}
+    >
+      {paused ? <PlayIcon /> : <PauseIcon />}
+    </button>
+  );
+}
+
+/**
+ * The picture of the wide brand panel, with a dark veil (login.css) so the white logo and text stay readable on its light
+ * greens. Reduced motion or the pause button swap in the still copy. In the panel (phone, tablet) it carries its own
+ * pause button; the full-screen copy of {@link AuthStage} is decorative and the stage holds the button.
+ */
+export function MapArt({ toggle = true }: { toggle?: boolean }) {
+  const paused = useMapPaused();
   return (
     <>
-      <circle cx={x} cy={y} r="17" fill="#ffffff" />
-      <text
-        x={x}
-        y={y + 6}
-        textAnchor="middle"
-        fontFamily="Be Vietnam Pro, sans-serif"
-        fontSize="16"
-        fontWeight="700"
-        fill={BRAND}
-      >
-        {n}
-      </text>
+      <picture>
+        <source media="(prefers-reduced-motion: reduce)" srcSet={mapRouteStill} />
+        <img className="pw-auth-art pw-auth-map" src={paused ? mapRouteStill : mapRoute} alt="" decoding="sync" />
+      </picture>
+      <span className="pw-auth-veil" aria-hidden="true" />
+      {toggle ? <MapMotionToggle className="pw-auth-motion-panel" /> : null}
     </>
   );
 }
 
 /**
- * Drawing of the wide brand panel, exactly as the prototype: one 720×720 drawing (street grid, blobs, skyline, route
- * and pin) covering the panel. "Đăng ký cửa hàng" draws it without the thin streets, faint pins and inner halo.
+ * Layout route of "Đăng nhập" and "Đăng ký cửa hàng": the full-screen picture of two columns lives here, once, so going
+ * from one page to the other does not rebuild it — rebuilding restarted its animations (the pin and the vehicle jumped
+ * back) and showed them twice during the transition. On a phone each page keeps its picture in its own panel.
  */
-export function RouteArt({ variant = 'login' }: { variant?: 'login' | 'register' }) {
-  const login = variant === 'login';
+export function AuthStage() {
   return (
-    <svg
-      className="pw-auth-art"
-      viewBox="0 0 720 720"
-      preserveAspectRatio="xMidYMid slice"
-      aria-hidden="true"
-      focusable="false"
-    >
-      <circle cx="40" cy="20" r="210" fill="#ffffff" fillOpacity="0.06" />
-      <circle cx="700" cy="760" r="260" fill="#ffffff" fillOpacity="0.05" />
-      <g transform="rotate(-24 360 360)" stroke="#ffffff" fill="none">
-        <path d={GRID_THICK} strokeOpacity="0.09" strokeWidth="12" />
-        {login ? <path d={GRID_THIN} strokeOpacity="0.05" strokeWidth="3" /> : null}
-      </g>
-      <g fill="#ffffff" fillOpacity="0.07">
-        <rect x="520" y="560" width="26" height="160" />
-        <rect x="550" y="520" width="34" height="200" />
-        <rect x="588" y="590" width="22" height="130" />
-        <rect x="614" y="540" width="30" height="180" />
-        <rect x="648" y="600" width="24" height="120" />
-        <rect x="676" y="570" width="44" height="150" />
-      </g>
-      {login ? (
-        <g fill="#ffffff" fillOpacity="0.18">
-          <path d="M386 268 s-12 -11 -12 -20 a12 12 0 0 1 24 0 c0 9 -12 20 -12 20z" />
-          <path d="M676 306 s-12 -11 -12 -20 a12 12 0 0 1 24 0 c0 9 -12 20 -12 20z" />
-        </g>
-      ) : null}
-      <path
-        d="M150 500 C 190 440, 230 418, 278 418 S 380 360, 442 324 S 540 290, 543 236"
-        fill="none"
-        stroke="#ffffff"
-        strokeWidth="5"
-        strokeDasharray="12 11"
-        strokeLinecap="round"
-      />
-      <NumberedStop x={278} y={418} n={1} />
-      <NumberedStop x={442} y={324} n={2} />
-      <ellipse cx="543" cy="228" rx="34" ry="11" fill="#ffffff" fillOpacity="0.18" />
-      {login ? <ellipse cx="543" cy="228" rx="18" ry="6" fill="#ffffff" fillOpacity="0.35" /> : null}
-      <path d="M543 224 s-36 -32 -36 -60 a36 36 0 0 1 72 0 c0 28 -36 60 -36 60z" fill="#ffffff" />
-      <circle cx="543" cy="164" r="13" fill={BRAND} />
-    </svg>
+    <div className="pw-auth-stage">
+      <div className="pw-auth-stage-art" aria-hidden="true">
+        <MapArt toggle={false} />
+      </div>
+      <Outlet />
+      {/* After the page in the tab order: the form comes first. */}
+      <MapMotionToggle className="pw-auth-motion-stage" />
+    </div>
   );
 }
 

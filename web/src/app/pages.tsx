@@ -2,14 +2,14 @@ import type { ReactNode } from 'react';
 import { Link } from 'react-router';
 import { useSession } from '@/features/auth';
 import { vi } from '@/shared/i18n/vi';
-import { Button, buttonClass, EmptyState, LogoMark } from '@/shared/ui';
+import { Button, buttonClass, EmptyState, LogoMark, Wordmark } from '@/shared/ui';
 
 function StandalonePage({ children }: { children: ReactNode }) {
   return (
     <main className="pw-standalone">
       <div className="pw-standalone-logo">
         <LogoMark size={40} />
-        <span>{vi.appName}</span>
+        <Wordmark />
       </div>
       {children}
     </main>

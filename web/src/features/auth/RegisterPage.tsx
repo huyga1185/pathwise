@@ -15,24 +15,22 @@ import {
   PinIcon,
   StoreIcon,
   TextField,
-  UserIcon,
   UserPlusIcon,
 } from '@/shared/ui';
 import { useAccountApi } from './accountApi';
-import { AuthCardHead, AuthLayout, MainArt, RouteArt } from './AuthLayout';
+import { AuthCardHead, AuthLayout, MainArt, MapArt } from './AuthLayout';
 import { emailRules, passwordRules, requiredRule } from './rules';
 
 interface RegisterForm {
   storeName: string;
-  fullName: string;
   email: string;
   password: string;
 }
 
-const FIELDS = ['storeName', 'fullName', 'email', 'password'] as const;
+// No full name here: the owner sets it later in Hồ sơ (chủ dự án, 2026-11-16).
+const FIELDS = ['storeName', 'email', 'password'] as const;
 const LABELS = {
   storeName: vi.form.storeName,
-  fullName: vi.form.fullName,
   email: vi.auth.email,
   password: vi.auth.password,
 };
@@ -50,7 +48,7 @@ export function RegisterPage() {
     handleSubmit,
     setError,
     formState: { errors, isSubmitting },
-  } = useForm<RegisterForm>({ defaultValues: { storeName: '', fullName: '', email: '', password: '' } });
+  } = useForm<RegisterForm>({ defaultValues: { storeName: '', email: '', password: '' } });
 
   const onSubmit = handleSubmit(async (form) => {
     setFailure(null);
@@ -59,7 +57,6 @@ export function RegisterPage() {
     try {
       await accountApi.register({
         storeName: form.storeName.trim(),
-        fullName: form.fullName.trim() || undefined,
         email,
         password: form.password,
       });
@@ -79,7 +76,11 @@ export function RegisterPage() {
 
   const emailError = emailExisted ? (
     <>
-      {errorMessages.EMAIL_EXISTED} <Link to="/login">{vi.form.toLogin}</Link> {vi.form.emailExistedLogin}
+      {errorMessages.EMAIL_EXISTED}{' '}
+      <Link to="/login" viewTransition>
+        {vi.form.toLogin}
+      </Link>{' '}
+      {vi.form.emailExistedLogin}
     </>
   ) : (
     errors.email?.message
@@ -89,7 +90,7 @@ export function RegisterPage() {
     <AuthLayout
       panel="wide"
       logoToLogin
-      art={<RouteArt variant="register" />}
+      art={<MapArt />}
       mainArt={<MainArt variant="register" />}
       pitch={
         <div className="pw-auth-pitch pw-auth-pitch-steps">
@@ -116,7 +117,7 @@ export function RegisterPage() {
       }
     >
       <form className="pw-auth-card pw-auth-card-md" aria-labelledby="reg-title" onSubmit={onSubmit} noValidate>
-        <AuthCardHead id="reg-title" title={vi.register.title} lead={vi.register.lead} />
+        <AuthCardHead id="reg-title" title={vi.register.title} accent={false} />
         {failure ? <ErrorBanner title={messageFor(failure)} /> : null}
 
         <TextField
@@ -128,15 +129,6 @@ export function RegisterPage() {
           startIcon={<StoreIcon />}
           error={errors.storeName?.message}
           {...register('storeName', requiredRule('STORE_NAME_REQUIRED', vi.form.storeName))}
-        />
-        <TextField
-          label={vi.form.yourName}
-          size="lg"
-          maxLength={100}
-          autoComplete="name"
-          startIcon={<UserIcon />}
-          error={errors.fullName?.message}
-          {...register('fullName')}
         />
         <TextField
           label={vi.auth.email}
@@ -174,7 +166,10 @@ export function RegisterPage() {
           )}
         </Button>
         <p className="pw-auth-center">
-          {vi.form.haveAccount} <Link to="/login">{vi.form.toLogin}</Link>
+          {vi.form.haveAccount}{' '}
+          <Link to="/login" viewTransition>
+            {vi.form.toLogin}
+          </Link>
         </p>
       </form>
     </AuthLayout>

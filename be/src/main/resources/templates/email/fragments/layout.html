@@ -26,8 +26,8 @@
                                     <a th:href="${appUrl}" href="#" style="text-decoration: none; color: #ffffff;">
                                         <img src="cid:logo" width="36" height="34" alt=""
                                              style="display: inline-block; vertical-align: middle; border: 0;" />
-                                        <span th:text="${companyName}"
-                                              style="display: inline-block; vertical-align: middle; margin-left: 10px; font-size: 22px; line-height: 28px; font-weight: 700; letter-spacing: -0.01em; color: #ffffff;">PathWise</span>
+                                        <!--/* Wordmark: "Wise" in the brand mint (chủ dự án, 2026-11-16); another company name stays plain. */-->
+                                        <span style="display: inline-block; vertical-align: middle; margin-left: 10px; font-size: 22px; line-height: 28px; font-weight: 700; letter-spacing: -0.01em; color: #ffffff;"><th:block th:if="${companyName == 'PathWise'}">Path<span style="color: #9ff0d3;">Wise</span></th:block><th:block th:unless="${companyName == 'PathWise'}" th:text="${companyName}">PathWise</th:block></span>
                                     </a>
                                 </td>
                                 <td th:text="${tag}"
