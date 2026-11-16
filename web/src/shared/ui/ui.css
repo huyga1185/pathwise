@@ -624,6 +624,16 @@ textarea.pw-field-input {
   width: 20px;
   height: 20px;
 }
+/* Clear button of a text field: a muted mark, round like the field's end (TextField clearable). */
+.pw-field-clear {
+  border-radius: 50%;
+  color: var(--ink-muted);
+  -webkit-tap-highlight-color: transparent;
+}
+.pw-field-clear svg {
+  width: 18px;
+  height: 18px;
+}
 .pw-banner {
   display: grid;
   gap: var(--space-1);

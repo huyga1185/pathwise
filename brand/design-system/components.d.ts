@@ -28,6 +28,8 @@ export interface TextFieldProps extends React.InputHTMLAttributes<HTMLInputEleme
   endAction?: React.ReactNode;
   /** Web client (W01): lg is 48px tall with 16px text (account screens). */
   size?: 'md' | 'lg';
+  /** Web client: clear button at the end while the field has text (HIG Text fields); one-line, no endAction. */
+  clearable?: boolean;
 }
 export declare function TextField(props: TextFieldProps): React.ReactElement;
 

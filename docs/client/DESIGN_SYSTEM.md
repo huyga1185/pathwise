@@ -144,7 +144,7 @@ Nút bấm cho mọi hành động; mỗi màn hình chỉ một nút `primary`,
 - Với lỗi validation từ API (`fields`), gắn từng câu vào đúng ô theo tên field.
 - `multiline` cho ghi chú stop và ô dán mã mời (web làm từ W02).
 - Ô mã một dòng (web W02, class `pw-field-code`, thêm `pw-field-code-sm` trong thẻ Hồ sơ): chữ số lớn, giãn chữ, căn giữa, `inputmode="numeric"`, `autocomplete="one-time-code"`; dùng ở Quên mật khẩu bước 2 và đổi mật khẩu theo prototype. Màn Xác thực email dùng `OtpInput` 6 ô.
-- Web (W01) thêm `startIcon` (icon trong ô, ví dụ thư, ổ khoá ở màn tài khoản), `endAction` (nút trong ô, ví dụ hiện mật khẩu, có `aria-label` và `aria-pressed`) và `size="lg"` (48px, chữ 16px cho màn tài khoản).
+- Web (W01) thêm `startIcon` (icon trong ô, ví dụ thư, ổ khoá ở màn tài khoản), `endAction` (nút trong ô, ví dụ hiện mật khẩu, có `aria-label` và `aria-pressed`) và `size="lg"` (48px, chữ 16px cho màn tài khoản). Thêm `clearable`: nút xoá nội dung ⓧ ở cuối ô khi ô có chữ (HIG Text fields: "Display a Clear button in the trailing end of a text field"); chỉ ô một dòng không có `endAction`, không dùng cho mật khẩu; ngoài thứ tự Tab (bàn phím chọn rồi xoá), bấm không lấy focus khỏi ô. Đang bật ở các ô chữ của màn tài khoản (email, tên cửa hàng, họ tên, số điện thoại, mã mời); form khác bật dần.
 - Trong app tài xế, form hiếm khi xuất hiện (chỉ lý do không giao được); khi có, dùng cỡ chữ `body-touch` qua CSS của client.
 
 ### SelectField, Checkbox, card (web, W03)

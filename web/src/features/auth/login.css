@@ -208,13 +208,38 @@
   flex: 1 1 520px;
   overflow: visible;
 }
+/* The logo as a link back to "Đăng nhập": as wide as the logo, not the whole panel row; a capsule around it (padding
+   taken back by the negative margin, so the logo does not move) gives the hover, press and focus their shape
+   (HIG Buttons: "Always include a press state"). No square tap highlight of the browser. */
 a.pw-auth-logo {
+  width: fit-content;
+  align-self: flex-start;
+  margin: -6px -14px -6px -6px;
+  padding: 6px 14px 6px 6px;
+  border-radius: var(--radius-full);
   color: #ffffff;
   text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    background-color 0.15s ease,
+    transform 0.15s ease;
+}
+/* The base link hover colour (base.css) would turn "Path" dark: the logo stays white. */
+a.pw-auth-logo:hover {
+  color: #ffffff;
+}
+@media (hover: hover) {
+  a.pw-auth-logo:hover {
+    background: rgba(255, 255, 255, 0.12);
+  }
+}
+a.pw-auth-logo:active {
+  background: rgba(255, 255, 255, 0.2);
+  transform: scale(0.97);
 }
 a.pw-auth-logo:focus-visible {
   outline: 2px solid #ffffff;
-  outline-offset: 4px;
+  outline-offset: 2px;
 }
 .pw-auth-note {
   position: relative;
@@ -656,8 +681,16 @@ a.pw-auth-logo:focus-visible {
 .pw-auth-stage .pw-auth-card .pw-btn {
   border-radius: var(--radius-full);
 }
-.pw-auth-stage .pw-auth-card .pw-banner {
+.pw-auth-stage .pw-auth-card .pw-banner,
+.pw-auth-stage .pw-auth-card .pw-auth-facts,
+.pw-auth-stage .pw-auth-card .pw-auth-done {
   border-radius: 22px;
+}
+/* The invitation's facts: a group nested in the card (concentric radius 22, like the error banner), on the same light
+   fill as the fields instead of a second surface. */
+.pw-auth-stage .pw-auth-card .pw-auth-facts {
+  background: var(--auth-field-fill);
+  border-color: transparent;
 }
 /* Grouping by spacing (WWDC25 356: "hierarchy should be expressed through layout and grouping"; forms get more room,
    Adopting Liquid Glass): heading group and primary action 24 apart from the fields, label 8 from its field; field
@@ -673,7 +706,7 @@ a.pw-auth-logo:focus-visible {
 }
 /* Focus on a field: its own rim lights up (route, 2px through an inset shadow so nothing moves, a soft glow and a
    brighter fill) instead of the ring outside — after "illuminates from within as a form of feedback" (WWDC25 219).
-   Exception to DESIGN_SYSTEM's 2px ring, only for the fields of these two cards. */
+   Exception to DESIGN_SYSTEM's 2px ring, only for the fields of the cards on AuthStage. */
 /* Hover on a field: half of the focus light — a slightly brighter fill and a darker rim. No Apple rule for hover:
    project choice, same idea as focus. */
 .pw-auth-stage .pw-auth-card .pw-field-input:hover {
@@ -832,4 +865,9 @@ a.pw-auth-logo:focus-visible {
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
   }
+}
+
+/* A card title receives focus from script after the card changes (AcceptInvitePage): not a control, no ring. */
+.pw-auth-card-head h1:focus {
+  outline: none;
 }

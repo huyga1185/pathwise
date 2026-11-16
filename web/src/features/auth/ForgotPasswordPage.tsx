@@ -162,6 +162,7 @@ export function ForgotPasswordPage() {
           <>
             <TextField
               label={vi.auth.email}
+              clearable
               type="email"
               required
               autoComplete="email"

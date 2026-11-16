@@ -108,6 +108,7 @@ export function LoginPage() {
 
         <TextField
           label={vi.auth.email}
+          clearable
           type="email"
           autoComplete="email"
           inputMode="email"
@@ -169,7 +170,10 @@ export function LoginPage() {
             </Link>
           </span>
           <span>
-            {vi.auth.invited} <Link to="/invite">{vi.auth.enterInvite}</Link>
+            {vi.auth.invited}{' '}
+            <Link to="/invite" viewTransition>
+              {vi.auth.enterInvite}
+            </Link>
           </span>
         </div>
       </form>

@@ -166,3 +166,16 @@ export const PlayIcon = () => (
     <path d="M8 5.5v13l10.5-6.5z" />
   </Icon>
 );
+export const KeyIcon = () => (
+  <Icon>
+    <circle cx="8" cy="15" r="4" />
+    <path d="M10.8 12.2L19 4M15.5 7.5l2.5 2.5M17.5 5.5l2 2" />
+  </Icon>
+);
+/** The clear mark of a text field (filled circle with a cross, like iOS "xmark.circle.fill"). */
+export const ClearIcon = () => (
+  <Icon stroke="none">
+    <circle cx="12" cy="12" r="8" fill="currentColor" />
+    <path d="M9.2 9.2l5.6 5.6M14.8 9.2l-5.6 5.6" stroke="var(--surface-raised, #fff)" strokeWidth={1.8} />
+  </Icon>
+);
