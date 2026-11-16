@@ -222,4 +222,32 @@ void main() {
     expect(find.text('Thử lại'), findsOneWidget);
     expect(find.text('Mở Google Maps'), findsOneWidget);
   });
+
+  testWidgets('đứng yên, luồng vị trí chưa gửi gì: xin một vị trí riêng rồi xin đường từ đó', (tester) async {
+    // A stream filtered by distance may say nothing while the phone stands still (the bug on a real phone).
+    final location = FakeLocationSource()..currentFix = at(start);
+    final nav = await openNavigation(tester, location: location);
+
+    expect(location.currentRequests, 1);
+    expect(nav.directions.requests.single.from, start);
+    expect(find.text('Rẽ trái vào Nguyễn Văn Linh'), findsOneWidget);
+
+    // The stream keeps the guidance going once it starts.
+    await tester.pump(const Duration(seconds: 16));
+    expect(find.text('Chưa lấy được vị trí của bạn.'), findsNothing);
+  });
+
+  testWidgets('"Thử lại" sau 15 giây cũng xin lại một vị trí riêng', (tester) async {
+    final location = FakeLocationSource();
+    final nav = await openNavigation(tester, location: location);
+    await tester.pump(const Duration(seconds: 16));
+    expect(find.text('Chưa lấy được vị trí của bạn.'), findsOneWidget);
+
+    location.currentFix = at(start);
+    await tester.tap(find.text('Thử lại'));
+    await settle(tester);
+
+    expect(location.currentRequests, 2);
+    expect(nav.directions.requests.single.from, start);
+  });
 }
