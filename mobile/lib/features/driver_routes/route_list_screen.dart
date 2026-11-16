@@ -216,10 +216,9 @@ class _Header extends ConsumerWidget {
   }
 
   Future<void> _openAccount(BuildContext context, WidgetRef ref, String name, String email) async {
-    final t = context.pw;
+    // No backgroundColor here: the theme gives it (theme.dart), so the sheet follows a light/dark switch made in it.
     final logOut = await showModalBottomSheet<bool>(
       context: context,
-      backgroundColor: t.surfaceRaised,
       showDragHandle: true,
       isScrollControlled: true,
       builder: (sheet) => _AccountSheet(name: name, email: email),
