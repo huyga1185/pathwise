@@ -166,3 +166,9 @@ export const PlayIcon = () => (
     <path d="M8 5.5v13l10.5-6.5z" />
   </Icon>
 );
+export const KeyIcon = () => (
+  <Icon>
+    <circle cx="8" cy="15" r="4" />
+    <path d="M10.8 12.2L19 4M15.5 7.5l2.5 2.5M17.5 5.5l2 2" />
+  </Icon>
+);

@@ -103,7 +103,9 @@ export const vi = {
   },
   invite: {
     titles: { code: 'Nhận lời mời', form: 'Tạo tài khoản', done: 'Xong' },
+    brandHeadline: ['Bạn được mời ', 'cùng giao hàng', ' với cửa hàng.'] as const,
     brandLead: 'Chủ cửa hàng đã mời bạn qua email. Dán mã mời trong email để tham gia.',
+    steps: ['1. Dán mã mời', '2. Tạo tài khoản', '3. Bắt đầu làm việc'] as const,
     code: 'Mã mời',
     codePlaceholder: 'Dán mã 43 ký tự trong email mời',
     codeHint: 'Lời mời có hiệu lực 7 ngày.',

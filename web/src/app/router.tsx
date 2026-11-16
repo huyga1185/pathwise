@@ -39,7 +39,7 @@ const PlanDetailPage = lazyPage(() => import('@/features/plans').then((m) => ({ 
 /** Routes of docs/client/SCREENS.md §1. */
 export const routes: RouteObject[] = [
   {
-    // One picture for both pages, kept while moving between them (AuthStage).
+    // One picture for these pages, kept while moving between them (AuthStage).
     element: <AuthStage />,
     children: [
       {
@@ -51,11 +51,11 @@ export const routes: RouteObject[] = [
         ),
       },
       { path: '/register', element: <RegisterPage /> },
+      { path: '/invite', element: <AcceptInvitePage /> },
     ],
   },
   { path: '/verify-email', element: <VerifyEmailPage /> },
   { path: '/forgot-password', element: <ForgotPasswordPage /> },
-  { path: '/invite', element: <AcceptInvitePage /> },
   { path: '/reset-password', element: <ResetPasswordPage /> },
   {
     path: '/driver',

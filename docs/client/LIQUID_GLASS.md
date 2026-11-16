@@ -1,6 +1,6 @@
 # LIQUID_GLASS — Đặc tả vật liệu kính cho web PathWise
 
-> **Trạng thái:** nguyên tắc **đã duyệt** (P-71, 2026-11-16): hướng dẫn chính thức của Apple đứng trước, quy tắc cũ của dự án chỉ áp ở chỗ Apple không nói. Đã áp cho màn **Đăng nhập** và **Đăng ký cửa hàng** (§9, P-72). Các bề mặt khác ở §2 (header, menu, hộp thoại, điều khiển trên bản đồ) **chưa làm**; khi làm thì theo tài liệu này. Phạm vi: web dispatcher (`web/`); app tài xế không thuộc tài liệu này, trừ chữ logo (§9). Bổ sung cho `docs/client/DESIGN_SYSTEM.md`, không thay nó.
+> **Trạng thái:** nguyên tắc **đã duyệt** (P-71, 2026-11-16): hướng dẫn chính thức của Apple đứng trước, quy tắc cũ của dự án chỉ áp ở chỗ Apple không nói. Đã áp cho màn **Đăng nhập**, **Đăng ký cửa hàng** (§9, P-72) và **Nhận lời mời** (§9, chủ dự án yêu cầu 2026-11-17). Các bề mặt khác ở §2 (header, menu, hộp thoại, điều khiển trên bản đồ) **chưa làm**; khi làm thì theo tài liệu này. Phạm vi: web dispatcher (`web/`); app tài xế không thuộc tài liệu này, trừ chữ logo (§9). Bổ sung cho `docs/client/DESIGN_SYSTEM.md`, không thay nó.
 
 ## 0. Quy ước
 
@@ -119,7 +119,14 @@ Tương phản đo theo T4: chụp ảnh thật, ẩn chữ, lấy nền sau ch�
 - `saturate(140%)`: Apple chỉ nói làm nhoè và chỉnh độ sáng (M8).
 - Chế độ giảm trong suốt chuyển sang nền đặc: Apple nói "frostier", không nói đặc (§6).
 
-## 9. Màn Đăng nhập và Đăng ký cửa hàng (đã chốt, P-72)
+## 9. Màn Đăng nhập, Đăng ký cửa hàng, Nhận lời mời (đã chốt, P-72)
+
+Nhận lời mời theo cùng thiết kế (chủ dự án yêu cầu 2026-11-17): cùng ảnh, cùng thẻ và control, nằm trong `AuthStage` nên đi từ "Nhập mã mời" của Đăng nhập không dựng lại ảnh. Riêng ở màn này:
+
+- Ô mã mời là **text field một dòng** (HIG Text fields: "Use a text field to request a small amount of information"; mã 43 ký tự là thông tin ngắn), trước đây là ô nhiều dòng. Dán mã có xuống dòng thì trình duyệt tự bỏ, client bỏ khoảng trắng như cũ.
+- Khối thông tin lời mời (cửa hàng, email, vai trò, hạn) và khối "Bạn đã tham gia…" là nhóm lồng trong thẻ: bo đồng tâm 22px như khung báo lỗi; khối thông tin dùng fill nhạt của ô nhập thay cho bề mặt thứ hai. [Apple] S1, S2
+- Chữ giới thiệu: tiêu đề, câu phụ và 3 bước như Đăng ký. [Chủ dự án] (nội dung chữ chờ duyệt)
+
 
 | Thành phần | Thiết kế | Nhãn |
 |---|---|---|

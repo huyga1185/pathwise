@@ -6,9 +6,20 @@ import { errorMessages, fieldMessage, messageFor } from '@/shared/errors';
 import { applyServerErrors, errorCode } from '@/shared/forms/serverErrors';
 import { formatDate } from '@/shared/format';
 import { vi } from '@/shared/i18n/vi';
-import { Button, buttonClass, ErrorBanner, TextField } from '@/shared/ui';
+import {
+  Button,
+  buttonClass,
+  CheckCircleIcon,
+  ErrorBanner,
+  KeyIcon,
+  LockIcon,
+  PhoneIcon,
+  TextField,
+  UserIcon,
+  UserPlusIcon,
+} from '@/shared/ui';
 import { useAccountApi } from './accountApi';
-import { AuthLayout, CompactArt } from './AuthLayout';
+import { AuthCardHead, AuthLayout, MainArt, MapArt } from './AuthLayout';
 import { passwordRules, requiredRule } from './rules';
 
 type Preview = Schemas['InvitationPreviewResponse'];
@@ -22,11 +33,13 @@ interface AcceptForm {
 
 const FIELDS = ['fullName', 'phoneNumber', 'password'] as const;
 const LABELS = { fullName: vi.form.fullName, phoneNumber: vi.form.phone, password: vi.auth.password };
+const STEP_ICONS = [KeyIcon, UserPlusIcon, CheckCircleIcon];
 
 /**
  * Prototype "Nhận lời mời" (SCREENS §1.1): the invitation email links here with the code (`?code=`), filled in and
  * checked at once; the code can also be pasted. The invitation is shown, then the invited person sets a name and
- * password. Afterwards a DRIVER is told to open the app.
+ * password. Afterwards a DRIVER is told to open the app. Same picture, card and controls as "Đăng nhập" (AuthStage,
+ * LIQUID_GLASS.md §9).
  */
 export function AcceptInvitePage() {
   const accountApi = useAccountApi();
@@ -106,23 +119,48 @@ export function AcceptInvitePage() {
 
   return (
     <AuthLayout
-      panel="compact"
+      panel="wide"
       logoToLogin
-      art={<CompactArt picture="invite" />}
-      pitch={<p className="pw-auth-note">{vi.invite.brandLead}</p>}
+      art={<MapArt />}
+      mainArt={<MainArt variant="register" />}
+      pitch={
+        <div className="pw-auth-pitch pw-auth-pitch-steps">
+          <div className="pw-auth-pitch-text">
+            <p className="pw-auth-headline">
+              {vi.invite.brandHeadline[0]}
+              <span>{vi.invite.brandHeadline[1]}</span>
+              {vi.invite.brandHeadline[2]}
+            </p>
+            <p className="pw-auth-lead">{vi.invite.brandLead}</p>
+          </div>
+          <ol className="pw-auth-steps-inline">
+            {vi.invite.steps.map((item, index) => {
+              const StepIcon = STEP_ICONS[index] ?? CheckCircleIcon;
+              return (
+                <li key={item}>
+                  <StepIcon />
+                  <span>{item}</span>
+                </li>
+              );
+            })}
+          </ol>
+        </div>
+      }
     >
       <form
-        className="pw-auth-card pw-auth-card-lg"
+        className="pw-auth-card"
         aria-labelledby="i-title"
         onSubmit={step === 'code' ? (event) => void onCheck(event) : (event) => void onAccept(event)}
         noValidate
       >
-        <div className="pw-auth-card-head">
-          <h1 id="i-title">{vi.invite.titles[step]}</h1>
-        </div>
+        <AuthCardHead id="i-title" title={vi.invite.titles[step]} accent={false} />
         {failure ? (
           <ErrorBanner title={messageFor(failure)}>
-            {errorCode(failure) === 'EMAIL_EXISTED' ? <Link to="/login">{vi.form.toLogin}</Link> : null}
+            {errorCode(failure) === 'EMAIL_EXISTED' ? (
+              <Link to="/login" viewTransition>
+                {vi.form.toLogin}
+              </Link>
+            ) : null}
           </ErrorBanner>
         ) : null}
 
@@ -130,9 +168,11 @@ export function AcceptInvitePage() {
           <>
             <TextField
               label={vi.invite.code}
-              multiline
               required
+              size="lg"
               spellCheck={false}
+              autoCapitalize="off"
+              startIcon={<KeyIcon />}
               autoComplete="off"
               placeholder={vi.invite.codePlaceholder}
               hint={codeError ? undefined : vi.invite.codeHint}
@@ -164,7 +204,9 @@ export function AcceptInvitePage() {
             <TextField
               label={vi.form.fullName}
               required
+              size="lg"
               maxLength={100}
+              startIcon={<UserIcon />}
               autoComplete="name"
               error={errors.fullName?.message}
               {...register('fullName', requiredRule('FULL_NAME_REQUIRED', vi.form.fullName))}
@@ -172,9 +214,11 @@ export function AcceptInvitePage() {
             <TextField
               label={vi.form.phone}
               type="tel"
+              size="lg"
               autoComplete="tel"
               maxLength={20}
               placeholder="0905 123 456"
+              startIcon={<PhoneIcon />}
               hint={vi.form.phoneHint}
               error={errors.phoneNumber?.message}
               {...register('phoneNumber')}
@@ -183,9 +227,11 @@ export function AcceptInvitePage() {
               label={vi.auth.password}
               type="password"
               required
+              size="lg"
               maxLength={72}
               autoComplete="new-password"
               hint={vi.form.passwordHint}
+              startIcon={<LockIcon />}
               error={errors.password?.message}
               {...register('password', passwordRules(vi.auth.password))}
             />
@@ -202,7 +248,7 @@ export function AcceptInvitePage() {
               <span>{isDriver ? vi.invite.driverNext : vi.invite.webNext}</span>
             </div>
             {isDriver ? null : (
-              <Link className={buttonClass('primary', 'lg', true)} to="/login">
+              <Link className={buttonClass('primary', 'lg', true)} to="/login" viewTransition>
                 {vi.invite.webLogin}
               </Link>
             )}
@@ -211,7 +257,10 @@ export function AcceptInvitePage() {
 
         {step !== 'done' ? (
           <p className="pw-auth-center">
-            {vi.form.haveAccount} <Link to="/login">{vi.form.toLogin}</Link>
+            {vi.form.haveAccount}{' '}
+            <Link to="/login" viewTransition>
+              {vi.form.toLogin}
+            </Link>
           </p>
         ) : null}
       </form>

@@ -155,7 +155,7 @@ export function MapArt({ toggle = true }: { toggle?: boolean }) {
 }
 
 /**
- * Layout route of "Đăng nhập" and "Đăng ký cửa hàng": the full-screen picture of two columns lives here, once, so going
+ * Layout route of "Đăng nhập", "Đăng ký cửa hàng" and "Nhận lời mời": the full-screen picture of two columns lives here, once, so going
  * from one page to the other does not rebuild it — rebuilding restarted its animations (the pin and the vehicle jumped
  * back) and showed them twice during the transition. On a phone each page keeps its picture in its own panel.
  */
@@ -198,7 +198,7 @@ export function MainArt({ variant = 'login' }: { variant?: 'login' | 'register' 
 }
 
 /** Drawing of the compact brand panel: the street grid and one picture in the middle (prototype). */
-export function CompactArt({ picture }: { picture: 'mail' | 'lock' | 'invite' }) {
+export function CompactArt({ picture }: { picture: 'mail' | 'lock' }) {
   return (
     <svg
       className="pw-auth-art"
@@ -234,14 +234,6 @@ export function CompactArt({ picture }: { picture: 'mail' | 'lock' | 'invite' })
           <path d="M310 320 V280 a50 50 0 0 1 100 0 V320" fill="none" stroke="#ffffff" strokeWidth="6" />
           <circle cx="360" cy="372" r="12" fill={MINT} />
           <path d="M360 384 V408" stroke={MINT} strokeWidth="6" strokeLinecap="round" />
-        </>
-      ) : null}
-      {picture === 'invite' ? (
-        <>
-          <rect x="250" y="270" width="220" height="150" rx="16" fill="none" stroke="#ffffff" strokeWidth="6" />
-          <path d="M250 310 H470" stroke="#ffffff" strokeWidth="6" />
-          <circle cx="312" cy="365" r="22" fill="none" stroke={MINT} strokeWidth="6" />
-          <path d="M352 352 H430 M352 378 H410" stroke="#ffffff" strokeWidth="6" strokeLinecap="round" />
         </>
       ) : null}
     </svg>
