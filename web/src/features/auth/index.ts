@@ -1,4 +1,5 @@
 export { LoginPage } from './LoginPage';
+export { AuthStage } from './AuthLayout';
 export { SessionProvider, useSession, canUseWeb, homeOf, type Session, type SessionUser } from './session';
 export { RegisterPage } from './RegisterPage';
 export { VerifyEmailPage } from './VerifyEmailPage';

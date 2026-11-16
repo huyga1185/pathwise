@@ -17,7 +17,7 @@ import {
   TextField,
 } from '@/shared/ui';
 import { useCountdown } from '@/shared/hooks/useCountdown';
-import { AuthCardHead, AuthLayout, MainArt, RouteArt } from './AuthLayout';
+import { AuthCardHead, AuthLayout, MainArt, MapArt } from './AuthLayout';
 import { useSession } from './session';
 
 const FIELD_LABELS = { email: vi.auth.email, password: vi.auth.password };
@@ -62,7 +62,7 @@ export function LoginPage() {
   return (
     <AuthLayout
       panel="wide"
-      art={<RouteArt />}
+      art={<MapArt />}
       mainArt={<MainArt />}
       pitch={
         <div className="pw-auth-pitch">
@@ -91,7 +91,7 @@ export function LoginPage() {
       }
     >
       <form className="pw-auth-card" aria-labelledby="login-title" onSubmit={onSubmit} noValidate>
-        <AuthCardHead id="login-title" title={vi.auth.loginTitle} lead={vi.auth.loginLead} />
+        <AuthCardHead id="login-title" title={vi.auth.loginTitle} accent={false} />
 
         {expired && !error ? <ErrorBanner title={vi.auth.sessionExpired} tone="info" /> : null}
         {message ? (
@@ -163,7 +163,10 @@ export function LoginPage() {
         </div>
         <div className="pw-auth-links">
           <span>
-            {vi.auth.noAccount} <Link to="/register">{vi.auth.register}</Link>
+            {vi.auth.noAccount}{' '}
+            <Link to="/register" viewTransition>
+              {vi.auth.register}
+            </Link>
           </span>
           <span>
             {vi.auth.invited} <Link to="/invite">{vi.auth.enterInvite}</Link>

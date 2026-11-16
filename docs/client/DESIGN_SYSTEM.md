@@ -1,5 +1,7 @@
 # DESIGN_SYSTEM — Brand book và component của PathWise
 
+> **Ưu tiên (P-71):** hướng dẫn chính thức của Apple đứng trước các quy tắc trong tài liệu này; xem `docs/client/LIQUID_GLASS.md`. Màn Đăng nhập/Đăng ký có ngoại lệ ghi ở P-72.
+>
 > Bản trong repo của design system PathWise (Claude Design, artifact `https://claude.ai/artifact/CBQwFPSiBSH6JavBwHgutU`, chép ngày 2026-11-03, version artifact 15; W11 thêm trạng thái cửa hàng vào README, `StatusPill` và `bundle.js` của artifact, version 16). **Repo là nguồn đúng cho code**; artifact là nơi chủ dự án xem và góp ý trực quan. Đổi token hay quy tắc thì sửa cả hai trong cùng PR (xem `docs/client/README.md` §4).
 >
 > File đi kèm trong `brand/design-system/`:
@@ -24,7 +26,7 @@ PathWise là phần mềm lập tuyến giao hàng cho cửa hàng nhỏ ở Vi�
 ## Màu
 
 - Nền trang `surface`; panel, bảng, thẻ, khung bản đồ `surface-raised`. Phân tầng chính bằng nền. Bóng chỉ cho lớp nổi lên trên trang: `shadow-raised` cho thẻ đăng nhập và thông báo, `shadow-overlay` cho hộp thoại. Bảng, panel và thẻ dữ liệu không có bóng.
-- Gradient: chỉ `brand-gradient` cho panel thương hiệu (màn tài khoản, đăng nhập app tài xế), và một lớp sáng rất nhẹ trên nút chính (có sẵn trong `Button`). Không dùng gradient cho nền trang, thẻ dữ liệu, chữ hay icon.
+- Gradient: chỉ `brand-gradient` cho panel thương hiệu (màn tài khoản phụ, đăng nhập app tài xế), và một lớp sáng rất nhẹ trên nút chính (có sẵn trong `Button`). Không dùng gradient cho nền trang, thẻ dữ liệu, chữ hay icon. Màn **Đăng nhập** và **Đăng ký cửa hàng** dùng ảnh `map-route.svg` thay cho panel gradient (P-72, `LIQUID_GLASS.md` §9).
 - Chữ `ink`; chữ phụ (địa chỉ, ETA, chú thích) `ink-muted`. Không dùng màu trạng thái cho chữ thường.
 - `route` là màu duy nhất của thương hiệu: nút chính, link, tab đang chọn, vòng focus, và đường route mặc định trên bản đồ. Mỗi màn hình chỉ một nút chính `route`.
 - Dòng đang chọn, stop tài xế sắp tới: nền `surface-tint`, chữ vẫn `ink`.
@@ -111,7 +113,8 @@ Mark là chữ P kèm con đường và ghim vị trí: con đường là tuyế
 
 - **Mark màu** (`pathwise-mark.svg`, nền chuyển `#1fa189` → `#0b6a5c` → `#054a40`): dùng trên nền sáng (`surface`, `surface-raised`).
 - **Mark trắng** (`pathwise-mark-white.svg`): dùng trên nền màu thương hiệu `#0b6a5c`, ảnh tối, và mọi nền ở theme tối (phần tối của mark màu chìm vào nền tối). Không đặt mark màu lên nền màu. Ở theme tối, `route` sáng hơn nên không làm nền cho mark trắng.
-- **Lockup**: mark đứng trước, cách chữ `space-2`, chữ **PathWise** Be Vietnam Pro 700 màu `ink`; chiều cao mark bằng khoảng 1,4 lần cỡ chữ. Header web dùng lockup; chỗ hẹp chỉ dùng mark.
+- **Lockup**: mark đứng trước, cách chữ `space-2`, chữ **PathWise** Be Vietnam Pro 700; chiều cao mark bằng khoảng 1,4 lần cỡ chữ. Header web dùng lockup; chỗ hẹp chỉ dùng mark.
+- **Chữ logo hai màu** (P-72): "Path" màu chữ (`ink`, hoặc trắng trên nền tối/thương hiệu), "Wise" màu nhấn: `route` trên nền sáng (header, trang lỗi; tự sáng lên ở theme tối), bạc hà `#9ff0d3` trên nền tối hoặc nền xanh thương hiệu (màn tài khoản, dải đầu email, đăng nhập app tài xế). Web dùng component `Wordmark`; đọc liền là "PathWise".
 - **Cỡ nhỏ**: dưới 48px dùng bản không có vạch đường, vì vạch đứt thành nhiễu ở cỡ đó. `favicon.svg` (icon tab trình duyệt), `favicon-32.png` và `favicon.ico` (16, 32, 48px, dự phòng cho trình duyệt và công cụ không đọc SVG) là bản không vạch; `favicon-192.png`, `favicon-512.png`, `apple-touch-icon.png` giữ vạch. Mark không nhỏ hơn 16px.
 - **App icon** (`app-icon.svg`, `app-icon-foreground.svg` cho icon Android thích ứng): chỉ dùng cho icon cài đặt, không dùng trong giao diện.
 - Không đổi màu, xoay, kéo méo, thêm bóng hay viền cho mark. Chừa khoảng trống quanh mark tối thiểu bằng 1/4 chiều cao mark.

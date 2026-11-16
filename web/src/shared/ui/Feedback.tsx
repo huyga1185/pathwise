@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { Children, type ReactNode } from 'react';
 
 /** Error box at the top of a form or section (role="alert"). Field errors go under the field instead. */
 export function ErrorBanner({
@@ -16,7 +16,8 @@ export function ErrorBanner({
       role={tone === 'danger' ? 'alert' : 'status'}
     >
       <span className="pw-banner-title">{title}</span>
-      {children ? (
+      {/* Children.toArray drops null and false: a page passing only empty parts gets no empty second row. */}
+      {Children.toArray(children).length > 0 ? (
         <>
           {' '}
           <span>{children}</span>

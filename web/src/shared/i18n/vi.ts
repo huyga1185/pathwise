@@ -11,7 +11,6 @@ export const vi = {
   },
   auth: {
     loginTitle: 'Đăng nhập',
-    loginLead: 'Chào mừng bạn quay lại PathWise.',
     email: 'Email',
     password: 'Mật khẩu',
     showPassword: 'Hiện mật khẩu',
@@ -43,7 +42,6 @@ export const vi = {
   form: {
     storeName: 'Tên cửa hàng',
     fullName: 'Họ tên',
-    yourName: 'Họ tên của bạn',
     phone: 'Số điện thoại',
     phoneHint: 'Tuỳ chọn. Chỉ nhận số Việt Nam.',
     passwordHint: 'Từ 8 đến 72 ký tự.',
@@ -65,7 +63,6 @@ export const vi = {
   },
   register: {
     title: 'Đăng ký cửa hàng',
-    lead: 'Tạo tài khoản chủ cửa hàng.',
     storePlaceholder: 'Ví dụ: Tiệm bánh Cô Lan',
     submit: 'Tạo cửa hàng',
     brandHeadline: ['Tạo cửa hàng, ', 'giao đơn đầu tiên', ' trong hôm nay.'] as const,
