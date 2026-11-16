@@ -30,7 +30,20 @@ class LoginHeader extends StatelessWidget {
                   children: [
                     const PathwiseMarkWhite(),
                     const SizedBox(width: PwSpacing.space2),
-                    Text(Vi.appName, style: PwTypeStyles.display.copyWith(color: Colors.white, fontSize: 24)),
+                    // Wordmark: "Wise" in the brand mint, as on the web's account screens (chủ dự án, 2026-11-16).
+                    Text.rich(
+                      const TextSpan(
+                        text: 'Path',
+                        children: [
+                          TextSpan(
+                            text: 'Wise',
+                            style: TextStyle(color: Color(0xFF9FF0D3)),
+                          ),
+                        ],
+                      ),
+                      semanticsLabel: Vi.appName,
+                      style: PwTypeStyles.display.copyWith(color: Colors.white, fontSize: 24),
+                    ),
                   ],
                 ),
                 const SizedBox(height: PwSpacing.space2),

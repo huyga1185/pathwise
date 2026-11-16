@@ -957,3 +957,11 @@ select.pw-field-input {
   outline: 2px solid var(--route);
   outline-offset: 2px;
 }
+
+/* ---------- Wordmark (chủ dự án, 2026-11-16) ---------- */
+.pw-wordmark-accent {
+  color: var(--route);
+}
+.pw-wordmark-on-brand .pw-wordmark-accent {
+  color: #9ff0d3;
+}
