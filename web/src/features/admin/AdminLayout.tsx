@@ -2,7 +2,7 @@ import { Outlet } from 'react-router';
 import { useSession } from '@/features/auth';
 import { vi } from '@/shared/i18n/vi';
 import { useTheme } from '@/shared/theme/ThemeProvider';
-import { AppHeader, Button, MoonIcon, SunIcon } from '@/shared/ui';
+import { AppHeader, Button } from '@/shared/ui';
 import './admin.css';
 
 const NAV = [
@@ -15,7 +15,7 @@ const NAV = [
 /** Layout of the ADMIN area (W11, prototype "Quản trị"): its own menu, no store, a "QUẢN TRỊ" badge. */
 export function AdminLayout() {
   const { session, logOut } = useSession();
-  const { theme, setPreference } = useTheme();
+  const { theme } = useTheme();
   const user = session.status === 'authenticated' ? session.user : null;
   return (
     <div className="pw-app">
@@ -29,14 +29,6 @@ export function AdminLayout() {
         darkLogo={theme === 'dark'}
         actions={
           <>
-            <button
-              type="button"
-              className="pw-icon-button"
-              aria-label={vi.theme.toggle}
-              onClick={() => setPreference(theme === 'dark' ? 'light' : 'dark')}
-            >
-              {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
-            </button>
             <Button variant="quiet" onClick={() => void logOut()}>
               {vi.auth.logout}
             </Button>

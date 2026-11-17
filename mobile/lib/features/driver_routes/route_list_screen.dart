@@ -6,7 +6,6 @@ import 'package:go_router/go_router.dart';
 import 'package:pathwise_api/pathwise_api.dart';
 
 import '../../app/providers.dart';
-import '../../app/theme_mode.dart';
 import '../../shared/errors/errors.dart';
 import '../../shared/format.dart';
 import '../../shared/i18n/vi.dart';
@@ -216,7 +215,7 @@ class _Header extends ConsumerWidget {
   }
 
   Future<void> _openAccount(BuildContext context, WidgetRef ref, String name, String email) async {
-    // No backgroundColor here: the theme gives it (theme.dart), so the sheet follows a light/dark switch made in it.
+    // No backgroundColor here: the theme gives it (theme.dart), so an open sheet follows the system turning light or dark.
     final logOut = await showModalBottomSheet<bool>(
       context: context,
       showDragHandle: true,
@@ -443,8 +442,8 @@ class _EmptyPainter extends CustomPainter {
   bool shouldRepaint(_EmptyPainter oldDelegate) => oldDelegate.t != t;
 }
 
-/// The account sheet: who is signed in, location sharing (ask, always, never; T32), the theme (system, light, dark),
-/// both remembered on the phone, sign out.
+/// The account sheet: who is signed in, location sharing (ask, always, never; T32) remembered on the phone, sign out.
+/// No theme choice: the app follows the system's appearance (P-73).
 class _AccountSheet extends ConsumerWidget {
   const _AccountSheet({required this.name, required this.email});
 
@@ -454,7 +453,6 @@ class _AccountSheet extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final t = context.pw;
-    final mode = ref.watch(themeModeProvider);
     final sharing = ref.watch(sharingChoiceProvider).value ?? SharingChoice.ask;
     return SafeArea(
       child: SingleChildScrollView(
@@ -477,27 +475,11 @@ class _AccountSheet extends ConsumerWidget {
               (SharingChoice.always, Vi.shareChoiceAlways, Vi.shareChoiceAlwaysHint),
               (SharingChoice.never, Vi.shareChoiceNever, Vi.shareChoiceNeverHint),
             ])
-              _ThemeOption(
+              _ChoiceOption(
                 label: label,
                 hint: hint,
                 selected: sharing == option,
                 onTap: () => unawaited(ref.read(sharingChoiceProvider.notifier).choose(option)),
-              ),
-            const SizedBox(height: PwSpacing.space4),
-            Semantics(
-              header: true,
-              child: Text(Vi.appearance.toUpperCase(), style: PwTypeStyles.label.copyWith(color: t.inkMuted)),
-            ),
-            const SizedBox(height: PwSpacing.space1),
-            for (final (option, label) in const [
-              (ThemeMode.system, Vi.themeSystem),
-              (ThemeMode.light, Vi.themeLight),
-              (ThemeMode.dark, Vi.themeDark),
-            ])
-              _ThemeOption(
-                label: label,
-                selected: mode == option,
-                onTap: () => unawaited(ref.read(themeModeProvider.notifier).choose(option)),
               ),
             const SizedBox(height: PwSpacing.space4),
             PwButton(label: Vi.logout, block: true, onPressed: () => Navigator.of(context).pop(true)),
@@ -509,8 +491,8 @@ class _AccountSheet extends ConsumerWidget {
 }
 
 /// One choice of a group in the account sheet (radio), with an optional hint under it.
-class _ThemeOption extends StatelessWidget {
-  const _ThemeOption({required this.label, required this.selected, required this.onTap, this.hint});
+class _ChoiceOption extends StatelessWidget {
+  const _ChoiceOption({required this.label, required this.selected, required this.onTap, this.hint});
 
   final String label;
   final String? hint;

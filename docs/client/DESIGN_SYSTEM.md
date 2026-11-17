@@ -34,7 +34,7 @@ PathWise là phần mềm lập tuyến giao hàng cho cửa hàng nhỏ ở Vi�
 
 ### Theme sáng và tối
 
-- Hai theme dùng cùng tên token; client chỉ đổi giá trị. Mặc định theo cài đặt hệ điều hành (`prefers-color-scheme` trên web, `ThemeMode.system` trên Flutter), người dùng chọn lại được và lựa chọn được nhớ trên máy.
+- Hai theme dùng cùng tên token; client chỉ đổi giá trị. Luôn theo cài đặt hệ điều hành (`prefers-color-scheme` trên web, `ThemeMode.system` trên Flutter), không có nút hay lựa chọn sáng/tối trong app (P-73; HIG Dark Mode: "Avoid offering an app-specific appearance setting… they may think your app is broken because it doesn't respond to their systemwide appearance choice").
 - Ở theme tối, màu nhấn (`route`, trạng thái) sáng lên để đọc được trên nền tối; vì thế chữ đặt trên nền màu nhấn luôn dùng `on-accent`, không viết cứng màu trắng.
 - Phân tầng ở theme tối vẫn bằng nền: `surface` tối nhất, `surface-raised` sáng hơn một bậc. Bóng chỉ cho lớp nổi như ở theme sáng; token bóng đậm hơn để còn thấy trên nền tối.
 - Bản đồ: tile OSM chuẩn chỉ có bản sáng. Ở theme tối, khung bản đồ vẫn dùng tile sáng cho đến khi chọn nguồn tile tối (cần quyết định riêng vì là dịch vụ ngoài); đường route và marker vẫn dùng token theo theme sáng để nổi trên tile sáng.

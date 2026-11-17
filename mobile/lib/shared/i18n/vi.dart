@@ -25,7 +25,6 @@ abstract final class Vi {
   static const logoutTitle = 'Đăng xuất khỏi app?';
   static const logoutBody = 'Bạn cần đăng nhập lại để xem tuyến của mình.';
   static String accountMenu(String name) => '$name — tài khoản và giao diện';
-  static const appearance = 'Giao diện';
   // Location sharing (T32, P-54; prototype "Tài xế — chia sẻ vị trí").
   static const shareAskTitle = 'Chia sẻ vị trí cho tuyến này?';
   static String shareAskBody(String plan) =>
@@ -57,9 +56,6 @@ abstract final class Vi {
   static const shareChoiceAlwaysHint = 'Không hỏi, tự bật khi mở tuyến đang giao';
   static const shareChoiceNever = 'Không chia sẻ';
   static const shareChoiceNeverHint = 'Không hỏi; bật riêng từng tuyến ở chi tiết tuyến';
-  static const themeSystem = 'Theo máy';
-  static const themeLight = 'Sáng';
-  static const themeDark = 'Tối';
 
   // Tuyến hôm nay (M01)
   static const myRoutes = 'Tuyến của tôi';
