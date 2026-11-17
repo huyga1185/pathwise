@@ -26,9 +26,28 @@ function runtimeConfig(): Plugin {
   };
 }
 
+/**
+ * Addresses outside /app/ (and outside /api/) go to the same address under /app/, like the Caddy site in production
+ * (deploy/caddy/Caddyfile): the app then shows its own "Không tìm thấy trang" page instead of Vite's base URL notice.
+ */
+function outsideBaseToApp(): Plugin {
+  const redirect = (req: IncomingMessage, res: ServerResponse, next: () => void) => {
+    const url = req.url ?? '/';
+    if (url.startsWith('/app') || url.startsWith('/api') || url.startsWith('/@')) return next();
+    res.statusCode = 302;
+    res.setHeader('Location', `/app${url === '/' ? '/' : url}`);
+    res.end();
+  };
+  return {
+    name: 'pathwise-outside-base',
+    configureServer: (server) => void server.middlewares.use(redirect),
+    configurePreviewServer: (server) => void server.middlewares.use(redirect),
+  };
+}
+
 export default defineConfig({
   base: '/app/',
-  plugins: [react(), runtimeConfig()],
+  plugins: [react(), runtimeConfig(), outsideBaseToApp()],
   // Favicons and logos come straight from brand/logo (docs/client/ARCHITECTURE.md §8): served under /app/ in dev, copied into dist.
   publicDir: '../brand/logo',
   resolve: {

@@ -57,7 +57,9 @@
 		file_server
 	}
 
+	# Any other address is not the API and not a file of the app: hand it to the app under /app/, which shows its own
+	# "Không tìm thấy trang" page (or the page itself, e.g. /favicon.ico → /app/favicon.ico) instead of a blank 404.
 	handle {
-		respond 404
+		redir * /app{uri} 302
 	}
 }

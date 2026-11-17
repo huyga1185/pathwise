@@ -255,7 +255,7 @@ Tên volume có tiền tố là tên thư mục/project (xem `docker volume ls`)
 
 ## 8. Web dispatcher và HTTPS (Caddy, W08, P-56)
 
-Caddy phục vụ web dispatcher ở `https://<domain>/app/`, chuyển `/api/` (và Swagger ở staging) về app, tự lấy chứng chỉ Let's Encrypt cho `PATHWISE_DOMAIN`. `/` chuyển sang `/app/` cho tới khi có trang landing (P-47); `/actuator` không mở ra ngoài. Cấu hình chung ở `deploy/caddy/Caddyfile`, dùng cho cả hai cách dưới.
+Caddy phục vụ web dispatcher ở `https://<domain>/app/`, chuyển `/api/` (và Swagger ở staging) về app, tự lấy chứng chỉ Let's Encrypt cho `PATHWISE_DOMAIN`. `/` chuyển sang `/app/` cho tới khi có trang landing (P-47); địa chỉ khác ngoài `/app/` và ngoài API (ví dụ `/abc`, `/favicon.ico`) chuyển sang cùng địa chỉ dưới `/app/` (302), nên người dùng thấy trang "Không tìm thấy trang" của web thay vì 404 trắng (F-72); `/actuator` không mở ra ngoài (trừ `/actuator/health`). Cấu hình chung ở `deploy/caddy/Caddyfile`, dùng cho cả hai cách dưới.
 
 Trước khi bắt đầu: bản ghi DNS `A` của domain trỏ về IP của VPS, cổng 80 và 443 (TCP, thêm 443/UDP cho HTTP/3) mở từ internet. Let's Encrypt kiểm tra domain qua cổng 80/443, nên chứng chỉ chỉ cấp được khi DNS đã trỏ đúng.
 
