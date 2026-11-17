@@ -935,7 +935,6 @@ export const vi = {
     noReasons: 'Chưa có điểm nào không giao được.',
     unnamed: '(chưa có tên)',
   },
-  theme: { toggle: 'Đổi giao diện sáng/tối', light: 'Sáng', dark: 'Tối', system: 'Theo hệ thống' },
   pages: {
     notFoundTitle: 'Không tìm thấy trang',
     notFoundLead: 'Đường dẫn không đúng hoặc trang đã bị xoá.',

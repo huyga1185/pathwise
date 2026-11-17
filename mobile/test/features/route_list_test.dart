@@ -1,9 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:pathwise_driver/app/theme_mode.dart';
 import 'package:pathwise_driver/features/driver_routes/route_list_screen.dart';
-import 'package:pathwise_driver/platform/preferences.dart';
 import 'package:pathwise_driver/shared/theme/tokens.g.dart';
 
 import '../support/app.dart';
@@ -149,54 +147,24 @@ void main() {
     expect(store.refreshToken, isNull);
   });
 
-  testWidgets('chọn giao diện Tối thì đổi ngay và nhớ trên máy; Theo máy thì xoá lựa chọn', (tester) async {
-    final preferences = MemoryPreferences();
-    await pumpApp(
-      tester,
-      driverServer((request) async => FakeReply.ok(<Object>[])),
-      refreshToken: 'refresh-1',
-      preferences: preferences,
-    );
-    ThemeMode mode() => tester.widget<MaterialApp>(find.byType(MaterialApp)).themeMode!;
-    expect(mode(), ThemeMode.system);
+  testWidgets('không có lựa chọn giao diện; bảng tài khoản đang mở đổi màu theo máy (F-61)', (tester) async {
+    await pumpApp(tester, driverServer((request) async => FakeReply.ok(<Object>[])), refreshToken: 'refresh-1');
+    addTearDown(tester.platformDispatcher.clearPlatformBrightnessTestValue);
+    expect(tester.widget<MaterialApp>(find.byType(MaterialApp)).themeMode, ThemeMode.system);
 
     await tester.tap(find.text('TA'));
     await tester.pumpAndSettle();
-    Color sheetColor() => tester.widget<Material>(
-      find.descendant(of: find.byType(BottomSheet), matching: find.byType(Material)).first,
-    ).color!;
-    await tester.tap(find.text('Sáng'));
-    await tester.pumpAndSettle();
+    expect(find.text('GIAO DIỆN'), findsNothing);
+    Color sheetColor() => tester
+        .widget<Material>(find.descendant(of: find.byType(BottomSheet), matching: find.byType(Material)).first)
+        .color!;
     expect(sheetColor(), PwColorTokens.light.surfaceRaised);
-    await tester.tap(find.text('Tối'));
+
+    tester.platformDispatcher.platformBrightnessTestValue = Brightness.dark;
     await tester.pumpAndSettle();
-    expect(mode(), ThemeMode.dark);
+
     // The open sheet itself turns dark, not only the screen behind it.
     expect(sheetColor(), PwColorTokens.dark.surfaceRaised);
-    expect(preferences.values, {'pw-theme': 'dark'});
-    expect(
-      tester.getSemantics(find.bySemanticsLabel('Tối')),
-      matchesSemantics(
-        label: 'Tối',
-        isButton: true,
-        hasCheckedState: true,
-        isChecked: true,
-        isInMutuallyExclusiveGroup: true,
-        hasTapAction: true,
-      ),
-    );
-
-    await tester.tap(find.text('Theo máy'));
-    await tester.pumpAndSettle();
-    expect(mode(), ThemeMode.system);
-    expect(preferences.values, isEmpty);
-  });
-
-  test('giao diện đã lưu được đọc lúc mở app; giá trị lạ thì theo máy', () async {
-    expect(await savedThemeMode(MemoryPreferences({'pw-theme': 'light'})), ThemeMode.light);
-    expect(await savedThemeMode(MemoryPreferences({'pw-theme': 'dark'})), ThemeMode.dark);
-    expect(await savedThemeMode(MemoryPreferences({'pw-theme': 'x'})), ThemeMode.system);
-    expect(await savedThemeMode(MemoryPreferences()), ThemeMode.system);
   });
 
   test('chữ viết tắt lấy chữ đầu của từ đầu và từ cuối', () {

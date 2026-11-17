@@ -40,6 +40,7 @@
 | C12 | Tăng tương phản / giảm trong suốt / forced colors có cách hiển thị riêng (nền đặc, viền rõ, màu hệ thống) | [Apple] WWDC25 219; [Web] `forced-colors` | Chụp từng chế độ |
 | C13 | Cùng loại thành phần thì cùng hình, cỡ, trạng thái ở mọi màn | [Chủ dự án] "ưu tiên tính nhất quán" | So ảnh các màn |
 | C14 | Không có chữ/hint đè lên nhau ở mọi khổ (đặc biệt 320–390px) | [Web] | Đo giao cắt `getBoundingClientRect` |
+| C15 | Sáng/tối theo hệ điều hành, đổi ngay khi hệ điều hành đổi; không thêm nút hay lựa chọn giao diện riêng; đẹp và đủ tương phản ở cả hai, kể cả khi bật tăng tương phản/giảm trong suốt | [Apple] HIG Dark Mode: "Avoid offering an app-specific appearance setting", "Ensure that your app looks good in both appearance modes"; P-73 | Chụp hai theme; đổi `colorScheme` khi trang đang mở |
 
 ## 2. Hình dạng, vật liệu, bóng
 

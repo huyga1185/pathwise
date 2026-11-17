@@ -4,7 +4,6 @@ import 'package:timezone/data/latest_10y.dart' as tz_data;
 
 import 'app/app.dart';
 import 'app/providers.dart';
-import 'app/theme_mode.dart';
 import 'platform/preferences.dart';
 
 Future<void> main() async {
@@ -12,14 +11,5 @@ Future<void> main() async {
   // Planned times show in the plan's timezone (P-50); the database is bundled, nothing is fetched.
   tz_data.initializeTimeZones();
   final preferences = SharedPreferencesStore();
-  final themeMode = await savedThemeMode(preferences);
-  runApp(
-    ProviderScope(
-      overrides: [
-        preferencesProvider.overrideWithValue(preferences),
-        initialThemeModeProvider.overrideWithValue(themeMode),
-      ],
-      child: const PathwiseApp(),
-    ),
-  );
+  runApp(ProviderScope(overrides: [preferencesProvider.overrideWithValue(preferences)], child: const PathwiseApp()));
 }
