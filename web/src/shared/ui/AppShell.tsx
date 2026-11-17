@@ -289,6 +289,7 @@ export function AppShell({ items, navLabel, sidebarTitle, account, children }: A
   const sidebar = useExit(sidebarShown, 200);
   const main = useRef<HTMLElement>(null);
   const { pathname } = useLocation();
+  const smallTitle = useSmallTitle(main, !wide);
   const previous = useRef(pathname);
   useEffect(() => {
     const from = previous.current;
@@ -343,6 +344,11 @@ export function AppShell({ items, navLabel, sidebarTitle, account, children }: A
               <SidebarIcon />
             </button>
           ) : null}
+          {!wide ? (
+            <span className={cx('pw-topbar-title', smallTitle && 'is-shown')} aria-hidden="true">
+              {smallTitle}
+            </span>
+          ) : null}
           <AccountMenu account={account} crossFade={wide} />
         </div>
         <main ref={main} className="pw-page">
@@ -360,4 +366,43 @@ export function AppShell({ items, navLabel, sidebarTitle, account, children }: A
       )}
     </div>
   );
+}
+
+/**
+ * Phone: the page's large title (its h1) gives way to a small one in the middle of the top bar once it scrolls under
+ * the bar, and comes back when people scroll to the top (HIG Toolbars: "Use a large title to help people stay oriented
+ * as they navigate and scroll. By default, a large title transitions to a standard title as people begin scrolling…
+ * and transitions back to large when people scroll to the top"). Follows the h1 as pages and their content change.
+ */
+function useSmallTitle(main: React.RefObject<HTMLElement | null>, enabled: boolean): string | null {
+  const [title, setTitle] = useState<string | null>(null);
+  useEffect(() => {
+    const root = main.current;
+    if (!enabled || !root || typeof IntersectionObserver === 'undefined') return undefined;
+    let watched: HTMLElement | null = null;
+    let observer: IntersectionObserver | null = null;
+    const bind = () => {
+      const heading = root.querySelector<HTMLElement>('h1');
+      if (heading === watched) return;
+      observer?.disconnect();
+      watched = heading;
+      setTitle(null);
+      if (!heading) return;
+      const bar = (root.previousElementSibling as HTMLElement | null)?.offsetHeight ?? 60;
+      observer = new IntersectionObserver(
+        ([entry]) =>
+          setTitle(entry && !entry.isIntersecting && entry.boundingClientRect.top < bar ? heading.textContent : null),
+        { rootMargin: `-${bar}px 0px 0px 0px` },
+      );
+      observer.observe(heading);
+    };
+    bind();
+    const changes = new MutationObserver(bind);
+    changes.observe(root, { childList: true, subtree: true });
+    return () => {
+      changes.disconnect();
+      observer?.disconnect();
+    };
+  }, [main, enabled]);
+  return enabled ? title : null;
 }

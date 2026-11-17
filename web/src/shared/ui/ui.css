@@ -1136,6 +1136,7 @@ select.pw-field-input {
   position: sticky;
   top: 0;
   z-index: 20;
+  /* The small title is placed in the middle of the bar (phone). */
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -2792,4 +2793,34 @@ select.pw-field-input {
 }
 .pw-th-resize:focus-visible {
   outline: none;
+}
+
+/* Phone: the small title in the middle of the top bar, shown once the large title has scrolled under it (HIG
+   Toolbars: large title → standard title). */
+.pw-topbar-title {
+  position: absolute;
+  left: 72px;
+  right: 72px;
+  overflow: hidden;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 1.0625rem;
+  font-weight: 600;
+  color: var(--ink);
+  opacity: 0;
+  transform: translateY(4px);
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
+  pointer-events: none;
+}
+.pw-topbar-title.is-shown {
+  opacity: 1;
+  transform: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .pw-topbar-title {
+    transform: none;
+  }
 }
