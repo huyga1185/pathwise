@@ -3,6 +3,8 @@ import { Link, NavLink, useLocation } from 'react-router';
 import { vi } from '@/shared/i18n/vi';
 import { cx } from './cx';
 import { SidebarIcon } from './icons';
+import { reducedMotion, useExit } from '@/shared/hooks/useExit';
+import { useMediaQuery, WIDE_QUERY } from '@/shared/hooks/useMediaQuery';
 
 export interface ShellNavItem {
   to: string;
@@ -37,44 +39,13 @@ export function useInAppShell(): boolean {
 }
 
 const SIDEBAR_KEY = 'pw-sidebar';
-/** Wide window: sidebar; narrower: tab bar (the same 960px step as the account screens). */
-const WIDE = '(min-width: 960px)';
-
-function useWide(): boolean {
-  const [wide, setWide] = useState(() => window.matchMedia?.(WIDE).matches ?? false);
-  useEffect(() => {
-    const media = window.matchMedia?.(WIDE);
-    if (!media) return undefined;
-    const update = () => setWide(media.matches);
-    media.addEventListener('change', update);
-    return () => media.removeEventListener('change', update);
-  }, []);
-  return wide;
-}
-
-function reducedMotion(): boolean {
-  return window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
-}
+/** Wide window: sidebar; narrower: tab bar (the same 960px step as the account screens and the lists). */
+const useWide = () => useMediaQuery(WIDE_QUERY);
 
 /**
  * Keeps an element mounted for a moment after it is closed, so it can animate out ("closing"); with reduced motion it
  * goes at once. While closing it is hidden from assistive technologies and inert.
  */
-function useExit(shown: boolean, ms: number): 'open' | 'closing' | 'closed' {
-  const [state, setState] = useState<'open' | 'closing' | 'closed'>(shown ? 'open' : 'closed');
-  const [wasShown, setWasShown] = useState(shown);
-  if (shown !== wasShown) {
-    setWasShown(shown);
-    setState(shown ? 'open' : reducedMotion() ? 'closed' : 'closing');
-  }
-  useEffect(() => {
-    if (state !== 'closing') return undefined;
-    const timer = window.setTimeout(() => setState('closed'), ms);
-    return () => window.clearTimeout(timer);
-  }, [state, ms]);
-  return state;
-}
-
 function readSidebarOpen(): boolean {
   try {
     return window.localStorage.getItem(SIDEBAR_KEY) !== 'closed';

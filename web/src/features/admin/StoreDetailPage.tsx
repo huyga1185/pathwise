@@ -5,7 +5,17 @@ import { auditSentence } from '@/shared/audit';
 import { messageFor } from '@/shared/errors';
 import { formatDate, formatDayTime, formatRate } from '@/shared/format';
 import { vi } from '@/shared/i18n/vi';
-import { Button, DataTable, Dialog, EmptyState, ErrorBanner, SelectField, Stat, StatusPill } from '@/shared/ui';
+import {
+  Button,
+  DataTable,
+  Dialog,
+  EmptyState,
+  ErrorBanner,
+  SelectField,
+  Stat,
+  StatusPill,
+  ActivityIndicator,
+} from '@/shared/ui';
 import { useAdminApi, useAdminAudit, useAdminStore, type AdminStoreDetail } from './adminApi';
 
 const ZONE = 'Asia/Ho_Chi_Minh';
@@ -25,7 +35,7 @@ export function StoreDetailPage() {
       </section>
     );
   }
-  if (!store.data) return <p role="status">{vi.pages.loading}</p>;
+  if (!store.data) return <ActivityIndicator label={vi.pages.loading} className="is-page" />;
   return <StoreDetail store={store.data} />;
 }
 

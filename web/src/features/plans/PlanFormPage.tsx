@@ -8,7 +8,7 @@ import { formatCapacity } from '@/features/fleet';
 import { errorMessages, fieldErrors, messageFor } from '@/shared/errors';
 import { todayIn } from '@/shared/format';
 import { vi } from '@/shared/i18n/vi';
-import { Button, buttonClass, Dialog, ErrorBanner, TextField, TrashIcon } from '@/shared/ui';
+import { Button, buttonClass, Dialog, ErrorBanner, TextField, TrashIcon, ActivityIndicator } from '@/shared/ui';
 import {
   useActiveVehicles,
   useAssignableMembers,
@@ -69,14 +69,15 @@ export function PlanFormPage() {
   const failure = store.error ?? members.error ?? vehicles.error;
   if (failure) return <ErrorBanner title={messageFor(failure)} />;
   // The selects get their values when they mount: wait for their options.
-  if (!store.data || !members.data || !vehicles.data) return <p className="pw-muted">{vi.pages.loading}</p>;
+  if (!store.data || !members.data || !vehicles.data)
+    return <ActivityIndicator label={vi.pages.loading} className="is-page" />;
   return planId ? <EditPlan id={planId} /> : <PlanForm plan={null} />;
 }
 
 function EditPlan({ id }: { id: number }) {
   const plan = usePlan(id);
   if (plan.isError) return <ErrorBanner title={messageFor(plan.error)} />;
-  if (!plan.data) return <p className="pw-muted">{vi.pages.loading}</p>;
+  if (!plan.data) return <ActivityIndicator label={vi.pages.loading} className="is-page" />;
   if (plan.data.status !== 'DRAFT') {
     return (
       <section className="pw-page-section">

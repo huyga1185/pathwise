@@ -19,6 +19,7 @@ import {
   violationText,
   type Draft,
 } from './manualEdit';
+import { CopyDialog } from './CopyDialog';
 import { CancelDialog, PublishDialog, routesWithStops } from './PlanDialogs';
 import { allStops, useJob, usePlanApi, type Job, type PlanDetail, type PlanStop } from './planApi';
 import {
@@ -64,6 +65,7 @@ export function ResultView({
   const [failure, setFailure] = useState<unknown>(null);
   const [dialog, setDialog] = useState<'publish' | 'cancel' | 'discard' | 'reoptimize' | null>(null);
   const [savedDraft, setDraft] = useState<Draft | null>(null);
+  const [copying, setCopying] = useState(false);
   // The plan changed under the draft (another dispatcher, a new optimization): a draft that no longer fits is dropped.
   const draft = savedDraft !== null && draftFits(plan, savedDraft) ? savedDraft : null;
   const [saving, setSaving] = useState(false);
@@ -168,6 +170,12 @@ export function ResultView({
         </div>
         {!editing ? (
           <div className="pw-plan-actions">
+            {/* Copy, in every state; the list's touch-and-hold menu offers it too. */}
+            {!readOnly ? (
+              <Button variant="quiet" onClick={() => setCopying(true)}>
+                {vi.planCopy.action}
+              </Button>
+            ) : null}
             <Button variant="quiet" disabled={busy || readOnly} onClick={() => setDialog('cancel')}>
               {r.cancel}
             </Button>
@@ -364,6 +372,7 @@ export function ResultView({
       >
         <p>{m.leaveLead}</p>
       </Dialog>
+      {copying ? <CopyDialog planId={plan.id} planName={plan.name} open onClose={() => setCopying(false)} /> : null}
     </section>
   );
 }

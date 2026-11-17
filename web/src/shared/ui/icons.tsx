@@ -224,3 +224,64 @@ export const SidebarIcon = () => (
     <path d="M9.5 4.5v15" />
   </Icon>
 );
+export const PlusIcon = () => (
+  <Icon>
+    <path d="M12 5v14M5 12h14" />
+  </Icon>
+);
+/** Copy (like "doc.on.doc"). */
+export const CopyIcon = () => (
+  <Icon>
+    <rect x="8.5" y="8.5" width="11" height="12" rx="2.5" />
+    <path d="M15.5 5.5V5a1.5 1.5 0 0 0-1.5-1.5H6A2.5 2.5 0 0 0 3.5 6v9A1.5 1.5 0 0 0 5 16.5h.5" />
+  </Icon>
+);
+export const ChevronRightIcon = () => (
+  <Icon>
+    <path d="M9.5 6l6 6-6 6" />
+  </Icon>
+);
+export const ChevronDownIcon = () => (
+  <Icon>
+    <path d="M6 9.5l6 6 6-6" />
+  </Icon>
+);
+export const ChevronUpIcon = () => (
+  <Icon>
+    <path d="M6 14.5l6-6 6 6" />
+  </Icon>
+);
+export const CalendarIcon = () => (
+  <Icon>
+    <rect x="3.5" y="5" width="17" height="15.5" rx="2.5" />
+    <path d="M3.5 10h17M8 3v4M16 3v4" />
+  </Icon>
+);
+export const ChevronLeftIcon = () => (
+  <Icon>
+    <path d="M14.5 6l-6 6 6 6" />
+  </Icon>
+);
+/** A pop-up button's mark (like "chevron.up.chevron.down"). */
+export const ChevronUpDownIcon = () => (
+  <Icon>
+    <path d="M8 9.5l4-4 4 4M8 14.5l4 4 4-4" />
+  </Icon>
+);
+export const CheckIcon = () => (
+  <Icon>
+    <path d="M5 12.5l4.5 4.5L19 7.5" />
+  </Icon>
+);
+/** First page (like "chevron.backward.2"). */
+export const ChevronsLeftIcon = () => (
+  <Icon>
+    <path d="M11.5 6l-6 6 6 6M18.5 6l-6 6 6 6" />
+  </Icon>
+);
+/** Last page (like "chevron.forward.2"). */
+export const ChevronsRightIcon = () => (
+  <Icon>
+    <path d="M5.5 6l6 6-6 6M12.5 6l6 6-6 6" />
+  </Icon>
+);

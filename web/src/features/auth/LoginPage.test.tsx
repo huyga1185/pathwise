@@ -18,7 +18,7 @@ describe('Phiên đăng nhập', () => {
     server.use(...signedInHandlers());
     renderApp('/plans');
 
-    expect(await screen.findByRole('heading', { name: 'Kế hoạch giao hàng' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Kế hoạch', level: 1 })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Kế hoạch' })).toHaveAttribute('aria-current', 'page');
     // The store is in the account menu (P-74).
     await userEvent.setup().click(screen.getByRole('button', { name: /^Tài khoản:/ }));

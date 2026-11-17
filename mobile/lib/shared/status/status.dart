@@ -7,14 +7,14 @@ enum StatusKind { plan, route, stop, dropReason, geocode, processing, invitation
 const _status = <StatusKind, Map<String, (String, Tone)>>{
   StatusKind.plan: {
     'DRAFT': ('NHÁP', Tone.muted),
-    'PUBLISHED': ('ĐÃ GIAO VIỆC', Tone.info),
-    'IN_PROGRESS': ('ĐANG GIAO', Tone.signal),
+    'PUBLISHED': ('ĐÃ GIAO VIỆC', Tone.muted),
+    'IN_PROGRESS': ('ĐANG GIAO', Tone.info),
     'COMPLETED': ('HOÀN THÀNH', Tone.success),
     'CANCELLED': ('ĐÃ HUỶ', Tone.danger),
   },
   StatusKind.route: {
     'PENDING': ('CHỜ GIAO', Tone.muted),
-    'IN_PROGRESS': ('ĐANG GIAO', Tone.signal),
+    'IN_PROGRESS': ('ĐANG GIAO', Tone.info),
     'COMPLETED': ('HOÀN THÀNH', Tone.success),
   },
   StatusKind.stop: {

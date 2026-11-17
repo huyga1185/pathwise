@@ -4,7 +4,7 @@ export { SelectField, type SelectFieldProps, type SelectOption } from './SelectF
 export { Checkbox, type CheckboxProps } from './Checkbox';
 export { StatusPill, type StatusPillProps } from './StatusPill';
 export { ProgressBar, type ProgressBarProps } from './ProgressBar';
-export { DataTable, type DataTableColumn, type DataTableProps } from './DataTable';
+export { DataTable, type DataTableColumn, type TableSort, type DataTableProps } from './DataTable';
 export { StopCard, type StopCardProps } from './StopCard';
 export { MapMarker, type MapMarkerProps } from './MapMarker';
 export { Dialog, type DialogProps } from './Dialog';
@@ -23,3 +23,5 @@ export {
 export { CodeField } from './CodeField';
 export { Wordmark } from './Wordmark';
 export * from './icons';
+export { DatePickerFilter, PageJump, PlaceholderRows, PopUpButton, PopUpFilter } from './Filters';
+export { ActivityIndicator } from './ActivityIndicator';

@@ -1,5 +1,6 @@
 import type { Key, ReactNode } from 'react';
 import { cx } from './cx';
+import { ChevronDownIcon, ChevronUpIcon } from './icons';
 
 export interface DataTableColumn<Row> {
   key: string;
@@ -9,6 +10,15 @@ export interface DataTableColumn<Row> {
   numeric?: boolean;
   align?: 'start' | 'end';
   width?: string | number;
+  /** Extra class on the column's heading and cells (e.g. hidden when the table is narrow). */
+  className?: string;
+  /** The heading sorts the table when clicked (HIG Lists and tables: "let people click a column heading to sort"). */
+  sortable?: boolean;
+}
+
+export interface TableSort {
+  key: string;
+  direction: 'asc' | 'desc';
 }
 
 export interface DataTableProps<Row> {
@@ -21,6 +31,11 @@ export interface DataTableProps<Row> {
   empty?: ReactNode;
   caption?: string;
   className?: string;
+  /** Current order; clicking a sortable heading calls onSort with its key. */
+  sort?: TableSort;
+  onSort?: (key: string) => void;
+  /** Right click (or touch and hold) on a row: the caller opens that row's context menu. */
+  onRowContextMenu?: (row: Row, point: { x: number; y: number }) => void;
 }
 
 /** Design system DataTable: selectable rows by mouse and keyboard, sticky header, numeric columns. */
@@ -33,6 +48,9 @@ export function DataTable<Row>({
   empty,
   caption,
   className,
+  sort,
+  onSort,
+  onRowContextMenu,
 }: DataTableProps<Row>) {
   const keyOf = (row: Row): Key => (typeof rowKey === 'function' ? rowKey(row) : (row[rowKey] as Key));
   const clickable = typeof onRowClick === 'function';
@@ -46,10 +64,28 @@ export function DataTable<Row>({
               <th
                 key={column.key}
                 scope="col"
-                className={cx(column.numeric && 'pw-num', column.align === 'end' && 'pw-end')}
+                className={cx(column.numeric && 'pw-num', column.align === 'end' && 'pw-end', column.className)}
                 style={column.width ? { width: column.width } : undefined}
+                aria-sort={
+                  column.sortable && onSort
+                    ? sort?.key === column.key
+                      ? sort.direction === 'asc'
+                        ? 'ascending'
+                        : 'descending'
+                      : 'none'
+                    : undefined
+                }
               >
-                {column.header}
+                {column.sortable && onSort ? (
+                  <button type="button" className="pw-th-sort" onClick={() => onSort(column.key)}>
+                    {column.header}
+                    <span className={cx('pw-th-sort-mark', sort?.key === column.key && 'is-on')} aria-hidden="true">
+                      {sort?.key === column.key && sort.direction === 'asc' ? <ChevronUpIcon /> : <ChevronDownIcon />}
+                    </span>
+                  </button>
+                ) : (
+                  column.header
+                )}
               </th>
             ))}
           </tr>
@@ -72,6 +108,14 @@ export function DataTable<Row>({
                   aria-selected={clickable ? selected : undefined}
                   tabIndex={clickable ? 0 : undefined}
                   onClick={clickable ? () => onRowClick(row) : undefined}
+                  onContextMenu={
+                    onRowContextMenu
+                      ? (event) => {
+                          event.preventDefault();
+                          onRowContextMenu(row, { x: event.clientX, y: event.clientY });
+                        }
+                      : undefined
+                  }
                   onKeyDown={
                     clickable
                       ? (event) => {
@@ -84,7 +128,10 @@ export function DataTable<Row>({
                   }
                 >
                   {columns.map((column) => (
-                    <td key={column.key} className={cx(column.numeric && 'pw-num', column.align === 'end' && 'pw-end')}>
+                    <td
+                      key={column.key}
+                      className={cx(column.numeric && 'pw-num', column.align === 'end' && 'pw-end', column.className)}
+                    >
                       {column.render ? column.render(row) : (row[column.key as keyof Row] as ReactNode)}
                     </td>
                   ))}

@@ -4,7 +4,7 @@ import { useStoreQuery } from '@/data/storeQuery';
 import { fieldErrors, messageFor } from '@/shared/errors';
 import { todayIn } from '@/shared/format';
 import { vi } from '@/shared/i18n/vi';
-import { Dialog, ErrorBanner, TextField } from '@/shared/ui';
+import { Dialog, ErrorBanner, TextField, ActivityIndicator } from '@/shared/ui';
 import { allStops, usePlan, usePlanApi, type PlanDetail, type SkippedAssignment } from './planApi';
 
 const t = vi.planCopy;
@@ -129,7 +129,7 @@ export function CopyDialog({ planId, planName, open, onClose }: CopyDialogProps)
             ) : null}
           </fieldset>
         ) : plan.isError ? null : (
-          <p className="pw-muted">{vi.pages.loading}</p>
+          <ActivityIndicator label={vi.pages.loading} />
         )}
         <p className="pw-muted">{t.hint}</p>
         {failure && !fields.planDate && !fields.name ? <ErrorBanner title={messageFor(failure)} /> : null}

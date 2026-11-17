@@ -25,69 +25,91 @@
 .pw-tabular {
   font-variant-numeric: tabular-nums;
 }
-.pw-plans-filter {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  gap: 16px;
-  padding: 16px;
-  background: var(--surface-raised);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-md);
-}
-.pw-plans-filter-date {
-  flex: 0 1 200px;
-}
-.pw-plans-filter-status {
-  flex: 0 1 220px;
-}
 .pw-plans-list {
   display: flex;
   flex-direction: column;
   gap: 16px;
 }
-.pw-plans-table table {
-  min-width: 900px;
+/* The name gets room first: at least 14rem, two lines at most; numbers and dates stay on one line. On a narrower
+   window the least important columns (the trailing ones, HIG Layout: "Order content by relative importance") become a
+   secondary line under the name, in two steps (duration and optimised time below 66rem; routes and distance too
+   below 52rem), rather than squeezing the name, scrolling sideways or losing their values (HIG Lists and tables: a
+   narrow table keeps content "recognizable and easy to read"). Measured: the full table needs about 1060px, the first
+   step about 830px. */
+.pw-plans-table {
+  container-type: inline-size;
 }
-.pw-plans-link {
-  font-weight: 600;
+.pw-plans-table td {
+  white-space: nowrap;
 }
-.pw-plans-pager {
-  display: flex;
+.pw-plans-table .pw-plans-col-name {
+  width: 40%;
+  min-width: 14rem;
+  white-space: normal;
+}
+/* What a hidden column held moves under the name, so nothing is lost (OWNER_UI_REDESIGN G2.11). */
+.pw-plans-more {
+  display: none;
   flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
+  column-gap: 6px;
+  margin-top: 2px;
+  font-size: 0.8125rem;
+  line-height: 1.125rem;
   color: var(--ink-muted);
+  font-variant-numeric: tabular-nums;
 }
-.pw-plans-pager-buttons {
-  display: flex;
-  gap: 8px;
+.pw-plans-more > span {
+  display: none;
 }
-.pw-plans-empty {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 16px;
-  padding: 48px 24px;
-  text-align: center;
-  background: var(--surface-raised);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-md);
+.pw-plans-more > span::after {
+  content: '·';
+  margin-left: 6px;
 }
-.pw-plans-empty h2 {
-  margin: 0;
-  font-size: 20px;
-  line-height: 28px;
+.pw-plans-more > span:last-child::after {
+  content: none;
+}
+@container (max-width: 66rem) {
+  .pw-plans-table .pw-plans-col-extra {
+    display: none;
+  }
+  .pw-plans-table .pw-plans-more:has(.pw-plans-more-duration, .pw-plans-more-optimized) {
+    display: flex;
+  }
+  .pw-plans-more-duration,
+  .pw-plans-more-optimized {
+    display: inline !important;
+  }
+}
+@container (max-width: 52rem) {
+  .pw-plans-table .pw-plans-col-more {
+    display: none;
+  }
+  .pw-plans-table .pw-plans-more {
+    display: flex;
+  }
+  .pw-plans-more-routes,
+  .pw-plans-more-distance {
+    display: inline !important;
+  }
+}
+/* The name opens the plan like the whole row: plain bold text, underlined only on hover (a row, not a link in prose). */
+.pw-plans-link {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  overflow-wrap: anywhere;
   font-weight: 600;
+  color: var(--ink);
+  text-decoration: none;
 }
-.pw-plans-empty p {
-  max-width: 480px;
+@media (hover: hover) {
+  .pw-plans-link:hover {
+    color: var(--ink);
+    text-decoration: underline;
+  }
 }
-.pw-plans-empty-art {
-  max-width: 100%;
-}
-
 /* Plan form */
 .pw-plan-form {
   display: flex;

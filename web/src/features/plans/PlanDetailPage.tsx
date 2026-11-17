@@ -18,12 +18,13 @@ import {
   TextField,
   Toast,
   type DataTableColumn,
+  ActivityIndicator,
 } from '@/shared/ui';
 import { PinPickerDialog } from '@/shared/ui/PinPicker';
 import { allStops, usePlan, usePlanApi, type PlanDetail, type PlanStop } from './planApi';
 import { ResultView } from './ResultView';
 import { TrackView } from './TrackView';
-import type { CopiedNotice } from './CopyDialog';
+import { CopyDialog, type CopiedNotice } from './CopyDialog';
 import './plans.css';
 
 const g = vi.geocode;
@@ -47,7 +48,7 @@ export function PlanDetailPage() {
       </section>
     );
   }
-  if (!plan.data) return <p className="pw-muted">{vi.pages.loading}</p>;
+  if (!plan.data) return <ActivityIndicator label={vi.pages.loading} className="is-page" />;
   const data = plan.data;
   const view =
     data.status === 'DRAFT' && !data.optimizedAt ? (
@@ -107,6 +108,7 @@ function GeocodeView({ plan }: { plan: PlanDetail }) {
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [failure, setFailure] = useState<unknown>(null);
   const [working, setWorking] = useState(false);
+  const [copying, setCopying] = useState(false);
   const selected =
     stops.find((stop) => stop.id === selectedId) ?? stops.find((stop) => stop.geocodeStatus === 'FAILED') ?? stops[0];
 
@@ -194,6 +196,12 @@ function GeocodeView({ plan }: { plan: PlanDetail }) {
         actions={
           <div className="pw-plan-header-actions">
             <div className="pw-plan-actions">
+              {/* Copy, in every state (API_SPEC: any status); the list's touch-and-hold menu offers it too. */}
+              {!readOnly ? (
+                <Button variant="quiet" onClick={() => setCopying(true)}>
+                  {vi.planCopy.action}
+                </Button>
+              ) : null}
               <Button
                 variant="secondary"
                 disabled={busy || readOnly}
@@ -258,6 +266,7 @@ function GeocodeView({ plan }: { plan: PlanDetail }) {
         </section>
         {selected ? <FixStop key={selected.id} plan={plan} stop={selected} busy={busy} /> : null}
       </div>
+      {copying ? <CopyDialog planId={plan.id} planName={plan.name} open onClose={() => setCopying(false)} /> : null}
     </section>
   );
 }

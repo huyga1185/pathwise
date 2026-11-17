@@ -40,6 +40,15 @@ function fixed(plan: Plan, version: number): Plan {
 }
 
 describe('Soạn plan — tìm toạ độ', () => {
+  it('kế hoạch nháp cũng có nút "Sao chép" (sao chép được ở mọi trạng thái)', async () => {
+    server.use(
+      http.get(`${API}/plans/83`, () => ok(geocoded())),
+      ...signedInHandlers(),
+    );
+    renderApp('/plans/83');
+    expect(await screen.findByRole('button', { name: 'Sao chép' })).toBeInTheDocument();
+  });
+
   it('còn điểm không tìm thấy: cảnh báo, khoá "Tối ưu lộ trình", mở sẵn điểm lỗi kèm lý do', async () => {
     server.use(
       http.get(`${API}/plans/83`, () => ok(geocoded())),
