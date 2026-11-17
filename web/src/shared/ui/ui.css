@@ -43,7 +43,8 @@
   text-decoration: none;
   white-space: nowrap;
   border: 1px solid transparent;
-  border-radius: var(--radius-sm);
+  /* Capsules (HIG Buttons: "prefer circular or capsule-shape buttons… the capsule shape in a horizontal row"). */
+  border-radius: var(--radius-full);
   cursor: pointer;
 }
 .pw-btn-lg {
@@ -66,9 +67,10 @@
   color: var(--on-accent);
 }
 .pw-btn-secondary {
-  background: var(--surface-raised);
+  /* Grey fill, no outline (F-73; HIG Buttons: the system's styles are prominent, grey, plain or glass — no hollow
+     outline). */
+  background: color-mix(in srgb, var(--ink) 7%, transparent);
   color: var(--ink);
-  border-color: var(--ink-muted);
 }
 .pw-btn-quiet {
   background: transparent;
@@ -105,7 +107,9 @@
   .pw-btn-signal:hover:not(:disabled) {
     filter: brightness(0.92);
   }
-  .pw-btn-secondary:hover:not(:disabled),
+  .pw-btn-secondary:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--ink) 11%, transparent);
+  }
   .pw-btn-quiet:hover:not(:disabled) {
     background: var(--surface-tint);
   }
@@ -116,7 +120,9 @@
 .pw-btn-signal:active:not(:disabled) {
   filter: brightness(0.84);
 }
-.pw-btn-secondary:active:not(:disabled),
+.pw-btn-secondary:active:not(:disabled) {
+  background: color-mix(in srgb, var(--ink) 16%, transparent);
+}
 .pw-btn-quiet:active:not(:disabled) {
   background: color-mix(in srgb, var(--route) 16%, transparent);
 }

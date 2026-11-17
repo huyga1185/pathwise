@@ -1,6 +1,6 @@
 # OWNER_UI_REDESIGN — Nghiên cứu thiết kế lại giao diện chính của chủ cửa hàng theo Apple
 
-> **Trạng thái:** nghiên cứu xong; chủ dự án đã trả lời Q1–Q5 (§5, 2026-11-17), quyết định ở P-74. **G1 (khung app) đã làm** (§6, branch `docs/owner-ui-redesign`). **G2 (danh sách kế hoạch) đã làm** (§7, branch `feat/owner-ui-g2`). Tiếp: G3.
+> **Trạng thái:** nghiên cứu xong; chủ dự án đã trả lời Q1–Q5 (§5, 2026-11-17), quyết định ở P-74. **G1 (khung app) đã làm** (§6, branch `docs/owner-ui-redesign`). **G2 (danh sách kế hoạch) đã làm** (§7, PR #129). **G3 đang thiết kế** (§8, branch `feat/owner-ui-g3`).
 >
 > Theo P-71 (hướng dẫn Apple đứng trước), quy tắc ở `docs/client/LIQUID_GLASS.md`, kiểm từng thành phần theo `docs/client/APPLE_CHECKLIST.md`. Nhãn: **[Apple]** trích nguyên văn HIG (bản tải 2026-11-17), **[Web]** điều web buộc phải có, chọn bằng đo, **[Chủ dự án]** chờ hoặc đã có quyết định. Phần "Đề xuất" là ý của agent, mỗi dòng ghi nguồn; chỗ nào Apple không nói thì ghi rõ.
 
@@ -242,3 +242,45 @@ Không làm trong G2: tiêu đề lớn thu nhỏ khi cuộn (D5 hẹp; cần th
 | Nút viền rỗng | ⚠️ F-73 | Trang này không còn nút viền; kiểu `secondary` của cả app đổi ở G3 |
 | C14 không chữ đè | ✅ (đã sửa) | Tên 150 ký tự: 2 dòng rồi "…" ở mọi khổ (G2.11); hàng lọc xuống dòng khi hẹp. Thấy thêm và đã sửa: tab bar ở 320px cắt nhãn "Thành vi…" (F-74, khung G1) — tab rộng theo nhãn, tối thiểu 44px |
 | C15 sáng/tối | ✅ | Chụp cả hai |
+
+## 8. Thiết kế G3: Xe, Thành viên, Cửa hàng, Nhật ký, Hồ sơ (2026-11-17, đang thiết kế)
+
+### 8.1 Hiện trạng (chụp 2026-11-17, 1440 và 390px, tài khoản owner)
+
+- **Xe** (`/vehicles`): tiêu đề + câu mô tả; ô đánh dấu "Hiện cả xe đã tắt"; bảng có viền; form "Thêm xe"/"Sửa xe" là thẻ bên phải (điện thoại: dưới bảng); bảng trống chỉ có câu chữ trong ô; nút "Sửa" chữ ở mỗi dòng.
+- **Thành viên** (`/members`): hai tab gạch chân "Thành viên (4) / Lời mời (6)"; mỗi dòng có `select` vai trò, ô đánh dấu "Đi giao", "Vô hiệu hoá" chữ; tab lời mời: form "Mời thành viên" là thẻ bên trái; điện thoại: bảng bị cắt (chỉ còn 2 cột thấy được).
+- **Cửa hàng** (`/store`): tab "Thông tin và kho / Nhật ký"; hai thẻ "Thông tin" và "Kho xuất phát" (bản đồ); "Lưu thay đổi" ở hàng tiêu đề.
+- **Nhật ký** (`/store/audit`): bộ lọc `select` + hai ô ngày của trình duyệt, cao bằng ô nhập; bảng; phân trang "Mới hơn / Cũ hơn" viền rỗng (F-73).
+- **Hồ sơ** (`/profile`): tiêu đề "Hồ sơ và bảo mật" (16 ký tự); thẻ thông tin, thẻ đổi mật khẩu; danh sách thiết bị dài hết cỡ (DB dev: hơn 70 phiên), mỗi dòng "Đăng xuất" chữ; nút "Đăng xuất" viền rỗng ở hàng tiêu đề.
+- **Chung:** 26 chỗ `Button variant="secondary"` viền rỗng (F-73); `Dialog` một kiểu cho mọi hộp thoại (16 chỗ: xác nhận vô hiệu hoá, huỷ kế hoạch, giao việc, sao chép, nhập file, bản đồ chọn ghim…); ô bảng "Đang tải…".
+
+### 8.2 Thành phần dùng chung (làm trước, các trang dùng lại)
+
+| # | Làm gì | Nguồn |
+|---|---|---|
+| S1 | **Sheet** cho việc có nhập liệu (thêm/sửa xe, mời thành viên, sửa thành viên trên điện thoại, đổi mật khẩu; sau này sao chép, nhập file ở G4): tiêu đề; **điện thoại**: trồi từ đáy, có grabber, vuốt xuống để đóng, "Huỷ" ở đầu thanh trên và nút xong (động từ: "Thêm", "Lưu", "Gửi") ở cuối; vuốt đóng khi đang có thay đổi chưa lưu thì hỏi bằng action sheet. **Máy tính**: thẻ giữa màn hình, nền phía sau tối đi, cỡ vừa nội dung | [Apple] Sheets ("Cancel button belongs on the leading edge of the top toolbar… Done button… trailing edge", "Include a grabber in a resizable sheet", "Support swiping to dismiss… If people have unsaved changes… use an action sheet", macOS "The parent window is dimmed", "Present a sheet in a reasonable default size", "Provide an alternative to the Done button") |
+| S2 | **Alert** chỉ cho xác nhận việc khó đảo ngược (vô hiệu hoá thành viên → bị đăng xuất ngay; huỷ kế hoạch): tiêu đề nói rõ chuyện gì, câu phụ chỉ khi cần, nút động từ 1–2 chữ, "Huỷ" ở đầu hàng (không là nút mặc định). **Không** tô đỏ nút khi người dùng đã chủ động chọn việc đó (vô hiệu hoá, huỷ kế hoạch đều do người dùng chọn) | [Apple] Alerts ("Use alerts sparingly", "Avoid displaying alerts for common, undoable actions", "Aim for a one- or two-word title", "Always use the title 'Cancel'", "Use the destructive style… people didn't deliberately choose… when people deliberately choose a destructive action… doesn't apply the destructive style") |
+| S3 | **Nút `secondary` → nền xám, không viền** cho cả app (F-73) | [Apple] Buttons (kiểu hệ thống: nổi bật màu nhấn, xám, không nền, kính; không có viền rỗng) |
+| S4 | **Menu ngữ cảnh của hàng** dùng chung (rút từ G2.13 thành component): chạm giữ / nhấp chuột phải | [Apple] Context menus ("Support context menus consistently throughout your app") |
+| S5 | **Kéo đổi độ rộng cột** của bảng (máy tính) | [Apple] Lists and tables macOS ("Let people resize columns") |
+| S6 | **Tiêu đề lớn thu nhỏ khi cuộn** trên điện thoại (D5 hẹp, để từ G2): cuộn qua tiêu đề lớn thì tên khu hiện nhỏ ở giữa thanh trên | [Apple] Toolbars iOS large title |
+| S7 | Ô bảng "Đang tải…" → `PlaceholderRows`; trang/khung → `ActivityIndicator` | [Apple] Loading, Progress indicators (G2.6, G2.12) |
+
+### 8.3 Theo trang
+
+| Trang | Làm gì | Nguồn |
+|---|---|---|
+| **Xe** | Tiêu đề "Xe" + nút thêm ở hàng tiêu đề (rộng "+ Thêm xe", hẹp "+" tròn); form bên cạnh → **sheet** "Thêm xe" / "Sửa {tên}" (bấm hàng để sửa); "Hiện cả xe đã tắt" → bộ lọc pop-up "Trạng thái: Đang dùng / Tất cả" như trang Kế hoạch (`?active=` giữ trên URL); bảng trong nhóm (rộng), danh sách hàng (hẹp: tên, biển số · sức chứa, trạng thái, chevron); menu ngữ cảnh "Sửa…", "Tắt xe"/"Dùng lại"; trống: kiểu ContentUnavailableView có nút "Thêm xe"; câu mô tả dưới tiêu đề giữ, chữ phụ | [Apple] Toolbars (hành động chính ở hàng tiêu đề); Sheets; Toggles iOS ("Outside of a list, use a button that behaves like a toggle, not a switch") — bộ lọc thay ô đánh dấu; Pop-up buttons; Lists and tables; Context menus |
+| **Thành viên** | Tiêu đề "Thành viên" + "+ Mời" (chỉ OWNER) → **sheet** "Mời thành viên" (Email, Vai trò); hai phần Thành viên / Lời mời: rộng tab view, hẹp segmented control (Q6); **rộng**: bảng, vai trò là pop-up button trong hàng, "Đi giao" ô đánh dấu (macOS dùng checkbox), "Vô hiệu hoá" trong menu ngữ cảnh + nút trong hàng → **alert** không tô đỏ; **hẹp**: danh sách hàng (tên, email, vai trò · trạng thái, chevron) → bấm hàng mở **sheet** thành viên: vai trò (pop-up), "Đi giao" (**switch** vì trong hàng danh sách), "Vô hiệu hoá"/"Kích hoạt lại"; lời mời: danh sách hàng, "Thu hồi" trong menu ngữ cảnh + nút, không alert (mời lại được) | [Apple] Sheets; Toggles ("Use the switch toggle style only in a list row", macOS checkbox); Pop-up buttons; Alerts; Context menus |
+| **Cửa hàng** | Hai thẻ → hai nhóm nền (D9), tiêu đề nhóm nhỏ; "Lưu thay đổi" giữ ở cuối hàng tiêu đề, kiểu nổi bật; múi giờ: pop-up button thay `select` | [Apple] Toolbars ("Use the .prominent style for key actions such as Done or Submit… trailing side"); Layout grouping; Pop-up buttons |
+| **Nhật ký** | Bộ lọc → `PopUpFilter` "Hành động" + hai `DatePickerFilter` "Từ ngày" / "Đến ngày" như trang Kế hoạch; bảng nhóm / danh sách hàng; phân trang → thanh trang của G2 (`?page=`) | G2 (D7, G2.9); [Apple] Pickers, Pop-up buttons |
+| **Tài khoản** (`/profile`) | Tiêu đề "Tài khoản" (Q7; mục menu tài khoản giữ "Hồ sơ và bảo mật"); hai thẻ → nhóm; đổi mật khẩu 2 bước → **sheet** (bước 2 có "Quay lại"); danh sách thiết bị: thiết bị này + 9 phiên mới nhất, cuộn tới cuối thì hiện thêm 10 (Q8; API trả cả danh sách, hiện dần phía client); "Đăng xuất" từng thiết bị: menu ngữ cảnh + nút trong hàng; "Đăng xuất" ở hàng tiêu đề bỏ (đã có trong menu tài khoản, G1) | [Apple] Toolbars ("< 15 characters"); Sheets ("The Back button lets people navigate to a previous step in a multi-step flow"); Lists and tables ("limit the number of rows… providing a way for people to view more") |
+
+### 8.4 Câu hỏi cho chủ dự án
+
+| # | Câu hỏi | Trả lời |
+|---|---|---|
+| Q6 | Thành viên / Lời mời: HIG macOS bảo dùng **tab view** trong vùng nội dung chính, HIG iOS bảo dùng **segmented control** | **Rộng: tab view** (như hiện tại), **hẹp: segmented control** (theo từng nền tảng) |
+| Q7 | "Hồ sơ và bảo mật" 16 ký tự > 15 (Toolbars) | Tiêu đề trang **"Tài khoản"** |
+| Q8 | Danh sách thiết bị dài (hơn 70 phiên trên DB dev) | **Hiện một phần, cuộn tới cuối thì hiện thêm** ("xem thêm" tự động); không lệch HIG: Lists and tables chỉ nói "providing a way for people to view more", không quy định cách |
+| Q9 | Giao G3 thành 1 PR hay 2 PR | **1 PR** |
