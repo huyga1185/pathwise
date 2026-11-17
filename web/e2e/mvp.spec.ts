@@ -42,21 +42,24 @@ test('chủ cửa hàng đi hết luồng MVP tới khi kế hoạch hoàn thàn
 
   await test.step('thêm xe', async () => {
     await page.getByRole('link', { name: 'Xe', exact: true }).click();
-    const form = page.getByRole('form', { name: 'Thêm xe' });
+    // "Thêm xe" on the title row (and in the empty list) opens a sheet (G3).
+    await page.getByRole('button', { name: 'Thêm xe' }).first().click();
+    const form = page.getByRole('dialog', { name: 'Thêm xe' });
     await form.getByLabel(/^Tên xe/).fill('Xe 1');
     await form.getByLabel(/^Sức chứa/).fill('30');
     await form.getByLabel(/^Đơn vị/).selectOption('BOX');
-    await form.getByRole('button', { name: 'Thêm xe' }).click();
+    await form.getByRole('button', { name: 'Thêm', exact: true }).click();
     await expect(page.getByText('Đã thêm xe.')).toBeVisible();
     await expect(page.getByRole('table', { name: 'Xe của cửa hàng' })).toContainText('30 thùng');
   });
 
   await test.step('mời tài xế; tài xế nhận lời mời bằng mã trong email', async () => {
     await page.getByRole('link', { name: 'Thành viên', exact: true }).click();
-    await page.getByRole('tab', { name: /^Lời mời/ }).click();
-    const form = page.getByRole('form', { name: 'Mời thành viên' });
+    // "Mời" on the title row opens a sheet (G3).
+    await page.getByRole('button', { name: 'Mời', exact: true }).click();
+    const form = page.getByRole('dialog', { name: 'Mời thành viên' });
     await form.getByLabel(/^Email/).fill(driverEmail);
-    await form.getByRole('button', { name: 'Gửi lời mời' }).click();
+    await form.getByRole('button', { name: 'Gửi', exact: true }).click();
     await expect(page.getByText(`Đã gửi lời mời tới ${driverEmail}.`)).toBeVisible();
 
     const code = await invitationCodeSentTo(driverEmail);

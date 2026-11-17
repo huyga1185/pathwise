@@ -1,7 +1,8 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { wideWindow } from '@/test/media';
 import { renderApp } from '@/test/renderApp';
 import { sample } from '@/test/samples';
 import { API, fail, ok, owner, server, signedInHandlers } from '@/test/server';
@@ -52,7 +53,10 @@ const memberRows = () =>
     .slice(1);
 const rowOf = (text: string) => memberRows().find((row) => row.textContent?.includes(text)) as HTMLElement;
 
-describe('Thành viên (chủ cửa hàng)', () => {
+afterEach(() => vi.restoreAllMocks());
+
+describe('Thành viên (chủ cửa hàng, màn rộng)', () => {
+  beforeEach(() => wideWindow());
   it('chủ cửa hàng chỉ đổi được "Đi giao" của chính mình; người khác có vai trò, đi giao, vô hiệu hoá', async () => {
     const state = storeState();
     const calls: Array<[string, unknown]> = [];
@@ -72,7 +76,6 @@ describe('Thành viên (chủ cửa hàng)', () => {
     const mine = rowOf('(bạn)');
     expect(mine).toHaveTextContent('Chưa đặt tên (bạn)');
     expect(mine).toHaveTextContent('Chủ cửa hàng');
-    expect(within(mine).queryByRole('combobox')).not.toBeInTheDocument();
     expect(within(mine).queryByRole('button')).not.toBeInTheDocument();
 
     await user.click(within(mine).getByRole('checkbox', { name: 'Đi giao: Chưa đặt tên (bạn)' }));
@@ -81,7 +84,8 @@ describe('Thành viên (chủ cửa hàng)', () => {
 
     const driver = rowOf('Tài xế A');
     expect(within(driver).getByRole('checkbox')).toBeDisabled();
-    expect(within(driver).getByRole('combobox', { name: 'Vai trò của Tài xế A' })).toHaveValue('DRIVER');
+    // The role is a pop-up button showing the current one.
+    expect(within(driver).getByRole('button', { name: 'Vai trò của Tài xế A: Tài xế' })).toBeInTheDocument();
     expect(within(driver).getByRole('button', { name: 'Vô hiệu hoá Tài xế A' })).toBeInTheDocument();
   });
 
@@ -96,7 +100,8 @@ describe('Thành viên (chủ cửa hàng)', () => {
     await waitFor(() => expect(within(rowOf('Điều phối')).getByRole('checkbox')).toBeChecked());
     expect(state.members.find((member) => member.id === 450)?.canDrive).toBe(true);
 
-    await user.selectOptions(within(rowOf('Tài xế B')).getByRole('combobox'), 'DISPATCHER');
+    await user.click(within(rowOf('Tài xế B')).getByRole('button', { name: /^Vai trò của Tài xế B/ }));
+    await user.click(screen.getByRole('menuitemradio', { name: 'Điều phối viên' }));
     await waitFor(() => expect(state.members.find((member) => member.id === 452)?.role).toBe('DISPATCHER'));
   });
 
@@ -109,15 +114,17 @@ describe('Thành viên (chủ cửa hàng)', () => {
 
     await user.click(within(rowOf('Tài xế A')).getByRole('button', { name: 'Vô hiệu hoá Tài xế A' }));
     const dialog = screen.getByRole('alertdialog', { name: 'Vô hiệu hoá Tài xế A?' });
-    expect(dialog).toHaveTextContent('bị đăng xuất ngay trên mọi thiết bị');
-    await user.click(within(dialog).getByRole('button', { name: 'Quay lại' }));
-    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+    expect(dialog).toHaveTextContent('bị đăng xuất ngay');
+    // An alert's way out is always titled Cancel (HIG Alerts).
+    await user.click(within(dialog).getByRole('button', { name: 'Huỷ' }));
+    // It fades out, then leaves the page.
+    await waitFor(() => expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument());
     expect(state.members.find((member) => member.id === 451)?.status).toBe('ACTIVE');
 
     await user.click(within(rowOf('Tài xế A')).getByRole('button', { name: 'Vô hiệu hoá Tài xế A' }));
     await user.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Vô hiệu hoá' }));
     await waitFor(() => expect(rowOf('Tài xế A')).toHaveTextContent('ĐÃ VÔ HIỆU HOÁ'));
-    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument());
 
     await user.click(within(rowOf('Tài xế A')).getByRole('button', { name: 'Kích hoạt lại Tài xế A' }));
     await waitFor(() => expect(rowOf('Tài xế A')).toHaveTextContent('ĐANG HOẠT ĐỘNG'));
@@ -140,8 +147,10 @@ describe('Thành viên (chủ cửa hàng)', () => {
   });
 });
 
-describe('Lời mời', () => {
-  it('gửi lời mời theo vai trò, danh sách tải lại; thu hồi lời mời đang chờ', async () => {
+describe('Lời mời (màn rộng)', () => {
+  beforeEach(() => wideWindow());
+
+  it('nút "Mời" mở sheet: gửi theo vai trò, sang tab lời mời, danh sách tải lại; thu hồi lời mời đang chờ', async () => {
     const state = storeState();
     let body: unknown;
     server.use(
@@ -163,22 +172,22 @@ describe('Lời mời', () => {
     expect(within(list).getAllByRole('row')[1]).toHaveTextContent('CHỜ NHẬN');
     expect(within(list).getAllByRole('row')[1]).toHaveTextContent('10/11/2026');
 
-    const form = screen.getByRole('form', { name: 'Mời thành viên' });
-    await user.type(within(form).getByLabelText(/^Email/), 'dieuphoi.moi@example.com');
-    await user.selectOptions(within(form).getByLabelText(/^Vai trò/), 'DISPATCHER');
-    await user.click(within(form).getByRole('button', { name: 'Gửi lời mời' }));
+    await user.click(screen.getByRole('button', { name: 'Mời' }));
+    const sheet = screen.getByRole('dialog', { name: 'Mời thành viên' });
+    await user.type(within(sheet).getByLabelText(/^Email/), 'dieuphoi.moi@example.com');
+    await user.selectOptions(within(sheet).getByLabelText(/^Vai trò/), 'DISPATCHER');
+    await user.click(within(sheet).getByRole('button', { name: 'Gửi' }));
 
     expect(await screen.findByText('Đã gửi lời mời tới dieuphoi.moi@example.com.')).toBeInTheDocument();
     expect(body).toEqual({ email: 'dieuphoi.moi@example.com', role: 'DISPATCHER' });
-    await waitFor(() => expect(within(list).getAllByRole('row')).toHaveLength(6));
+    await waitFor(() =>
+      expect(within(screen.getByRole('table', { name: 'Lời mời đã gửi' })).getAllByRole('row')).toHaveLength(6),
+    );
     expect(screen.getByRole('tab', { name: 'Lời mời (5)' })).toBeInTheDocument();
 
-    await user.click(within(list).getByRole('button', { name: 'Thu hồi lời mời của nguoimoi@example.com' }));
-    await waitFor(() =>
-      expect(
-        within(list).queryByRole('button', { name: 'Thu hồi lời mời của nguoimoi@example.com' }),
-      ).not.toBeInTheDocument(),
-    );
+    const table = screen.getByRole('table', { name: 'Lời mời đã gửi' });
+    await user.click(within(table).getByRole('button', { name: 'Thu hồi lời mời của nguoimoi@example.com' }));
+    expect(await screen.findByText('Đã thu hồi lời mời của nguoimoi@example.com.')).toBeInTheDocument();
     expect(state.invitations.find((item) => item.id === 14)?.status).toBe('REVOKED');
   });
 
@@ -189,13 +198,14 @@ describe('Lời mời', () => {
     );
     renderApp('/members?tab=invitations');
     const user = userEvent.setup();
-    const form = await screen.findByRole('form', { name: 'Mời thành viên' });
+    await user.click(await screen.findByRole('button', { name: 'Mời' }));
+    const sheet = screen.getByRole('dialog', { name: 'Mời thành viên' });
 
-    await user.type(within(form).getByLabelText(/^Email/), 'taixe.a@example.com');
-    await user.click(within(form).getByRole('button', { name: 'Gửi lời mời' }));
+    await user.type(within(sheet).getByLabelText(/^Email/), 'taixe.a@example.com');
+    await user.click(within(sheet).getByRole('button', { name: 'Gửi' }));
 
-    expect(await within(form).findByText('Email này đã được dùng.')).toBeInTheDocument();
-    expect(within(form).getByLabelText(/^Email/)).toHaveAttribute('aria-invalid', 'true');
+    expect(await within(sheet).findByText('Email này đã được dùng.')).toBeInTheDocument();
+    expect(within(sheet).getByLabelText(/^Email/)).toHaveAttribute('aria-invalid', 'true');
   });
 
   it('gửi quá nhiều thì khoá nút theo Retry-After', async () => {
@@ -205,17 +215,55 @@ describe('Lời mời', () => {
     );
     renderApp('/members?tab=invitations');
     const user = userEvent.setup();
-    const form = await screen.findByRole('form', { name: 'Mời thành viên' });
+    await user.click(await screen.findByRole('button', { name: 'Mời' }));
+    const sheet = screen.getByRole('dialog', { name: 'Mời thành viên' });
 
-    await user.type(within(form).getByLabelText(/^Email/), 'a@example.com');
-    await user.click(within(form).getByRole('button', { name: 'Gửi lời mời' }));
+    await user.type(within(sheet).getByLabelText(/^Email/), 'a@example.com');
+    await user.click(within(sheet).getByRole('button', { name: 'Gửi' }));
 
-    expect(await within(form).findByRole('alert')).toHaveTextContent('Thử lại sau 10 phút.');
-    expect(within(form).getByRole('button', { name: /Thử lại sau/ })).toBeDisabled();
+    expect(await within(sheet).findByRole('alert')).toHaveTextContent('Thử lại sau 10 phút.');
+    expect(within(sheet).getByRole('button', { name: /Thử lại sau/ })).toBeDisabled();
+  });
+});
+
+describe('Thành viên (điện thoại)', () => {
+  it('segmented control đổi phần; bấm hàng mở sheet: switch "Đi giao", đổi vai trò, vô hiệu hoá qua alert', async () => {
+    const state = storeState();
+    server.use(...memberHandlers(state));
+    const { router } = renderApp('/members');
+    const user = userEvent.setup();
+
+    const tabs = await screen.findByRole('tablist', { name: 'Thành viên và lời mời' });
+    expect(within(tabs).getByRole('tab', { name: /^Thành viên/ })).toHaveAttribute('aria-selected', 'true');
+
+    await user.click(await screen.findByRole('button', { name: 'Xem và đổi Điều phối' }));
+    const sheet = screen.getByRole('dialog', { name: 'Điều phối' });
+    const drive = within(sheet).getByRole('switch', { name: /^Đi giao/ });
+    expect(drive).toHaveAttribute('aria-checked', 'false');
+    await user.click(drive);
+    await waitFor(() =>
+      expect(within(screen.getByRole('dialog')).getByRole('switch')).toHaveAttribute('aria-checked', 'true'),
+    );
+    expect(state.members.find((member) => member.id === 450)?.canDrive).toBe(true);
+
+    await user.selectOptions(within(sheet).getByLabelText('Vai trò'), 'DRIVER');
+    await waitFor(() => expect(state.members.find((member) => member.id === 450)?.role).toBe('DRIVER'));
+
+    await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Vô hiệu hoá' }));
+    await user.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Vô hiệu hoá' }));
+    await waitFor(() => expect(state.members.find((member) => member.id === 450)?.status).toBe('DISABLED'));
+
+    await user.click(within(tabs).getByRole('tab', { name: /^Lời mời/ }));
+    expect(router.state.location.search).toBe('?tab=invitations');
+    const invitations = await screen.findByRole('list', { name: 'Lời mời đã gửi' });
+    expect(
+      within(invitations).getByRole('button', { name: 'Thu hồi lời mời của nguoimoi@example.com' }),
+    ).toBeInTheDocument();
   });
 });
 
 describe('Thành viên (điều phối viên)', () => {
+  beforeEach(() => wideWindow());
   const dispatcher = { ...owner, id: 450, email: 'dieuphoi@example.com', role: 'DISPATCHER' } as typeof owner;
 
   it('chỉ xem: không có ô chọn vai trò, ô đi giao bị khoá, không có thao tác và tab lời mời', async () => {
@@ -232,7 +280,7 @@ describe('Thành viên (điều phối viên)', () => {
     await waitFor(() => expect(memberRows()).toHaveLength(4));
     expect(screen.getByText(/Bạn đang xem với vai trò điều phối viên/)).toBeInTheDocument();
     expect(screen.queryByRole('tab', { name: /^Lời mời/ })).not.toBeInTheDocument();
-    expect(screen.queryByRole('combobox')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^Vai trò của/ })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Vô hiệu hoá|Kích hoạt lại/ })).not.toBeInTheDocument();
     screen.getAllByRole('checkbox').forEach((box) => expect(box).toBeDisabled());
     expect(rowOf('Điều phối (bạn)')).toBeInTheDocument();

@@ -177,6 +177,16 @@ Nhãn trạng thái viết hoa trên nền màu trạng thái; truyền thẳng 
 - Màu không bao giờ đứng một mình: pill luôn có chữ. Stop `FAILED` đi kèm lý do ngay dưới, chữ `small`.
 - Chữ pill dùng `on-accent` (trắng ở theme sáng, gần đen ở theme tối).
 
+### Sheet, Alert, SwitchRow, SegmentedControl (web, G3)
+
+- `Sheet`: việc có nhập liệu; "Huỷ" đầu thanh trên, nút xong (động từ) cuối; điện thoại trồi từ đáy, grabber, vuốt xuống để đóng (còn thay đổi chưa lưu thì hỏi bằng action sheet "Bỏ thay đổi" / "Tiếp tục sửa"); máy tính là thẻ giữa màn hình. Không `doneLabel` = sheet áp dụng ngay, chỉ có "Đóng".
+- `Alert`: chỉ xác nhận việc khó đảo ngược; "Huỷ" bên trái (được focus), hành động bên phải; `destructive` (đỏ) chỉ khi người dùng không chủ động chọn việc phá huỷ.
+- `SwitchRow`: switch trong một hàng danh sách (nhãn trái, switch phải), `role="switch"`.
+- `SegmentedControl`: chuyển giữa các phần liên quan trên điện thoại; ô bằng nhau, ô đang chọn nổi lên.
+- `useRowMenu` + `RowMenu`: menu ngữ cảnh của hàng cho mọi danh sách (chạm giữ, nhấp chuột phải); mục phá huỷ chữ đỏ.
+- `ToastDock`: chỗ hiện toast (góc dưới; điện thoại trên tab bar).
+- Nút `pw-btn` là viên thuốc; `secondary` nền xám, không viền (F-73).
+
 ### ActivityIndicator (web, G2)
 
 Chờ không biết bao lâu (khôi phục phiên, mở trang, tải dữ liệu một khung): 8 nan xoay màu `ink-muted`, không có chữ hiện ra (HIG Progress indicators: "Avoid vague terms like loading"), `role="status"` với nhãn "Đang tải…" cho trình đọc màn hình; hiện sau 0,3 s. `className="is-page"` khi thay cả trang. Danh sách dùng `PlaceholderRows`, không dùng vòng xoay.

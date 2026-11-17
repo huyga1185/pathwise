@@ -41,8 +41,9 @@ export interface SheetProps {
   open: boolean;
   title: ReactNode;
   children: ReactNode;
-  /** The finishing action, a verb: "Thêm", "Lưu", "Gửi". It submits the sheet's form. */
-  doneLabel: ReactNode;
+  /** The finishing action, a verb: "Thêm", "Lưu", "Gửi". It submits the sheet's form. None: a sheet whose changes
+   * apply at once, closed with cancelLabel (give it "Đóng"; HIG Sheets: "The Cancel (or Close) button"). */
+  doneLabel?: ReactNode;
   cancelLabel?: ReactNode;
   busy?: boolean;
   doneDisabled?: boolean;
@@ -50,7 +51,7 @@ export interface SheetProps {
   dirty?: boolean;
   discardLabel?: ReactNode;
   keepEditingLabel?: ReactNode;
-  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+  onSubmit?: (event: FormEvent<HTMLFormElement>) => void;
   onClose: () => void;
 }
 
@@ -149,12 +150,21 @@ export function Sheet({
             <h2 id={titleId} className="pw-sheet-title">
               {title}
             </h2>
-            <Button variant="primary" type="submit" form={formId} busy={busy} disabled={doneDisabled}>
-              {doneLabel}
-            </Button>
+            {doneLabel ? (
+              <Button variant="primary" type="submit" form={formId} busy={busy} disabled={doneDisabled}>
+                {doneLabel}
+              </Button>
+            ) : (
+              <span />
+            )}
           </div>
         </div>
-        <form id={formId} className="pw-sheet-body" noValidate onSubmit={onSubmit}>
+        <form
+          id={formId}
+          className="pw-sheet-body"
+          noValidate
+          onSubmit={(event) => (onSubmit ? onSubmit(event) : event.preventDefault())}
+        >
           {children}
         </form>
         {asking ? (

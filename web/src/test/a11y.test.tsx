@@ -180,8 +180,8 @@ describe('accessibility', () => {
     );
     const { container } = renderApp(path);
     await screen.findByRole('heading', { name: heading, level: 1 });
-    // Tests run at phone width: the vehicles are a list of rows there (G3); members still a table.
-    await screen.findAllByRole(path === '/vehicles' ? 'listitem' : 'row');
+    // Tests run at phone width: vehicles, members and invitations are lists of rows there (G3).
+    await screen.findAllByRole('listitem');
     expect(await violations(container)).toEqual([]);
   });
 
