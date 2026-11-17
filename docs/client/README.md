@@ -7,7 +7,7 @@
 1. Task của bạn trong `docs/client/PLAN.md`: phạm vi, ngoài phạm vi, acceptance, phụ thuộc.
 2. `docs/client/ARCHITECTURE.md`: lớp, quy tắc phụ thuộc, port, auth, polling, lỗi, bản đồ.
 3. Màn hình của task trong `docs/client/SCREENS.md`, rồi mở artboard tương ứng trong prototype (`https://claude.ai/artifact/JPW7uzXLFrpqfgFmQVjs5N`, xem bằng Artifact tool `read` nếu cần mã nguồn của artboard).
-4. `docs/client/DESIGN_SYSTEM.md` và `brand/design-system/` (token, props component).
+4. `docs/client/DESIGN_SYSTEM.md` và `brand/design-system/` (token, props component). Làm giao diện: hướng dẫn Apple đứng trước (P-71), quy tắc ở `docs/client/LIQUID_GLASS.md`, danh sách kiểm từng thành phần ở `docs/client/APPLE_CHECKLIST.md`.
 5. Endpoint dùng tới trong `docs/API_SPEC.md`, thông điệp và trạng thái trong `docs/ux/UX_BRIEF.md`, dữ liệu mẫu trong `docs/ux/samples/`.
 6. `docs/DECISIONS.md`: P-40 → P-47 (client) cùng các quyết định backend mà màn hình dựa vào (P-34 không hoàn tác, P-35/P-39 trạng thái route, P-36 idempotent…); khu quản trị W11: P-59 → P-66 (P-66: Recharts); nhập file, sao chép, báo cáo W12: P-67, P-68.
 7. `docs/CURRENT_STATE.md` §5: task client nào đã xong.
@@ -29,6 +29,7 @@
 1. Web: `pnpm lint && pnpm typecheck && pnpm test && pnpm build` xanh. Mobile: `flutter analyze && flutter test` xanh. CI xanh trên PR.
 2. Acceptance của task được kiểm bằng test hoặc ghi cách kiểm tay (kèm ảnh chụp màn hình nếu là giao diện, đặt trong mô tả PR, không commit ảnh).
 3. Giao diện khớp prototype và DESIGN_SYSTEM; chỗ cố ý khác prototype ghi lý do trong báo cáo.
+   Thay đổi giao diện: kiểm theo `docs/client/APPLE_CHECKLIST.md` (§1 và mục của từng thành phần bị đụng), báo cáo ✅/❌/— từng mục.
 4. Làm đủ checklist docs §4 trong cùng PR.
 
 ## 4. Checklist docs (bắt buộc, trước khi commit)

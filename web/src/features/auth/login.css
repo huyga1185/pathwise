@@ -327,34 +327,6 @@ a.pw-auth-logo:focus-visible {
   margin: 0;
   color: var(--ink-muted);
 }
-.pw-auth-steps {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  display: flex;
-  gap: 8px;
-}
-.pw-auth-steps li {
-  flex: 1 1 0;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  font-size: 12px;
-  line-height: 16px;
-  color: var(--ink-muted);
-}
-.pw-auth-steps li span {
-  height: 4px;
-  border-radius: var(--radius-full);
-  background: var(--line);
-}
-.pw-auth-steps li.is-on {
-  color: var(--ink);
-  font-weight: 600;
-}
-.pw-auth-steps li.is-on span {
-  background: var(--route);
-}
 .pw-auth-facts {
   margin: 0;
   padding: 16px;
@@ -683,8 +655,25 @@ a.pw-auth-logo:focus-visible {
 }
 .pw-auth-stage .pw-auth-card .pw-banner,
 .pw-auth-stage .pw-auth-card .pw-auth-facts,
+.pw-auth-stage .pw-auth-card .pw-auth-notice,
 .pw-auth-stage .pw-auth-card .pw-auth-done {
   border-radius: 22px;
+}
+/* A notice in the card ("mã đã được gửi"): nested group on the fields' light fill, like the invitation's facts. */
+.pw-auth-stage .pw-auth-card .pw-auth-notice {
+  padding: 12px 16px;
+  background: var(--auth-field-fill);
+  border-color: transparent;
+}
+/* Secondary actions side by side (HIG Buttons: capsules in a horizontal row), each half the card; they stack when
+   the card is too narrow for their labels. */
+.pw-auth-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.pw-auth-actions > .pw-btn {
+  flex: 1 1 160px;
 }
 /* The invitation's facts: a group nested in the card (concentric radius 22, like the error banner), on the same light
    fill as the fields instead of a second surface. */
@@ -747,14 +736,39 @@ a.pw-auth-logo:focus-visible {
 }
 
 /* The field hint (e.g. "Từ 8 đến 72 ký tự.") sits on the label row, at the right, instead of a row of its own under
-   the field: the rule is still read before typing; an error still shows under the field. */
+   the field: the rule is still read before typing; an error still shows under the field. A wrapping row, not an
+   overlay: when label and hint do not fit side by side (narrow phone, long hint) the hint takes the next line, still
+   above the field, instead of running over the label. */
 .pw-auth-stage .pw-auth-card .pw-field:has(> .pw-field-msg:not(.pw-field-msg-error)) {
-  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: 12px;
+}
+.pw-auth-stage .pw-auth-card .pw-field:has(> .pw-field-msg:not(.pw-field-msg-error)) > * {
+  flex: 1 1 100%;
+  order: 2;
+}
+.pw-auth-stage .pw-auth-card .pw-field:has(> .pw-field-msg:not(.pw-field-msg-error)) > .pw-field-label {
+  flex: 0 1 auto;
+  order: 0;
 }
 .pw-auth-stage .pw-auth-card .pw-field > .pw-field-msg:not(.pw-field-msg-error) {
-  position: absolute;
-  top: 2px;
-  right: 0;
+  flex: 1 1 auto;
+  order: 1;
+  margin-bottom: 4px;
+  text-align: right;
+}
+.pw-auth-stage .pw-auth-card .pw-field > .pw-field-msg-error {
+  order: 3;
+}
+/* Phones (up to 400px): every hint on its own line under the label, left-aligned, so the fields of one form look
+   alike instead of some hints beside the label and some pushed under it. */
+@container auth (max-width: 400px) {
+  .pw-auth-stage .pw-auth-card .pw-field > .pw-field-msg:not(.pw-field-msg-error) {
+    flex-basis: 100%;
+    text-align: left;
+  }
 }
 
 /* Same card width on both pages at every size (the register card was 440): no sideways slide when switching. */
@@ -870,4 +884,87 @@ a.pw-auth-logo:focus-visible {
 /* A card title receives focus from script after the card changes (AcceptInvitePage): not a control, no ring. */
 .pw-auth-card-head h1:focus {
   outline: none;
+}
+
+/* Progress of a multistep card ("Quên mật khẩu"): a thin capsule track filled from the leading side in route, and a
+   short "Bước n/3" after it (HIG Progress indicators). Sits right under the title, in the same place at every step. */
+.pw-auth-progress {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: -8px;
+}
+.pw-auth-progress-track {
+  position: relative;
+  flex: 1 1 auto;
+  height: 4px;
+  overflow: hidden;
+  border-radius: var(--radius-full);
+  background: var(--line);
+}
+.pw-auth-progress-track > span {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: inherit;
+  overflow: hidden;
+  background: var(--route);
+  transition: width 0.3s ease;
+}
+/* A light glint crosses the done part once, after it has grown (0.3s): brief feedback tied to the step just done
+   (HIG Motion: "Aim for brevity and precision in feedback animations"), not a loop that would read as "still working"
+   (HIG Progress indicators) or need a pause (WCAG 2.2.2). */
+.pw-auth-progress-shine {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 60%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.7), transparent);
+  transform: translateX(-100%);
+  animation: pw-progress-shine 0.7s ease-in-out 0.3s both;
+}
+@keyframes pw-progress-shine {
+  to {
+    transform: translateX(270%);
+  }
+}
+.pw-auth-progress-text {
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--ink-muted);
+  font-variant-numeric: tabular-nums;
+}
+@media (prefers-reduced-motion: reduce) {
+  .pw-auth-progress-track > span {
+    transition: none;
+  }
+  .pw-auth-progress-shine {
+    display: none;
+  }
+}
+@media (forced-colors: active) {
+  .pw-auth-progress-track {
+    border: 1px solid CanvasText;
+  }
+  .pw-auth-progress-track > span {
+    background: Highlight;
+  }
+}
+
+/* Code boxes on the account cards: same fill and lit rim as the capsule fields. Corners concentric with the card
+   (WWDC25 356: nested shapes "calculate their radius by subtracting padding from the parent's"): 46 − 24 = 22, like the
+   fields and the nested groups. Off the cards the boxes keep radius-md as the fallback radius ("a concentric shape
+   with a fallback radius"). */
+.pw-auth-stage .pw-auth-card .pw-code-cell {
+  border-radius: 22px;
+  background: var(--auth-field-fill);
+}
+.pw-auth-stage .pw-auth-card .pw-code-cell.is-active {
+  background: color-mix(in srgb, var(--surface-raised) 40%, transparent);
+  box-shadow:
+    inset 0 0 0 1px var(--route),
+    0 0 14px color-mix(in srgb, var(--route) 40%, transparent);
+}
+.pw-auth-stage .pw-auth-card .pw-field-error .pw-code-cell.is-active {
+  box-shadow:
+    inset 0 0 0 1px var(--danger),
+    0 0 14px color-mix(in srgb, var(--danger) 35%, transparent);
 }

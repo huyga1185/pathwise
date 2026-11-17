@@ -83,14 +83,10 @@ export const vi = {
   },
   forgot: {
     titles: ['Quên mật khẩu', 'Nhập mã xác thực', 'Đặt mật khẩu mới', 'Xong'] as const,
-    leads: [
-      'Nhập email đã đăng ký. Mã đặt lại sẽ được gửi tới đó.',
-      'Mã 6 số đã gửi tới email của bạn.',
-      'Chọn một mật khẩu mới cho tài khoản.',
-      'Mật khẩu đã được thay đổi.',
-    ] as const,
     steps: ['1. Email', '2. Mã xác thực', '3. Mật khẩu mới'] as const,
-    stepsLabel: 'Các bước',
+    progress: (step: number, total: number) => `Bước ${step}/${total}`,
+    progressLabel: 'Tiến độ đặt lại mật khẩu',
+    brandHeadline: ['Lấy lại ', 'quyền truy cập', ' trong vài phút.'] as const,
     brandLead: 'Đặt lại mật khẩu bằng mã gửi qua email. Xong thì mọi thiết bị đang đăng nhập sẽ bị đăng xuất.',
     sendCode: 'Gửi mã',
     sent: 'Nếu email này có tài khoản, mã 6 số đã được gửi tới hộp thư. Mã có hiệu lực 5 phút.',

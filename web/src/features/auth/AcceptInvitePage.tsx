@@ -20,6 +20,7 @@ import {
 } from '@/shared/ui';
 import { useAccountApi } from './accountApi';
 import { AuthCardHead, AuthLayout, MainArt, MapArt } from './AuthLayout';
+import { changeCard } from './changeCard';
 import { passwordRules, requiredRule } from './rules';
 
 type Preview = Schemas['InvitationPreviewResponse'];
@@ -85,9 +86,12 @@ export function AcceptInvitePage() {
     }
     setChecking(true);
     try {
-      setPreview(await accountApi.previewInvitation(value));
-      setCodeError(null);
-      setStep('form');
+      const found = await accountApi.previewInvitation(value);
+      changeCard(() => {
+        setPreview(found);
+        setCodeError(null);
+        setStep('form');
+      });
     } catch (error) {
       if (errorCode(error) === 'INVITATION_INVALID') setCodeError(vi.invite.invalid);
       else setFailure(error);
@@ -117,12 +121,14 @@ export function AcceptInvitePage() {
         password: form.password,
         phoneNumber: form.phoneNumber.trim() || undefined,
       });
-      setStep('done');
+      changeCard(() => setStep('done'));
     } catch (error) {
       const codeOfError = errorCode(error);
       if (codeOfError === 'INVITATION_INVALID') {
-        setCodeError(vi.invite.invalid);
-        setStep('code');
+        changeCard(() => {
+          setCodeError(vi.invite.invalid);
+          setStep('code');
+        });
       } else if (codeOfError === 'INVALID_PHONE_NUMBER') {
         setError('phoneNumber', { type: 'server', message: errorMessages.INVALID_PHONE_NUMBER }, { shouldFocus: true });
       } else if (!applyServerErrors(error, setError, FIELDS, LABELS)) {

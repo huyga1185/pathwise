@@ -13,5 +13,6 @@ export { ErrorBanner, FieldError, EmptyState } from './Feedback';
 export { OtpInput, type OtpInputProps } from './OtpInput';
 export { Stat } from './Stat';
 export { AppHeader, type AppHeaderProps, type NavItem } from './AppHeader';
+export { CodeField } from './CodeField';
 export { Wordmark } from './Wordmark';
 export * from './icons';
