@@ -187,6 +187,13 @@
 .pw-auth-links a {
   font-weight: 600;
 }
+/* On a touch screen the two link lines sit 44px apart, so their 44px hit areas do not overlap (HIG Accessibility:
+   spacing between controls is as important as their size). */
+@media (pointer: coarse) {
+  .pw-auth-links {
+    gap: 26px;
+  }
+}
 
 /* "Đăng ký cửa hàng": text block then the three steps, 24px apart. */
 .pw-auth-pitch-steps {
@@ -225,8 +232,10 @@ a.pw-auth-logo {
     transform 0.15s ease;
 }
 /* The base link hover colour (base.css) would turn "Path" dark: the logo stays white. */
-a.pw-auth-logo:hover {
-  color: #ffffff;
+@media (hover: hover) {
+  a.pw-auth-logo:hover {
+    color: #ffffff;
+  }
 }
 @media (hover: hover) {
   a.pw-auth-logo:hover {
@@ -258,8 +267,10 @@ a.pw-auth-logo:focus-visible {
   color: var(--route);
   font-weight: 600;
 }
-.pw-auth-card a:not(.pw-btn):hover {
-  color: var(--ink);
+@media (hover: hover) {
+  .pw-auth-card a:not(.pw-btn):hover {
+    color: var(--ink);
+  }
 }
 .pw-auth-steps-inline {
   margin: 0;
@@ -604,14 +615,6 @@ a.pw-auth-logo:focus-visible {
     display: none;
   }
 }
-/* The background is the same on both pages and keeps running: show the new page's root at once instead of a
-   cross-fade between a frozen picture and a moving one. */
-::view-transition-old(root) {
-  display: none;
-}
-::view-transition-new(root) {
-  animation: none;
-}
 
 /* The card's controls and spacing at every width (login, register): same capsules, concentric corners, grouping,
    focus, hover and eye button on a phone, a tablet and two columns. */
@@ -698,9 +701,11 @@ a.pw-auth-logo:focus-visible {
    Exception to DESIGN_SYSTEM's 2px ring, only for the fields of the cards on AuthStage. */
 /* Hover on a field: half of the focus light — a slightly brighter fill and a darker rim. No Apple rule for hover:
    project choice, same idea as focus. */
-.pw-auth-stage .pw-auth-card .pw-field-input:hover {
-  border-color: var(--ink);
-  background: color-mix(in srgb, var(--surface-raised) 22%, transparent);
+@media (hover: hover) {
+  .pw-auth-stage .pw-auth-card .pw-field-input:hover {
+    border-color: var(--ink);
+    background: color-mix(in srgb, var(--surface-raised) 22%, transparent);
+  }
 }
 /* The eye button (40px) sits 2px inside the 44px capsule: concentric radius 22 − 2 = 20, a circle; its hover is a clear
    fill, not an opaque patch. */
@@ -708,9 +713,11 @@ a.pw-auth-logo:focus-visible {
   border-radius: 50%;
   color: var(--ink-muted);
 }
-.pw-auth-stage .pw-auth-card .pw-field-end .pw-icon-button:hover {
-  background: color-mix(in srgb, var(--ink) 10%, transparent);
-  color: var(--ink);
+@media (hover: hover) {
+  .pw-auth-stage .pw-auth-card .pw-field-end .pw-icon-button:hover {
+    background: color-mix(in srgb, var(--ink) 10%, transparent);
+    color: var(--ink);
+  }
 }
 .pw-auth-stage .pw-auth-card .pw-field-input:focus-visible {
   outline: none;
@@ -815,36 +822,32 @@ a.pw-auth-logo:focus-visible {
   .pw-auth-motion:hover {
     --motion-tint: rgba(2, 40, 30, 0.6);
   }
-  .pw-auth-motion-panel:hover {
-    --motion-tint: rgba(255, 255, 255, 0.22);
-  }
 }
 /* Pressed: darker and a little smaller (HIG Buttons: "Always include a press state for a custom button"). */
 .pw-auth-motion:active {
   --motion-tint: rgba(2, 40, 30, 0.72);
   transform: scale(0.94);
 }
-.pw-auth-motion-panel:active {
-  --motion-tint: rgba(255, 255, 255, 0.3);
-}
 .pw-auth-motion:focus-visible {
   outline: 2px solid #ffffff;
   outline-offset: 2px;
 }
-/* In the panel (phone, tablet) the destination pin sits top-right: the button takes the free bottom-right corner. It
-   sits on the dark veil there, so the glass turns lighter instead of darker (Liquid Glass adapts to what is behind,
-   WWDC25 219), which keeps its shape visible. */
+/* In the panel (phone, tablet) the destination pin sits top-right: the button takes the free bottom-right corner. Same
+   glass as on two columns (owner: the phone button should look like the PC one). It sits on the dark veil there,
+   where the usual soft shadow does not show: a deeper black shadow and the light rim keep it lifted off the picture. */
 .pw-auth-motion-panel {
-  --motion-tint: rgba(255, 255, 255, 0.14);
-  -webkit-backdrop-filter: blur(14px) brightness(1.15) saturate(1.3);
-  backdrop-filter: blur(14px) brightness(1.15) saturate(1.3);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.35),
+    0 6px 18px rgba(0, 0, 0, 0.55),
+    0 0 0 1px rgba(0, 0, 0, 0.25);
   top: auto;
   bottom: clamp(24px, 4vw, 48px);
 }
-/* The intro's last row (features, steps) keeps clear of the button: 44 + 12px. */
+/* The intro's last row (features, steps, or the lead when it ends the intro) keeps clear of the button: 44 + 12px. */
 @container auth (max-width: 959.98px) {
   .pw-auth-stage .pw-auth-features,
-  .pw-auth-stage .pw-auth-steps-inline {
+  .pw-auth-stage .pw-auth-steps-inline,
+  .pw-auth-stage .pw-auth-pitch > .pw-auth-lead:last-child {
     padding-right: 56px;
   }
 }

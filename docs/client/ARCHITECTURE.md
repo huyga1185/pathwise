@@ -169,7 +169,7 @@ Theo API_SPEC §2 và UX_BRIEF §3.
 
 ## 9. Điều hướng
 
-- Web: React Router, mỗi màn một route (danh sách ở `SCREENS.md`); base path `/app/` (P-47); route cần đăng nhập bọc `RequireAuth` + `RequireRole`. Trạng thái có thể chia sẻ (bộ lọc, trang, plan đang xem) nằm trên URL.
+- Web: React Router, mỗi màn một route (danh sách ở `SCREENS.md`); base path `/app/` (P-47); route cần đăng nhập bọc `RequireAuth` rồi guard theo vai trò (P-75): `RequireDispatcher` (OWNER, DISPATCHER), `RequireAdmin` (ADMIN), `RequireRole` (trang chỉ OWNER: `/store/audit`), `RequireDriver` (`/driver`); sai vai trò thì **trang 403 ngay tại địa chỉ đã mở** (không chuyển hướng), trong khung app nếu người dùng có khung, câu mô tả chung không nói trang dành cho ai; `/` vẫn đưa về trang chủ của vai trò. Guard chỉ để hiển thị, quyền thật do API kiểm. Trạng thái có thể chia sẻ (bộ lọc, trang, plan đang xem) nằm trên URL.
 - Mobile: go_router; redirect theo trạng thái phiên; deep link `pathwise://routes/{routeId}` (để dành cho thông báo sau MVP) mở thẳng chi tiết tuyến (đã có `planName`, T45).
 
 ## 10. Kiểm thử

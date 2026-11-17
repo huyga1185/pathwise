@@ -21,8 +21,10 @@ body {
 a {
   color: var(--route);
 }
-a:hover {
-  color: var(--ink);
+@media (hover: hover) {
+  a:hover {
+    color: var(--ink);
+  }
 }
 a:focus-visible,
 button:focus-visible {
@@ -36,4 +38,35 @@ button:focus-visible {
   overflow: hidden;
   clip: rect(0 0 0 0);
   white-space: nowrap;
+}
+
+/* Touch and pointer, for every control (docs/client/APPLE_CHECKLIST.md C1, C3, C5). */
+/* No square tap highlight of the browser: each control shows its own pressed state. */
+a,
+button,
+input,
+select,
+textarea,
+label,
+summary,
+[role='button'],
+[role='tab'],
+[role='menuitem'] {
+  -webkit-tap-highlight-color: transparent;
+}
+/* A text link dims while pressed, like a link on iOS (HIG Buttons: "Always include a press state"). */
+a:not([class]):active {
+  opacity: 0.6;
+}
+/* A text link's hit area reaches 28px with a pointer and 44px on a touch screen (HIG Accessibility: macOS 28×28,
+   iOS 44×44), also for a short word ("Đổi"), without moving the text: vertical padding on an inline box does not change
+   the line's height, and the side padding is taken back by a negative margin. */
+a:not([class]) {
+  padding: 5px 10px;
+  margin-inline: -10px;
+}
+@media (pointer: coarse) {
+  a:not([class]) {
+    padding-block: 13px;
+  }
 }

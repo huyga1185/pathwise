@@ -1,8 +1,9 @@
 import { useQueryClient } from '@tanstack/react-query';
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useApiContext } from '@/data/ApiContext';
 import { unwrap, unwrapEmpty } from '@/data/http';
 import type { AuthUser, UserRole } from '@/data/types';
+import { accountScreenShown, appShown, changeScene } from './sceneTransition';
 
 export interface SessionUser {
   id: number;
@@ -80,28 +81,41 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     return () => sessionEvents.removeEventListener('expired', onExpired);
   }, [sessionEvents, tokenStore, queryClient]);
 
+  // A log-out still on its way (it runs in the background, below): signing in again waits for it, or its answer, which
+  // clears the refresh cookie, could clear the new session's cookie.
+  const pendingLogOut = useRef<Promise<void> | null>(null);
+
   const logIn = useCallback(
     async (email: string, password: string) => {
+      await pendingLogOut.current;
       const tokens = await unwrap(api.client.POST('/api/v1/auth/log-in', { body: { email, password } }));
       // `user` is left out only by /refresh (TokenResponse); log-in always has it.
       if (!tokens.user) throw new Error('Log-in response without user');
       tokenStore.set(tokens.accessToken);
       const user = toUser(tokens.user);
-      setSession({ status: 'authenticated', user });
+      // The login screen gives way to the app through a transition, not a cut; the login button keeps turning until the
+      // screen has faded out.
+      await changeScene(() => setSession({ status: 'authenticated', user }), appShown);
       return user;
     },
     [api, tokenStore],
   );
 
   const logOut = useCallback(async () => {
-    try {
-      await unwrapEmpty(api.client.POST('/api/v1/auth/log-out'));
-    } catch {
+    // The session ends on this device at once and the screen changes right away; the server is told in the background
+    // (POST /log-out is public and works from the cookie, so it needs no access token). Waiting for it first left the
+    // app on screen for seconds after "Đăng xuất".
+    const request = unwrapEmpty(api.client.POST('/api/v1/auth/log-out')).catch(() => {
       // The session ends on this device either way.
-    }
+    });
+    pendingLogOut.current = request;
     tokenStore.set(null);
-    queryClient.clear();
-    setSession({ status: 'anonymous', expired: false });
+    void changeScene(() => {
+      queryClient.clear();
+      setSession({ status: 'anonymous', expired: false });
+    }, accountScreenShown);
+    await request;
+    if (pendingLogOut.current === request) pendingLogOut.current = null;
   }, [api, tokenStore, queryClient]);
 
   const updateUser = useCallback((changes: Partial<Pick<SessionUser, 'fullName'>>) => {

@@ -59,8 +59,10 @@
   font-size: 14px;
   line-height: 20px;
 }
-.pw-map-ctl:hover {
-  background: #dcebe6;
+@media (hover: hover) {
+  .pw-map-ctl:hover {
+    background: #dcebe6;
+  }
 }
 .pw-map-ctl:disabled {
   opacity: 0.4;
@@ -193,4 +195,11 @@
   border: 2px solid #ffffff;
   border-radius: var(--radius-full);
   box-shadow: 0 0 0 1px var(--line);
+}
+/* Touch screens: map controls of at least 44×44 (HIG Accessibility; HIG Maps: controls with enough contrast and room). */
+@media (pointer: coarse) {
+  .pw-map-ctl {
+    min-width: 44px;
+    height: 44px;
+  }
 }

@@ -179,3 +179,48 @@ export const ClearIcon = () => (
     <path d="M9.2 9.2l5.6 5.6M14.8 9.2l-5.6 5.6" stroke="var(--surface-raised, #fff)" strokeWidth={1.8} />
   </Icon>
 );
+/** Navigation icons of the app shell (sidebar, tab bar). */
+export const ChartIcon = () => (
+  <Icon>
+    <path d="M4 20h16" />
+    <path d="M7 16v-5M12 16V7M17 16v-8" />
+  </Icon>
+);
+export const TruckIcon = () => (
+  <Icon>
+    <path d="M3 6h11v10H3z" />
+    <path d="M14 10h4l3 3v3h-7" />
+    <circle cx="7" cy="17.5" r="1.8" />
+    <circle cx="17" cy="17.5" r="1.8" />
+  </Icon>
+);
+export const UsersIcon = () => (
+  <Icon>
+    <circle cx="9" cy="8" r="3.5" />
+    <path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6" />
+    <path d="M16 4.6a3.5 3.5 0 0 1 0 6.8M18 14.3c2 .8 3.5 2.8 3.5 5.7" />
+  </Icon>
+);
+export const ListIcon = () => (
+  <Icon>
+    <path d="M9 6h11M9 12h11M9 18h11" />
+    <circle cx="4.5" cy="6" r="1" />
+    <circle cx="4.5" cy="12" r="1" />
+    <circle cx="4.5" cy="18" r="1" />
+  </Icon>
+);
+export const OverviewIcon = () => (
+  <Icon>
+    <rect x="3.5" y="3.5" width="7" height="7" rx="1.5" />
+    <rect x="13.5" y="3.5" width="7" height="7" rx="1.5" />
+    <rect x="3.5" y="13.5" width="7" height="7" rx="1.5" />
+    <rect x="13.5" y="13.5" width="7" height="7" rx="1.5" />
+  </Icon>
+);
+/** Shows or hides the sidebar (like the "sidebar.left" symbol). */
+export const SidebarIcon = () => (
+  <Icon>
+    <rect x="3" y="4.5" width="18" height="15" rx="3" />
+    <path d="M9.5 4.5v15" />
+  </Icon>
+);

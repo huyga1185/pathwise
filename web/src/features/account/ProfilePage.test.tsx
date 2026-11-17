@@ -99,7 +99,8 @@ describe('Hồ sơ và bảo mật', () => {
 
     expect(await screen.findByText('Đã lưu thông tin.')).toBeInTheDocument();
     expect(body).toEqual({ fullName: 'Lan Nguyễn', phoneNumber: null });
-    expect(screen.getByRole('link', { name: 'Lan Nguyễn' })).toHaveAttribute('href', '/profile');
+    // The new name reaches the account button of the app shell.
+    expect(screen.getByRole('button', { name: 'Tài khoản: Lan Nguyễn' })).toBeInTheDocument();
   });
 
   it('số điện thoại sai thì báo dưới ô', async () => {
