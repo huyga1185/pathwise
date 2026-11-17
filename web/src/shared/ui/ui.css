@@ -2748,3 +2748,48 @@ select.pw-field-input {
 .pw-menu-item.is-destructive {
   color: var(--danger);
 }
+
+/* Column resizing (HIG Lists and tables, macOS: "Let people resize columns"): a thin handle on each heading's trailing
+   edge; a line shows on hover, focus and while dragging. Double click: back to automatic widths. Headings are sticky,
+   so the handle is placed against its heading. */
+.pw-table.is-resized {
+  table-layout: fixed;
+}
+.pw-table.is-resized td,
+.pw-table.is-resized th {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pw-th-resize {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2;
+  width: 10px;
+  cursor: col-resize;
+  touch-action: none;
+}
+.pw-th-resize::after {
+  content: '';
+  position: absolute;
+  top: 8px;
+  bottom: 8px;
+  right: 0;
+  width: 2px;
+  border-radius: 1px;
+  background: transparent;
+  transition: background-color 0.15s ease;
+}
+@media (hover: hover) {
+  .pw-th-resize:hover::after {
+    background: var(--line);
+  }
+}
+.pw-th-resize:active::after,
+.pw-th-resize:focus-visible::after {
+  background: var(--route);
+}
+.pw-th-resize:focus-visible {
+  outline: none;
+}

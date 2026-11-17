@@ -364,6 +364,7 @@ export function PlanListPage() {
                 sort={sort}
                 onSort={onSort}
                 onRowContextMenu={readOnly ? undefined : rowMenu.openAt}
+                resizable
               />
             ) : (
               <ul className="pw-list-group pw-list-rows" aria-label={vi.plans.caption}>
