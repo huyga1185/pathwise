@@ -7,6 +7,7 @@ import {
   type PointerEvent,
   type ReactNode,
 } from 'react';
+import { createPortal } from 'react-dom';
 import { cx } from './cx';
 
 export interface RowMenuItem {
@@ -140,7 +141,7 @@ export function RowMenu({
   };
   const below = rect.bottom + 8 + 48 * items.length < window.innerHeight - 96;
   const left = Math.min(rect.left + 8, document.documentElement.clientWidth - 216);
-  return (
+  return createPortal(
     <div
       ref={menu}
       className={cx('pw-popover pw-menu pw-row-menu', !below && 'is-above')}
@@ -170,6 +171,7 @@ export function RowMenu({
           {item.label}
         </button>
       ))}
-    </div>
+    </div>,
+    document.body,
   );
 }

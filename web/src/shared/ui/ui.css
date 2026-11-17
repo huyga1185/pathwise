@@ -2824,3 +2824,33 @@ select.pw-field-input {
     transform: none;
   }
 }
+
+/* A short message after a sheet closes ("Đã thêm xe."), bottom leading corner; on a phone above the tab bar. */
+.pw-toast-dock {
+  position: fixed;
+  left: 24px;
+  bottom: 24px;
+  z-index: 60;
+}
+@media (max-width: 959.98px) {
+  .pw-toast-dock {
+    left: 16px;
+    right: 16px;
+    bottom: calc(var(--tabbar-height, 64px) + 24px + env(safe-area-inset-bottom));
+  }
+}
+.pw-list-lead {
+  margin: -12px 0 0;
+}
+/* A row that opens a sheet (not a page) is a button: no button look of its own. */
+button.pw-list-row-main {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+button.pw-list-row-main:disabled {
+  cursor: default;
+}

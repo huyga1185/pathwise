@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, useState, type FormEvent, type PointerEvent, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { useExit } from '@/shared/hooks/useExit';
 import { useMediaQuery, WIDE_QUERY } from '@/shared/hooks/useMediaQuery';
 import { Button } from './Button';
@@ -112,7 +113,8 @@ export function Sheet({
     }
   };
 
-  return (
+  // On document.body: above the shell (top bar, sidebar, tab bar), outside any stacking context of the page.
+  return createPortal(
     <div
       className={cx('pw-sheet-backdrop', closing && 'is-closing', wide ? 'is-wide' : 'is-narrow')}
       onPointerDown={(event) => {
@@ -165,7 +167,8 @@ export function Sheet({
           />
         ) : null}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
@@ -256,7 +259,7 @@ export function Alert({
   useModalFocus(open, panel, onCancel);
   if (presence === 'closed') return null;
   const closing = presence === 'closing';
-  return (
+  return createPortal(
     <div className={cx('pw-alert-backdrop', closing && 'is-closing')}>
       <div
         ref={panel}
@@ -292,6 +295,7 @@ export function Alert({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

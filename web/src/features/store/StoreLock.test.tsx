@@ -1,4 +1,4 @@
-import { screen, within } from '@testing-library/react';
+import { screen } from '@testing-library/react';
 import { http } from 'msw';
 import { describe, expect, it } from 'vitest';
 import type { Schemas } from '@/data/types';
@@ -34,8 +34,9 @@ describe('Cửa hàng bị khoá (W11, T56)', () => {
     expect(screen.queryByRole('link', { name: 'Tạo kế hoạch' })).not.toBeInTheDocument();
 
     await router.navigate('/vehicles');
-    const form = await screen.findByRole('form', { name: 'Thêm xe' });
-    expect(within(form).getByRole('button', { name: 'Thêm xe' })).toBeDisabled();
+    // Locked: no way to add or change a vehicle (no add button, rows do not open the sheet).
+    await screen.findByRole('heading', { name: 'Xe', level: 1 });
+    expect(screen.queryByRole('button', { name: 'Thêm xe' })).not.toBeInTheDocument();
     expect(screen.getByText('Cửa hàng đang tạm khoá:')).toBeInTheDocument();
   });
 

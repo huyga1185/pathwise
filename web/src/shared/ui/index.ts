@@ -8,7 +8,7 @@ export { DataTable, type DataTableColumn, type TableSort, type DataTableProps } 
 export { StopCard, type StopCardProps } from './StopCard';
 export { MapMarker, type MapMarkerProps } from './MapMarker';
 export { Dialog, type DialogProps } from './Dialog';
-export { Toast, type ToastProps } from './Toast';
+export { Toast, ToastDock, type ToastProps } from './Toast';
 export { ErrorBanner, FieldError, EmptyState } from './Feedback';
 export { OtpInput, type OtpInputProps } from './OtpInput';
 export { Stat } from './Stat';

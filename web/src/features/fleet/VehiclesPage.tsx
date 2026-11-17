@@ -5,18 +5,30 @@ import { useSearchParams } from 'react-router';
 import { errorMessages, fieldMessage, messageFor } from '@/shared/errors';
 import { requiredRule } from '@/shared/forms/rules';
 import { applyServerErrors, errorCode } from '@/shared/forms/serverErrors';
+import { useMediaQuery, WIDE_QUERY } from '@/shared/hooks/useMediaQuery';
 import { vi } from '@/shared/i18n/vi';
 import { statusInfo } from '@/shared/status';
 import {
-  Button,
+  buttonClass,
   Checkbox,
+  ChevronRightIcon,
   DataTable,
   ErrorBanner,
+  PlaceholderRows,
+  PlusIcon,
+  PopUpFilter,
+  RowMenu,
   SelectField,
+  Sheet,
   StatusPill,
   TextField,
+  Toast,
+  ToastDock,
+  TruckIcon,
+  useRowMenu,
   type DataTableColumn,
 } from '@/shared/ui';
+import { cx } from '@/shared/ui/cx';
 import { useVehicleApi, useVehicles, type CapacityUnit, type Vehicle } from './vehicleApi';
 import './fleet.css';
 
@@ -36,15 +48,24 @@ const LABELS = {
   capacity: vi.vehicles.capacity,
   capacityUnit: vi.vehicles.unit,
 };
+const v = vi.vehicles;
 
 /** "30 thùng": capacity with the short name of its unit. */
 export function formatCapacity(capacity: number, unit: string): string {
   return `${capacity.toLocaleString('vi-VN')} ${vi.units.short[unit] ?? unit}`;
 }
 
+function VehicleStatus({ vehicle }: { vehicle: Vehicle }) {
+  const info = statusInfo('vehicle', vehicle.active ? 'ACTIVE' : 'INACTIVE');
+  return info ? <StatusPill tone={info.tone}>{info.label}</StatusPill> : null;
+}
+
 /**
- * Prototype "Xe" (SCREENS §1.1): the store's vehicles and a form to add or change one. A vehicle is never deleted,
- * only turned off. OWNER and DISPATCHER both manage vehicles (API_SPEC §5).
+ * "Xe" (SCREENS §1.1, OWNER_UI_REDESIGN §8.3): the store's vehicles, laid out like the plan list (G2). The add action
+ * at the end of the title row; adding and changing a vehicle happen in a sheet (HIG Sheets); a status filter as a
+ * pop-up button on the URL (`?active=true`: only those in use) instead of a checkbox (HIG Toggles: outside a list, not
+ * a switch); a table on a wide window, rows on a phone; touch and hold or right click a row for "Sửa…" and turning it
+ * off or on again. A vehicle is never deleted, only turned off. OWNER and DISPATCHER both manage vehicles (API_SPEC §5).
  */
 export function VehiclesPage() {
   const [params, setParams] = useSearchParams();
@@ -52,26 +73,27 @@ export function VehiclesPage() {
   const vehicles = useVehicles(onlyActive ? { active: true } : {});
   const vehicleApi = useVehicleApi();
   const { readOnly } = useStoreReadOnly();
-  const [editing, setEditing] = useState<Vehicle | null>(null);
-  const [saved, setSaved] = useState<string | null>(null);
+  const wide = useMediaQuery(WIDE_QUERY);
+  const rowMenu = useRowMenu<Vehicle>();
+  // The sheet: closed, adding (null) or changing a vehicle.
+  const [sheet, setSheet] = useState<{ vehicle: Vehicle | null } | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
   const [failure, setFailure] = useState<unknown>(null);
   const {
     register,
     handleSubmit,
     reset,
     setError,
-    formState: { errors, isSubmitting },
+    formState: { errors, isSubmitting, isDirty },
   } = useForm<VehicleForm>({ defaultValues: EMPTY });
 
-  const startAdd = () => {
-    setEditing(null);
+  const openAdd = () => {
     setFailure(null);
     reset(EMPTY);
+    setSheet({ vehicle: null });
   };
-
-  const startEdit = (vehicle: Vehicle) => {
-    setEditing(vehicle);
-    setSaved(null);
+  const openEdit = (vehicle: Vehicle) => {
+    if (readOnly) return;
     setFailure(null);
     reset({
       name: vehicle.name,
@@ -80,10 +102,11 @@ export function VehiclesPage() {
       capacityUnit: vehicle.capacityUnit,
       active: vehicle.active,
     });
+    setSheet({ vehicle });
   };
+  const editing = sheet?.vehicle ?? null;
 
   const onSave = handleSubmit(async (form) => {
-    setSaved(null);
     setFailure(null);
     const body = {
       name: form.name.trim(),
@@ -94,12 +117,12 @@ export function VehiclesPage() {
     try {
       if (editing) {
         const vehicle = await vehicleApi.update(editing.id, { ...body, active: form.active });
-        setSaved(vi.vehicles.saved(vehicle.name));
+        setToast(v.saved(vehicle.name));
       } else {
         await vehicleApi.create(body);
-        setSaved(vi.vehicles.added);
+        setToast(v.added);
       }
-      startAdd();
+      setSheet(null);
     } catch (error) {
       if (errorCode(error) === 'VEHICLE_NAME_EXISTED') {
         setError('name', { type: 'server', message: errorMessages.VEHICLE_NAME_EXISTED }, { shouldFocus: true });
@@ -109,127 +132,212 @@ export function VehiclesPage() {
     }
   });
 
+  // Turning a vehicle off or on from its context menu: the same PUT as the sheet, with every field (it replaces all).
+  const setActive = async (vehicle: Vehicle, active: boolean) => {
+    try {
+      await vehicleApi.update(vehicle.id, {
+        name: vehicle.name,
+        plateNumber: vehicle.plateNumber ?? undefined,
+        capacity: vehicle.capacity,
+        capacityUnit: vehicle.capacityUnit,
+        active,
+      });
+      setToast(active ? v.turnedOn(vehicle.name) : v.turnedOff(vehicle.name));
+    } catch (error) {
+      setToast(messageFor(error));
+    }
+  };
+
   const columns: DataTableColumn<Vehicle>[] = [
-    { key: 'name', header: vi.vehicles.name, render: (row) => <strong className="pw-fleet-name">{row.name}</strong> },
-    { key: 'plate', header: vi.vehicles.plate, render: (row) => row.plateNumber ?? '—' },
+    { key: 'name', header: v.name, render: (row) => <strong className="pw-fleet-name">{row.name}</strong> },
+    { key: 'plate', header: v.plate, render: (row) => row.plateNumber ?? '—' },
     {
       key: 'capacity',
-      header: vi.vehicles.capacity,
+      header: v.capacity,
       numeric: true,
       render: (row) => formatCapacity(row.capacity, row.capacityUnit),
     },
-    {
-      key: 'status',
-      header: vi.vehicles.status,
-      render: (row) => {
-        const info = statusInfo('vehicle', row.active ? 'ACTIVE' : 'INACTIVE');
-        return info ? <StatusPill tone={info.tone}>{info.label}</StatusPill> : null;
-      },
-    },
-    {
-      key: 'actions',
-      header: <span className="pw-visually-hidden">{vi.vehicles.actions}</span>,
-      align: 'end',
-      render: (row) => (
-        <Button variant="quiet" aria-label={vi.vehicles.editLabel(row.name)} onClick={() => startEdit(row)}>
-          {vi.vehicles.edit}
-        </Button>
-      ),
-    },
+    { key: 'status', header: v.status, render: (row) => <VehicleStatus vehicle={row} /> },
   ];
+
+  const items = vehicles.data ?? [];
+  const loading = vehicles.isPending;
+  const empty = !loading && !vehicles.isError && items.length === 0;
 
   return (
     <section className="pw-page-section" aria-labelledby="vehicles-title">
-      <div className="pw-fleet-head">
-        <div className="pw-fleet-intro">
-          <h1 id="vehicles-title" className="pw-page-title">
-            {vi.vehicles.title}
-          </h1>
-          <p className="pw-muted">{vi.vehicles.lead}</p>
-        </div>
+      <div className="pw-list-head">
+        <h1 id="vehicles-title" className="pw-page-title">
+          {v.title}
+        </h1>
+        {!readOnly ? (
+          <button
+            type="button"
+            className={wide ? buttonClass('primary') : 'pw-icon-button pw-list-add'}
+            aria-label={wide ? undefined : v.formAdd}
+            title={wide ? undefined : v.formAdd}
+            onClick={openAdd}
+          >
+            <PlusIcon />
+            {wide ? v.formAdd : null}
+          </button>
+        ) : null}
+      </div>
+      <p className="pw-muted pw-list-lead">{v.lead}</p>
+
+      <div className="pw-list-filters" role="group" aria-label={v.filterLabel}>
+        <PopUpFilter
+          label={v.status}
+          value={onlyActive ? 'ACTIVE' : undefined}
+          emptyText={v.all}
+          options={[{ value: 'ACTIVE', label: v.active }]}
+          onChange={(value) => setParams(value ? { active: 'true' } : {}, { replace: true })}
+        />
       </div>
 
-      <div className="pw-fleet-layout">
-        <section className="pw-fleet-list" aria-label={vi.vehicles.listLabel}>
-          <Checkbox
-            label={vi.vehicles.showInactive}
-            checked={!onlyActive}
-            onChange={(event) => setParams(event.target.checked ? {} : { active: 'true' }, { replace: true })}
-          />
-          {vehicles.isError ? <ErrorBanner title={messageFor(vehicles.error)} /> : null}
-          <DataTable
-            caption={vi.vehicles.caption}
-            columns={columns}
-            rows={vehicles.data ?? []}
-            selectedKey={editing?.id ?? null}
-            className="pw-fleet-table"
-            empty={vehicles.isPending ? vi.pages.loading : onlyActive ? vi.vehicles.emptyActive : vi.vehicles.empty}
-          />
-        </section>
+      {vehicles.isError ? <ErrorBanner title={messageFor(vehicles.error)} /> : null}
 
-        <form className="pw-card pw-fleet-form" aria-labelledby="form-title" onSubmit={onSave} noValidate>
-          <h2 id="form-title">{editing ? vi.vehicles.formEdit(editing.name) : vi.vehicles.formAdd}</h2>
-          {saved ? (
-            <div role="status" className="pw-status-ok">
-              {saved}
+      {loading ? (
+        <div className="pw-list-group">
+          <PlaceholderRows rows={4} label={v.loading} />
+        </div>
+      ) : empty ? (
+        <section className="pw-list-empty" aria-labelledby="vehicles-empty">
+          <span className="pw-list-empty-symbol" aria-hidden="true">
+            <TruckIcon />
+          </span>
+          <h2 id="vehicles-empty">{onlyActive ? v.emptyActiveTitle : v.emptyTitle}</h2>
+          <p>{onlyActive ? v.emptyActiveLead : v.emptyLead}</p>
+          {!readOnly && !onlyActive ? (
+            <div className="pw-list-empty-actions">
+              <button type="button" className={buttonClass('primary', 'lg')} onClick={openAdd}>
+                {v.formAdd}
+              </button>
             </div>
           ) : null}
-          {failure ? <ErrorBanner title={messageFor(failure)} /> : null}
+        </section>
+      ) : wide ? (
+        <DataTable
+          caption={v.caption}
+          columns={columns}
+          rows={items}
+          onRowClick={readOnly ? undefined : openEdit}
+          onRowContextMenu={readOnly ? undefined : rowMenu.openAt}
+          resizable
+          className="pw-list-group"
+        />
+      ) : (
+        <ul className="pw-list-group pw-list-rows" aria-label={v.caption}>
+          {items.map((row) => (
+            <li
+              key={row.id}
+              className={cx('pw-list-row', rowMenu.menu?.row.id === row.id && 'is-held')}
+              {...(readOnly ? {} : rowMenu.holdHandlers(row))}
+            >
+              <button
+                type="button"
+                className="pw-list-row-main"
+                aria-label={readOnly ? undefined : v.editLabel(row.name)}
+                disabled={readOnly}
+                onClick={(event) => {
+                  rowMenu.consumeHold(event);
+                  if (!event.defaultPrevented) openEdit(row);
+                }}
+              >
+                <span className="pw-list-row-title">{row.name}</span>
+                <span className="pw-list-row-sub">
+                  {[row.plateNumber, formatCapacity(row.capacity, row.capacityUnit)].filter(Boolean).join(' · ')}
+                </span>
+              </button>
+              <VehicleStatus vehicle={row} />
+              {!readOnly ? (
+                <span className="pw-list-row-chevron" aria-hidden="true">
+                  <ChevronRightIcon />
+                </span>
+              ) : null}
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {rowMenu.menu ? (
+        <RowMenu
+          rect={rowMenu.menu.rect}
+          label={rowMenu.menu.row.name}
+          onClose={rowMenu.close}
+          items={[
+            { label: v.menuEdit, onSelect: () => openEdit(rowMenu.menu!.row) },
+            rowMenu.menu.row.active
+              ? { label: v.menuTurnOff, onSelect: () => void setActive(rowMenu.menu!.row, false) }
+              : { label: v.menuTurnOn, onSelect: () => void setActive(rowMenu.menu!.row, true) },
+          ]}
+        />
+      ) : null}
+
+      <Sheet
+        open={sheet !== null}
+        title={editing ? v.formEdit(editing.name) : v.formAdd}
+        doneLabel={editing ? v.save : v.add}
+        busy={isSubmitting}
+        dirty={isDirty}
+        onSubmit={onSave}
+        onClose={() => setSheet(null)}
+      >
+        {failure ? <ErrorBanner title={messageFor(failure)} /> : null}
+        <TextField
+          label={v.name}
+          required
+          maxLength={100}
+          hint={v.nameHint}
+          error={errors.name?.message}
+          {...register('name', requiredRule('VEHICLE_NAME_REQUIRED', v.name))}
+        />
+        <TextField
+          label={v.plate}
+          maxLength={20}
+          placeholder={v.platePlaceholder}
+          hint={v.plateHint}
+          error={errors.plateNumber?.message}
+          {...register('plateNumber')}
+        />
+        <div className="pw-fleet-pair">
           <TextField
-            label={vi.vehicles.name}
+            label={v.capacity}
+            type="number"
+            inputMode="numeric"
+            min={1}
+            step={1}
             required
-            maxLength={100}
-            hint={vi.vehicles.nameHint}
-            error={errors.name?.message}
-            {...register('name', requiredRule('VEHICLE_NAME_REQUIRED', vi.vehicles.name))}
+            error={errors.capacity?.message}
+            {...register('capacity', {
+              validate: (value) =>
+                value.trim() === ''
+                  ? fieldMessage('CAPACITY_REQUIRED', v.capacity)
+                  : (Number.isInteger(Number(value)) && Number(value) > 0) || fieldMessage('INVALID_CAPACITY', ''),
+            })}
           />
-          <TextField
-            label={vi.vehicles.plate}
-            maxLength={20}
-            placeholder={vi.vehicles.platePlaceholder}
-            hint={vi.vehicles.plateHint}
-            error={errors.plateNumber?.message}
-            {...register('plateNumber')}
+          <SelectField
+            label={v.unit}
+            required
+            placeholder={v.unitPlaceholder}
+            options={vi.units.options}
+            hint={errors.capacityUnit ? undefined : v.unitHint}
+            error={errors.capacityUnit?.message}
+            {...register('capacityUnit', {
+              validate: (value) => value !== '' || fieldMessage('CAPACITY_UNIT_REQUIRED', v.unit),
+            })}
           />
-          <div className="pw-fleet-pair">
-            <TextField
-              label={vi.vehicles.capacity}
-              type="number"
-              inputMode="numeric"
-              min={1}
-              step={1}
-              required
-              error={errors.capacity?.message}
-              {...register('capacity', {
-                validate: (value) =>
-                  value.trim() === ''
-                    ? fieldMessage('CAPACITY_REQUIRED', vi.vehicles.capacity)
-                    : (Number.isInteger(Number(value)) && Number(value) > 0) || fieldMessage('INVALID_CAPACITY', ''),
-              })}
-            />
-            <SelectField
-              label={vi.vehicles.unit}
-              required
-              placeholder={vi.vehicles.unitPlaceholder}
-              options={vi.units.options}
-              hint={errors.capacityUnit ? undefined : vi.vehicles.unitHint}
-              error={errors.capacityUnit?.message}
-              {...register('capacityUnit', {
-                validate: (value) => value !== '' || fieldMessage('CAPACITY_UNIT_REQUIRED', vi.vehicles.unit),
-              })}
-            />
-          </div>
-          {editing ? <Checkbox label={vi.vehicles.active} {...register('active')} /> : null}
-          <div className="pw-fleet-actions">
-            <Button variant="quiet" onClick={startAdd}>
-              {vi.vehicles.cancel}
-            </Button>
-            <Button type="submit" variant="primary" busy={isSubmitting} disabled={readOnly}>
-              {editing ? vi.vehicles.save : vi.vehicles.submitAdd}
-            </Button>
-          </div>
-        </form>
-      </div>
+        </div>
+        {editing ? <Checkbox label={v.active} {...register('active')} /> : null}
+      </Sheet>
+
+      {toast ? (
+        <ToastDock>
+          <Toast tone="success" onClose={() => setToast(null)}>
+            {toast}
+          </Toast>
+        </ToastDock>
+      ) : null}
     </section>
   );
 }
