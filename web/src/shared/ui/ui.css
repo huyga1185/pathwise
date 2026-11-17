@@ -86,15 +86,56 @@
   background: var(--signal);
   color: var(--on-accent);
 }
-.pw-btn-primary:hover:not(:disabled),
-.pw-btn-danger:hover:not(:disabled),
-.pw-btn-success:hover:not(:disabled),
-.pw-btn-signal:hover:not(:disabled) {
-  filter: brightness(0.92);
+/* States (APPLE_CHECKLIST C3–C5): hover only with a real pointer (on a touch screen it stayed after the tap), a press
+   state for every button (HIG Buttons: "Always include a press state for a custom button"), no square tap highlight,
+   colours easing instead of flashing. */
+.pw-btn {
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    filter 0.15s ease,
+    background-color 0.15s ease;
 }
-.pw-btn-secondary:hover:not(:disabled),
-.pw-btn-quiet:hover:not(:disabled) {
-  background: var(--surface-tint);
+@media (hover: hover) {
+  .pw-btn-primary:hover:not(:disabled),
+  .pw-btn-danger:hover:not(:disabled),
+  .pw-btn-success:hover:not(:disabled),
+  .pw-btn-signal:hover:not(:disabled) {
+    filter: brightness(0.92);
+  }
+  .pw-btn-secondary:hover:not(:disabled),
+  .pw-btn-quiet:hover:not(:disabled) {
+    background: var(--surface-tint);
+  }
+}
+.pw-btn-primary:active:not(:disabled),
+.pw-btn-danger:active:not(:disabled),
+.pw-btn-success:active:not(:disabled),
+.pw-btn-signal:active:not(:disabled) {
+  filter: brightness(0.84);
+}
+.pw-btn-secondary:active:not(:disabled),
+.pw-btn-quiet:active:not(:disabled) {
+  background: color-mix(in srgb, var(--route) 16%, transparent);
+}
+/* A link drawn as a button keeps its button colours: the base link hover (base.css: a:hover → ink) turned the white
+   text of a filled button dark on hover. */
+@media (hover: hover) {
+  a.pw-btn-primary:hover,
+  a.pw-btn-danger:hover,
+  a.pw-btn-success:hover,
+  a.pw-btn-signal:hover {
+    color: var(--on-accent);
+  }
+}
+@media (hover: hover) {
+  a.pw-btn-secondary:hover {
+    color: var(--ink);
+  }
+}
+@media (hover: hover) {
+  a.pw-btn-quiet:hover {
+    color: var(--route);
+  }
 }
 .pw-btn:disabled {
   opacity: 0.5;
@@ -288,12 +329,16 @@ textarea.pw-field-input {
 .pw-row-clickable {
   cursor: pointer;
 }
-.pw-row-clickable:hover td {
-  background: var(--surface);
+@media (hover: hover) {
+  .pw-row-clickable:hover td {
+    background: var(--surface);
+  }
 }
-.pw-row-selected td,
-.pw-row-selected:hover td {
-  background: var(--surface-tint);
+@media (hover: hover) {
+  .pw-row-selected td,
+  .pw-row-selected:hover td {
+    background: var(--surface-tint);
+  }
 }
 .pw-row-clickable:focus-visible {
   outline-offset: -2px;
@@ -556,9 +601,11 @@ textarea.pw-field-input {
   font-size: 18px;
   min-width: 32px;
 }
-.pw-toast-action:hover,
-.pw-toast-close:hover {
-  background: var(--surface-tint);
+@media (hover: hover) {
+  .pw-toast-action:hover,
+  .pw-toast-close:hover {
+    background: var(--surface-tint);
+  }
 }
 
 /* ---------- Additions of the web client (not in the reference) ---------- */
@@ -612,9 +659,11 @@ textarea.pw-field-input {
   color: var(--ink-muted);
   cursor: pointer;
 }
-.pw-icon-button:hover {
-  background: var(--surface-tint);
-  color: var(--ink);
+@media (hover: hover) {
+  .pw-icon-button:hover {
+    background: var(--surface-tint);
+    color: var(--ink);
+  }
 }
 .pw-icon-button:focus-visible {
   outline: 2px solid var(--route);
@@ -708,61 +757,6 @@ textarea.pw-field-input {
   max-width: 480px;
   color: var(--ink-muted);
 }
-.pw-header {
-  background: var(--surface-raised);
-  border-bottom: 1px solid var(--line);
-}
-.pw-header-inner {
-  max-width: 1440px;
-  margin: 0 auto;
-  padding: 8px clamp(16px, 2vw, 24px);
-  min-height: 56px;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px 32px;
-}
-.pw-header-brand {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: var(--ink);
-  text-decoration: none;
-  font-weight: 700;
-  font-size: 20px;
-  line-height: 28px;
-  letter-spacing: -0.01em;
-}
-.pw-header-nav {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 24px;
-  flex: 1 1 auto;
-}
-.pw-nav-link {
-  color: var(--ink-muted);
-  text-decoration: none;
-  font-weight: 600;
-  padding: 8px 0;
-  border-bottom: 2px solid transparent;
-}
-.pw-nav-link:hover {
-  color: var(--ink);
-}
-.pw-nav-link-active {
-  color: var(--route);
-  border-bottom-color: var(--route);
-}
-.pw-header-side {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  color: var(--ink-muted);
-}
-.pw-header-user {
-  font-weight: 600;
-}
-
 /* One-line code field (prototype "Quên mật khẩu", "Hồ sơ"): large spaced digits. */
 .pw-field-code .pw-field-input {
   min-height: 56px;
@@ -869,8 +863,10 @@ select.pw-field-input {
 .pw-pin-results li:last-child .pw-pin-result {
   border-bottom: 0;
 }
-.pw-pin-result:hover {
-  background: var(--surface-tint);
+@media (hover: hover) {
+  .pw-pin-result:hover {
+    background: var(--surface-tint);
+  }
 }
 .pw-pin-result:focus-visible {
   outline: 2px solid var(--route);
@@ -1035,5 +1031,579 @@ select.pw-field-input {
 @media (forced-colors: active) {
   .pw-code-cell.is-active {
     outline: 2px solid Highlight;
+  }
+}
+
+/* ---------- App shell (P-74, docs/client/OWNER_UI_REDESIGN.md §6) ----------
+   Text sizes in rem so the shell follows the text size set in the browser (the web's stand-in for Dynamic Type, HIG
+   Layout: "Be prepared for text-size changes").
+   Wide window (≥ 960px): a sidebar floating on the leading side, glass of the functional layer (HIG Sidebars: sidebars
+   "can float above content in the Liquid Glass layer"), that can be hidden. Phone: a tab bar floating at the bottom
+   (HIG Tab bars, iOS). A top bar with the sidebar button and the account menu, no logo. */
+.pw-shell {
+  --shell-glass: color-mix(in srgb, var(--surface-raised) 78%, transparent);
+  --shell-gap: 12px;
+  --sidebar-width: 232px;
+  --tabbar-height: 64px;
+  min-height: 100vh;
+}
+.pw-shell-main {
+  min-width: 0;
+}
+.pw-sidebar,
+.pw-tabbar,
+.pw-account-menu {
+  -webkit-backdrop-filter: blur(20px) saturate(1.4);
+  backdrop-filter: blur(20px) saturate(1.4);
+}
+
+/* Sidebar: radius-lg 16 (fallback radius: the browser window has no corner to be concentric with); its items take
+   16 − padding 8 = radius-md 8 (WWDC25 356). */
+.pw-sidebar-title {
+  margin: 4px 12px 8px;
+  font-size: 0.8125rem;
+  line-height: 1.125rem;
+  font-weight: 600;
+  color: var(--ink-muted);
+}
+.pw-sidebar-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 36px;
+  padding: 6px 12px;
+  border-radius: var(--radius-md);
+  color: var(--ink);
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.pw-sidebar-item .pw-nav-icon {
+  display: inline-flex;
+  color: var(--route);
+}
+@media (hover: hover) {
+  .pw-sidebar-item:not(.is-active):hover {
+    background: color-mix(in srgb, var(--ink) 7%, transparent);
+    color: var(--ink);
+  }
+}
+.pw-sidebar-item,
+.pw-tabbar-item,
+.pw-account-item,
+.pw-topbar-button {
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
+}
+.pw-sidebar-item:active {
+  background: color-mix(in srgb, var(--route) 24%, transparent);
+}
+
+/* Top bar: the controls stay above the page as it scrolls under them (HIG Layout: "Differentiate controls from
+   content"). An opaque strip, not a blur: a blurred parent would cut the account menu off from what is behind it (an
+   element with a backdrop filter is the backdrop of its children), and the menu needs its own blur. Fully opaque: at
+   94% the text scrolling under it showed faintly behind the account button, which read as flicker on a phone. */
+.pw-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 60px;
+  padding: 8px clamp(16px, 2vw, 24px);
+  background: var(--surface);
+}
+.pw-topbar-button {
+  display: inline-grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--ink-muted);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+@media (hover: hover) {
+  .pw-topbar-button:hover {
+    background: color-mix(in srgb, var(--ink) 8%, transparent);
+    color: var(--ink);
+  }
+}
+.pw-topbar-button:active {
+  background: color-mix(in srgb, var(--ink) 14%, transparent);
+}
+
+/* Account: a round button with the initials and its menu. */
+.pw-account {
+  position: relative;
+  margin-left: auto;
+}
+.pw-account-button {
+  display: inline-grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--route) 18%, var(--surface-raised));
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 700;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+/* States on one scale for every shell control (route tint): rest, +8 hover (pointer only), +10 while its menu is open,
+   +16 pressed; colours ease over 0.15s instead of flashing. */
+.pw-account-button {
+  transition:
+    background-color 0.15s ease,
+    transform 0.15s ease;
+}
+@media (hover: hover) {
+  .pw-account-button:hover {
+    background: color-mix(in srgb, var(--route) 26%, var(--surface-raised));
+  }
+}
+.pw-account-button[aria-expanded='true'] {
+  background: color-mix(in srgb, var(--route) 28%, var(--surface-raised));
+}
+.pw-account-button:active {
+  background: color-mix(in srgb, var(--route) 34%, var(--surface-raised));
+}
+/* With a pointer the button also gives a little when pressed; not on a touch screen, where a scroll starting on the
+   button presses it for a moment and made it jump. */
+@media (hover: hover) and (pointer: fine) {
+  .pw-account-button:active {
+    transform: scale(0.94);
+  }
+}
+.pw-account-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  min-width: 240px;
+  max-width: min(320px, calc(100vw - 32px));
+  padding: 8px;
+  border: 1px solid color-mix(in srgb, var(--line) 70%, transparent);
+  border-radius: var(--radius-lg);
+  /* A menu carries text: thicker than the bars so what is behind never competes with it (HIG Materials: Regular for
+     elements with a lot of text). */
+  background: color-mix(in srgb, var(--surface-raised) 90%, transparent);
+  box-shadow: var(--shadow-raised);
+}
+.pw-account-who {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 12px 12px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid var(--line);
+  overflow-wrap: anywhere;
+}
+.pw-account-who span {
+  font-size: 0.8125rem;
+  line-height: 1.125rem;
+  color: var(--ink-muted);
+}
+.pw-account-item {
+  display: flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 6px 12px;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.875rem;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+@media (hover: hover) {
+  .pw-account-item:hover {
+    background: color-mix(in srgb, var(--route) 14%, transparent);
+  }
+}
+.pw-account-item:focus-visible {
+  background: color-mix(in srgb, var(--route) 14%, transparent);
+  outline: none;
+}
+.pw-account-item:active {
+  background: color-mix(in srgb, var(--route) 22%, transparent);
+}
+.pw-account-item:focus-visible {
+  box-shadow: inset 0 0 0 2px var(--route);
+}
+
+/* Tab bar (phone): a capsule floating above the page, items with a symbol and a one-word label. */
+.pw-tabbar {
+  position: fixed;
+  left: var(--shell-gap);
+  right: var(--shell-gap);
+  bottom: max(var(--shell-gap), env(safe-area-inset-bottom));
+  z-index: 30;
+  display: flex;
+  gap: 4px;
+  min-height: var(--tabbar-height);
+  padding: 6px;
+  border: 1px solid color-mix(in srgb, var(--line) 70%, transparent);
+  border-radius: var(--radius-full);
+  background: var(--shell-glass);
+  box-shadow: var(--shadow-raised);
+}
+/* Items: capsules inside the capsule (concentric: (64 − 2 × 6) / 2 = 26). */
+.pw-tabbar-item {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  border-radius: var(--radius-full);
+  color: var(--ink-muted);
+  /* Fixed 11px (Apple's minimum text size): five labels share about 60px each, so the tab bar's labels do not grow
+     with the browser's text size; everything else in the shell does. */
+  font-size: 11px;
+  line-height: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.pw-tabbar-item .pw-nav-icon {
+  display: inline-flex;
+}
+.pw-tabbar-item .pw-nav-label {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pw-tabbar-item.is-active {
+  color: var(--route);
+}
+.pw-tabbar-item:active {
+  background: color-mix(in srgb, var(--route) 22%, transparent);
+}
+/* Very narrow phones (< 360px): less inset and padding so the longest label ("Thành viên") still fits on one line. */
+@media (max-width: 359.98px) {
+  .pw-shell {
+    --shell-gap: 8px;
+  }
+  .pw-tabbar {
+    gap: 0;
+    padding: 4px;
+  }
+}
+/* The page ends above the tab bar. */
+.pw-shell .pw-page {
+  padding-bottom: calc(var(--tabbar-height) + 2 * var(--shell-gap) + env(safe-area-inset-bottom));
+}
+
+@media (min-width: 960px) {
+  .pw-shell .pw-page {
+    padding-bottom: clamp(16px, 2vw, 24px);
+  }
+  .pw-sidebar {
+    position: fixed;
+    top: var(--shell-gap);
+    bottom: var(--shell-gap);
+    left: var(--shell-gap);
+    z-index: 30;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    width: var(--sidebar-width);
+    padding: 8px;
+    overflow-y: auto;
+    border: 1px solid color-mix(in srgb, var(--line) 70%, transparent);
+    border-radius: var(--radius-lg);
+    background: var(--shell-glass);
+    box-shadow: var(--shadow-raised);
+  }
+  .pw-shell.has-sidebar .pw-shell-main {
+    margin-left: calc(var(--sidebar-width) + var(--shell-gap));
+  }
+}
+
+/* Touch screens: controls of at least 44px (HIG Accessibility, iOS/iPadOS default control size 44×44 pt; macOS 28×28
+   for a pointer). */
+@media (pointer: coarse) {
+  .pw-topbar-button,
+  .pw-account-button {
+    width: 44px;
+    height: 44px;
+  }
+  .pw-sidebar-item,
+  .pw-account-item {
+    min-height: 44px;
+  }
+}
+@media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
+  .pw-sidebar,
+  .pw-tabbar,
+  .pw-account-menu {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+  .pw-shell {
+    --shell-glass: var(--surface-raised);
+  }
+  .pw-topbar {
+    background: var(--surface);
+  }
+}
+@media (prefers-contrast: more) {
+  .pw-sidebar,
+  .pw-tabbar,
+  .pw-account-menu {
+    border: 2px solid var(--ink);
+  }
+}
+@media (forced-colors: active) {
+  .pw-sidebar,
+  .pw-tabbar,
+  .pw-account-menu {
+    border: 1px solid CanvasText;
+  }
+  .pw-sidebar-item.is-active,
+  .pw-tabbar-item.is-active {
+    outline: 2px solid Highlight;
+  }
+}
+/* Reduced motion: no scaling on press (HIG Accessibility: reduce "zooming, scaling, and peripheral motion"). */
+@media (prefers-reduced-motion: reduce) {
+  .pw-account-button:active {
+    transform: none;
+  }
+}
+
+/* ---------- App shell motion (OWNER_UI_REDESIGN.md §6.2) ----------
+   Durations and curves are the project's [Web]: Apple gives principles, not numbers (HIG Motion). */
+
+/* The current area stays highlighted (HIG Split views: "persistently highlight the current selection") by one
+   highlight that slides to the new area with a little give, the controls shape-shifting between sections (WWDC25 219).
+   It sits under the links, which stay on top. */
+.pw-sidebar-item,
+.pw-tabbar-item {
+  position: relative;
+  z-index: 1;
+}
+.pw-nav-highlight {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 0;
+  pointer-events: none;
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--route) 16%, transparent);
+}
+.pw-tabbar .pw-nav-highlight {
+  border-radius: var(--radius-full);
+  background: color-mix(in srgb, var(--route) 14%, transparent);
+}
+.pw-nav-highlight.is-ready {
+  transition:
+    transform 0.34s cubic-bezier(0.34, 1.3, 0.64, 1),
+    width 0.34s cubic-bezier(0.34, 1.3, 0.64, 1),
+    height 0.34s cubic-bezier(0.34, 1.3, 0.64, 1);
+}
+
+/* The sidebar slides in from the leading edge and back out (HIG Motion: realistic motion that "follows people's
+   gestures and expectations"); the content makes room with it. */
+@media (min-width: 960px) {
+  .pw-shell-main {
+    transition: margin-left 0.24s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  .pw-sidebar {
+    animation: pw-sidebar-in 0.24s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  .pw-sidebar-slot.is-closing .pw-sidebar {
+    animation: pw-sidebar-out 0.2s ease-in forwards;
+  }
+}
+@keyframes pw-sidebar-in {
+  from {
+    opacity: 0;
+    transform: translateX(-24px);
+  }
+}
+@keyframes pw-sidebar-out {
+  to {
+    opacity: 0;
+    transform: translateX(-24px);
+  }
+}
+
+/* The account menu pops out of its button and back into it (WWDC25 219: "the bubble simply pops open… right where you
+   just tapped"). */
+.pw-account-menu {
+  transform-origin: top right;
+  animation: pw-pop-in 0.22s cubic-bezier(0.34, 1.3, 0.64, 1);
+}
+.pw-account-menu.is-closing {
+  animation: pw-pop-out 0.14s ease-in forwards;
+}
+@keyframes pw-pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+}
+@keyframes pw-pop-out {
+  to {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+}
+
+/* Switching areas from the sidebar or tab bar (View Transition): the old page fades out while the new one fades in
+   and settles from a little below; the shell itself stays live (app.css root rules), so the highlight keeps sliding. */
+.pw-shell main.pw-page {
+  view-transition-name: pw-page;
+}
+/* The page's box does not morph from the old page's size to the new one's (pages differ in height; a morph moved and
+   stretched the content): only the two pictures fade, the new one rising a little. */
+::view-transition-group(pw-page) {
+  animation: none;
+}
+/* Wide window only (phones do not use View Transitions, AppShell). The bars keep their own names, so during the
+   change they are drawn in their usual order, above the page, show their new state at once and stay live. */
+.pw-shell .pw-topbar {
+  view-transition-name: pw-topbar;
+}
+.pw-shell .pw-sidebar {
+  view-transition-name: pw-sidebar;
+}
+::view-transition-group(pw-topbar),
+::view-transition-group(pw-sidebar),
+::view-transition-new(pw-topbar),
+::view-transition-new(pw-sidebar) {
+  animation: none;
+}
+::view-transition-old(pw-topbar),
+::view-transition-old(pw-sidebar) {
+  display: none;
+}
+/* While a page change runs, the browser draws the captured bars' backdrop blur as a plain rectangle (outside the
+   rounded corners): the bars drop the blur for that moment and keep their tint. */
+:root:active-view-transition .pw-sidebar {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+/* The old page leaves first, the new one comes in right after: the two pages' text never sits on top of each other. */
+::view-transition-old(pw-page) {
+  animation: pw-page-out 0.12s ease-in both;
+}
+::view-transition-new(pw-page) {
+  animation: pw-page-in 0.28s cubic-bezier(0.2, 0.8, 0.2, 1) 0.1s both;
+}
+@keyframes pw-page-out {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes pw-page-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+}
+
+/* Reduced motion: no sliding, scaling or give ("disables any elastic properties", WWDC25 219); things just appear. */
+@media (prefers-reduced-motion: reduce) {
+  .pw-nav-highlight.is-ready,
+  .pw-shell-main {
+    transition: none;
+  }
+  .pw-sidebar,
+  .pw-account-menu {
+    animation: none;
+  }
+}
+
+/* Small illustrations (empty states, missing page): parts drawn with the theme's colours. */
+.pw-art-tint {
+  fill: var(--surface-tint);
+}
+.pw-art-street {
+  stroke: var(--surface-raised);
+}
+.pw-art-route {
+  stroke: var(--route);
+}
+.pw-art-route-fill {
+  fill: var(--route);
+}
+.pw-art-ink {
+  fill: var(--ink);
+}
+.pw-art-raised {
+  fill: var(--surface-raised);
+}
+.pw-art-muted {
+  stroke: var(--ink-muted);
+}
+
+/* Touch screens: controls of at least 44×44 (HIG Accessibility, iOS default control size 44×44 pt; a pointer keeps the
+   denser desktop sizes, macOS 28×28). */
+@media (pointer: coarse) {
+  .pw-btn:not(.pw-btn-lg):not(.pw-btn-xl) {
+    height: 44px;
+  }
+  .pw-field-input:not(textarea) {
+    min-height: 44px;
+  }
+  .pw-icon-button,
+  .pw-map-ctl {
+    min-width: 44px;
+    min-height: 44px;
+  }
+  .pw-segmented .pw-segmented-btn,
+  .pw-tab,
+  .pw-store-tab,
+  .pw-back-link,
+  .pw-check,
+  .pw-link-button {
+    min-height: 44px;
+  }
+  .pw-back-link,
+  .pw-link-button {
+    display: inline-flex;
+    align-items: center;
+  }
+}
+/* With a pointer: a back link of at least 28px (macOS 28×28). */
+@media (pointer: fine) {
+  .pw-back-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 28px;
+  }
+  /* A button inside a 44px field (show password, clear) keeps its 40px circle, concentric with the field (22 − 2), and
+     reaches 44px with an invisible edge. */
+  .pw-field-end .pw-icon-button {
+    position: relative;
+    min-width: 40px;
+    min-height: 40px;
+  }
+  .pw-field-end .pw-icon-button::after {
+    content: '';
+    position: absolute;
+    inset: -2px;
   }
 }

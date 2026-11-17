@@ -164,13 +164,13 @@ export function MapArt({ toggle = true }: { toggle?: boolean }) {
  * from one page to the other does not rebuild it — rebuilding restarted its animations (the pin and the vehicle jumped
  * back) and showed them twice during the transition. On a phone each page keeps its picture in its own panel.
  */
-export function AuthStage() {
+export function AuthStage({ children }: { children?: ReactNode }) {
   return (
     <div className="pw-auth-stage">
       <div className="pw-auth-stage-art" aria-hidden="true">
         <MapArt toggle={false} />
       </div>
-      <Outlet />
+      {children ?? <Outlet />}
       {/* After the page in the tab order: the form comes first. */}
       <MapMotionToggle className="pw-auth-motion-stage" />
     </div>

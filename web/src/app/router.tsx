@@ -9,7 +9,7 @@ import {
   VerifyEmailPage,
 } from '@/features/auth';
 import { AppLayout } from './AppLayout';
-import { RedirectIfSignedIn, RequireAdmin, RequireAuth, RequireDispatcher } from './guards';
+import { RedirectIfSignedIn, RequireAdmin, RequireAuth, RequireDispatcher, RequireDriver, RequireRole } from './guards';
 import { DriverUseAppPage, ForbiddenPage, NotFoundPage } from './pages';
 
 /**
@@ -32,6 +32,12 @@ const AdminStoreDetailPage = lazyPage(() => import('@/features/admin').then((m) 
 const AdminUsersPage = lazyPage(() => import('@/features/admin').then((m) => ({ default: m.UsersPage })));
 const AdminAuditPage = lazyPage(() => import('@/features/admin').then((m) => ({ default: m.AuditPage })));
 const PlanListPage = lazyPage(() => import('@/features/plans').then((m) => ({ default: m.PlanListPage })));
+// The page after signing in: fetched when the browser is idle, so the sign-in transition does not stall on it.
+if (typeof window !== 'undefined') {
+  const preload = () => void PlanListPage();
+  if ('requestIdleCallback' in window) window.requestIdleCallback(preload, { timeout: 3000 });
+  else setTimeout(preload, 1500);
+}
 const PlanFormPage = lazyPage(() => import('@/features/plans').then((m) => ({ default: m.PlanFormPage })));
 const ReportsPage = lazyPage(() => import('@/features/reports').then((m) => ({ default: m.ReportsPage })));
 const PlanDetailPage = lazyPage(() => import('@/features/plans').then((m) => ({ default: m.PlanDetailPage })));
@@ -61,7 +67,9 @@ export const routes: RouteObject[] = [
     path: '/driver',
     element: (
       <RequireAuth>
-        <DriverUseAppPage />
+        <RequireDriver>
+          <DriverUseAppPage />
+        </RequireDriver>
       </RequireAuth>
     ),
   },
@@ -84,7 +92,15 @@ export const routes: RouteObject[] = [
       { path: '/vehicles', lazy: VehiclesPage },
       { path: '/members', lazy: MembersPage },
       { path: '/store', lazy: StorePage },
-      { path: '/store/audit', lazy: StoreAuditPage },
+      {
+        path: '/store/audit',
+        element: (
+          <RequireRole roles={['OWNER']}>
+            <Outlet />
+          </RequireRole>
+        ),
+        children: [{ index: true, lazy: StoreAuditPage }],
+      },
       { path: '/profile', lazy: ProfilePage },
     ],
   },

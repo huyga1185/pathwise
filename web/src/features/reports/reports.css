@@ -29,6 +29,12 @@
 .pw-reports-filters .pw-segmented-btn {
   min-height: 38px;
 }
+/* Touch screens: 42px + the 1px border on each side = 44px, as tall as the 44px date fields (ui.css). */
+@media (pointer: coarse) {
+  .pw-reports-filters .pw-segmented-btn {
+    min-height: 42px;
+  }
+}
 .pw-reports-filters .pw-field {
   flex: 0 1 200px;
 }

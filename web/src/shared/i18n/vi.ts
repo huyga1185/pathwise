@@ -9,6 +9,12 @@ export const vi = {
     store: 'Cửa hàng',
     main: 'Điều hướng chính',
   },
+  shell: {
+    account: (name: string) => `Tài khoản: ${name}`,
+    accountMenu: 'Tài khoản',
+    hideSidebar: 'Ẩn thanh bên',
+    showSidebar: 'Hiện thanh bên',
+  },
   auth: {
     loginTitle: 'Đăng nhập',
     email: 'Email',
@@ -686,7 +692,7 @@ export const vi = {
     forgot: 'Quên mật khẩu',
   },
   admin: {
-    badge: 'QUẢN TRỊ',
+    badge: 'Quản trị',
     nav: {
       overview: 'Tổng quan',
       stores: 'Cửa hàng',
@@ -939,10 +945,12 @@ export const vi = {
     notFoundTitle: 'Không tìm thấy trang',
     notFoundLead: 'Đường dẫn không đúng hoặc trang đã bị xoá.',
     forbiddenTitle: 'Bạn không có quyền xem trang này',
-    forbiddenLead: 'Liên hệ chủ cửa hàng nếu bạn cần quyền này.',
+    forbiddenLead: 'Về trang chính hoặc quay lại trang trước để tiếp tục.',
+    forbiddenLeadSignedOut: 'Đăng nhập bằng tài khoản có quyền để xem trang này.',
     driverTitle: 'Dùng app tài xế',
     driverLead: 'Tài khoản tài xế nhận tuyến và báo kết quả trên app PathWise cho điện thoại.',
     backHome: 'Về trang chính',
+    goBack: 'Quay lại',
     soonTitle: 'Sắp có',
     soonLead: 'Màn hình này đang được xây dựng.',
     loading: 'Đang tải…',

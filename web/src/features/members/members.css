@@ -20,8 +20,10 @@
   border-bottom: 2px solid transparent;
   cursor: pointer;
 }
-.pw-tab:hover {
-  color: var(--ink);
+@media (hover: hover) {
+  .pw-tab:hover {
+    color: var(--ink);
+  }
 }
 .pw-tab[aria-selected='true'] {
   color: var(--route);

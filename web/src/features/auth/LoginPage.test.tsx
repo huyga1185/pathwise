@@ -1,4 +1,4 @@
-import { screen, waitFor } from '@testing-library/react';
+import { screen, within, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http } from 'msw';
 import { describe, expect, it } from 'vitest';
@@ -19,8 +19,10 @@ describe('Phiên đăng nhập', () => {
     renderApp('/plans');
 
     expect(await screen.findByRole('heading', { name: 'Kế hoạch giao hàng' })).toBeInTheDocument();
-    expect(await screen.findByText('Tiệm bánh Cô Lan')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Kế hoạch' })).toHaveAttribute('aria-current', 'page');
+    // The store is in the account menu (P-74).
+    await userEvent.setup().click(screen.getByRole('button', { name: /^Tài khoản:/ }));
+    expect(await within(screen.getByRole('menu')).findByText('Tiệm bánh Cô Lan')).toBeInTheDocument();
   });
 
   it('không có phiên thì về đăng nhập, đăng nhập xong quay lại trang định mở, đăng xuất thì về đăng nhập', async () => {
@@ -41,7 +43,8 @@ describe('Phiên đăng nhập', () => {
     const user = await fillAndSubmit();
     expect(await screen.findByRole('heading', { name: 'Xe' })).toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: 'Đăng xuất' }));
+    await user.click(screen.getByRole('button', { name: /^Tài khoản:/ }));
+    await user.click(screen.getByRole('menuitem', { name: 'Đăng xuất' }));
     expect(await screen.findByRole('heading', { name: 'Đăng nhập' })).toBeInTheDocument();
     expect(loggedOut).toBe(true);
   });

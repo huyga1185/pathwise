@@ -12,7 +12,14 @@ export { Toast, type ToastProps } from './Toast';
 export { ErrorBanner, FieldError, EmptyState } from './Feedback';
 export { OtpInput, type OtpInputProps } from './OtpInput';
 export { Stat } from './Stat';
-export { AppHeader, type AppHeaderProps, type NavItem } from './AppHeader';
+export {
+  AppShell,
+  initials,
+  useInAppShell,
+  type AppShellProps,
+  type ShellAccount,
+  type ShellNavItem,
+} from './AppShell';
 export { CodeField } from './CodeField';
 export { Wordmark } from './Wordmark';
 export * from './icons';

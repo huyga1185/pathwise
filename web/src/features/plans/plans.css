@@ -87,24 +87,6 @@
 .pw-plans-empty-art {
   max-width: 100%;
 }
-.pw-art-tint {
-  fill: var(--surface-tint);
-}
-.pw-art-street {
-  stroke: var(--surface-raised);
-}
-.pw-art-route {
-  stroke: var(--route);
-}
-.pw-art-route-fill {
-  fill: var(--route);
-}
-.pw-art-ink {
-  fill: var(--ink);
-}
-.pw-art-raised {
-  fill: var(--surface-raised);
-}
 
 /* Plan form */
 .pw-plan-form {
@@ -211,8 +193,10 @@
   align-items: center;
   gap: 4px;
 }
-.pw-row-remove:hover {
-  color: var(--danger);
+@media (hover: hover) {
+  .pw-row-remove:hover {
+    color: var(--danger);
+  }
 }
 .pw-plan-add {
   display: flex;
@@ -417,8 +401,10 @@
   border: 0;
   cursor: pointer;
 }
-.pw-link-button:hover {
-  color: var(--ink);
+@media (hover: hover) {
+  .pw-link-button:hover {
+    color: var(--ink);
+  }
 }
 .pw-link-button:focus-visible {
   outline: 2px solid var(--route);
@@ -772,9 +758,11 @@
   cursor: grab;
   touch-action: none;
 }
-.pw-drag-handle:hover {
-  background: var(--surface-tint);
-  color: var(--ink);
+@media (hover: hover) {
+  .pw-drag-handle:hover {
+    background: var(--surface-tint);
+    color: var(--ink);
+  }
 }
 .pw-drag-handle:focus-visible {
   outline: 2px solid var(--route);

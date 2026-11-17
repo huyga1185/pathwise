@@ -199,10 +199,23 @@ describe('Khu quản trị (W11)', () => {
     expect(new Date(asked[1]!).getTime() - new Date(asked[0]!).getTime()).toBe(23 * 86_400_000);
   });
 
-  it('người không phải ADMIN mở /admin thì về trang của mình', async () => {
+  it('người không phải ADMIN mở /admin thì thấy 403 ngay tại địa chỉ đó, trong khung cửa hàng (P-75)', async () => {
     server.use(...signedInHandlers());
     const { router } = renderApp('/admin/stores');
-    await waitFor(() => expect(router.state.location.pathname).toBe('/plans'));
+
+    expect(await screen.findByRole('heading', { name: 'Bạn không có quyền xem trang này' })).toBeInTheDocument();
+    expect(screen.getByText('Về trang chính hoặc quay lại trang trước để tiếp tục.')).toBeInTheDocument();
+    expect(router.state.location.pathname).toBe('/admin/stores');
+    expect(screen.getByRole('link', { name: 'Về trang chính' })).toHaveAttribute('href', '/plans');
+  });
+
+  it('ADMIN mở trang của cửa hàng thì thấy 403 trong khung quản trị (P-75)', async () => {
+    server.use(...adminHandlers());
+    renderApp('/plans');
+
+    expect(await screen.findByRole('heading', { name: 'Bạn không có quyền xem trang này' })).toBeInTheDocument();
+    expect(screen.getByText('Về trang chính hoặc quay lại trang trước để tiếp tục.')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Về trang chính' })).toHaveAttribute('href', '/admin');
   });
 
   it('danh sách cửa hàng: tìm bằng Enter gửi q, sắp xếp, link sang chi tiết', async () => {
