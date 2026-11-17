@@ -143,7 +143,9 @@ export function LoginPage() {
           }
         />
         <div className="pw-auth-forgot">
-          <Link to="/forgot-password">{vi.auth.forgot}</Link>
+          <Link to="/forgot-password" viewTransition>
+            {vi.auth.forgot}
+          </Link>
         </div>
 
         <Button type="submit" variant="primary" size="lg" block busy={busy} disabled={remaining > 0}>

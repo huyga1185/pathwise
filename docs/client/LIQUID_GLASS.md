@@ -1,6 +1,6 @@
 # LIQUID_GLASS — Đặc tả vật liệu kính cho web PathWise
 
-> **Trạng thái:** nguyên tắc **đã duyệt** (P-71, 2026-11-16): hướng dẫn chính thức của Apple đứng trước, quy tắc cũ của dự án chỉ áp ở chỗ Apple không nói. Đã áp cho màn **Đăng nhập**, **Đăng ký cửa hàng** (§9, P-72) và **Nhận lời mời** (§9, chủ dự án yêu cầu 2026-11-17). Các bề mặt khác ở §2 (header, menu, hộp thoại, điều khiển trên bản đồ) **chưa làm**; khi làm thì theo tài liệu này. Phạm vi: web dispatcher (`web/`); app tài xế không thuộc tài liệu này, trừ chữ logo (§9). Bổ sung cho `docs/client/DESIGN_SYSTEM.md`, không thay nó.
+> **Trạng thái:** nguyên tắc **đã duyệt** (P-71, 2026-11-16): hướng dẫn chính thức của Apple đứng trước, quy tắc cũ của dự án chỉ áp ở chỗ Apple không nói. Đã áp cho màn **Đăng nhập**, **Đăng ký cửa hàng** (§9, P-72) **Nhận lời mời** và **Quên mật khẩu** (§9, chủ dự án yêu cầu 2026-11-17). Các bề mặt khác ở §2 (header, menu, hộp thoại, điều khiển trên bản đồ) **chưa làm**; khi làm thì theo tài liệu này. Phạm vi: web dispatcher (`web/`); app tài xế không thuộc tài liệu này, trừ chữ logo (§9). Bổ sung cho `docs/client/DESIGN_SYSTEM.md`, không thay nó. Kiểm từng thành phần theo danh sách `docs/client/APPLE_CHECKLIST.md`.
 
 ## 0. Quy ước
 
@@ -69,7 +69,7 @@ Không có nhãn "agent tự suy": thứ gì không thuộc ba nhãn trên thì 
 | S1 | Ba loại hình: cố định (bán kính không đổi), capsule (bán kính = nửa chiều cao), đồng tâm (bán kính = bán kính cha − padding). | [Apple] [356] |
 | S2 | Hình đồng tâm có bán kính dự phòng khi đứng riêng hoặc khi phép trừ không còn dương. | [Apple] "use a concentric shape with a fallback radius" [356] |
 | S3 | Giao diện desktop dày đặc: capsule cho hành động nổi bật; control nhỏ, vừa dùng hình chữ nhật bo góc. | [Apple] [356] |
-| S4 | Giá trị bán kính: giữ token DESIGN_SYSTEM (`radius-sm` 4, `radius-md` 8, `radius-lg` 16, `radius-full`). Thẻ đăng nhập `radius-lg`; ô nhập trong thẻ: 16 − padding ≤ 0 nên dùng dự phòng `radius-sm` (S2). | [Web] token có sẵn, không thêm |
+| S4 | Giá trị bán kính: token DESIGN_SYSTEM (`radius-sm` 4, `radius-md` 8, `radius-lg` 16, `radius-full`) cho phần tử đứng riêng (bán kính dự phòng, S2). Thẻ màn tài khoản (P-72) tính ngược từ control: capsule 44px bo 22 + padding 24 = thẻ 46; mọi phần tử lồng trong thẻ bo 22 (§9). | [Web] token có sẵn; [Apple] S1, S2 |
 
 ## 4. Chữ, màu, khoảng cách
 
@@ -119,7 +119,16 @@ Tương phản đo theo T4: chụp ảnh thật, ẩn chữ, lấy nền sau ch�
 - `saturate(140%)`: Apple chỉ nói làm nhoè và chỉnh độ sáng (M8).
 - Chế độ giảm trong suốt chuyển sang nền đặc: Apple nói "frostier", không nói đặc (§6).
 
-## 9. Màn Đăng nhập, Đăng ký cửa hàng, Nhận lời mời (đã chốt, P-72)
+## 9. Màn Đăng nhập, Đăng ký cửa hàng, Nhận lời mời, Quên mật khẩu (đã chốt, P-72)
+
+Quên mật khẩu theo cùng thiết kế (chủ dự án yêu cầu 2026-11-17), trong `AuthStage` (link "Quên mật khẩu?" chuyển bằng View Transitions):
+
+- Bỏ câu phụ dưới tiêu đề trong thẻ (giống Đăng nhập); 3 bước cũng ghi trong chữ giới thiệu như Đăng ký và Nhận lời mời.
+- Thanh tiến trình (chủ dự án giữ lại): thanh mảnh 4px bo tròn ngay dưới tiêu đề, phần `route` đầy từ trái theo số bước **đã xong** (0, 1/3, 2/3; HIG: "as accurate as possible"), kèm chữ "Bước n/3" của bước đang làm; phần xanh dài ra trong 0,3 giây rồi một gợn sáng lướt qua phần đã xong **một lần** (0,7 giây), không lặp (HIG Motion: "Aim for brevity and precision in feedback animations"; sóng lặp sẽ đọc thành "đang xử lý" theo HIG Progress indicators và vướng WCAG 2.2.2), tắt khi giảm chuyển động; ẩn ở bước "Xong"; trình đọc màn hình đọc `progressbar` kèm tên bước. Nguồn gần nhất là HIG Progress indicators ("fills from the leading side", "display a description that provides additional context", "consistent location", "transient… disappearing after it completes"). **Lệch:** Apple viết progress indicator cho tác vụ đang chạy, không cho các bước của form, và không có component riêng cho "bước X trên Y"; Page controls (chấm) là để bấm/vuốt giữa các trang nên không hợp. [Apple] gần nhất; [Chủ dự án]
+- Email kiểm khi rời ô, mật khẩu mới kiểm khi gõ, ô nhập lại kiểm khi rời ô (gõ dở thì luôn khác); đổi bước thì focus về tiêu đề. [Apple] HIG Text fields, VoiceOver
+- "Gửi lại mã" và "Đổi email khác" là hai nút phụ 44px cạnh nhau, xuống dòng khi thẻ hẹp (HIG Buttons: 44×44; capsule cho hàng nút ngang). Khối "mã đã được gửi" là nhóm lồng bo 22px trên fill nhạt như khối thông tin lời mời. [Apple]
+- Ô mã 6 số: **một ô thật vẽ thành 6 khung** (`CodeField`, chủ dự án chọn): AutoFill mã, bàn phím số, dán/xoá như ô thường vì vẫn là một `<input autocomplete="one-time-code">` (Apple developer docs: *Securing logins with iCloud Keychain verification codes*, `oneTimeCode`). Apple không quy định 1 ô hay 6 ô; khung cao 56px, nền fill nhạt và viền như ô nhập, bo **đồng tâm 46 − 24 = 22px** (WWDC25 356: hình lồng "calculate their radius by subtracting padding from the parent's"; ngoài thẻ tài khoản dùng `radius-md` làm "fallback radius"); khung hẹp (màn 320px, rộng 33px) thì 22px vượt nửa chiều rộng nên thành viên thuốc dọc; không bóng đổ, chỉ khung đang nhận số có quầng sáng như focus của ô. [Apple] AutoFill, S1/S2; [Chủ dự án] 6 khung
+- Gợi ý trên hàng nhãn tự xuống dòng khi không đủ chỗ (trước đây đè lên nhãn ở màn ≤ 360px, F-67); màn ≤ 400px mọi gợi ý nằm dòng riêng dưới nhãn, canh trái. [Web]
 
 Nhận lời mời theo cùng thiết kế (chủ dự án yêu cầu 2026-11-17): cùng ảnh, cùng thẻ và control, nằm trong `AuthStage` nên đi từ "Nhập mã mời" của Đăng nhập không dựng lại ảnh. Riêng ở màn này:
 
@@ -141,7 +150,7 @@ Nhận lời mời theo cùng thiết kế (chủ dự án yêu cầu 2026-11-17
 | Chữ | Tiêu đề thẻ 32px (28px khi màn ≤ 600px), không câu phụ dưới tiêu đề; chữ phụ `ink-muted`, link `route` (đạt ≥ 6,3:1 sáng, ≥ 7,4:1 tối) | [Apple] T1; [Chủ dự án] |
 | Focus, hover | Focus: viền ô sáng màu `route` 2px (bóng trong) + quầng sáng, không vòng ngoài (ngoại lệ DESIGN_SYSTEM, chỉ hai thẻ này; forced colors vẫn có vòng `Highlight`); hover: viền đậm, nền sáng nhẹ | [Apple] A1 ("illuminates from within") ; [Web] |
 | Ảnh nền | `map-route.svg` phủ kín màn (hai cột) hoặc trong panel (điện thoại, tablet); lớp tối sau chữ giới thiệu; ảnh tĩnh `map-route-static.svg` khi giảm chuyển động | [Chủ dự án]; [Web] T4; [Apple] §6 |
-| Chuyển trang | View Transitions: thẻ đứng yên, nội dung cũ mờ đi rồi nội dung mới hiện (hai cột), mờ chéo đồng thời (điện thoại); ảnh nền dùng chung qua layout route `AuthStage` nên hoạt ảnh không chạy lại; tắt khi giảm chuyển động | [Apple] (WWDC25 219: biến hình giữa các trạng thái); [Web] thời lượng |
+| Chuyển trang | View Transitions: thẻ đứng yên, nội dung cũ mờ đi rồi nội dung mới hiện (hai cột), mờ chéo đồng thời (điện thoại). Đổi bước trong cùng thẻ (Quên mật khẩu, Nhận lời mời: sang bước sau, "Xong", làm lại) cũng qua View Transition cùng trang (`changeCard`): thẻ co giãn tới chiều cao mới thay vì nhảy; ảnh nền dùng chung qua layout route `AuthStage` nên hoạt ảnh không chạy lại; tắt khi giảm chuyển động | [Apple] (WWDC25 219: biến hình giữa các trạng thái); [Web] thời lượng |
 | Form đăng ký | Tên cửa hàng, email, mật khẩu; **không có ô họ tên** (đặt sau ở Hồ sơ). Email và tên cửa hàng kiểm khi rời ô, mật khẩu kiểm khi gõ (HIG Text fields: email "when people switch to another field", mật khẩu mới "before people switch to another field") | [Chủ dự án]; [Apple] |
 | Chữ logo | "Path" + "**Wise**" có màu: bạc hà `#9ff0d3` trên nền tối/xanh thương hiệu (màn tài khoản, dải email, đăng nhập app tài xế), `route` trên nền sáng (header, trang lỗi) | [Chủ dự án]; HIG Branding (màu thương hiệu ở lớp nội dung) |
 

@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { describe, expect, it } from 'vitest';
 import { TextField } from './TextField';
 
@@ -11,8 +11,8 @@ function Controlled() {
 }
 
 function WithForm({ onValue }: { onValue: (value: string) => void }) {
-  const { register, watch } = useForm({ defaultValues: { name: '' } });
-  onValue(watch('name'));
+  const { register, control } = useForm({ defaultValues: { name: '' } });
+  onValue(useWatch({ control, name: 'name' }));
   return <TextField label="Họ tên" clearable {...register('name')} />;
 }
 

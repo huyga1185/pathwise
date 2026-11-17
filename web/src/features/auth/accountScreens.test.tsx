@@ -243,6 +243,38 @@ describe('Xác thực email', () => {
 });
 
 describe('Quên mật khẩu', () => {
+  it('email sai báo khi rời ô; qua bước mới thì focus về tiêu đề; mật khẩu mới báo ngay khi gõ', async () => {
+    server.use(
+      http.post(`${API}/auth/password/forgot`, () => noContent()),
+      http.post(`${API}/auth/password/reset/verify`, () =>
+        ok({ resetToken: 'reset-1', expiresAt: '2026-11-04T10:10:00Z' }),
+      ),
+      ...anonymousHandlers(),
+    );
+    renderApp('/forgot-password');
+    const user = userEvent.setup();
+    const email = await screen.findByLabelText(/^Email/);
+
+    await user.type(email, 'lan@');
+    expect(email).not.toHaveAttribute('aria-invalid', 'true');
+    await user.tab();
+    expect(email).toHaveAttribute('aria-invalid', 'true');
+
+    await user.clear(email);
+    await user.type(email, 'lan@example.com');
+    await user.click(screen.getByRole('button', { name: 'Gửi mã' }));
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'Nhập mã xác thực' })).toHaveFocus());
+    expect(screen.getByRole('progressbar', { name: 'Tiến độ đặt lại mật khẩu' })).toHaveAttribute('aria-valuenow', '1');
+
+    await user.type(screen.getByLabelText(/^Mã xác thực/), '123456');
+    await user.click(screen.getByRole('button', { name: 'Tiếp tục' }));
+    const password = await screen.findByLabelText(/^Mật khẩu mới/);
+    await user.type(password, 'ngan');
+
+    expect(password).toHaveFocus();
+    expect(password).toHaveAttribute('aria-invalid', 'true');
+  });
+
   it('đi đủ 3 bước: email, mã, mật khẩu mới', async () => {
     const calls: Array<[string, unknown]> = [];
     const record =

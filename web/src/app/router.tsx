@@ -52,10 +52,10 @@ export const routes: RouteObject[] = [
       },
       { path: '/register', element: <RegisterPage /> },
       { path: '/invite', element: <AcceptInvitePage /> },
+      { path: '/forgot-password', element: <ForgotPasswordPage /> },
     ],
   },
   { path: '/verify-email', element: <VerifyEmailPage /> },
-  { path: '/forgot-password', element: <ForgotPasswordPage /> },
   { path: '/reset-password', element: <ResetPasswordPage /> },
   {
     path: '/driver',
