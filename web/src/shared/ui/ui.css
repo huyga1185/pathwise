@@ -2744,3 +2744,7 @@ select.pw-field-input {
     animation-name: pw-fade-out;
   }
 }
+/* A destructive menu item, in red (HIG Context menus: "identify them as destructive… red text color"). */
+.pw-menu-item.is-destructive {
+  color: var(--danger);
+}

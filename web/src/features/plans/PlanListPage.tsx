@@ -1,13 +1,5 @@
 import { useStoreReadOnly } from '@/data/meQuery';
-import {
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-  type MouseEvent,
-  type PointerEvent,
-  type RefObject,
-} from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router';
 import { useStoreQuery } from '@/data/storeQuery';
 import { messageFor } from '@/shared/errors';
@@ -26,6 +18,8 @@ import {
   DatePickerFilter,
   ErrorBanner,
   PageJump,
+  RowMenu,
+  useRowMenu,
   PlaceholderRows,
   PlusIcon,
   RouteIcon,
@@ -121,51 +115,10 @@ export function PlanListPage() {
     update({ order: next === 'date-desc' ? undefined : next });
   };
 
-  // Phone: touch and hold a row for its context menu ("Sao chép…"), like Mail and Notes; the plan's own page has the
-  // same command (HIG Context menus: "Always make context menu items available in the main interface, too").
-  const [menuFor, setMenuFor] = useState<{ row: PlanSummary; rect: DOMRect } | null>(null);
-  const held = useRef(false);
-  const hold = useRef<{ timer: number; x: number; y: number } | null>(null);
-  const stopHold = () => {
-    if (hold.current) window.clearTimeout(hold.current.timer);
-    hold.current = null;
-  };
-  const holdHandlers = (row: PlanSummary) => ({
-    onPointerDown: (event: PointerEvent<HTMLLIElement>) => {
-      if (event.pointerType !== 'touch') return;
-      const element = event.currentTarget;
-      held.current = false;
-      stopHold();
-      hold.current = {
-        x: event.clientX,
-        y: event.clientY,
-        timer: window.setTimeout(() => {
-          held.current = true;
-          hold.current = null;
-          setMenuFor({ row, rect: element.getBoundingClientRect() });
-        }, 500),
-      };
-    },
-    onPointerMove: (event: PointerEvent<HTMLLIElement>) => {
-      const start = hold.current;
-      if (start && Math.hypot(event.clientX - start.x, event.clientY - start.y) > 10) stopHold();
-    },
-    onPointerUp: stopHold,
-    onPointerCancel: stopHold,
-    // Android's long press and a right click: the same menu instead of the browser's.
-    onContextMenu: (event: MouseEvent<HTMLLIElement>) => {
-      event.preventDefault();
-      stopHold();
-      // A right click opens it at the pointer; Android's long press, under the row like touch and hold.
-      const touch = (event.nativeEvent as globalThis.PointerEvent).pointerType === 'touch';
-      setMenuFor({
-        row,
-        rect: touch
-          ? event.currentTarget.getBoundingClientRect()
-          : new DOMRect(event.clientX - 8, event.clientY - 8, 0, 0),
-      });
-    },
-  });
+  // Phone: touch and hold a row for its context menu ("Sao chép…"), like Mail and Notes; a right click on a wide
+  // window. The plan's own page has the same command (HIG Context menus: "Always make context menu items available in
+  // the main interface, too").
+  const rowMenu = useRowMenu<PlanSummary>();
 
   const copyButton = (row: PlanSummary) =>
     readOnly ? null : (
@@ -410,31 +363,17 @@ export function PlanListPage() {
                 className="pw-list-group pw-plans-table"
                 sort={sort}
                 onSort={onSort}
-                onRowContextMenu={
-                  readOnly
-                    ? undefined
-                    : (row, point) => setMenuFor({ row, rect: new DOMRect(point.x - 8, point.y - 8, 0, 0) })
-                }
+                onRowContextMenu={readOnly ? undefined : rowMenu.openAt}
               />
             ) : (
               <ul className="pw-list-group pw-list-rows" aria-label={vi.plans.caption}>
                 {items.map((row) => (
                   <li
                     key={row.id}
-                    className={cx('pw-list-row', menuFor?.row.id === row.id && 'is-held')}
-                    {...(readOnly ? {} : holdHandlers(row))}
+                    className={cx('pw-list-row', rowMenu.menu?.row.id === row.id && 'is-held')}
+                    {...(readOnly ? {} : rowMenu.holdHandlers(row))}
                   >
-                    <Link
-                      to={`/plans/${row.id}`}
-                      className="pw-list-row-main"
-                      onClick={(event) => {
-                        // The touch-and-hold that opened the menu is not also a tap on the row.
-                        if (held.current) {
-                          event.preventDefault();
-                          held.current = false;
-                        }
-                      }}
-                    >
+                    <Link to={`/plans/${row.id}`} className="pw-list-row-main" onClick={rowMenu.consumeHold}>
                       <span className="pw-list-row-title">{row.name}</span>
                       <span className="pw-list-row-sub">
                         {formatDateShort(row.planDate)} · {vi.plans.stopCount(row.stopCount)}
@@ -453,12 +392,12 @@ export function PlanListPage() {
       </div>
       {/* Outside the result, which is drawn again on each page: the pager keeps its focus while pages turn. */}
       {data !== undefined && !empty ? <Pager page={page} totalPages={totalPages} onPage={goToPage} /> : null}
-      {menuFor ? (
+      {rowMenu.menu ? (
         <RowMenu
-          rect={menuFor.rect}
-          label={menuFor.row.name}
-          onClose={() => setMenuFor(null)}
-          items={[{ label: vi.planCopy.menuItem, onSelect: () => setCopying(menuFor.row) }]}
+          rect={rowMenu.menu.rect}
+          label={rowMenu.menu.row.name}
+          onClose={rowMenu.close}
+          items={[{ label: vi.planCopy.menuItem, icon: <CopyIcon />, onSelect: () => setCopying(rowMenu.menu!.row) }]}
         />
       ) : null}
       {copying ? (
@@ -637,84 +576,5 @@ function ClearFilters({ closing, onClear }: { closing: boolean; onClear: () => v
     >
       {vi.plans.clearFilters}
     </Button>
-  );
-}
-
-/**
- * A row's context menu (touch and hold on a phone; right click): a short list of commands under the row, or above it
- * near the bottom of the screen (HIG Context menus: "Aim for a small number of menu items"; HIG Menus: an ellipsis when
- * more input follows). Closes on a choice, a tap outside, Escape or scrolling; focus goes to its first item and back
- * where it was afterwards.
- */
-function RowMenu({
-  rect,
-  label,
-  items,
-  onClose,
-}: {
-  rect: DOMRect;
-  label: string;
-  items: { label: string; onSelect: () => void }[];
-  onClose: () => void;
-}) {
-  const menu = useRef<HTMLDivElement>(null);
-  // The latest onClose, so the listeners below are set once while the menu is open.
-  const close = useRef(onClose);
-  useEffect(() => {
-    close.current = onClose;
-  });
-  useEffect(() => {
-    const onClose = () => close.current();
-    const before = document.activeElement as HTMLElement | null;
-    menu.current?.querySelector<HTMLElement>('[role="menuitem"]')?.focus({ preventScroll: true });
-    const outside = (event: globalThis.PointerEvent) => {
-      if (!menu.current?.contains(event.target as Node)) onClose();
-    };
-    const key = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose();
-    };
-    // The finger that opened it is still lifting: listen for taps outside from the next frame.
-    const frame = window.requestAnimationFrame(() => document.addEventListener('pointerdown', outside));
-    document.addEventListener('keydown', key);
-    window.addEventListener('scroll', onClose, { passive: true });
-    return () => {
-      window.cancelAnimationFrame(frame);
-      document.removeEventListener('pointerdown', outside);
-      document.removeEventListener('keydown', key);
-      window.removeEventListener('scroll', onClose);
-      before?.focus?.({ preventScroll: true });
-    };
-  }, []);
-  const below = rect.bottom + 8 + 56 * items.length < window.innerHeight - 96;
-  return (
-    <div
-      ref={menu}
-      className={cx('pw-popover pw-menu pw-row-menu', !below && 'is-above')}
-      role="menu"
-      aria-label={label}
-      style={{
-        position: 'fixed',
-        left: rect.left + 8,
-        ...(below ? { top: rect.bottom + 8 } : { top: 'auto', bottom: window.innerHeight - rect.top + 8 }),
-      }}
-    >
-      {items.map((item) => (
-        <button
-          key={item.label}
-          type="button"
-          role="menuitem"
-          className="pw-menu-item"
-          onClick={() => {
-            onClose();
-            item.onSelect();
-          }}
-        >
-          <span className="pw-menu-check" aria-hidden="true">
-            <CopyIcon />
-          </span>
-          {item.label}
-        </button>
-      ))}
-    </div>
   );
 }
