@@ -28,7 +28,7 @@ test('chủ cửa hàng đi hết luồng MVP tới khi kế hoạch hoàn thàn
     await page.getByLabel(/^Email/).fill(owner);
     await page.getByLabel(/^Mật khẩu/).fill(password);
     await page.getByRole('button', { name: /Đăng nhập/ }).click();
-    await expect(page.getByRole('heading', { name: 'Kế hoạch giao hàng' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Kế hoạch', level: 1 })).toBeVisible();
   });
 
   await test.step('đặt kho xuất phát bằng ghim', async () => {

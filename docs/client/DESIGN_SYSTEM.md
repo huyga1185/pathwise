@@ -44,11 +44,23 @@ PathWise là phần mềm lập tuyến giao hàng cho cửa hàng nhỏ ở Vi�
 
 Mỗi trạng thái hiện bằng **pill**: nhãn `label` viết hoa, chữ `on-accent` trên nền màu trạng thái, bo `radius-full`. Màu không bao giờ đứng một mình: luôn có chữ.
 
+**Mỗi màu một nghĩa** (P-76, [Apple] Color: "Avoid using the same color to mean different things… especially when you use it to help communicate information like status"):
+
+| Token | Nghĩa |
+|---|---|
+| `ink-muted` | chưa bắt đầu hoặc không còn hiệu lực (nháp, đã giao việc, chờ giao, chưa xếp tuyến, thu hồi, hết hạn…) |
+| `info` | đang diễn ra hoặc đang xử lý (đang giao, đang tìm toạ độ, đang tối ưu, đang chạy, chờ nhận lời mời) |
+| `signal` | cần chú ý (bỏ qua, không xếp được, cửa hàng tạm khoá) |
+| `success` | xong hoặc đang hoạt động bình thường |
+| `danger` | thất bại, huỷ hoặc bị vô hiệu |
+
+**Tương phản:** theme sáng tô nền pill đậm hơn token 12% (`color-mix(in srgb, token 88%, black)`, app tài xế `Color.lerp(token, black, 0.12)`) để chữ trắng 12px đạt 7:1 ([Apple] Dark Mode: "strive for a contrast ratio of 7:1, especially in small text"); đo: 7,07–7,99:1 (trước 5,86–6,72:1). Theme tối dùng token nguyên (7,72–9,06:1).
+
 | Trạng thái (API) | Nhãn | Token |
 |---|---|---|
 | Plan `DRAFT` | NHÁP | `ink-muted` |
-| Plan `PUBLISHED` | ĐÃ GIAO VIỆC | `info` |
-| Plan `IN_PROGRESS`, route `IN_PROGRESS` | ĐANG GIAO | `signal` |
+| Plan `PUBLISHED` | ĐÃ GIAO VIỆC | `ink-muted` |
+| Plan `IN_PROGRESS`, route `IN_PROGRESS` | ĐANG GIAO | `info` |
 | Plan `COMPLETED`, route `COMPLETED` | HOÀN THÀNH | `success` |
 | Plan `CANCELLED` | ĐÃ HUỶ | `danger` |
 | Stop `PENDING`, route `PENDING` | CHỜ GIAO | `ink-muted` |
@@ -165,6 +177,10 @@ Nhãn trạng thái viết hoa trên nền màu trạng thái; truyền thẳng 
 - Màu không bao giờ đứng một mình: pill luôn có chữ. Stop `FAILED` đi kèm lý do ngay dưới, chữ `small`.
 - Chữ pill dùng `on-accent` (trắng ở theme sáng, gần đen ở theme tối).
 
+### ActivityIndicator (web, G2)
+
+Chờ không biết bao lâu (khôi phục phiên, mở trang, tải dữ liệu một khung): 8 nan xoay màu `ink-muted`, không có chữ hiện ra (HIG Progress indicators: "Avoid vague terms like loading"), `role="status"` với nhãn "Đang tải…" cho trình đọc màn hình; hiện sau 0,3 s. `className="is-page"` khi thay cả trang. Danh sách dùng `PlaceholderRows`, không dùng vòng xoay.
+
 ### ProgressBar
 
 Thanh tiến độ mảnh màu `info` cho việc chạy nền của plan (geocode, tối ưu); không che trang.
@@ -178,12 +194,14 @@ Thanh tiến độ mảnh màu `info` cho việc chạy nền của plan (geocod
 
 Bảng dữ liệu của web dashboard: danh sách stop, plan, xe, thành viên; dòng chọn được nối với bản đồ.
 
-- Nền `surface-raised`, đường kẻ `line`, tiêu đề cột `label` viết hoa màu `ink-muted`, tiêu đề dính khi cuộn.
+- Nền `surface-raised`, đường kẻ `line`, tiêu đề cột 13px đậm màu `ink-muted` viết như thường (không HOA, theo HIG Lists and tables; G2), tiêu đề dính khi cuộn.
+- Danh sách của khu chủ cửa hàng (G2): bảng trong nhóm `pw-list-group` (nền, bo 16, không viền); cột có `sortable` thì tiêu đề là nút sắp xếp (`sort`, `onSort`, `aria-sort`); màn hẹp dùng danh sách hàng `pw-list-rows` thay bảng; lọc bằng `DatePickerFilter` (lịch tháng) / `PopUpFilter` (menu có dấu tích), nút lọc nền xám không viền; phân trang có điểm kết thúc: máy tính mỗi trang vừa một màn hình, điện thoại 20 hàng cuộn được, thanh trang "‹ Trang 4/12 ›" ở giữa dưới danh sách, nút tròn nền xám; "Trang 4/12" mở `PageJump` (khung nhỏ « [ô số trang] »); `PopUpButton` dùng cho bộ lọc; đang tải dùng `PlaceholderRows` (`OWNER_UI_REDESIGN.md` §7).
 - Cột số (`numeric`): ETA, khung giờ, km, tải — căn phải, `tabular-nums`.
 - `onRowClick` + `selectedKey`: dòng đang chọn nền `surface-tint`; chọn được bằng bàn phím (Tab, Enter). Trên màn soạn plan, chọn dòng thì marker tương ứng trên bản đồ `selected`, và ngược lại.
 - `empty`: câu hướng dẫn việc tiếp theo, ví dụ "Chưa có điểm giao. Thêm điểm giao để tối ưu lộ trình."
 - Phân trang theo API (`page`, `size`) đặt dưới bảng; component không tự phân trang.
 - Ô chứa trạng thái dùng `StatusPill`.
+- `onRowContextMenu(row, {x, y})`: nhấp chuột phải hàng → trang mở menu ngữ cảnh của hàng tại con trỏ (G2.13); danh sách hàng trên điện thoại mở cùng menu bằng chạm giữ.
 
 ### StopCard
 

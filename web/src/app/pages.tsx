@@ -2,7 +2,7 @@ import { lazy, Suspense, type ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { AuthLayout, AuthStage, canUseWeb, homeOf, MapArt, useSession } from '@/features/auth';
 import { vi } from '@/shared/i18n/vi';
-import { Button, buttonClass, EmptyState, LogoMark, useInAppShell, Wordmark } from '@/shared/ui';
+import { Button, buttonClass, EmptyState, LogoMark, useInAppShell, Wordmark, ActivityIndicator } from '@/shared/ui';
 import { DispatcherShell } from './AppLayout';
 
 function StandalonePage({ children }: { children: ReactNode }) {
@@ -119,11 +119,7 @@ function MissingPage({ kind }: { kind: Missing }) {
   // Already inside the app's frame (a guard on one page of it): only the content, not a second frame.
   const inShell = useInAppShell();
   if (session.status === 'loading') {
-    return (
-      <p role="status" className="pw-page-loading">
-        {vi.pages.loading}
-      </p>
-    );
+    return <ActivityIndicator label={vi.pages.loading} className="is-page" />;
   }
   if (session.status === 'authenticated' && (canUseWeb(session.user) || session.user.role === 'ADMIN')) {
     const content = (

@@ -29,7 +29,14 @@ class StatusPill extends StatelessWidget {
     };
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: PwSpacing.space2, vertical: 2),
-      decoration: BoxDecoration(color: colour, borderRadius: BorderRadius.circular(PwRadius.radiusFull)),
+      // Light theme: 12% darker so white 12px text reaches 7:1 (HIG Dark Mode: "strive for a contrast ratio of 7:1,
+      // especially in small text"; the tokens alone give 5.9–6.7:1). Dark theme already gives 7.7–9.1:1.
+      decoration: BoxDecoration(
+        color: Theme.of(context).brightness == Brightness.light
+            ? Color.lerp(colour, const Color(0xFF000000), 0.12)
+            : colour,
+        borderRadius: BorderRadius.circular(PwRadius.radiusFull),
+      ),
       child: Text(text, style: PwTypeStyles.label.copyWith(color: t.onAccent)),
     );
   }

@@ -32,18 +32,31 @@ export const PAGE_SIZE = 20;
 export interface PlanFilter {
   date?: string;
   status?: PlanStatus;
+  /** API order, e.g. "name,asc"; none = the API's default (plan date, newest first). */
+  sort?: string;
   page: number;
+  /** Plans a page: as many rows as fit the window (1–100, API_SPEC §1). */
+  size: number;
 }
 
-/** `GET /plans`, newest plan date first (API_SPEC §7). */
-export function usePlans(filter: PlanFilter) {
+/** `GET /plans`, one page (API_SPEC §7); newest plan date first unless `sort` says otherwise. */
+export function usePlans(filter: PlanFilter, enabled = true) {
   const api = useApi();
   return useQuery({
     queryKey: queryKeys.plans(filter),
+    enabled,
     queryFn: () =>
       unwrap(
         api.GET('/api/v1/plans', {
-          params: { query: { date: filter.date, status: filter.status, page: filter.page, size: PAGE_SIZE } },
+          params: {
+            query: {
+              date: filter.date,
+              status: filter.status,
+              page: filter.page,
+              size: filter.size,
+              sort: filter.sort ? [filter.sort] : undefined,
+            },
+          },
         }),
       ),
     placeholderData: (previous) => previous,

@@ -19,12 +19,12 @@ export type StatusKind =
 const STATUS: Record<StatusKind, Record<string, [string, Tone]>> = {
   plan: {
     DRAFT: ['NHÁP', 'muted'],
-    PUBLISHED: ['ĐÃ GIAO VIỆC', 'info'],
-    IN_PROGRESS: ['ĐANG GIAO', 'signal'],
+    PUBLISHED: ['ĐÃ GIAO VIỆC', 'muted'],
+    IN_PROGRESS: ['ĐANG GIAO', 'info'],
     COMPLETED: ['HOÀN THÀNH', 'success'],
     CANCELLED: ['ĐÃ HUỶ', 'danger'],
   },
-  route: { PENDING: ['CHỜ GIAO', 'muted'], IN_PROGRESS: ['ĐANG GIAO', 'signal'], COMPLETED: ['HOÀN THÀNH', 'success'] },
+  route: { PENDING: ['CHỜ GIAO', 'muted'], IN_PROGRESS: ['ĐANG GIAO', 'info'], COMPLETED: ['HOÀN THÀNH', 'success'] },
   stop: {
     PENDING: ['CHỜ GIAO', 'muted'],
     DELIVERED: ['ĐÃ GIAO', 'success'],

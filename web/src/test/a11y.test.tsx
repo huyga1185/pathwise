@@ -192,7 +192,7 @@ describe('accessibility', () => {
   });
 
   it.each([
-    ['/plans', 'Kế hoạch giao hàng'],
+    ['/plans', 'Kế hoạch'],
     ['/plans/new', 'Tạo kế hoạch'],
     ['/plans/83', 'Giao sáng 01/12'],
   ])('màn %s không có lỗi axe', async (path, heading) => {
@@ -206,7 +206,8 @@ describe('accessibility', () => {
     );
     const { container } = renderApp(path);
     await screen.findByRole('heading', { name: heading, level: 1 });
-    await screen.findAllByRole('row');
+    // Tests run at phone width: the plan list is a list of rows there, the other screens have tables.
+    await screen.findAllByRole(path === '/plans' ? 'listitem' : 'row');
     expect(await violations(container)).toEqual([]);
   });
 

@@ -1,4 +1,4 @@
-import type { ButtonHTMLAttributes } from 'react';
+import type { ButtonHTMLAttributes, Ref } from 'react';
 import { cx } from './cx';
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -9,6 +9,7 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   /** Disables the button and sets aria-busy while a request runs. */
   busy?: boolean;
   block?: boolean;
+  ref?: Ref<HTMLButtonElement>;
 }
 
 /** Design system Button (brand/design-system/components.d.ts). */

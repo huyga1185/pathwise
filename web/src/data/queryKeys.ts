@@ -8,7 +8,8 @@ export const queryKeys = {
   members: ['members'] as const,
   invitations: ['invitations'] as const,
   assignableMembers: ['members', { assignable: true }] as const,
-  plans: (filter: { date?: string; status?: string; page: number }) => ['plans', filter] as const,
+  plans: (filter: { date?: string; status?: string; sort?: string; page: number; size: number }) =>
+    ['plans', 'list', filter] as const,
   plansAll: ['plans'] as const,
   plan: (id: number) => ['plan', id] as const,
   driverLocations: (planId: number) => ['driver-locations', planId] as const,

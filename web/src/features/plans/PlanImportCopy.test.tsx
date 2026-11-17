@@ -1,10 +1,11 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http } from 'msw';
-import { afterEach, describe, expect, it, vi as vitest } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi as vitest } from 'vitest';
 import type { Schemas } from '@/data/types';
 import { renderApp } from '@/test/renderApp';
 import { sample } from '@/test/samples';
+import { wideWindow } from '@/test/media';
 import { API, fail, ok, server, signedInHandlers } from '@/test/server';
 
 const storeSample = () => sample<{ data: Record<string, unknown> }>('store').data;
@@ -180,6 +181,9 @@ describe('Nhập điểm giao từ file: đóng khi đang đọc', () => {
 });
 
 describe('Sao chép kế hoạch', () => {
+  // The copy button is in the list's table, on a wide window (on a phone it is in the plan's page).
+  beforeEach(() => wideWindow());
+  afterEach(() => vitest.restoreAllMocks());
   it('không đọc được kế hoạch gốc thì báo lỗi thay vì đang tải mãi', async () => {
     server.use(
       http.get(`${API}/plans`, () => ok(sample<{ data: unknown }>('plan-list').data)),

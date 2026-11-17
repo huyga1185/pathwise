@@ -3,17 +3,14 @@ import { Navigate, useLocation, useSearchParams } from 'react-router';
 import { canUseWeb, homeOf, useSession } from '@/features/auth';
 import { vi } from '@/shared/i18n/vi';
 import { ForbiddenPage } from './pages';
+import { ActivityIndicator } from '@/shared/ui';
 
 /** Signed-in pages: wait for the session to be restored, send anonymous users to /login with ?next=. */
 export function RequireAuth({ children }: { children: ReactNode }) {
   const { session } = useSession();
   const location = useLocation();
   if (session.status === 'loading') {
-    return (
-      <p role="status" className="pw-page-loading">
-        {vi.pages.loading}
-      </p>
-    );
+    return <ActivityIndicator label={vi.pages.loading} className="is-page" />;
   }
   if (session.status === 'anonymous') {
     const next = `${location.pathname}${location.search}`;

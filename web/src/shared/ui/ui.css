@@ -73,6 +73,9 @@
 .pw-btn-quiet {
   background: transparent;
   color: var(--route);
+  /* No visible shape at rest; its hover and press fill is a capsule like every other button around it (HIG Buttons:
+     "prefer circular or capsule-shape buttons"), not a near-square 4px box. */
+  border-radius: var(--radius-full);
 }
 .pw-btn-danger {
   background: var(--danger);
@@ -211,24 +214,30 @@ textarea.pw-field-input {
   white-space: nowrap;
   border-radius: var(--radius-full);
   color: var(--on-accent);
+  /* Light theme: the tone 12% darker, so white 12px text reaches 7:1 (HIG Dark Mode: "strive for a contrast ratio of
+     7:1, especially in small text"; the tokens alone give 5.9–6.7:1). The dark theme's tones already give 7.7–9.1:1. */
+  background: color-mix(in srgb, var(--pill) 88%, black);
+}
+[data-theme='dark'] .pw-pill {
+  background: var(--pill);
 }
 .pw-pill-muted {
-  background: var(--ink-muted);
+  --pill: var(--ink-muted);
 }
 .pw-pill-info {
-  background: var(--info);
+  --pill: var(--info);
 }
 .pw-pill-signal {
-  background: var(--signal);
+  --pill: var(--signal);
 }
 .pw-pill-danger {
-  background: var(--danger);
+  --pill: var(--danger);
 }
 .pw-pill-success {
-  background: var(--success);
+  --pill: var(--success);
 }
 .pw-pill-route {
-  background: var(--route);
+  --pill: var(--route);
 }
 
 /* ---------- ProgressBar ---------- */
@@ -305,11 +314,10 @@ textarea.pw-field-input {
   padding: var(--space-2) var(--space-4);
   text-align: left;
   white-space: nowrap;
-  font-size: 12px;
-  line-height: 16px;
+  font-size: 0.8125rem;
+  line-height: 1.125rem;
   font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  /* Nouns as written, not all caps (HIG Lists and tables: "Use descriptive column headings… title-style"). */
   color: var(--ink-muted);
   border-bottom: 1px solid var(--line);
 }
@@ -655,15 +663,24 @@ textarea.pw-field-input {
   padding: 0;
   background: transparent;
   border: 0;
-  border-radius: var(--radius-sm);
+  /* An icon-only button is a circle (HIG Buttons: "an icon-only button uses a circle shape"). */
+  border-radius: 50%;
   color: var(--ink-muted);
   cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
 }
 @media (hover: hover) {
   .pw-icon-button:hover {
-    background: var(--surface-tint);
+    background: color-mix(in srgb, var(--ink) 8%, transparent);
     color: var(--ink);
   }
+}
+.pw-icon-button:active {
+  background: color-mix(in srgb, var(--ink) 14%, transparent);
+  color: var(--ink);
 }
 .pw-icon-button:focus-visible {
   outline: 2px solid var(--route);
@@ -1049,6 +1066,10 @@ select.pw-field-input {
 }
 .pw-shell-main {
   min-width: 0;
+  /* Content that slides sideways (another page of a list, a page going deeper) is cut at the screen's edge instead of
+     widening the page for a moment: a phone browser then zooms the whole page out and stays zoomed out (fb_10, F-75).
+     clip, not hidden: no scroll container, so the sticky top bar keeps working. */
+  overflow-x: clip;
 }
 .pw-sidebar,
 .pw-tabbar,
@@ -1257,7 +1278,6 @@ select.pw-field-input {
   bottom: max(var(--shell-gap), env(safe-area-inset-bottom));
   z-index: 30;
   display: flex;
-  gap: 4px;
   min-height: var(--tabbar-height);
   padding: 6px;
   border: 1px solid color-mix(in srgb, var(--line) 70%, transparent);
@@ -1265,10 +1285,13 @@ select.pw-field-input {
   background: var(--shell-glass);
   box-shadow: var(--shadow-raised);
 }
-/* Items: capsules inside the capsule (concentric: (64 − 2 × 6) / 2 = 26). */
+/* Items: capsules inside the capsule (concentric: (64 − 2 × 6) / 2 = 26). Each item is as wide as its label plus an
+   equal share of the room left, so a long label ("Thành viên") borrows from a short one ("Xe") instead of being cut on
+   a 320px screen (F-74); "…" only if the five labels cannot fit at all. */
 .pw-tabbar-item {
-  flex: 1 1 0;
-  min-width: 0;
+  flex: 1 1 auto;
+  min-width: 44px;
+  padding: 0 2px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1605,5 +1628,850 @@ select.pw-field-input {
     content: '';
     position: absolute;
     inset: -2px;
+  }
+}
+
+/* ---------- Lists (OWNER_UI_REDESIGN G2): title row, filters, grouped list, rows, placeholders ---------- */
+/* A short title with the page's main action at its end (HIG Toolbars). */
+.pw-list-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.pw-list-head .pw-btn {
+  border-radius: var(--radius-full);
+}
+/* Phone: the action is a round "+" (like the add button of an iOS toolbar). */
+.pw-list-add {
+  border-radius: 50%;
+  background: var(--route);
+  color: var(--on-accent);
+}
+.pw-list-add:active {
+  background: var(--route);
+  color: var(--on-accent);
+  filter: brightness(0.84);
+}
+@media (hover: hover) {
+  .pw-list-add:hover {
+    background: var(--route);
+    color: var(--on-accent);
+    filter: brightness(0.92);
+  }
+}
+
+/* Filters right above the list, no card around them; "Xoá bộ lọc" only while filtering. */
+.pw-list-filters {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: -8px;
+}
+/* A filter is a capsule button showing its value, filled grey, no outline (HIG Buttons: system styles are filled —
+   prominent, grey, plain or glass; "prefer the capsule shape in a horizontal row of buttons"). While it filters, it is
+   tinted with the accent colour. */
+.pw-filter-wrap {
+  position: relative;
+  display: inline-flex;
+}
+.pw-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 0 12px 0 14px;
+  border: 0;
+  border-radius: var(--radius-full);
+  background: color-mix(in srgb, var(--ink) 7%, transparent);
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.875rem;
+  white-space: nowrap;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color 0.15s ease;
+}
+.pw-filter.is-set {
+  background: color-mix(in srgb, var(--route) 16%, transparent);
+}
+.pw-filter svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  color: var(--ink-muted);
+}
+.pw-filter-label {
+  color: var(--ink-muted);
+}
+.pw-filter-value {
+  font-weight: 600;
+}
+/* The compact date picker shows its value in the accent colour (HIG Pickers). */
+.pw-filter-date {
+  color: var(--route);
+}
+@media (hover: hover) {
+  .pw-filter:hover {
+    background: color-mix(in srgb, var(--ink) 11%, transparent);
+  }
+  .pw-filter.is-set:hover {
+    background: color-mix(in srgb, var(--route) 22%, transparent);
+  }
+}
+.pw-filter:active,
+.pw-filter[aria-expanded='true'] {
+  background: color-mix(in srgb, var(--ink) 14%, transparent);
+}
+.pw-filter.is-set:active,
+.pw-filter.is-set[aria-expanded='true'] {
+  background: color-mix(in srgb, var(--route) 26%, transparent);
+}
+.pw-filter:focus-visible {
+  outline: 2px solid var(--route);
+  outline-offset: 2px;
+}
+
+/* Menus and the calendar pop out of their button, on the same glass as the account menu (WWDC25 219). */
+.pw-popover {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 40;
+  padding: 8px;
+  border: 1px solid color-mix(in srgb, var(--line) 70%, transparent);
+  border-radius: var(--radius-lg);
+  /* Thicker than the account menu: it opens over rows of text, which showed through at 90% (HIG Materials: thicker
+     materials for text-heavy elements). */
+  background: color-mix(in srgb, var(--surface-raised) 96%, transparent);
+  box-shadow: var(--shadow-raised);
+  -webkit-backdrop-filter: blur(24px) saturate(1.4);
+  backdrop-filter: blur(24px) saturate(1.4);
+  transform-origin: top left;
+  animation: pw-pop-in 0.22s cubic-bezier(0.34, 1.3, 0.64, 1);
+}
+.pw-popover.is-closing {
+  animation: pw-pop-out 0.14s ease-in forwards;
+}
+.pw-menu {
+  display: flex;
+  flex-direction: column;
+  min-width: 200px;
+}
+.pw-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 36px;
+  padding: 6px 12px 6px 6px;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.875rem;
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color 0.15s ease;
+}
+.pw-menu-check {
+  display: inline-flex;
+  width: 22px;
+  justify-content: center;
+}
+.pw-menu-check svg {
+  width: 16px;
+  height: 16px;
+  stroke-width: 2.4;
+}
+@media (hover: hover) {
+  .pw-menu-item:hover {
+    background: color-mix(in srgb, var(--route) 14%, transparent);
+  }
+}
+.pw-menu-item:focus-visible {
+  outline: none;
+  background: color-mix(in srgb, var(--route) 14%, transparent);
+}
+.pw-menu-item:active {
+  background: color-mix(in srgb, var(--route) 24%, transparent);
+}
+
+/* Calendar (the compact date picker's editor): month and year with arrows, weekdays, days; today in the accent
+   colour, the chosen day a filled accent circle (HIG Pickers; the system calendar). */
+.pw-calendar {
+  width: min(320px, calc(100vw - 32px));
+  padding: 12px;
+}
+.pw-calendar-head {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 0 8px 8px;
+}
+.pw-calendar-head strong {
+  flex: 1;
+  font-size: 1rem;
+  font-weight: 600;
+}
+.pw-calendar-nav,
+.pw-calendar-day,
+.pw-calendar-link {
+  border: 0;
+  background: transparent;
+  font: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color 0.15s ease;
+}
+.pw-calendar-nav {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  color: var(--route);
+}
+.pw-calendar-nav svg {
+  width: 20px;
+  height: 20px;
+}
+.pw-calendar-grid {
+  display: flex;
+  flex-direction: column;
+}
+.pw-calendar-row {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+}
+.pw-calendar-row > span {
+  display: flex;
+  justify-content: center;
+}
+.pw-calendar-weekday {
+  padding: 4px 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--ink-muted);
+}
+.pw-calendar-day {
+  width: min(40px, 100%);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  color: var(--ink);
+  font-size: 1rem;
+  font-variant-numeric: tabular-nums;
+}
+.pw-calendar-day.is-today {
+  color: var(--route);
+  font-weight: 700;
+}
+.pw-calendar-day.is-selected {
+  background: var(--route);
+  color: var(--on-accent);
+  font-weight: 700;
+}
+.pw-calendar-foot {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 4px;
+}
+.pw-calendar-link {
+  min-height: 36px;
+  padding: 0 12px;
+  border-radius: var(--radius-full);
+  color: var(--route);
+  font-weight: 600;
+}
+@media (hover: hover) {
+  .pw-calendar-nav:hover,
+  .pw-calendar-day:not(.is-selected):hover,
+  .pw-calendar-link:hover {
+    background: color-mix(in srgb, var(--route) 12%, transparent);
+  }
+}
+.pw-calendar-nav:active,
+.pw-calendar-day:not(.is-selected):active,
+.pw-calendar-link:active {
+  background: color-mix(in srgb, var(--route) 22%, transparent);
+}
+.pw-calendar-day.is-selected:active {
+  filter: brightness(0.88);
+}
+.pw-calendar-nav:focus-visible,
+.pw-calendar-day:focus-visible,
+.pw-calendar-link:focus-visible {
+  outline: 2px solid var(--route);
+  outline-offset: 1px;
+}
+@media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
+  .pw-popover {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    background: var(--surface-raised);
+  }
+}
+@media (prefers-contrast: more) {
+  .pw-popover {
+    border: 2px solid var(--ink);
+  }
+}
+@media (forced-colors: active) {
+  .pw-popover {
+    border: 1px solid CanvasText;
+  }
+  .pw-calendar-day.is-selected {
+    outline: 2px solid Highlight;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pw-popover {
+    animation: none;
+  }
+}
+
+/* A group of rows on its own surface, no frame (HIG Layout: grouping; inset grouped lists). */
+.pw-list-group {
+  overflow: hidden;
+  background: var(--surface-raised);
+  border-radius: var(--radius-lg);
+}
+.pw-table-wrap.pw-list-group {
+  overflow: auto;
+  border: 0;
+}
+.pw-list-group .pw-table td {
+  vertical-align: middle;
+}
+.pw-th-sort {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin: -4px -8px;
+  padding: 4px 8px;
+  border: 0;
+  border-radius: var(--radius-full);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.pw-th-sort-mark {
+  display: inline-flex;
+  opacity: 0;
+}
+.pw-th-sort-mark.is-on {
+  opacity: 1;
+  color: var(--ink);
+}
+.pw-th-sort-mark svg {
+  width: 14px;
+  height: 14px;
+}
+@media (hover: hover) {
+  .pw-th-sort:hover {
+    color: var(--ink);
+    background: color-mix(in srgb, var(--ink) 6%, transparent);
+  }
+  .pw-th-sort:hover .pw-th-sort-mark {
+    opacity: 0.6;
+  }
+}
+.pw-nowrap {
+  white-space: nowrap;
+}
+
+/* Phone: a list of rows — title, a secondary line, the status, actions and a chevron (HIG Lists and tables). */
+.pw-list-rows {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  container-type: inline-size;
+}
+.pw-list-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 60px;
+  padding: 8px 8px 8px 16px;
+}
+/* Separators between rows stop short of both edges, the same inset on each side, the leading end lined up with the
+   text (Apple UIKit separatorInset: "cell separators don't extend all the way to the edge of the table view"). */
+.pw-list-row + .pw-list-row::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 16px;
+  right: 16px;
+  border-top: 1px solid var(--line);
+}
+.pw-list-row-main {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  color: var(--ink);
+  text-decoration: none;
+}
+/* The whole row opens the item; its other buttons stay on top. */
+.pw-list-row-main::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+}
+.pw-list-row > :not(.pw-list-row-main) {
+  position: relative;
+}
+.pw-list-row:has(.pw-list-row-main:active) {
+  background: color-mix(in srgb, var(--route) 10%, transparent);
+}
+@media (hover: hover) {
+  .pw-list-row:has(.pw-list-row-main:hover) {
+    background: color-mix(in srgb, var(--ink) 4%, transparent);
+  }
+  .pw-list-row-main:hover {
+    color: var(--ink);
+  }
+}
+/* A long title takes up to two lines, then "…" (HIG Typography: "use as many lines as needed to display a useful
+   amount of text"; the rest is in the item's own page). The secondary line wraps instead of being cut. Both follow
+   the browser's text size. */
+.pw-list-row-title {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  font-size: 1rem;
+  line-height: 1.375rem;
+  font-weight: 600;
+}
+.pw-list-row-sub {
+  font-size: 0.8125rem;
+  line-height: 1.125rem;
+  color: var(--ink-muted);
+  overflow-wrap: anywhere;
+}
+/* Large text or a very narrow screen: the status goes under the text instead of crowding it (HIG Typography: "consider
+   using a stacked layout where text appears above secondary items"). */
+@container (max-width: 21rem) {
+  .pw-list-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    column-gap: 8px;
+    row-gap: 6px;
+  }
+  .pw-list-row > .pw-pill {
+    grid-column: 1;
+    justify-self: start;
+  }
+  .pw-list-row-chevron {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+  }
+}
+.pw-list-row-chevron {
+  display: inline-flex;
+  color: var(--ink-muted);
+}
+.pw-list-row-chevron svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* Placeholder rows while loading: still bars, a slow glow only without reduced motion. */
+.pw-placeholder-row {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 16px;
+}
+/* The same separators as the rows they stand in for. */
+.pw-placeholder-row + .pw-placeholder-row::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 16px;
+  right: 16px;
+  border-top: 1px solid var(--line);
+}
+.pw-placeholder-row span {
+  display: block;
+  height: 10px;
+  border-radius: var(--radius-full);
+  background: var(--surface-tint);
+}
+.pw-placeholder-row span + span {
+  height: 8px;
+  opacity: 0.7;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .pw-placeholder-row span {
+    animation: pw-placeholder 1.4s ease-in-out infinite alternate;
+  }
+}
+@keyframes pw-placeholder {
+  to {
+    opacity: 0.45;
+  }
+}
+
+/* Empty list: like ContentUnavailableView (symbol, title, description, action), no card. */
+.pw-list-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  max-width: 420px;
+  margin: clamp(16px, 8vh, 80px) auto 0;
+  text-align: center;
+}
+.pw-list-empty p {
+  margin: 0;
+  color: var(--ink-muted);
+}
+.pw-list-empty-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  width: min(100%, 280px);
+  margin-top: 16px;
+}
+.pw-list-empty-actions .pw-btn {
+  height: 44px;
+  border-radius: var(--radius-full);
+}
+.pw-list-empty h2 {
+  margin: 0;
+  font-size: 1.375rem;
+  line-height: 1.75rem;
+  font-weight: 700;
+  text-wrap: balance;
+}
+.pw-list-empty-symbol {
+  display: inline-flex;
+  margin-bottom: 8px;
+  color: var(--ink-muted);
+}
+.pw-list-empty-symbol svg {
+  width: 56px;
+  height: 56px;
+  stroke-width: 1.2;
+}
+
+@media (pointer: coarse) {
+  .pw-filter,
+  .pw-menu-item,
+  .pw-calendar-nav,
+  .pw-calendar-link {
+    min-height: 44px;
+  }
+  .pw-calendar {
+    width: min(344px, calc(100vw - 32px));
+  }
+  .pw-calendar-nav {
+    width: 44px;
+    height: 44px;
+  }
+  .pw-calendar-day {
+    width: min(44px, 100%);
+  }
+  .pw-list-head .pw-btn {
+    height: 44px;
+  }
+}
+
+/* Filtering (OWNER_UI_REDESIGN §7, G2.10). While another filter's plans load, the old result stays, dimmed after a
+   moment (a fast answer never flickers); the new result — rows or the empty state — settles in from a little below,
+   like the pages (§6.2). "Xoá bộ lọc" pops in and out beside the filters (WWDC25 219). */
+.pw-list-result {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  transition: opacity 0.2s ease;
+}
+.pw-list-result.is-stale {
+  opacity: 0.5;
+  transition-delay: 0.15s;
+}
+.pw-list-result.is-changed {
+  animation: pw-result-in 0.32s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+@keyframes pw-result-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+.pw-list-clear {
+  transform-origin: left center;
+  animation: pw-pop-in 0.22s cubic-bezier(0.34, 1.3, 0.64, 1);
+}
+.pw-list-clear.is-closing {
+  animation: pw-pop-out 0.14s ease-in forwards;
+}
+/* Reduced motion: only fades, nothing moves or scales (HIG Accessibility). */
+@media (prefers-reduced-motion: reduce) {
+  .pw-list-result.is-changed {
+    animation-name: pw-result-fade;
+  }
+  .pw-list-clear,
+  .pw-list-clear.is-closing {
+    animation: none;
+  }
+}
+@keyframes pw-result-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+/* Pages (OWNER_UI_REDESIGN §7, G2.9): "‹ Trang 4/12 ›" centred under the list (placement as HIG Page controls); round
+   grey arrow buttons, no outline (HIG Buttons: an icon-only button is a circle). "Trang 4/12" opens a small panel with
+   the first page, a page number field and the last page. */
+.pw-pager {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+.pw-pager-step {
+  display: inline-grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--ink) 7%, transparent);
+  color: var(--ink);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color 0.15s ease;
+}
+.pw-pager-step svg {
+  width: 18px;
+  height: 18px;
+}
+@media (hover: hover) {
+  .pw-pager-step:hover:not([aria-disabled='true']) {
+    background: color-mix(in srgb, var(--ink) 11%, transparent);
+  }
+}
+.pw-pager-step:active:not([aria-disabled='true']) {
+  background: color-mix(in srgb, var(--ink) 16%, transparent);
+}
+.pw-pager-step[aria-disabled='true'] {
+  opacity: 0.35;
+  cursor: default;
+}
+.pw-pager-step:focus-visible {
+  outline: 2px solid var(--route);
+  outline-offset: 2px;
+}
+/* "Trang 4/12": no fill at rest, like the plain buttons beside it; a capsule on hover, press and while open. */
+.pw-pager-page {
+  min-height: 36px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: var(--radius-full);
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color 0.15s ease;
+}
+@media (hover: hover) {
+  .pw-pager-page:hover {
+    background: color-mix(in srgb, var(--ink) 7%, transparent);
+  }
+}
+.pw-pager-page:active,
+.pw-pager-page[aria-expanded='true'] {
+  background: color-mix(in srgb, var(--ink) 12%, transparent);
+}
+.pw-pager-page:focus-visible {
+  outline: 2px solid var(--route);
+  outline-offset: 2px;
+}
+/* A popover opening upward from a button near the bottom of the window; long menus scroll inside (HIG Menus). */
+.pw-menu {
+  max-height: min(320px, 50vh);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.pw-popover.is-above {
+  top: auto;
+  bottom: calc(100% + 8px);
+  transform-origin: bottom left;
+}
+/* The panel: « [ 4 ] », opening upward, centred over its button. A capsule, so its corners are concentric with the
+   capsules inside: 18 (half of 36) + padding 8 = 26 = half of its 52px height (HIG Toolbars: "ensure that its corner
+   radius is also concentric with the bar's corners"). */
+.pw-popover.pw-page-jump {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: var(--radius-full);
+  left: 50%;
+  translate: -50% 0;
+  transform-origin: bottom center;
+}
+.pw-page-jump-field {
+  box-sizing: border-box;
+  width: calc(var(--digits, 2) * 1ch + 26px);
+  height: 36px;
+  min-width: 2ch;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-full);
+  background: var(--surface-raised);
+  color: var(--ink);
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+.pw-page-jump-field:focus {
+  outline: none;
+  border-color: var(--route);
+  box-shadow: 0 0 0 1px var(--route);
+}
+@media (pointer: coarse) {
+  .pw-pager-step {
+    width: 44px;
+    height: 44px;
+  }
+  .pw-pager-page,
+  .pw-page-jump-field {
+    min-height: 44px;
+    height: 44px;
+  }
+  .pw-popover.pw-page-jump {
+    padding: 8px;
+  }
+}
+
+/* Another page slides in from the side it comes from, like turning a page (HIG Scroll views: page-by-page). */
+.pw-list-result.is-next {
+  animation: pw-page-next 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.pw-list-result.is-prev {
+  animation: pw-page-prev 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+@keyframes pw-page-next {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+}
+@keyframes pw-page-prev {
+  from {
+    opacity: 0;
+    transform: translateX(-24px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pw-list-result.is-next,
+  .pw-list-result.is-prev {
+    animation-name: pw-result-fade;
+  }
+}
+/* A phone scrolls back to the list's start, just under the top bar. */
+.pw-list-result {
+  scroll-margin-top: 72px;
+}
+
+/* An invisible sample row and pager: their heights say how many rows fit the window (useFitRows). As wide as the real
+   list (its section is the containing block), so the same columns hide and the same lines wrap. */
+.pw-page-section:has(> .pw-fit-probe) {
+  position: relative;
+}
+.pw-fit-probe {
+  position: absolute;
+  left: 0;
+  right: 0;
+  visibility: hidden;
+  pointer-events: none;
+  height: 0;
+  overflow: visible;
+}
+
+/* An activity indicator in a page or panel (HIG Progress indicators), centred in the room it has; it fades in after
+   0.3 s so a quick load never flashes it. Turns with pw-activity-turn (app.css). */
+.pw-activity-inline {
+  display: grid;
+  place-items: center;
+  min-height: 120px;
+  color: var(--ink-muted);
+  animation: pw-activity-show 0.2s ease 0.3s both;
+}
+.pw-activity-inline svg {
+  animation: pw-activity-turn 0.8s steps(8) infinite;
+}
+.pw-activity-inline.is-page {
+  min-height: 60vh;
+}
+@keyframes pw-activity-show {
+  from {
+    opacity: 0;
+  }
+}
+
+/* Touch and hold on a list row (phone): no browser link menu or text selection; the held row lifts a little while its
+   context menu is open (HIG Context menus: the item emerges from the content). */
+.pw-list-row-main {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.pw-list-row.is-held {
+  z-index: 2;
+  background: var(--surface-raised);
+  box-shadow: var(--shadow-raised);
+  border-radius: var(--radius-md);
+  transform: scale(1.02);
+  transition:
+    transform 0.2s cubic-bezier(0.34, 1.3, 0.64, 1),
+    box-shadow 0.2s ease;
+}
+.pw-list-row.is-held::before,
+.pw-list-row.is-held + .pw-list-row::before {
+  display: none;
+}
+.pw-list-group:has(.pw-list-row.is-held) {
+  overflow: visible;
+}
+.pw-row-menu {
+  z-index: 60;
+  min-width: 200px;
+  transform-origin: top left;
+}
+.pw-row-menu.is-above {
+  transform-origin: bottom left;
+}
+@media (pointer: coarse) {
+  .pw-row-menu .pw-menu-item {
+    min-height: 44px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pw-list-row.is-held {
+    transform: none;
   }
 }
