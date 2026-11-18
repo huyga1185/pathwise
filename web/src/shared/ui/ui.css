@@ -187,10 +187,13 @@
     background-color 0.15s ease;
 }
 /* Focus lights the field from within, like the sign-in fields (WWDC25 219: "illuminates from within"). */
-.pw-field-input:focus-visible {
+/* A select whose menu is open stays lit, as every other pop-up button keeps its pressed look while its menu is open.
+   background-color only: the shorthand would reset a select's ⌃⌄ image to repeat (seen in dark mode). */
+.pw-field-input:focus-visible,
+select.pw-field-input[aria-expanded='true'] {
   outline: none;
   border-color: var(--route);
-  background: var(--surface-raised);
+  background-color: var(--surface-raised);
   box-shadow:
     inset 0 0 0 1px var(--route),
     0 0 12px color-mix(in srgb, var(--route) 30%, transparent);
@@ -840,14 +843,65 @@ textarea.pw-field-input {
   cursor: pointer;
 }
 .pw-check input {
-  width: 18px;
-  height: 18px;
+  /* macOS checkbox (HIG Toggles, Checkboxes; images: off "a small rounded square with no fill", on "a small rounded
+     square with blue fill and a white checkmark"): drawn here, not the browser's box; the app accent stands for blue.
+     Border ink-muted for 3:1 against the page (WCAG 1.4.11). */
+  appearance: none;
+  -webkit-appearance: none;
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 16px;
+  height: 16px;
   margin: 0;
-  accent-color: var(--route);
+  border: 1px solid var(--ink-muted);
+  border-radius: 4px;
+  background: var(--surface-raised);
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.08);
+  cursor: inherit;
+  transition:
+    background-color 0.12s ease,
+    border-color 0.12s ease;
+}
+.pw-check input::after {
+  content: '';
+  width: 10px;
+  height: 10px;
+  background: var(--on-accent);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4.5 12.5l5 5L19.5 6.5'/%3E%3C/svg%3E")
+    center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4.5 12.5l5 5L19.5 6.5'/%3E%3C/svg%3E")
+    center / contain no-repeat;
+  transform: scale(0);
+  transition: transform 0.12s ease;
+}
+.pw-check input:checked {
+  border-color: var(--route);
+  background: var(--route);
+}
+.pw-check input:checked::after {
+  transform: none;
+}
+@media (hover: hover) {
+  .pw-check input:not(:disabled):not(:checked):hover {
+    border-color: var(--ink);
+  }
+}
+.pw-check input:active:not(:disabled) {
+  filter: brightness(0.9);
 }
 .pw-check input:focus-visible {
   outline: 2px solid var(--route);
   outline-offset: 2px;
+}
+.pw-check input:disabled {
+  opacity: 0.45;
+}
+@media (prefers-reduced-motion: reduce) {
+  .pw-check input,
+  .pw-check input::after {
+    transition: none;
+  }
 }
 .pw-check input:disabled,
 .pw-check input:disabled + span {
@@ -3030,6 +3084,7 @@ a.pw-segment {
 @media (pointer: fine) {
   .pw-btn,
   .pw-icon-button,
+  .pw-sidebar-toggle,
   .pw-filter,
   .pw-pager-page,
   .pw-pager-step,
