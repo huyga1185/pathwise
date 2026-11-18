@@ -450,3 +450,11 @@ Không làm trong G4: chi tiết kế hoạch, giao việc, huỷ kế hoạch, 
 - **Đo:** 1440/1280/1024/960/390px, sáng và tối: không trang nào cuộn ngang; hàng tiêu đề ghim ở y = 60 khi cuộn; ô ngày và ô tên thẳng hàng (lưới căn trên); sheet điểm giao, bánh xe giờ, sheet nhập file hai bước, sheet sao chép; test web 274, e2e 3/3.
 - **Để G5:** chi tiết kế hoạch, giao việc, huỷ kế hoạch, chọn ghim vẫn dùng `Dialog` cũ (`PlanDialogs.tsx`).
 
+### 9.5 Góp ý của chủ dự án sau G4 (2026-11-18)
+
+| # | Góp ý | Nguyên nhân (đo) | Sửa |
+|---|---|---|---|
+| 1 | Nút "Phóng to bản đồ để đặt ghim chính xác hơn" lỗi | `Dialog` cũ render trong trang: nằm dưới thanh bên và thanh trên, lệch trái; điện thoại rộng 477px trên màn 390; bản đồ 16:9 cao hơn chỗ, chú thích đè lên hai nút | `Dialog` render trên `body` (như Sheet, Alert — sửa luôn các hộp G5 còn dùng nó); một cột rộng bằng hộp (`minmax(0, 1fr)`); bản đồ của hộp toàn màn hình lấp chỗ còn lại. Đo: 1440 hộp trên cùng, bản đồ 582px, không đè nút; 390 hộp 358px |
+| 2 | "Tìm lại địa chỉ này" nhấp nháy khi đã có lỗi và cuộn hết trang | Bấm thì xoá thông báo lỗi trước khi gọi API: trang ngắn đi 54px, đang ở cuối nên trình duyệt kéo lên 54px; 22ms sau lỗi giống hệt hiện lại → nháy | Giữ lỗi cũ tới khi kết quả lần thử mới thay nó trong cùng một lần vẽ; lỗi lặp lại dựng mới banner (`key`) để trình đọc màn hình vẫn đọc (`role="alert"`). Đo từng khung hình: không còn thay đổi chiều cao hay vị trí cuộn (390 và 1440) |
+| 3 | Ô Người nhận và Số điện thoại trong bảng quá ngắn | Vòng trước hạ cột còn 7,5rem / 7rem (nội dung cần: "Nguyễn Thị Lan" 130px, "0905 123 456" 121px, "ĐH-10234" 98px) | Cột theo nội dung đo được (HIG Text fields: *"match the size of a text field to the quantity of anticipated text"*): Mã đơn 7rem, Người nhận 10,5rem, Số điện thoại 8,5rem; bù chỗ bằng ô giờ trong bảng 4,5rem (đủ "08:30" 66px), Khung giờ 9,5rem, Ghi chú 6rem. 1280px: cần 868, khung 933 |
+
