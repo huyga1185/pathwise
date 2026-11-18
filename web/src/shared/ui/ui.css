@@ -2966,3 +2966,16 @@ button.pw-list-row-main:disabled {
     min-height: 44px;
   }
 }
+/* A segment that is a link (sub-pages, e.g. Cửa hàng / Nhật ký). */
+a.pw-segment {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ink);
+  text-decoration: none;
+}
+@media (hover: hover) {
+  a.pw-segment:hover {
+    color: var(--ink);
+  }
+}
