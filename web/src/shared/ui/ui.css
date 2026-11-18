@@ -3635,3 +3635,26 @@ html {
     animation-name: pw-result-fade;
   }
 }
+
+/* The old Dialog opens and closes as a wide sheet does: the backdrop fades, the box pops in and back (HIG Motion). */
+.pw-dialog-backdrop {
+  animation: pw-fade-in 0.2s ease both;
+}
+.pw-dialog-backdrop.is-closing {
+  animation: pw-fade-out 0.2s ease both;
+}
+.pw-dialog {
+  animation: pw-sheet-pop 0.24s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.pw-dialog.is-closing {
+  animation: pw-sheet-unpop 0.2s ease both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .pw-dialog,
+  .pw-dialog.is-closing {
+    animation-name: pw-fade-in;
+  }
+  .pw-dialog.is-closing {
+    animation-name: pw-fade-out;
+  }
+}

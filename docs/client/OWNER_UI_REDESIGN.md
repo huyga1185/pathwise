@@ -474,7 +474,8 @@ Chủ dự án: phần lớn luồng chưa có chuyển cảnh. Theo HIG Motion 
 | Khối xuất hiện: thông báo lỗi/thông tin, thanh tiến độ, "Còn N điểm chưa có toạ độ", "Còn N ô cần sửa", "Đã thêm N điểm từ file", thông báo sao chép | Mờ vào, trồi 10px, 0,32 s | G2.10 |
 | Cùng thông báo lỗi nói lại sau một lần thử | Không chạy lại (`ErrorBanner repeat`) — chạy lại là nháy (§9.5 #2) | §9.5 |
 | Chọn điểm khác, thêm dòng | Không chuyển động | HIG Motion: thao tác lặp lại thường xuyên |
+| Hộp "Phóng to bản đồ" (`Dialog` cũ) | Mở: nền mờ vào, hộp bật ra (0,24 s); đóng: thu về (0,2 s) — như Sheet trên màn rộng. Trước đó bật/tắt đột ngột (chủ dự án) | Sheet G2.10 |
 | Giảm chuyển động | Chỉ mờ | §6.2 CĐ6 |
 
-Đo (`getAnimations`): bấm "Tìm lại toạ độ" → thanh tiến độ và khối "Còn N điểm…" chạy `pw-result-in` khi đổi chỗ cho nhau.
+Vòng xoay cạnh thanh tiến độ nằm thẳng hàng với dòng chữ của thanh (tâm trùng nhau, đo). Đo (`getAnimations`): bấm "Tìm lại toạ độ" → thanh tiến độ và khối "Còn N điểm…" chạy `pw-result-in` khi đổi chỗ cho nhau.
 

@@ -426,19 +426,18 @@ function FixStop({ plan, stop, busy }: { plan: PlanDetail; stop: PlanStop; busy:
           {g.savePin}
         </Button>
       </div>
-      {enlarge ? (
-        <PinPickerDialog
-          open
-          initial={pin ?? current ?? plan.depot}
-          search={search}
-          pinLabel={g.pinLabel}
-          onConfirm={(value) => {
-            setPin(value);
-            setEnlarge(false);
-          }}
-          onClose={() => setEnlarge(false)}
-        />
-      ) : null}
+      {/* Always there, so it closes with its animation (Dialog). */}
+      <PinPickerDialog
+        open={enlarge}
+        initial={pin ?? current ?? plan.depot}
+        search={search}
+        pinLabel={g.pinLabel}
+        onConfirm={(value) => {
+          setPin(value);
+          setEnlarge(false);
+        }}
+        onClose={() => setEnlarge(false)}
+      />
     </section>
   );
 }

@@ -1236,15 +1236,16 @@ html:has(.pw-form-bar) {
 /* Finding coordinates: the turning spokes beside the progress bar, which moves only when the plan is read again. */
 .pw-progress-running {
   display: flex;
-  align-items: flex-end;
-  gap: 10px;
+  align-items: flex-start;
+  gap: 8px;
 }
 .pw-progress-running > :last-child {
   flex: 1;
   min-width: 0;
 }
 .pw-progress-running .pw-activity-text {
-  margin-bottom: 2px;
+  /* On the bar's words line (its label is 16px tall): centred on it. */
+  height: 16px;
 }
 
 /* A table inside a form group has no frame of its own: the group is its container (DESIGN_SYSTEM: a table in a group

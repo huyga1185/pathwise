@@ -185,6 +185,15 @@ export function PinPickerDialog({
 }) {
   const [value, setValue] = useState<LatLng | null>(initial);
   const [place, setPlace] = useState<Place | null>(null);
+  // Kept mounted so it can close with its animation: each opening starts again from `initial`.
+  const [wasOpen, setWasOpen] = useState(open);
+  if (open !== wasOpen) {
+    setWasOpen(open);
+    if (open) {
+      setValue(initial);
+      setPlace(null);
+    }
+  }
   return (
     <Dialog
       open={open}
@@ -198,18 +207,17 @@ export function PinPickerDialog({
       onClose={onClose}
     >
       {children}
-      {open ? (
-        <PinPicker
-          value={value}
-          onChange={(next) => {
-            setValue(next);
-            setPlace(null);
-          }}
-          onPlace={setPlace}
-          search={search}
-          pinLabel={pinLabel}
-        />
-      ) : null}
+      {/* As long as the dialog shows, its closing included (the Dialog drops it all once closed). */}
+      <PinPicker
+        value={value}
+        onChange={(next) => {
+          setValue(next);
+          setPlace(null);
+        }}
+        onPlace={setPlace}
+        search={search}
+        pinLabel={pinLabel}
+      />
     </Dialog>
   );
 }
