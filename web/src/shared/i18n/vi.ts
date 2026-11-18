@@ -441,7 +441,8 @@ export const vi = {
   },
   planImport: {
     open: 'Nhập từ file',
-    title: 'Nhập điểm giao từ file',
+    /** The sheet's title: short (HIG Toolbars, under 15 characters), the same words as the button. */
+    title: 'Nhập từ file',
     drop: 'Kéo thả file vào đây',
     dropHint: 'Excel (.xlsx) hoặc CSV, tối đa 1 MB và 100 điểm giao. Dòng đầu là tiêu đề cột.',
     choose: 'Chọn file',
@@ -455,7 +456,6 @@ export const vi = {
     summary: (rows: number) => `${rows} dòng:`,
     valid: (n: number) => `${n} thêm được`,
     bad: (n: number) => `${n} có lỗi`,
-    again: 'Chọn file khác',
     ignored: (columns: string) => `Bỏ qua cột không có trong file mẫu: ${columns}.`,
     badRowsHint: 'Dòng có lỗi không được thêm; sửa trong file rồi chọn lại, hoặc thêm tay sau.',
     tooMany: (current: number, adding: number) =>
@@ -468,6 +468,8 @@ export const vi = {
     error: 'LỖI',
     window: 'Khung giờ',
     demand: 'Số lượng',
+    windowAndDemand: 'Khung giờ, số lượng',
+    rowAndResult: 'Dòng, kết quả',
     errors: 'Lỗi',
     add: (n: number) => `Thêm ${n} điểm giao`,
     back: 'Quay lại',

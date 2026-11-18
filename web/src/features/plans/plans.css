@@ -970,9 +970,6 @@
   font-size: 12px;
   line-height: 16px;
 }
-.pw-import-table .pw-table {
-  min-width: 1080px;
-}
 .pw-import-added {
   margin: 0;
   color: var(--ink-muted);
@@ -1142,4 +1139,23 @@ html:has(.pw-form-bar) {
 }
 .pw-btn.pw-sheet-destructive {
   color: var(--danger);
+}
+/* The import preview on a phone: one row per line of the file, its result at the end, its errors under it. */
+.pw-import-rows .pw-list-row {
+  align-items: flex-start;
+}
+.pw-import-rows .pw-import-err {
+  font-size: 0.8125rem;
+  line-height: 1.125rem;
+}
+/* Short values stay on one line; the errors take what they need (G2.11), so the preview fits the large sheet. */
+.pw-import-ok,
+.pw-import-bad {
+  white-space: nowrap;
+}
+.pw-import-col-errors {
+  min-width: 10rem;
+}
+.pw-import-col-address {
+  min-width: 9rem;
 }

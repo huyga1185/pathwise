@@ -77,7 +77,7 @@ describe('Nhập điểm giao từ file', () => {
     const user = userEvent.setup();
 
     await user.click(await screen.findByRole('button', { name: 'Nhập từ file' }));
-    const dialog = await screen.findByRole('dialog', { name: 'Nhập điểm giao từ file' });
+    const dialog = await screen.findByRole('dialog', { name: 'Nhập từ file' });
     await user.upload(within(dialog).getByLabelText('File điểm giao (.xlsx hoặc .csv)'), file());
 
     expect(await within(dialog).findByText('diem-giao.xlsx')).toBeInTheDocument();
@@ -136,7 +136,7 @@ describe('Nhập điểm giao từ file', () => {
     const user = userEvent.setup();
     await user.type(await screen.findByLabelText('Mã đơn dòng 1'), 'Đã có');
     await user.click(screen.getByRole('button', { name: 'Nhập từ file' }));
-    const dialog = await screen.findByRole('dialog', { name: 'Nhập điểm giao từ file' });
+    const dialog = await screen.findByRole('dialog', { name: 'Nhập từ file' });
 
     await user.upload(within(dialog).getByLabelText('File điểm giao (.xlsx hoặc .csv)'), file('thieu-cot.csv'));
     expect(
@@ -168,14 +168,15 @@ describe('Nhập điểm giao từ file: đóng khi đang đọc', () => {
     renderApp('/plans/new');
     const user = userEvent.setup();
     await user.click(await screen.findByRole('button', { name: 'Nhập từ file' }));
-    let dialog = await screen.findByRole('dialog', { name: 'Nhập điểm giao từ file' });
+    let dialog = await screen.findByRole('dialog', { name: 'Nhập từ file' });
     await user.upload(within(dialog).getByLabelText('File điểm giao (.xlsx hoặc .csv)'), file());
     expect(await within(dialog).findByRole('button', { name: 'Đang đọc file…' })).toBeInTheDocument();
-    await user.click(within(dialog).getByRole('button', { name: 'Quay lại' }));
+    // Step 1 of the sheet: its leading button cancels (Back is for a later step, HIG Sheets).
+    await user.click(within(dialog).getByRole('button', { name: 'Huỷ' }));
     release();
 
     await user.click(screen.getByRole('button', { name: 'Nhập từ file' }));
-    dialog = await screen.findByRole('dialog', { name: 'Nhập điểm giao từ file' });
+    dialog = await screen.findByRole('dialog', { name: 'Nhập từ file' });
     await new Promise((resolve) => setTimeout(resolve, 50));
     expect(within(dialog).queryByText('diem-giao.xlsx')).not.toBeInTheDocument();
     expect(within(dialog).getByRole('button', { name: 'Chọn file' })).toBeEnabled();

@@ -50,7 +50,7 @@ import {
   type DemandUnit,
   type PlanFormValues,
 } from './planForm';
-import { ImportDialog } from './ImportDialog';
+import { ImportSheet } from './ImportSheet';
 import { AssignmentSheet, assignmentRows, FormRows, StopSheet, stopRows, UNIT_TITLE } from './PlanFormLists';
 import './plans.css';
 
@@ -577,7 +577,7 @@ function PlanForm({ plan }: { plan: PlanDetail | null }) {
             {vi.planImport.added(imported)}
           </p>
         ) : null}
-        <ImportDialog
+        <ImportSheet
           open={importing}
           keptStops={(watchedStops ?? []).filter((row) => !isBlankStop(row)).length}
           onClose={() => setImporting(false)}

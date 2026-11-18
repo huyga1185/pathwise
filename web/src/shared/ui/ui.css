@@ -2581,6 +2581,9 @@ textarea.pw-field-input {
   place-items: center;
   padding: 24px;
 }
+.is-wide > .pw-sheet.is-large {
+  width: min(1040px, 100%);
+}
 .is-wide > .pw-sheet {
   width: min(520px, 100%);
   max-height: calc(100vh - 48px);
