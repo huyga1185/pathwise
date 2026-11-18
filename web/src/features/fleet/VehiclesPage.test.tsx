@@ -171,7 +171,8 @@ describe('Xe', () => {
 
     await user.clear(name);
     await user.type(name, 'Xe 1');
-    await user.click(within(sheet).getByLabelText('Đang dùng'));
+    // A switch in the sheet (HIG Toggles: a switch in a list row).
+    await user.click(within(sheet).getByRole('switch', { name: /^Đang dùng/ }));
     await user.click(within(sheet).getByRole('button', { name: 'Lưu' }));
 
     expect(await screen.findByText('Đã lưu Xe 1.')).toBeInTheDocument();

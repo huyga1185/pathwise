@@ -65,7 +65,7 @@ describe('Tài khoản', () => {
     server.use(...profileHandlers());
     renderApp('/profile');
 
-    // A short title (HIG Toolbars); the account menu's item still reads "Hồ sơ và bảo mật".
+    // A short title (HIG Toolbars); the account menu's item has the same name.
     expect(await screen.findByRole('heading', { name: 'Tài khoản', level: 1 })).toBeInTheDocument();
     expect(await screen.findByLabelText('Họ tên')).toHaveValue('Chủ Lan');
     expect(screen.getByLabelText('Số điện thoại')).toHaveValue('0905 123 456');

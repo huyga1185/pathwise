@@ -17,7 +17,7 @@ const DEVICE_TIME_ZONE = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
 /**
  * "Tài khoản" (SCREENS §1.1, OWNER_UI_REDESIGN §8.3): profile, the two-step password change in a sheet, signed-in
- * devices. A short title (HIG Toolbars: under 15 characters; the account menu's item still reads "Hồ sơ và bảo mật");
+ * devices. A short title (HIG Toolbars: under 15 characters; the account menu's item has the same name);
  * signing out is in the account menu (G1), so not on this page's title row. Groups, not framed cards (D9).
  */
 export function ProfilePage() {

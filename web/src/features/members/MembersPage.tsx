@@ -311,8 +311,9 @@ function MembersList({
       key: 'drive',
       header: m.drive,
       render: (row) => (
+        // No "Có/Không" beside it: the tick shows the state and the heading "Đi giao" what it is (HIG Toggles); a
+        // label that changed with the state also made the column change width.
         <Checkbox
-          label={row.canDrive ? m.yes : m.no}
           aria-label={m.driveOf(memberName(row, meId))}
           aria-describedby="drive-hint"
           checked={row.canDrive}

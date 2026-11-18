@@ -1,6 +1,6 @@
 import { useStoreReadOnly } from '@/data/meQuery';
 import { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { useSearchParams } from 'react-router';
 import { errorMessages, fieldMessage, messageFor } from '@/shared/errors';
 import { requiredRule } from '@/shared/forms/rules';
@@ -10,7 +10,6 @@ import { vi } from '@/shared/i18n/vi';
 import { statusInfo } from '@/shared/status';
 import {
   buttonClass,
-  Checkbox,
   ChevronRightIcon,
   DataTable,
   ErrorBanner,
@@ -21,6 +20,7 @@ import {
   SelectField,
   Sheet,
   StatusPill,
+  SwitchRow,
   TextField,
   Toast,
   ToastDock,
@@ -84,8 +84,11 @@ export function VehiclesPage() {
     handleSubmit,
     reset,
     setError,
+    setValue,
+    control,
     formState: { errors, isSubmitting, isDirty },
   } = useForm<VehicleForm>({ defaultValues: EMPTY });
+  const active = useWatch({ control, name: 'active' });
 
   const openAdd = () => {
     setFailure(null);
@@ -328,7 +331,18 @@ export function VehiclesPage() {
             })}
           />
         </div>
-        {editing ? <Checkbox label={v.active} {...register('active')} /> : null}
+        {/* A switch in a row of the sheet (HIG Toggles: "Use the switch toggle style only in a list row"; iOS has no
+            checkbox). */}
+        {editing ? (
+          <div className="pw-sheet-group">
+            <SwitchRow
+              label={v.active}
+              hint={v.activeHint}
+              checked={active}
+              onChange={(active) => setValue('active', active, { shouldDirty: true })}
+            />
+          </div>
+        ) : null}
       </Sheet>
 
       {toast ? (

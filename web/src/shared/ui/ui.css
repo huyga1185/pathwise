@@ -3042,3 +3042,10 @@ a.pw-segment {
     border-radius: 22px;
   }
 }
+
+/* A group of switch rows inside a sheet (like the member sheet's). */
+.pw-sheet-group {
+  padding: 0 16px;
+  border-radius: var(--radius-lg);
+  background: color-mix(in srgb, var(--ink) 5%, transparent);
+}

@@ -78,7 +78,7 @@ describe('AppShell (P-74)', () => {
 
     const menu = screen.getByRole('menu');
     expect(menu).toHaveTextContent('Tiệm Hoa Hồng');
-    expect(screen.getByRole('menuitem', { name: 'Hồ sơ và bảo mật' })).toHaveFocus();
+    expect(screen.getByRole('menuitem', { name: 'Tài khoản' })).toHaveFocus();
     await user.keyboard('{ArrowDown}');
     expect(screen.getByRole('menuitem', { name: 'Đăng xuất' })).toHaveFocus();
     await user.keyboard('{Escape}');

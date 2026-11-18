@@ -170,12 +170,12 @@ export function pageMotion(from: string, to: string, roots: string[]): Keyframe[
       { opacity: 0, transform: 'translateX(-32px)' },
       { opacity: 1, transform: 'none' },
     ];
-  // Any other change (an area outside the menu such as "Hồ sơ và bảo mật", one plan to another): like switching areas.
+  // Any other change (an area outside the menu such as "Tài khoản", one plan to another): like switching areas.
   return rise;
 }
 
 /**
- * The account button (initials) and its menu: who is signed in, the store, "Hồ sơ và bảo mật", "Đăng xuất". One
+ * The account button (initials) and its menu: who is signed in, the store, "Tài khoản", "Đăng xuất". One
  * button instead of the store, the name and "Đăng xuất" always on screen (HIG Toolbars: "Choose items deliberately to
  * avoid overcrowding"; P-74). A menu button: Escape, a click outside or choosing an item closes it, focus goes back to
  * the button.
