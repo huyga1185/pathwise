@@ -4,6 +4,11 @@ import { API, blockThirdParties, otpSentTo, RUN } from './support';
 
 const FIXTURE = fileURLToPath(new URL('./fixtures/diem-giao.csv', import.meta.url));
 
+// The plan form's stops are a table of fields when the table fits its group, rows and sheets otherwise (G4.7). These
+// tests type into the table; third-party requests are blocked, so the app font (Google Fonts) does not load and the
+// wider fallback font no longer fits 1280px: a 1440×900 window, the table's case.
+test.use({ viewport: { width: 1440, height: 900 } });
+
 /**
  * W12 acceptance on the real backend: a stop file (with coordinates, so no geocoding service is needed) goes into a
  * new plan through the import dialog, its bad row is left out, and the plan is saved with the two good stops.

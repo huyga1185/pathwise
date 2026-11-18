@@ -1,6 +1,11 @@
 import { expect, test } from '@playwright/test';
 import { blockThirdParties, driverApi, invitationCodeSentTo, otpSentTo, RUN, todayInVietnam } from './support';
 
+// The plan form's stops are a table of fields when the table fits its group, rows and sheets otherwise (G4.7). These
+// tests type into the table; third-party requests are blocked, so the app font (Google Fonts) does not load and the
+// wider fallback font no longer fits 1280px: a 1440×900 window, the table's case.
+test.use({ viewport: { width: 1440, height: 900 } });
+
 /**
  * The MVP path of docs/client/PLAN.md W07 on the real backend: register → verify (Mailpit) → depot → vehicle →
  * invite a driver → plan → coordinates → optimize → publish → the driver reports results (API) → COMPLETED.
