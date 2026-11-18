@@ -97,9 +97,11 @@ export function StoreAuditPage() {
 
   return (
     <section className="pw-page-section" aria-labelledby="store-audit-title">
-      <h1 id="store-audit-title" className="pw-page-title">
-        {vi.store.title}
-      </h1>
+      <div className="pw-list-head pw-store-head">
+        <h1 id="store-audit-title" className="pw-page-title">
+          {vi.store.title}
+        </h1>
+      </div>
       <StoreTabs />
       <p className="pw-muted pw-list-lead-tight">{t.storeLead}</p>
       {/* Filters like the plan list (G2): pop-up button and compact date pickers, no card. */}

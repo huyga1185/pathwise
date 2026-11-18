@@ -97,7 +97,7 @@ describe('AppShell (P-74)', () => {
     expect(initials('')).toBe('');
   });
 
-  it('page motion: a rise between areas, a slide in going deeper, a slide back coming up, nothing on the same page', () => {
+  it('page motion: a rise between areas, a slide in going deeper, a slide back coming up, nothing on the same page or between tabs', () => {
     const roots = ['/plans', '/reports', '/store'];
     const kind = (from: string, to: string) => {
       const frames = pageMotion(from, to, roots);
@@ -108,7 +108,9 @@ describe('AppShell (P-74)', () => {
     expect(kind('/plans', '/reports')).toBe('translateY(12px)');
     expect(kind('/plans', '/plans/new')).toBe('translateX(32px)');
     expect(kind('/plans/12', '/plans')).toBe('translateX(-32px)');
-    expect(kind('/store', '/store/audit')).toBe('translateX(32px)');
+    // Tabs of one page (Thông tin / Nhật ký): only the tab underline moves.
+    expect(kind('/store', '/store/audit')).toBe('none');
+    expect(kind('/store/audit', '/store')).toBe('none');
     expect(kind('/plans/12', '/plans/13')).toBe('translateY(12px)');
     expect(kind('/plans', '/profile')).toBe('translateY(12px)');
     expect(kind('/plans', '/plans')).toBe('none');

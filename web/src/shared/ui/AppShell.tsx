@@ -151,8 +151,12 @@ function inViewTransition(): boolean {
   }
 }
 
+/** Pages that are tabs of one page: switching between them is a tab switch (only the underline moves), not a page change. */
+const TAB_PAGES = [['/store', '/store/audit']];
+
 export function pageMotion(from: string, to: string, roots: string[]): Keyframe[] | null {
   if (from === to) return null;
+  if (TAB_PAGES.some((group) => group.includes(from) && group.includes(to))) return null;
   const fade: Keyframe[] = [{ opacity: 0 }, { opacity: 1 }];
   if (reducedMotion()) return fade;
   const rise: Keyframe[] = [

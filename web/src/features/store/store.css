@@ -74,3 +74,18 @@
 .pw-list-lead-tight {
   margin: 0;
 }
+
+/* Both tabs share one header: the title row keeps the save button's height when the log tab has none. */
+.pw-store-head {
+  min-height: 36px;
+}
+@media (max-width: 959.98px) {
+  .pw-store-head {
+    min-height: 40px;
+  }
+}
+@media (max-width: 959.98px) and (pointer: coarse) {
+  .pw-store-head {
+    min-height: 44px;
+  }
+}

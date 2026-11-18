@@ -128,8 +128,9 @@ function StoreForm({ store, editable, tabs }: { store: Store; editable: boolean;
 
   return (
     <form className="pw-store" aria-labelledby="store-title" onSubmit={onSave} noValidate>
-      {/* The title with the main action at its end, as on every page (HIG Toolbars); the lead below. */}
-      <div className="pw-list-head">
+      {/* The title with the main action at its end, as on every page (HIG Toolbars); then the tabs, then this tab's
+          lead: the same header as the log tab, so switching tabs moves nothing above the content. */}
+      <div className="pw-list-head pw-store-head">
         <h1 id="store-title" className="pw-page-title">
           {vi.store.title}
         </h1>
@@ -149,8 +150,10 @@ function StoreForm({ store, editable, tabs }: { store: Store; editable: boolean;
           </button>
         ) : null}
       </div>
-      <p className="pw-muted pw-list-lead">{editable ? vi.store.leadOwner : vi.store.leadViewer}</p>
       {tabs}
+      <p className={tabs ? 'pw-muted pw-list-lead-tight' : 'pw-muted pw-list-lead'}>
+        {editable ? vi.store.leadOwner : vi.store.leadViewer}
+      </p>
 
       {!pin ? (
         <section role="alert" className="pw-store-warning">
