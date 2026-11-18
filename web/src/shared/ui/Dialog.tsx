@@ -1,3 +1,4 @@
+import { createPortal } from 'react-dom';
 import { useEffect, useId, useRef, type ReactNode } from 'react';
 import { Button } from './Button';
 import { cx } from './cx';
@@ -73,7 +74,9 @@ export function Dialog({
   }, [open]);
 
   if (!open) return null;
-  return (
+  // On document.body, as Sheet and Alert: inside the page it sat under the sidebar and the top bar, off to one side
+  // (an ancestor's stacking context and containing block), and the enlarge-map dialog did not fit a phone.
+  return createPortal(
     <div className="pw-dialog-backdrop">
       <div
         ref={ref}
@@ -100,6 +103,7 @@ export function Dialog({
           </Button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

@@ -550,6 +550,8 @@ textarea.pw-field-input {
   max-width: 440px;
   padding: var(--space-6);
   display: grid;
+  /* One column as wide as the dialog: content never widens it past the screen (a phone's 390px). */
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--space-4);
   background: var(--surface-raised);
   color: var(--ink);
@@ -569,6 +571,17 @@ textarea.pw-field-input {
   min-height: 0;
   display: flex;
   flex-direction: column;
+}
+/* The map of a full-size dialog (choose a pin) fills the room left under the search, rather than a fixed 16:9 that
+   ran past the buttons on a wide window and left a blank half on a phone. */
+.pw-dialog-full .pw-dialog-body .pw-pin-picker {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+.pw-dialog-full .pw-dialog-body .pw-map {
+  flex: 1 1 auto;
+  min-height: 240px;
+  aspect-ratio: auto;
 }
 .pw-dialog-title {
   margin: 0;
