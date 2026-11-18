@@ -1677,9 +1677,6 @@ textarea.pw-field-input {
   justify-content: space-between;
   gap: 16px;
 }
-.pw-list-head .pw-btn {
-  border-radius: var(--radius-full);
-}
 /* Phone: the action is a round "+" (like the add button of an iOS toolbar). */
 .pw-list-add {
   border-radius: 50%;
@@ -2185,7 +2182,8 @@ textarea.pw-field-input {
   width: min(100%, 280px);
   margin-top: 16px;
 }
-.pw-list-empty-actions .pw-btn {
+/* 44px: a large control, so a capsule with a mouse too (WWDC25 356). */
+.pw-list-empty-actions .pw-btn.pw-btn {
   height: 44px;
   border-radius: var(--radius-full);
 }
@@ -3023,12 +3021,15 @@ a.pw-segment {
 }
 
 /* ---------- Shapes by input (S3, WWDC25 356; owner's choice 2026-11-18) ----------
-   With a mouse (a dense desktop interface): only the prominent action is a capsule; small and medium controls —
-   secondary and plain buttons, icon buttons, fields, filters, the page button, the role in a row — are rounded
-   rectangles (radius-md 8). With touch: capsules, 44px (the minimum hit target). */
+   The shape follows the control's size, not its role ("On macOS, Mini, Small, and Medium controls will continue using
+   rounded rectangles… Large controls will now use capsule shapes"); buttons side by side share one size and shape and
+   the preferred one differs by style (HIG Buttons: "Use style — not size"; Toolbars: Done is .prominent). With a mouse
+   (a dense desktop interface, medium controls): every button — prominent or not —, icon button, field, filter, the
+   page button, the role in a row is a rounded rectangle (radius-md 8). With touch: capsules, 44px (the minimum hit
+   target). The account card's large 44px controls stay capsules (login.css). */
 @media (pointer: fine) {
-  .pw-btn:not(.pw-btn-primary):not(.pw-btn-danger):not(.pw-btn-success):not(.pw-btn-signal),
-  .pw-icon-button:not(.pw-list-add),
+  .pw-btn,
+  .pw-icon-button,
   .pw-filter,
   .pw-pager-page,
   .pw-pager-step,
