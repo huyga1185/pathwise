@@ -1,5 +1,5 @@
 import { useStoreReadOnly } from '@/data/meQuery';
-import { useMemo, useState, type ReactNode } from 'react';
+import { useLayoutEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react';
 import { Controller, useFieldArray, useForm, useWatch, type FieldPath, type UseFormRegister } from 'react-hook-form';
 import { Link, useNavigate, useParams } from 'react-router';
 import { ApiError } from '@/data/apiError';
@@ -51,6 +51,7 @@ import {
   type PlanFormValues,
 } from './planForm';
 import { ImportDialog } from './ImportDialog';
+import { AssignmentSheet, assignmentRows, FormRows, StopSheet, stopRows, UNIT_TITLE } from './PlanFormLists';
 import './plans.css';
 
 const f = vi.planForm;
@@ -73,7 +74,6 @@ const LABELS: Record<string, string> = {
   end: f.windowTo,
   note: f.note,
 };
-const UNIT_TITLE: Record<DemandUnit, string> = { KG: 'Kg', BOX: 'Thùng', PACKAGE: 'Kiện' };
 
 /** `/plans/new` and `/plans/:id/edit` (prototype "Tạo kế hoạch"): one form, a PUT keeps the stops' ids. */
 export function PlanFormPage() {
@@ -195,6 +195,52 @@ function PlanForm({ plan }: { plan: PlanDetail | null }) {
   const errorCount = countErrors(errors);
   const wide = useMediaQuery(WIDE_QUERY);
   const { sentinel, stuck } = useStuck(true);
+  // A phone, or a table that does not fit its group (G4.7): rows and a sheet per row (G4.8). The sheet edits the row's
+  // own fields; "Huỷ" puts back what was there.
+  const assignProbe = useRef<HTMLDivElement>(null);
+  const stopsProbe = useRef<HTMLDivElement>(null);
+  const assignFits = useTableFits(assignProbe, wide);
+  const stopsFit = useTableFits(stopsProbe, wide, units.length);
+  const assignCompact = !wide || !assignFits;
+  const stopsCompact = !wide || !stopsFit;
+  const [editing, setEditing] = useState<{
+    kind: 'assignment' | 'stop';
+    index: number;
+    isNew: boolean;
+    snapshot: string;
+  } | null>(null);
+  const rowValue = (kind: 'assignment' | 'stop', index: number) =>
+    kind === 'assignment' ? getValues(`assignments.${index}`) : getValues(`stops.${index}`);
+  const openRow = (kind: 'assignment' | 'stop', index: number, isNew = false) =>
+    setEditing({ kind, index, isNew, snapshot: JSON.stringify(rowValue(kind, index)) });
+  const addRow = (kind: 'assignment' | 'stop') => {
+    if (kind === 'assignment') {
+      assignments.append(emptyAssignment(), { shouldFocus: false });
+      openRow('assignment', assignments.fields.length, true);
+    } else {
+      stops.append(emptyStop(), { shouldFocus: false });
+      openRow('stop', stops.fields.length, true);
+    }
+  };
+  const cancelRow = () => {
+    if (!editing) return;
+    const list = editing.kind === 'assignment' ? assignments : stops;
+    if (editing.isNew) list.remove(editing.index);
+    else list.update(editing.index, JSON.parse(editing.snapshot));
+    setEditing(null);
+  };
+  const removeRow = () => {
+    if (!editing) return;
+    (editing.kind === 'assignment' ? assignments : stops).remove(editing.index);
+    setEditing(null);
+  };
+  const editingValue =
+    editing === null
+      ? null
+      : editing.kind === 'assignment'
+        ? watchedAssignments?.[editing.index]
+        : watchedStops?.[editing.index];
+  const rowDirty = editing !== null && JSON.stringify(editingValue) !== editing.snapshot;
   // A driver disabled or a vehicle turned off since the draft was saved stays selectable in that draft.
   const memberOptions = withCurrent(
     members.data ?? [],
@@ -272,22 +318,22 @@ function PlanForm({ plan }: { plan: PlanDetail | null }) {
         {members.data && vehicles.data && (memberOptions.length === 0 || vehicleOptions.length === 0) ? (
           <p className="pw-muted">{f.noAssignable}</p>
         ) : null}
-        {assignments.fields.length > 0 ? (
+        <div ref={assignProbe} className="pw-table-probe" aria-hidden="true" inert>
+          <table className="pw-table pw-edit-table">
+            <AssignHead />
+          </table>
+        </div>
+        {assignCompact ? (
+          <FormRows
+            label={f.assignmentsCaption}
+            rows={assignmentRows(watchedAssignments ?? [], errors.assignments, memberOptions, vehicleOptions)}
+            onOpen={(index) => openRow('assignment', index)}
+          />
+        ) : assignments.fields.length > 0 ? (
           <div className="pw-table-wrap">
             <table className="pw-table pw-edit-table pw-assign-table">
               <caption className="pw-visually-hidden">{f.assignmentsCaption}</caption>
-              <thead>
-                <tr>
-                  <th scope="col">{f.driver}</th>
-                  <th scope="col">{f.vehicle}</th>
-                  <th scope="col">{f.shiftStart}</th>
-                  <th scope="col">{f.shiftEnd}</th>
-                  <th scope="col">{f.maxDistance}</th>
-                  <th scope="col">
-                    <span className="pw-visually-hidden">{f.remove}</span>
-                  </th>
-                </tr>
-              </thead>
+              <AssignHead />
               <tbody>
                 {assignments.fields.map((field, i) => {
                   const n = i + 1;
@@ -372,7 +418,7 @@ function PlanForm({ plan }: { plan: PlanDetail | null }) {
           <Button
             variant="quiet"
             disabled={assignments.fields.length >= MAX_ASSIGNMENTS}
-            onClick={() => assignments.append(emptyAssignment())}
+            onClick={() => (assignCompact ? addRow('assignment') : assignments.append(emptyAssignment()))}
           >
             {f.addAssignment}
           </Button>
@@ -384,36 +430,22 @@ function PlanForm({ plan }: { plan: PlanDetail | null }) {
           <h2 id="sec-stops">{f.stops}</h2>
           <span className="pw-muted pw-tabular">{f.stopsCount(stops.fields.length)}</span>
         </div>
-        {stops.fields.length > 0 ? (
+        <div ref={stopsProbe} className="pw-table-probe" aria-hidden="true" inert>
+          <table className="pw-table pw-edit-table">
+            <StopsHead units={units} />
+          </table>
+        </div>
+        {stopsCompact ? (
+          <FormRows
+            label={f.stopsCaption}
+            rows={stopRows(watchedStops ?? [], errors.stops)}
+            onOpen={(index) => openRow('stop', index)}
+          />
+        ) : stops.fields.length > 0 ? (
           <div className="pw-table-wrap">
             <table className="pw-table pw-edit-table pw-stops-table">
               <caption className="pw-visually-hidden">{f.stopsCaption}</caption>
-              <thead>
-                <tr>
-                  <th scope="col" className="pw-col-label">
-                    {f.label} *
-                  </th>
-                  <th scope="col">{f.recipient}</th>
-                  <th scope="col" className="pw-col-phone">
-                    {f.phone}
-                  </th>
-                  <th scope="col" className="pw-col-address">
-                    {f.address}
-                  </th>
-                  <th scope="col" className="pw-col-window">
-                    {f.window}
-                  </th>
-                  {units.map((unit) => (
-                    <th key={unit} scope="col" className="pw-col-demand">
-                      {UNIT_TITLE[unit]}
-                    </th>
-                  ))}
-                  <th scope="col">{f.note}</th>
-                  <th scope="col">
-                    <span className="pw-visually-hidden">{f.remove}</span>
-                  </th>
-                </tr>
-              </thead>
+              <StopsHead units={units} />
               <tbody>
                 {stops.fields.map((field, i) => {
                   const n = i + 1;
@@ -526,7 +558,11 @@ function PlanForm({ plan }: { plan: PlanDetail | null }) {
           </div>
         ) : null}
         <div className="pw-plan-add">
-          <Button variant="quiet" disabled={stops.fields.length >= MAX_STOPS} onClick={() => stops.append(emptyStop())}>
+          <Button
+            variant="quiet"
+            disabled={stops.fields.length >= MAX_STOPS}
+            onClick={() => (stopsCompact ? addRow('stop') : stops.append(emptyStop()))}
+          >
             {f.addStop}
           </Button>
           {!readOnly ? (
@@ -554,6 +590,31 @@ function PlanForm({ plan }: { plan: PlanDetail | null }) {
         />
       </section>
 
+      <AssignmentSheet
+        index={editing?.kind === 'assignment' ? editing.index : null}
+        isNew={Boolean(editing?.isNew)}
+        control={control}
+        register={register}
+        errors={errors}
+        members={memberOptions}
+        vehicles={vehicleOptions}
+        dirty={rowDirty}
+        onDone={() => setEditing(null)}
+        onCancel={cancelRow}
+        onRemove={removeRow}
+      />
+      <StopSheet
+        index={editing?.kind === 'stop' ? editing.index : null}
+        isNew={Boolean(editing?.isNew)}
+        control={control}
+        register={register}
+        errors={errors}
+        units={units}
+        dirty={rowDirty}
+        onDone={() => setEditing(null)}
+        onCancel={cancelRow}
+        onRemove={removeRow}
+      />
       {/* Changed elsewhere since it was opened (PLAN_MODIFIED): load the saved plan again (HIG Alerts). */}
       <Alert
         open={modified}
@@ -703,4 +764,94 @@ function countErrors(errors: unknown): number {
   return Object.entries(errors as Record<string, unknown>)
     .filter(([key]) => key !== 'ref' && key !== 'root')
     .reduce((sum, [, value]) => sum + countErrors(value), 0);
+}
+
+function AssignHead() {
+  return (
+    <thead>
+      <tr>
+        <th scope="col" className="pw-col-person">
+          {f.driver}
+        </th>
+        <th scope="col" className="pw-col-person">
+          {f.vehicle}
+        </th>
+        <th scope="col" className="pw-col-time">
+          {f.shiftStart}
+        </th>
+        <th scope="col" className="pw-col-time">
+          {f.shiftEnd}
+        </th>
+        <th scope="col" className="pw-col-distance">
+          {f.maxDistance}
+        </th>
+        <th scope="col" className="pw-col-remove">
+          <span className="pw-visually-hidden">{f.remove}</span>
+        </th>
+      </tr>
+    </thead>
+  );
+}
+
+function StopsHead({ units }: { units: DemandUnit[] }) {
+  return (
+    <thead>
+      <tr>
+        <th scope="col" className="pw-col-label">
+          {f.label} *
+        </th>
+        <th scope="col" className="pw-col-recipient">
+          {f.recipient}
+        </th>
+        <th scope="col" className="pw-col-phone">
+          {f.phone}
+        </th>
+        <th scope="col" className="pw-col-address">
+          {f.address}
+        </th>
+        <th scope="col" className="pw-col-window">
+          {f.window}
+        </th>
+        {units.map((unit) => (
+          <th key={unit} scope="col" className="pw-col-demand">
+            {UNIT_TITLE[unit]}
+          </th>
+        ))}
+        <th scope="col" className="pw-col-note">
+          {f.note}
+        </th>
+        <th scope="col" className="pw-col-remove">
+          <span className="pw-visually-hidden">{f.remove}</span>
+        </th>
+      </tr>
+    </thead>
+  );
+}
+
+/**
+ * Whether a table's columns, at their least widths (its hidden head, `.pw-table-probe`), fit the group it sits in
+ * (G4.7). Measured again when the window, the group or the columns change; true until measured.
+ */
+function useTableFits(probe: RefObject<HTMLDivElement | null>, enabled: boolean, columns = 0): boolean {
+  const [fits, setFits] = useState(true);
+  useLayoutEffect(() => {
+    const element = probe.current;
+    const group = element?.parentElement;
+    if (!enabled || !element || !group) return undefined;
+    const measure = () => {
+      const table = element.querySelector('table');
+      if (!table) return;
+      const room = group.clientWidth - 2 * (Number.parseFloat(getComputedStyle(group).paddingLeft) || 0);
+      setFits(table.scrollWidth <= room);
+    };
+    measure();
+    const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(measure);
+    observer?.observe(group);
+    window.addEventListener('resize', measure);
+    return () => {
+      observer?.disconnect();
+      window.removeEventListener('resize', measure);
+    };
+  }, [probe, enabled, columns]);
+  return fits;
 }

@@ -1,7 +1,8 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http } from 'msw';
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
+import { wideWindow } from '@/test/media';
 import { renderApp } from '@/test/renderApp';
 import { sample } from '@/test/samples';
 import { API, fail, ok, server, signedInHandlers } from '@/test/server';
@@ -28,6 +29,8 @@ async function fillStop(user: ReturnType<typeof userEvent.setup>, n: number, lab
 }
 
 describe('Tạo kế hoạch', () => {
+  // A wide window: the assignments and stops are tables of fields (G4.6, G4.7).
+  beforeEach(() => wideWindow());
   it('tạo: phân công, điểm giao, lưu gửi đúng body rồi sang /plans/:id', async () => {
     let body: unknown;
     server.use(
@@ -43,9 +46,9 @@ describe('Tạo kế hoạch', () => {
 
     expect(await screen.findByText('Kho 45 Lê Lợi, Hải Châu, Đà Nẵng')).toBeInTheDocument();
     await user.type(screen.getByLabelText(/^Tên kế hoạch/), 'Giao sáng 01/12');
-    // The date is a compact date picker: its calendar, moved to December 2026.
+    // The date is a compact date picker: its calendar (a popover on a wide window), moved to December 2026.
     await user.click(screen.getByRole('button', { name: /^Ngày giao:/ }));
-    const calendar = screen.getByRole('group', { name: 'Ngày giao' });
+    const calendar = screen.getByRole('dialog', { name: 'Ngày giao' });
     for (let step = 0; step < 24 && !within(calendar).queryByText('Tháng 12, 2026'); step += 1) {
       const title = within(calendar).getByRole('button', { name: /^Tháng \d+, \d{4}$/ }).textContent ?? '';
       const [, month = '0', year = '0'] = /Tháng (\d+), (\d{4})/.exec(title) ?? [];
@@ -153,6 +156,7 @@ describe('Tạo kế hoạch', () => {
 });
 
 describe('Sửa kế hoạch', () => {
+  beforeEach(() => wideWindow());
   it('nạp plan, PUT gửi version và id điểm giao; PLAN_MODIFIED hỏi tải lại', async () => {
     const plan = planSample();
     const bodies: Array<{ version: number; stops: Array<{ id?: number }> }> = [];
@@ -189,5 +193,57 @@ describe('Sửa kế hoạch', () => {
     await user.click(screen.getAllByRole('button', { name: 'Lưu và tìm toạ độ' })[0] as HTMLElement);
     await waitFor(() => expect(router.state.location.pathname).toBe('/plans/83'));
     expect(bodies[1]?.version).toBe(2);
+  });
+});
+
+describe('Tạo kế hoạch trên điện thoại (hàng + sheet, G4.8)', () => {
+  it('điểm giao là hàng; "+ Thêm điểm giao" mở sheet; Huỷ trả lại giá trị cũ; hàng có ô lỗi được đánh dấu; xoá trong sheet', async () => {
+    let called = false;
+    server.use(
+      http.post(`${API}/plans`, () => {
+        called = true;
+        return ok({});
+      }),
+      ...formHandlers(),
+    );
+    renderApp('/plans/new');
+    const user = userEvent.setup();
+
+    // The first stop of a new plan is a row, opened like any other.
+    const stops = await screen.findByRole('list', { name: 'Điểm giao của kế hoạch' });
+    await user.click(within(stops).getByRole('button', { name: 'Điểm giao 1: Điểm giao 1' }));
+    let sheet = screen.getByRole('dialog', { name: 'Điểm giao' });
+    await user.type(within(sheet).getByLabelText(/^Mã đơn/), 'ĐH-7');
+    await user.type(within(sheet).getByLabelText(/^Địa chỉ/), '12 Lê Duẩn');
+    await user.click(within(sheet).getByRole('button', { name: 'Xong' }));
+    expect(within(stops).getByRole('button', { name: 'Điểm giao 1: ĐH-7' })).toHaveTextContent('12 Lê Duẩn');
+
+    // Changed, then "Huỷ" (and the discard choice): the row is as it was.
+    await user.click(within(stops).getByRole('button', { name: 'Điểm giao 1: ĐH-7' }));
+    sheet = screen.getByRole('dialog', { name: 'Điểm giao' });
+    await user.clear(within(sheet).getByLabelText(/^Mã đơn/));
+    await user.type(within(sheet).getByLabelText(/^Mã đơn/), 'ĐH-8');
+    await user.click(within(sheet).getByRole('button', { name: 'Huỷ' }));
+    const discard = screen.queryByRole('button', { name: /Bỏ thay đổi/ });
+    if (discard) await user.click(discard);
+    await waitFor(() => expect(within(stops).getByRole('button', { name: 'Điểm giao 1: ĐH-7' })).toBeInTheDocument());
+
+    // A new stop left without its code: the save check marks its row, no request.
+    await user.click(screen.getByRole('button', { name: '+ Thêm điểm giao' }));
+    sheet = screen.getByRole('dialog', { name: 'Điểm giao' });
+    await user.type(within(sheet).getByLabelText(/^Địa chỉ/), '30 Bạch Đằng');
+    await user.click(within(sheet).getByRole('button', { name: 'Xong' }));
+    await user.type(screen.getByLabelText(/^Tên kế hoạch/), 'Giao sáng');
+    await user.click(screen.getByRole('button', { name: 'Lưu và tìm toạ độ' }));
+    const second = await within(stops).findByRole('button', { name: 'Điểm giao 2: Điểm giao 2' });
+    expect(second).toHaveTextContent('Có ô cần sửa');
+    expect(called).toBe(false);
+
+    // Removed in its sheet.
+    await user.click(second);
+    await user.click(
+      within(screen.getByRole('dialog', { name: 'Điểm giao' })).getByRole('button', { name: 'Xoá điểm giao' }),
+    );
+    await waitFor(() => expect(within(stops).getAllByRole('listitem')).toHaveLength(1));
   });
 });

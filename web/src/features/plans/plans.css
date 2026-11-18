@@ -191,7 +191,7 @@
 }
 .pw-edit-table td,
 .pw-edit-table th {
-  padding: 8px;
+  padding: 8px 6px;
   vertical-align: top;
 }
 .pw-edit-table .pw-field-input {
@@ -199,26 +199,53 @@
   width: 100%;
   box-sizing: border-box;
 }
-.pw-assign-table {
-  min-width: 820px;
-}
-.pw-stops-table {
-  min-width: 1180px;
-}
+/* Each column's least width (G4.7): enough for what it holds; the address and the names take what is left. A table
+   that does not fit its group at these widths becomes rows and sheets (measured, PlanFormPage): never sideways. */
 .pw-col-label {
-  width: 120px;
+  width: 6.5rem;
+}
+.pw-col-recipient {
+  width: 8rem;
 }
 .pw-col-phone {
-  width: 140px;
+  width: 7.5rem;
 }
 .pw-col-address {
-  width: 300px;
+  min-width: 11rem;
 }
 .pw-col-window {
-  width: 210px;
+  width: 12rem;
 }
 .pw-col-demand {
-  width: 80px;
+  width: 4.5rem;
+}
+.pw-col-note {
+  width: 8rem;
+}
+.pw-col-person {
+  width: 10rem;
+}
+.pw-col-time {
+  width: 6rem;
+}
+.pw-col-distance {
+  width: 7rem;
+}
+.pw-col-remove {
+  width: 2.75rem;
+}
+/* The hidden head that measures whether a table fits (as the plan list's probe row, G2.9). */
+.pw-table-probe {
+  position: absolute;
+  /* Its own width, not the group's: the columns at their least widths. */
+  width: max-content;
+  visibility: hidden;
+  pointer-events: none;
+  height: 0;
+  overflow: hidden;
+}
+.pw-table-probe table {
+  width: auto;
 }
 .pw-cell-error .pw-field-input {
   border: 2px solid var(--danger);
@@ -1077,3 +1104,42 @@ html:has(.pw-form-bar) {
   margin-top: -40px;
 }
 
+/* Phone rows of the form (G4.8): a row with a field to fix says so in the danger colour under its lines. */
+.pw-form-rows {
+  margin: 0;
+}
+.pw-form-row-fix {
+  font-size: 0.8125rem;
+  line-height: 1.125rem;
+  font-weight: 600;
+  color: var(--danger);
+}
+.pw-list-row.is-invalid .pw-list-row-title {
+  color: var(--danger);
+}
+/* Two fields side by side in a sheet (shift start/end, from/to, amounts). */
+.pw-sheet-pair {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(7rem, 1fr));
+  gap: 12px;
+}
+.pw-sheet-pair .pw-time-input,
+.pw-sheet-pair .pw-time-button {
+  width: 100%;
+}
+.pw-sheet-fieldset {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+.pw-sheet-fieldset > legend {
+  padding: 0;
+  margin-bottom: 8px;
+}
+.pw-btn.pw-sheet-destructive {
+  color: var(--danger);
+}

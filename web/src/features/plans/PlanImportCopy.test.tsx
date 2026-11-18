@@ -55,6 +55,7 @@ function file(name = 'diem-giao.xlsx') {
 }
 
 describe('Nhập điểm giao từ file', () => {
+  beforeEach(() => wideWindow());
   it('gửi file multipart, xem trước dòng lỗi, chỉ thêm dòng hợp lệ thay cho dòng trống rồi lưu đúng body', async () => {
     // jsdom's File does not reach Node's FormData (its part arrives empty, and reading the body can abort): the test
     // checks the request is multipart, not the file's bytes. Browsers send the file itself.
@@ -151,6 +152,7 @@ describe('Nhập điểm giao từ file', () => {
 });
 
 describe('Nhập điểm giao từ file: đóng khi đang đọc', () => {
+  beforeEach(() => wideWindow());
   it('đóng hộp thoại khi file đang đọc thì lần mở sau không hiện kết quả cũ', async () => {
     // A delayed multipart request through MSW aborts in jsdom (its File), so this one request is answered by a
     // stubbed fetch that waits; every other request goes through as usual.
