@@ -327,3 +327,4 @@ Nhóm: (1) nghiệp vụ/hiểu sai yêu cầu · (2) implementation · (3) ki�
 | 2026-11-18 | branch `feat/owner-ui-g3` | — | Sheet Đổi mật khẩu: khung mã vuông, cao bằng ô nhập (36/44), không kéo giãn (`OWNER_UI_REDESIGN.md` §8.14). |
 | 2026-11-18 | branch `feat/owner-ui-g3` | — | Sheet Đổi mật khẩu: mã xác nhận lại là một thanh nhập (bỏ khung vuông §8.14), các màn tài khoản giữ 6 khung (`OWNER_UI_REDESIGN.md` §8.15). |
 | 2026-11-18 | branch `feat/owner-ui-g3` | — | Sheet Đổi mật khẩu: hai ô mật khẩu có nút hiện/ẩn (`PasswordField`) (`OWNER_UI_REDESIGN.md` §8.16). |
+| 2026-11-18 | branch `feat/owner-ui-g3` | — | Điện thoại: thanh trang (Kế hoạch, Nhật ký) lên trên danh sách, ghim khi cuộn; `scroll-padding-top` cho WCAG 2.4.11 (`OWNER_UI_REDESIGN.md` §8.17). |

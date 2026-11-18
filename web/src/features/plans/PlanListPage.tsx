@@ -90,8 +90,10 @@ export function PlanListPage() {
     update({ page: target > 0 ? String(target) : undefined });
     // On a phone the next page starts at the top of the list: scroll back only as far as needed to see its start
     // (HIG Scroll views: "scroll automatically to help people find their place… only as much as necessary").
+    // Hidden means above the pinned bars, whose height is the page's scroll padding (ui.css).
     const top = result.current?.getBoundingClientRect().top ?? 0;
-    if (!wide && top < 0) {
+    const pinned = Number.parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop) || 0;
+    if (!wide && top < pinned) {
       result.current?.scrollIntoView({ block: 'start', behavior: reducedMotion() ? 'auto' : 'smooth' });
     }
   };
@@ -322,6 +324,11 @@ export function PlanListPage() {
           </>
         ) : null}
       </div>
+      {/* A phone: the pager above the list, pinned under the top bar (§8.17); before the list in reading and Tab order
+          too (WCAG 2.4.3). */}
+      {!wide && data !== undefined && !empty ? (
+        <Pager label={vi.plans.pagerLabel} page={page} totalPages={totalPages} onPage={goToPage} pinned />
+      ) : null}
       <div
         ref={result}
         key={shown.key}
@@ -392,7 +399,7 @@ export function PlanListPage() {
         )}
       </div>
       {/* Outside the result, which is drawn again on each page: the pager keeps its focus while pages turn. */}
-      {data !== undefined && !empty ? (
+      {wide && data !== undefined && !empty ? (
         <Pager label={vi.plans.pagerLabel} page={page} totalPages={totalPages} onPage={goToPage} />
       ) : null}
       {rowMenu.menu ? (

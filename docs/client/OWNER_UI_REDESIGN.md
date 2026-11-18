@@ -392,3 +392,18 @@ Sau §8.14, khung mã vuông cao bằng ô nhập (36/44) quá nhỏ trong sheet
 
 Chủ dự án: hai ô mật khẩu của sheet không có nút hiện. Đối chiếu docs: APPLE_CHECKLIST T-8 (nút chức năng thêm ở cuối ô; HIG Text fields: *"the trailing end to offer additional features"*), §3.5 I-1 biểu tượng quen thuộc, **I-2 `aria-label` và `title` khi có chuột**, **I-3 bán kính đồng tâm với ô**; LIQUID_GLASS §9 (nút con mắt 40px cách mép ô 2px). Làm: component chung `PasswordField` (ô ẩn chữ — T-5 — với nút con mắt cuối ô, `aria-label`, `title`, `aria-pressed`), dùng cho "Mật khẩu hiện tại" và "Mật khẩu mới". Trong sheet nút nằm trong ô, cách mép 2px, đồng tâm: chuột — ô 36 bo 8 → nút 32 bo 6; cảm ứng — ô 44 viên thuốc → nút tròn 40 (bo 20). I-3 ghi "hình tròn" vì viết cho ô viên thuốc của thẻ tài khoản; với ô bo 8 khi dùng chuột thì đồng tâm là bo 6. Trang Đăng nhập giữ nút riêng của nó; các màn tài khoản khác (Đăng ký, Quên mật khẩu, Đặt lại mật khẩu bằng link, Nhận lời mời) chưa có nút hiện — chưa đổi, chờ chủ dự án.
 
+### 8.17 Điện thoại: thanh trang ở trên, ghim khi cuộn (2026-11-18)
+
+Chủ dự án: ở mọi danh sách phân trang có điểm kết thúc (Kế hoạch, Nhật ký), trên điện thoại đưa thanh trang lên trên danh sách, ghim lại khi cuộn qua. Đối chiếu tài liệu:
+
+| Nguồn | Nội dung | Áp dụng |
+|---|---|---|
+| [Apple] HIG Toolbars (iOS) | *"You can place toolbar buttons in the top corners or along the bottom. If you place these buttons above scrolling content, the buttons always remain visible, as the content scrolls under them."* | Ghim phía trên, danh sách cuộn bên dưới: đúng |
+| [Apple] HIG Scroll edge effects | Hiệu ứng mép cuộn tách lớp khi nội dung cuộn dưới phần tử nổi; *"Apply one scroll edge effect per view"* | Thanh trang cùng nền đặc với thanh trên cùng (một khối), khi dính có mép mờ 16px phía dưới |
+| [Apple] HIG Page controls | *"Center a page control at the bottom of the view"* | Câu này G2.9 chỉ mượn vị trí (thanh chấm tròn, không phải loại thanh của mình); máy tính giữ ở đáy, điện thoại thôi |
+| WCAG 2.2 SC 2.4.11 Focus Not Obscured | Header dính không được che phần tử đang focus; kỹ thuật C43 *"using scroll padding"* | `scroll-padding-top` 60px (thanh trên cùng, mọi trang) và 120px khi có thanh trang ghim |
+| WCAG 2.2 SC 1.4.10 Reflow | Phần tử dính/cố định có thể che nội dung khi phóng to | Cửa sổ thấp (≤ 500px, điện thoại xoay ngang, phóng chữ) thì thanh trang không ghim |
+| WCAG 2.2 SC 2.4.3 Focus Order | Thứ tự Tab theo thứ tự nhìn thấy | Thanh trang nằm trước danh sách trong DOM, không chỉ dời bằng CSS |
+
+Làm: `Pager` có `pinned` (bọc `pw-pager-bar`, sticky dưới thanh trên cùng 60px, rộng hết màn, nền `surface`; `useStuck` dùng IntersectionObserver để bật mép mờ khi dính); khung nhập số trang mở xuống dưới khi ghim. Đổi trang trên điện thoại: cuộn về đầu danh sách nếu đầu danh sách bị hai thanh ghim che (so với `scroll-padding-top`). Đo 390×844: lúc nghỉ thanh trang ở trên danh sách; cuộn thì dính ở y = 60, mép mờ bật; khung số trang mở xuống cách nút 8px; 844×390 thanh không ghim.
+

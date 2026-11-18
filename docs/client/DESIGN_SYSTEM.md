@@ -215,7 +215,7 @@ Bảng dữ liệu của web dashboard: danh sách stop, plan, xe, thành viên;
 - Cột số (`numeric`): ETA, khung giờ, km, tải — căn phải, `tabular-nums`.
 - `onRowClick` + `selectedKey`: dòng đang chọn nền `surface-tint`; chọn được bằng bàn phím (Tab, Enter). Trên màn soạn plan, chọn dòng thì marker tương ứng trên bản đồ `selected`, và ngược lại.
 - `empty`: câu hướng dẫn việc tiếp theo, ví dụ "Chưa có điểm giao. Thêm điểm giao để tối ưu lộ trình."
-- Phân trang theo API (`page`, `size`) đặt dưới bảng; component không tự phân trang.
+- Phân trang theo API (`page`, `size`); component không tự phân trang. Máy tính: thanh trang dưới bảng; điện thoại: `Pager pinned` trên danh sách, ghim dưới thanh trên cùng, có mép mờ khi dính, không ghim khi cửa sổ thấp (§8.17).
 - Chữ dài trong bảng (G2.11): `pw-cell-title` (2 dòng rồi "…", bẻ cả chuỗi không dấu cách, kèm `title`), `pw-cell-sub` (1 dòng), `pw-cell-main` (cột chính tối thiểu 12rem), `pw-nowrap` cho giá trị ngắn; bảng hẹp gập cột phụ thành dòng dưới tên (`pw-col-fold` / `pw-cell-fold`, container query). Chỉ cắt khi có màn xem đủ (trang hoặc sheet của dòng).
 - Chọn ngày (`DatePickerFilter`): máy tính lịch bật ra (compact); điện thoại lịch inline trong trang dưới hàng lọc (HIG Date pickers, §8.11). Đầu lịch "Tháng x, năm ›" mở hai bánh xe tháng/năm (`Wheel`, §8.12); ô ngày tròn; ‹ › theo hình nút của cách nhập; nút xoá ngày "Bỏ chọn ngày".
 - Bảng vừa một màn hình: `useFitRows` (`shared/hooks`) + dòng mẫu ẩn cao nhất có thể (G2.9).

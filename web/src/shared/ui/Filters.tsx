@@ -276,8 +276,11 @@ export function PageJump({
   fieldLabel,
   firstLabel,
   lastLabel,
+  above = true,
   onPage,
 }: {
+  /** The jump panel opens above the button (a pager at the bottom) or below it (a pager pinned at the top). */
+  above?: boolean;
   /** 0-based. */
   page: number;
   pages: number;
@@ -339,7 +342,7 @@ export function PageJump({
         anchorRef={anchor}
         panelRef={panel}
         className="pw-page-jump"
-        above
+        above={above}
         align="center"
         id={dialogId}
         role="dialog"

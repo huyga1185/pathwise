@@ -91,8 +91,10 @@ export function StoreAuditPage() {
   const goToPage = (target: number) => {
     change({ page: target > 0 ? String(target) : undefined });
     // A phone's next page starts at the top of the list: scroll back only as far as needed (G2.9).
+    // Hidden means above the pinned bars, whose height is the page's scroll padding (ui.css).
     const top = result.current?.getBoundingClientRect().top ?? 0;
-    if (!wide && top < 0) {
+    const pinned = Number.parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop) || 0;
+    if (!wide && top < pinned) {
       result.current?.scrollIntoView({ block: 'start', behavior: reducedMotion() ? 'auto' : 'smooth' });
     }
   };
@@ -240,6 +242,10 @@ export function StoreAuditPage() {
           </>
         ) : null}
       </div>
+      {/* A phone: the pager above the list, pinned under the top bar (§8.17). */}
+      {!wide && page && !empty ? (
+        <Pager label={t.pagerLabel} page={filter.page} totalPages={totalPages} onPage={goToPage} pinned />
+      ) : null}
       <div
         ref={result}
         key={shown.key}
@@ -282,7 +288,7 @@ export function StoreAuditPage() {
         )}
       </div>
       {/* Outside the result, which is drawn again on each page: the pager keeps its focus while pages turn. */}
-      {page && !empty ? (
+      {wide && page && !empty ? (
         <Pager label={t.pagerLabel} page={filter.page} totalPages={totalPages} onPage={goToPage} />
       ) : null}
 

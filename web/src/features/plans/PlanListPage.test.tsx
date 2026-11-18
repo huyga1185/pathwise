@@ -216,6 +216,21 @@ describe('Danh sách kế hoạch', () => {
     expect(within(calendar).getByRole('button', { name: 'Tháng 11, 2027' })).toHaveFocus();
   });
 
+  it('điện thoại: thanh trang nằm trên danh sách (trước danh sách theo thứ tự đọc), ghim dưới thanh trên cùng', async () => {
+    const item = sample<{ data: Page }>('plan-list').data.items[0];
+    server.use(
+      http.get(`${API}/plans`, () => ok({ items: [item], page: 0, size: 20, totalPages: 2, totalElements: 21 })),
+      ...signedInHandlers(),
+    );
+    renderApp('/plans');
+
+    const pager = await screen.findByRole('navigation', { name: 'Trang danh sách kế hoạch' });
+    expect(pager.closest('.pw-pager-bar')).not.toBeNull();
+    const list = screen.getByRole('list', { name: /kế hoạch/i });
+    // Before the list in the document: reading and Tab order follow what is seen (WCAG 2.4.3).
+    expect(pager.compareDocumentPosition(list) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
   it('thanh trang ‹ Trang 1/2 ›: trang trên URL, trang sau gửi page=1, hai đầu mờ nút', async () => {
     const queries: URLSearchParams[] = [];
     const item = sample<{ data: Page }>('plan-list').data.items[0];
