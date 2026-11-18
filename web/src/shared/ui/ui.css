@@ -3448,3 +3448,43 @@ html {
     transition: none;
   }
 }
+
+/* A time of day (TimeField, OWNER_UI_REDESIGN G4.5): typed "HH:mm" with a mouse, a button opening hour and minute
+   wheels for touch. Five characters wide; the digits line up (tabular). */
+.pw-time-input,
+.pw-time-button {
+  width: 5.5rem;
+  min-width: 0;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+.pw-time-button {
+  display: inline-grid;
+  place-items: center;
+  color: var(--ink);
+  cursor: pointer;
+}
+.pw-time-button.is-empty {
+  color: var(--ink-muted);
+}
+.pw-time-button[aria-expanded='true'] {
+  border-color: var(--route);
+  background-color: var(--surface-raised);
+  box-shadow:
+    inset 0 0 0 1px var(--route),
+    0 0 12px color-mix(in srgb, var(--route) 30%, transparent);
+}
+.pw-time-panel {
+  width: 14rem;
+  padding: 12px;
+}
+.pw-wheels.pw-time-wheels {
+  grid-template-columns: 1fr 1fr;
+  height: 180px;
+}
+.pw-time-wheels .pw-wheel {
+  height: 180px;
+}
+.pw-time-wheels .pw-wheel-scroller {
+  padding-block: 72px;
+}

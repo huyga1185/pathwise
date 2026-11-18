@@ -737,6 +737,8 @@ export const vi = {
     detailTitle: 'Chi tiết',
     close: 'Đóng',
   },
+  /** A time field (TimeField, G4.5). */
+  time: { title: 'Chọn giờ', hours: 'Giờ', minutes: 'Phút', clear: 'Bỏ giờ', none: 'chưa có giờ' },
   storeTabs: { label: 'Cửa hàng', info: 'Thông tin và kho', audit: 'Nhật ký' },
   resetLink: {
     side: 'Quản trị viên đã gửi bạn link này theo yêu cầu hỗ trợ. Đổi mật khẩu vẫn cần mã gửi tới email của bạn.',

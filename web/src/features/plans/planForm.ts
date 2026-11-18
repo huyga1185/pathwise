@@ -1,3 +1,4 @@
+import { isTime } from '@/shared/ui/TimeField';
 import type { CapacityUnit } from '@/features/fleet';
 import { fieldMessage } from '@/shared/errors';
 import { formatPhone } from '@/shared/format';
@@ -167,9 +168,12 @@ export function validatePlan(values: PlanFormValues, labels: Record<string, stri
     const at = `assignments.${i}`;
     if (!row.driverId) errors[`${at}.driverId`] = fieldMessage('DRIVER_REQUIRED', label('driverId'));
     if (!row.vehicleId) errors[`${at}.vehicleId`] = fieldMessage('VEHICLE_REQUIRED', label('vehicleId'));
+    // Times are typed with a keyboard (TimeField, G4.5): a time that is not "HH:mm" is said before the server's 400.
     if (!row.shiftStart) errors[`${at}.shiftStart`] = fieldMessage('SHIFT_START_REQUIRED', label('shiftStart'));
+    else if (!isTime(row.shiftStart)) errors[`${at}.shiftStart`] = fieldMessage('INVALID_TIME_FORMAT', '');
     if (!row.shiftEnd) errors[`${at}.shiftEnd`] = fieldMessage('SHIFT_END_REQUIRED', label('shiftEnd'));
-    else if (row.shiftStart && row.shiftStart >= row.shiftEnd)
+    else if (!isTime(row.shiftEnd)) errors[`${at}.shiftEnd`] = fieldMessage('INVALID_TIME_FORMAT', '');
+    else if (isTime(row.shiftStart) && row.shiftStart >= row.shiftEnd)
       errors[`${at}.shiftEnd`] = fieldMessage('INVALID_SHIFT', '');
     const km = row.maxDistanceKm.trim();
     if (km && !(Number(km) > 0))
@@ -182,10 +186,16 @@ export function validatePlan(values: PlanFormValues, labels: Record<string, stri
       errors[`${at}.address`] = fieldMessage('ADDRESS_OR_COORDINATES_REQUIRED', label('address'));
     }
     const { start, end } = row.timeWindow;
-    if (start && !end) errors[`${at}.timeWindow.end`] = fieldMessage('TIME_WINDOW_END_REQUIRED', label('windowTo'));
-    else if (end && !start)
-      errors[`${at}.timeWindow.start`] = fieldMessage('TIME_WINDOW_START_REQUIRED', label('windowFrom'));
-    else if (start && end && start >= end) errors[`${at}.timeWindow.end`] = fieldMessage('INVALID_TIME_WINDOW', '');
+    const startOk = !start || isTime(start);
+    const endOk = !end || isTime(end);
+    if (!startOk) errors[`${at}.timeWindow.start`] = fieldMessage('INVALID_TIME_FORMAT', '');
+    if (!endOk) errors[`${at}.timeWindow.end`] = fieldMessage('INVALID_TIME_FORMAT', '');
+    if (startOk && endOk) {
+      if (start && !end) errors[`${at}.timeWindow.end`] = fieldMessage('TIME_WINDOW_END_REQUIRED', label('windowTo'));
+      else if (end && !start)
+        errors[`${at}.timeWindow.start`] = fieldMessage('TIME_WINDOW_START_REQUIRED', label('windowFrom'));
+      else if (start && end && start >= end) errors[`${at}.timeWindow.end`] = fieldMessage('INVALID_TIME_WINDOW', '');
+    }
     DEMAND_UNITS.forEach((unit) => {
       const value = row.demands[unit].trim();
       if (value && !(Number.isInteger(Number(value)) && Number(value) >= 0)) {
