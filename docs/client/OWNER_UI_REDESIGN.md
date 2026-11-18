@@ -1,6 +1,6 @@
 # OWNER_UI_REDESIGN — Nghiên cứu thiết kế lại giao diện chính của chủ cửa hàng theo Apple
 
-> **Trạng thái:** nghiên cứu xong; chủ dự án đã trả lời Q1–Q5 (§5, 2026-11-17), quyết định ở P-74. **G1 (khung app) đã làm** (§6, branch `docs/owner-ui-redesign`). **G2 (danh sách kế hoạch) đã làm** (§7, PR #129). **G3 (Xe, Thành viên, Cửa hàng, Nhật ký, Tài khoản) đã làm** (§8, PR #130). **G4 (tạo/sửa kế hoạch, nhập file, sao chép) đang làm** (§9, branch `feat/owner-ui-g4`).
+> **Trạng thái:** nghiên cứu xong; chủ dự án đã trả lời Q1–Q5 (§5, 2026-11-17), quyết định ở P-74. **G1 (khung app) đã làm** (§6, branch `docs/owner-ui-redesign`). **G2 (danh sách kế hoạch) đã làm** (§7, PR #129). **G3 (Xe, Thành viên, Cửa hàng, Nhật ký, Tài khoản) đã làm** (§8, PR #130). **G4 (tạo/sửa kế hoạch, nhập file, sao chép) đã làm** (§9, branch `feat/owner-ui-g4`). Tiếp: G5.
 >
 > Theo P-71 (hướng dẫn Apple đứng trước), quy tắc ở `docs/client/LIQUID_GLASS.md`, kiểm từng thành phần theo `docs/client/APPLE_CHECKLIST.md`. Nhãn: **[Apple]** trích nguyên văn HIG (bản tải 2026-11-17), **[Web]** điều web buộc phải có, chọn bằng đo, **[Chủ dự án]** chờ hoặc đã có quyết định. Phần "Đề xuất" là ý của agent, mỗi dòng ghi nguồn; chỗ nào Apple không nói thì ghi rõ.
 
@@ -442,4 +442,11 @@ Làm: `Pager` có `pinned` (bọc `pw-pager-bar`, sticky dưới thanh trên cù
 | G4.11 | Bị sửa nơi khác | `PLAN_MODIFIED` → **Alert** "Kế hoạch đã thay đổi" với "Tải lại" / "Huỷ" | [Apple] Alerts |
 
 Không làm trong G4: chi tiết kế hoạch, giao việc, huỷ kế hoạch, chọn ghim (G5).
+
+### 9.4 Làm và đo (2026-11-18)
+
+- **Khác thiết kế, có lý do:** tiêu đề tạo giữ "Tạo kế hoạch" (12 ký tự, đã dưới 15); bảng phân công cũng theo G4.6/G4.8 (Q4 áp cho cả hai danh sách); bảng điểm giao chọn chế độ bằng phép đo hàng tiêu đề ẩn (`useTableFits`): cột tối thiểu Mã đơn 6rem, Người nhận 7,5, SĐT 7, Địa chỉ ≥ 10, Khung giờ 11,5, Số lượng 4,5, Ghi chú 7 → cần 828px; 1280px dư 105px (lần đầu 41px — e2e dùng font Noto Sans rộng hơn nên chuyển sang hàng, đã nới), 1024/960px dùng hàng + sheet; bảng xem trước nhập file gộp "Dòng, kết quả", "Người nhận" + SĐT, "Khung giờ, số lượng" để vừa sheet lớn ở 1440/1024/960 (HIG Lists and tables: *"Choose a row style that fits the information you need to display"*); bỏ `min-width` cố định cũ (1180px bảng điểm giao, 1080px bảng xem trước). Sao chép: chỉ một lựa chọn (kế hoạch nháp) thì nói thành câu, không thành ô chọn.
+- **Lỗi tìm thấy khi làm:** Escape trong lịch nằm trong sheet đóng luôn sheet (sheet nghe `keydown` trên `document`) → sheet/alert bỏ qua Escape đã được popover xử lý (`defaultPrevented`); test hồi quy trong `Sheet.test.tsx`.
+- **Đo:** 1440/1280/1024/960/390px, sáng và tối: không trang nào cuộn ngang; hàng tiêu đề ghim ở y = 60 khi cuộn; ô ngày và ô tên thẳng hàng (lưới căn trên); sheet điểm giao, bánh xe giờ, sheet nhập file hai bước, sheet sao chép; test web 274, e2e 3/3.
+- **Để G5:** chi tiết kế hoạch, giao việc, huỷ kế hoạch, chọn ghim vẫn dùng `Dialog` cũ (`PlanDialogs.tsx`).
 
