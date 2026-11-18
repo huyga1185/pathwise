@@ -23,7 +23,9 @@ function useModalFocus(open: boolean, ref: React.RefObject<HTMLElement | null>, 
       root?.querySelector<HTMLElement>('button:not([disabled])');
     first?.focus({ preventScroll: true });
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
+      // An Escape a popover inside already handled (a calendar, a menu, a time picker: they prevent its default)
+      // closes only that popover, not the sheet around it.
+      if (event.key === 'Escape' && !event.defaultPrevented) {
         event.preventDefault();
         escape.current();
       }

@@ -6,7 +6,7 @@ import { vi } from '@/shared/i18n/vi';
 import { BackLink } from '@/shared/ui/BackLink';
 import { Button, buttonClass, StatusPill } from '@/shared/ui';
 import { useStoreReadOnly } from '@/data/meQuery';
-import { CopyDialog } from './CopyDialog';
+import { CopySheet } from './CopySheet';
 import { CancelDialog } from './PlanDialogs';
 import { allStops, useDriverLocations, type DriverLocation, type PlanDetail, type PlanStop } from './planApi';
 import { describeSelection } from './ResultView';
@@ -162,7 +162,7 @@ export function TrackView({ plan, updatedAt }: { plan: PlanDetail; updatedAt: nu
         </div>
       </div>
 
-      {copying ? <CopyDialog planId={plan.id} planName={plan.name} open onClose={() => setCopying(false)} /> : null}
+      {copying ? <CopySheet planId={plan.id} planName={plan.name} open onClose={() => setCopying(false)} /> : null}
 
       {plan.status === 'CANCELLED' ? (
         <section role="status" className="pw-cancelled">

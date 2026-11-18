@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, type KeyboardEvent } from 'react';
 import { useNavigate } from 'react-router';
 import { useStoreQuery } from '@/data/storeQuery';
 import { fieldErrors, messageFor } from '@/shared/errors';
 import { todayIn } from '@/shared/format';
 import { vi } from '@/shared/i18n/vi';
-import { Dialog, ErrorBanner, TextField, ActivityIndicator } from '@/shared/ui';
+import { ActivityIndicator, CheckIcon, DateField, ErrorBanner, Sheet, TextField } from '@/shared/ui';
+import { cx } from '@/shared/ui/cx';
 import { allStops, usePlan, usePlanApi, type PlanDetail, type SkippedAssignment } from './planApi';
 
 const t = vi.planCopy;
@@ -18,7 +19,7 @@ export interface CopiedNotice {
   skipped: string[];
 }
 
-export interface CopyDialogProps {
+export interface CopySheetProps {
   planId: number;
   planName: string;
   open: boolean;
@@ -26,10 +27,12 @@ export interface CopyDialogProps {
 }
 
 /**
- * Prototype "Kế hoạch — sao chép" (W12, T62): day, name, and which stops; the new DRAFT opens with a notice of what
- * was not copied. "Only the stops not delivered" shows only when the plan has some and was given to drivers.
+ * "Sao chép" (W12, T62; OWNER_UI_REDESIGN G4.10): a sheet ("Huỷ" / "Sao chép") with the plan copied from, the day,
+ * the name and which stops; the new DRAFT opens with a notice of what was not copied. "Only the stops not delivered"
+ * shows only when the plan has some and was given to drivers; the choice is a list of options, the chosen one with a
+ * checkmark (HIG Lists and tables: "a table that lists options… adding an image — such as a checkmark").
  */
-export function CopyDialog({ planId, planName, open, onClose }: CopyDialogProps) {
+export function CopySheet({ planId, planName, open, onClose }: CopySheetProps) {
   const navigate = useNavigate();
   const planApi = usePlanApi();
   const store = useStoreQuery();
@@ -70,25 +73,54 @@ export function CopyDialog({ planId, planName, open, onClose }: CopyDialogProps)
     }
   };
 
+  const options = counts
+    ? [
+        { value: 'ALL' as const, title: t.all(counts.all), hint: t.allHint },
+        ...(offerNotDelivered
+          ? [
+              {
+                value: 'NOT_DELIVERED' as const,
+                title: t.notDelivered(counts.notDelivered),
+                hint: t.notDeliveredHint(counts.failed, counts.skipped, counts.pending),
+              },
+            ]
+          : []),
+      ]
+    : [];
+  const chosen = offerNotDelivered ? scope : 'ALL';
+  const onOptionKey = (event: KeyboardEvent<HTMLButtonElement>) => {
+    if (!['ArrowDown', 'ArrowUp', 'ArrowLeft', 'ArrowRight'].includes(event.key) || options.length < 2) return;
+    event.preventDefault();
+    const next = chosen === 'ALL' ? 'NOT_DELIVERED' : 'ALL';
+    setScope(next);
+    (event.currentTarget.parentElement?.querySelector(`[data-value="${next}"]`) as HTMLElement | null)?.focus();
+  };
+
   return (
-    <Dialog
+    <Sheet
       open={open}
-      title={t.title(planName)}
-      confirmLabel={t.confirm}
-      cancelLabel={t.back}
+      title={t.sheetTitle}
+      doneLabel={t.confirm}
       busy={busy}
-      confirmDisabled={!date || !plan.data}
-      onConfirm={() => void copy()}
+      doneDisabled={!date || !plan.data}
+      onSubmit={(event) => {
+        event.preventDefault();
+        void copy();
+      }}
       onClose={close}
     >
       <div className="pw-copy-form">
-        <TextField
+        {/* The plan copied from, in full (the short title leaves it out). */}
+        <p className="pw-copy-source">
+          <span className="pw-muted">{t.from}</span> <strong>{planName}</strong>
+        </p>
+        <DateField
           label={t.date}
-          type="date"
           required
           value={date}
+          onChange={setDate}
+          today={todayIn(timeZone)}
           error={fields.planDate}
-          onChange={(event) => setDate(event.target.value)}
         />
         <TextField
           label={t.name}
@@ -99,42 +131,49 @@ export function CopyDialog({ planId, planName, open, onClose }: CopyDialogProps)
         />
         {plan.isError ? <ErrorBanner title={messageFor(plan.error)} /> : null}
         {counts ? (
-          <fieldset className="pw-copy-scope">
-            <legend className="pw-field-label">{t.scope}</legend>
-            <label className="pw-copy-option">
-              <input
-                type="radio"
-                name="copy-scope"
-                checked={!offerNotDelivered || scope === 'ALL'}
-                onChange={() => setScope('ALL')}
-              />
-              <span>
-                <span className="pw-copy-option-title">{t.all(counts.all)}</span>
-                <span className="pw-muted">{t.allHint}</span>
+          options.length > 1 ? (
+            <div className="pw-copy-scope">
+              <span id="copy-scope" className="pw-field-label">
+                {t.scope}
               </span>
-            </label>
-            {offerNotDelivered ? (
-              <label className="pw-copy-option">
-                <input
-                  type="radio"
-                  name="copy-scope"
-                  checked={scope === 'NOT_DELIVERED'}
-                  onChange={() => setScope('NOT_DELIVERED')}
-                />
-                <span>
-                  <span className="pw-copy-option-title">{t.notDelivered(counts.notDelivered)}</span>
-                  <span className="pw-muted">{t.notDeliveredHint(counts.failed, counts.skipped, counts.pending)}</span>
-                </span>
-              </label>
-            ) : null}
-          </fieldset>
+              <div role="radiogroup" aria-labelledby="copy-scope" className="pw-option-list">
+                {options.map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    role="radio"
+                    data-value={option.value}
+                    aria-checked={chosen === option.value}
+                    tabIndex={chosen === option.value ? 0 : -1}
+                    className={cx('pw-option', chosen === option.value && 'is-chosen')}
+                    onClick={() => setScope(option.value)}
+                    onKeyDown={onOptionKey}
+                  >
+                    <span className="pw-option-text">
+                      <span className="pw-option-title">{option.title}</span>
+                      <span className="pw-muted">{option.hint}</span>
+                    </span>
+                    <span className="pw-option-check" aria-hidden="true">
+                      {chosen === option.value ? <CheckIcon /> : null}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : (
+            // Only one choice: said, not offered.
+            <p className="pw-copy-only">
+              <strong>{options[0]?.title}</strong>
+              <span className="pw-muted">{options[0]?.hint}</span>
+            </p>
+          )
         ) : plan.isError ? null : (
           <ActivityIndicator label={vi.pages.loading} />
         )}
         <p className="pw-muted">{t.hint}</p>
         {failure && !fields.planDate && !fields.name ? <ErrorBanner title={messageFor(failure)} /> : null}
       </div>
-    </Dialog>
+    </Sheet>
   );
 }
 

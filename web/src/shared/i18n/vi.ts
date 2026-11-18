@@ -494,7 +494,9 @@ export const vi = {
     action: 'Sao chép',
     actionOf: (name: string) => `Sao chép ${name}`,
     menuItem: 'Sao chép…',
-    title: (name: string) => `Sao chép "${name}"`,
+    /** The sheet's short title (HIG Toolbars: under 15 characters); the plan copied from is in the sheet. */
+    sheetTitle: 'Sao chép',
+    from: 'Từ kế hoạch',
     date: 'Ngày giao',
     name: 'Tên kế hoạch',
     nameOf: (name: string) => `${name} (bản sao)`,
@@ -508,7 +510,6 @@ export const vi = {
         .join(', ') + ': để giao lại.',
     hint: 'Phân công tài xế và xe còn dùng được cũng được chép. Kế hoạch mới là nháp, cần tối ưu lại.',
     confirm: 'Sao chép',
-    back: 'Quay lại',
     done: (from: string, n: number, all: boolean) =>
       all ? `Đã sao chép từ "${from}": ${n} điểm giao.` : `Đã sao chép từ "${from}": ${n} điểm chưa giao được.`,
     skipped: (items: string) => `Không chép phân công của ${items}. Thêm phân công rồi tối ưu lộ trình.`,

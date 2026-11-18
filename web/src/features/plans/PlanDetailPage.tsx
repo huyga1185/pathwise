@@ -25,7 +25,7 @@ import { PinPickerDialog } from '@/shared/ui/PinPicker';
 import { allStops, usePlan, usePlanApi, type PlanDetail, type PlanStop } from './planApi';
 import { ResultView } from './ResultView';
 import { TrackView } from './TrackView';
-import { CopyDialog, type CopiedNotice } from './CopyDialog';
+import { CopySheet, type CopiedNotice } from './CopySheet';
 import './plans.css';
 
 const g = vi.geocode;
@@ -265,7 +265,7 @@ function GeocodeView({ plan }: { plan: PlanDetail }) {
         </section>
         {selected ? <FixStop key={selected.id} plan={plan} stop={selected} busy={busy} /> : null}
       </div>
-      {copying ? <CopyDialog planId={plan.id} planName={plan.name} open onClose={() => setCopying(false)} /> : null}
+      {copying ? <CopySheet planId={plan.id} planName={plan.name} open onClose={() => setCopying(false)} /> : null}
     </section>
   );
 }

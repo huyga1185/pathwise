@@ -20,7 +20,7 @@ import {
   violationText,
   type Draft,
 } from './manualEdit';
-import { CopyDialog } from './CopyDialog';
+import { CopySheet } from './CopySheet';
 import { CancelDialog, PublishDialog, routesWithStops } from './PlanDialogs';
 import { allStops, useJob, usePlanApi, type Job, type PlanDetail, type PlanStop } from './planApi';
 import {
@@ -371,7 +371,7 @@ export function ResultView({
       >
         <p>{m.leaveLead}</p>
       </Dialog>
-      {copying ? <CopyDialog planId={plan.id} planName={plan.name} open onClose={() => setCopying(false)} /> : null}
+      {copying ? <CopySheet planId={plan.id} planName={plan.name} open onClose={() => setCopying(false)} /> : null}
     </section>
   );
 }

@@ -224,11 +224,22 @@ describe('Sao chép kế hoạch', () => {
     const user = userEvent.setup();
 
     await user.click(await screen.findByRole('button', { name: 'Sao chép Giao sáng 01/12' }));
-    const dialog = await screen.findByRole('dialog', { name: 'Sao chép "Giao sáng 01/12"' });
+    // A sheet with a short title; the plan copied from is in it.
+    const dialog = await screen.findByRole('dialog', { name: 'Sao chép' });
+    expect(within(dialog).getByText('Giao sáng 01/12')).toBeInTheDocument();
     expect(router.state.location.pathname).toBe('/plans');
     await user.click(await within(dialog).findByRole('radio', { name: /^Chỉ \d+ điểm chưa giao được/ }));
-    await user.clear(within(dialog).getByLabelText(/^Ngày giao/));
-    await user.type(within(dialog).getByLabelText(/^Ngày giao/), '2026-12-02');
+    // The day from the date picker's calendar (a popover), moved to December 2026.
+    await user.click(within(dialog).getByRole('button', { name: /^Ngày giao:/ }));
+    const calendar = screen.getByRole('dialog', { name: 'Ngày giao' });
+    for (let step = 0; step < 24 && !within(calendar).queryByText('Tháng 12, 2026'); step += 1) {
+      const title = within(calendar).getByRole('button', { name: /^Tháng \d+, \d{4}$/ }).textContent ?? '';
+      const [, month = '0', year = '0'] = /Tháng (\d+), (\d{4})/.exec(title) ?? [];
+      const later = Number(year) * 12 + Number(month) < 2026 * 12 + 12;
+      await user.click(within(calendar).getByRole('button', { name: later ? 'Tháng sau' : 'Tháng trước' }));
+    }
+    await user.click(within(calendar).getByRole('button', { name: 'Thứ Tư, 2 tháng 12, 2026' }));
+    await user.keyboard('{Escape}');
     await user.clear(within(dialog).getByLabelText('Tên kế hoạch'));
     await user.type(within(dialog).getByLabelText('Tên kế hoạch'), 'Giao lại');
     await user.click(within(dialog).getByRole('button', { name: 'Sao chép' }));
@@ -255,8 +266,9 @@ describe('Sao chép kế hoạch', () => {
     renderApp('/plans');
     const user = userEvent.setup();
     await user.click(await screen.findByRole('button', { name: 'Sao chép Giao sáng 01/12' }));
-    const dialog = await screen.findByRole('dialog');
-    expect(await within(dialog).findByRole('radio', { name: /^Tất cả/ })).toBeChecked();
-    expect(within(dialog).queryByRole('radio', { name: /chưa giao được/ })).not.toBeInTheDocument();
+    const dialog = await screen.findByRole('dialog', { name: 'Sao chép' });
+    // One choice only: said, not offered.
+    expect(await within(dialog).findByText(/^Tất cả \d+ điểm giao$/)).toBeInTheDocument();
+    expect(within(dialog).queryByRole('radio')).not.toBeInTheDocument();
   });
 });

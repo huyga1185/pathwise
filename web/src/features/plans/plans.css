@@ -1159,3 +1159,67 @@ html:has(.pw-form-bar) {
 .pw-import-col-address {
   min-width: 9rem;
 }
+
+/* Copy sheet (G4.10). The plan copied from, in full; the stops to copy as a list of options, the chosen one with a
+   checkmark (HIG Lists and tables). */
+.pw-copy-source {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.pw-copy-only {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+}
+.pw-option-list {
+  display: flex;
+  flex-direction: column;
+  margin-top: 8px;
+  padding: 0 16px;
+  border-radius: var(--radius-lg);
+  background: color-mix(in srgb, var(--ink) 5%, transparent);
+}
+.pw-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+  padding: 10px 0;
+  border: 0;
+  border-top: 1px solid var(--line);
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.pw-option:first-child {
+  border-top: 0;
+}
+.pw-option-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.pw-option-title {
+  font-weight: 600;
+}
+.pw-option-check {
+  flex: none;
+  display: inline-grid;
+  width: 20px;
+  color: var(--route);
+}
+.pw-option-check svg {
+  width: 18px;
+  height: 18px;
+  stroke-width: 2.6;
+}
+.pw-option:focus-visible {
+  outline: 2px solid var(--route);
+  outline-offset: 2px;
+  border-radius: var(--radius-md);
+}
