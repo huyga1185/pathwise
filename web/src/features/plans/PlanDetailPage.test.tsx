@@ -180,7 +180,8 @@ describe('Soạn plan — tìm toạ độ', () => {
     const bar = await screen.findByRole('progressbar', { name: 'Đang tìm toạ độ cho các địa chỉ' });
     expect(bar).toHaveAttribute('aria-valuenow', '17');
     expect(screen.getByRole('button', { name: 'Sửa điểm giao' })).toBeDisabled();
-    expect(screen.getByText('ĐANG TÌM TOẠ ĐỘ', { selector: '.pw-plan-title *' })).toBeInTheDocument();
+    // The progress bar says it; the title has no static label for a running task (HIG Progress indicators).
+    expect(screen.queryByText('ĐANG TÌM TOẠ ĐỘ', { selector: '.pw-plan-title *' })).not.toBeInTheDocument();
 
     await waitFor(() => expect(bar).toHaveAttribute('aria-valuenow', '22'), { timeout: 5000 });
     await waitFor(() => expect(screen.queryByRole('progressbar')).not.toBeInTheDocument(), { timeout: 5000 });

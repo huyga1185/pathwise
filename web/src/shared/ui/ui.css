@@ -3541,3 +3541,17 @@ html {
 .pw-date-field .pw-filter-wrap {
   display: block;
 }
+
+/* A task running in place of a static label (ActivityText): the turning spokes and short words, in the muted ink. */
+.pw-activity-text {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ink-muted);
+  font-size: 0.875rem;
+  white-space: nowrap;
+}
+.pw-activity-text svg {
+  flex: none;
+  animation: pw-activity-turn 0.8s steps(8) infinite;
+}

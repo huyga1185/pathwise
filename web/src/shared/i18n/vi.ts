@@ -549,6 +549,8 @@ export const vi = {
     providerError: 'Dịch vụ tìm địa chỉ gặp sự cố khi tìm điểm này. Tìm lại sau hoặc đặt ghim trên bản đồ.',
     retryOne: 'Tìm lại địa chỉ này',
     searching: 'Đang tìm toạ độ…',
+    finding: 'Đang tìm',
+    optimizing: 'Đang tối ưu',
     savingPin: 'Đang lưu toạ độ…',
     orPin: 'hoặc đặt ghim',
     enlarge: 'Phóng to bản đồ để đặt ghim chính xác hơn',

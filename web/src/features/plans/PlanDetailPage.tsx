@@ -14,6 +14,7 @@ import {
   Button,
   DataTable,
   ErrorBanner,
+  ActivityText,
   ProgressBar,
   StatusPill,
   TextField,
@@ -86,7 +87,9 @@ function PlanHeader({ plan, subtitle, actions }: { plan: PlanDetail; subtitle: s
         <div className="pw-plan-title">
           <h1 className="pw-page-title">{plan.name}</h1>
           <StatusPill kind="plan" status={plan.status} />
-          <StatusPill kind="processing" status={plan.processingStatus} />
+          {/* A running task turns, it is not a static label (HIG Progress indicators). Finding coordinates has its
+              progress bar under the title, so the title says nothing more; optimizing has none here. */}
+          {plan.processingStatus === 'OPTIMIZING' ? <ActivityText text={g.optimizing} /> : null}
         </div>
         <p className="pw-muted">{subtitle}</p>
       </div>
@@ -184,7 +187,9 @@ function GeocodeView({ plan }: { plan: PlanDetail }) {
       key: 'geo',
       header: g.coordinates,
       render: (row) =>
-        statusInfo('geocode', row.geocodeStatus) ? (
+        row.geocodeStatus === 'PENDING' ? (
+          <ActivityText text={g.finding} />
+        ) : statusInfo('geocode', row.geocodeStatus) ? (
           <StatusPill kind="geocode" status={row.geocodeStatus} />
         ) : (
           <span className="pw-muted">{row.geocodeStatus === 'RESOLVED' ? g.resolved : g.provided}</span>
@@ -343,7 +348,11 @@ function FixStop({ plan, stop, busy }: { plan: PlanDetail; stop: PlanStop; busy:
     <section className="pw-card pw-geocode-fix" aria-labelledby="fix-title">
       <div className="pw-geocode-fix-head">
         <h2 id="fix-title">{g.fixTitle(stopTitle(stop))}</h2>
-        <StatusPill kind="geocode" status={stop.geocodeStatus} />
+        {stop.geocodeStatus === 'PENDING' ? (
+          <ActivityText text={g.finding} />
+        ) : (
+          <StatusPill kind="geocode" status={stop.geocodeStatus} />
+        )}
       </div>
       {failure ? <ErrorBanner key={tries} title={messageFor(failure)} /> : null}
       <TextField
@@ -446,26 +455,7 @@ function CopiedBanner({ notice, onClose }: { notice: CopiedNotice; onClose: () =
 function Working({ active, text }: { active: boolean; text: string }) {
   return (
     <span aria-live="polite" className="pw-working">
-      {active ? (
-        <span className="pw-working-inner">
-          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
-            {Array.from({ length: 8 }, (_, index) => (
-              <rect
-                key={index}
-                x="11"
-                y="2"
-                width="2"
-                height="6"
-                rx="1"
-                fill="currentColor"
-                opacity={(0.25 + (index / 8) * 0.75).toFixed(2)}
-                transform={`rotate(${index * 45} 12 12)`}
-              />
-            ))}
-          </svg>
-          {text}
-        </span>
-      ) : null}
+      {active ? <ActivityText text={text} className="pw-working-inner" /> : null}
     </span>
   );
 }

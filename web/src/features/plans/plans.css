@@ -1247,16 +1247,7 @@ html:has(.pw-form-bar) {
   min-height: 1px;
 }
 .pw-working-inner {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 0.875rem;
-  color: var(--ink-muted);
   animation: pw-activity-show 0.2s ease 0.3s both;
-}
-.pw-working-inner svg {
-  color: var(--ink-muted);
-  animation: pw-activity-turn 0.8s steps(8) infinite;
 }
 
 /* A table inside a form group has no frame of its own: the group is its container (DESIGN_SYSTEM: a table in a group
@@ -1268,4 +1259,3 @@ html:has(.pw-form-bar) {
   border-radius: 0;
   background: transparent;
 }
-
