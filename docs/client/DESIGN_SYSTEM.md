@@ -189,6 +189,8 @@ Nhãn trạng thái viết hoa trên nền màu trạng thái; truyền thẳng 
 - Ô nhập, ô chọn: nền fill nhạt, viền 1px `ink-muted`, focus sáng viền màu nhấn (như trang đăng nhập); ô chọn có dấu ⌃⌄.
 - Menu và khung bật ra vẽ trên `body`, đặt theo nút mở. Ô chọn (`<select>`) mở menu của app (`useSelectMenu`), không dùng danh sách của trình duyệt.
 - Lưu/Xong dùng biểu tượng dấu tích (`CheckIcon`, HIG Icons: Save → `checkmark`).
+- Checkbox (chỉ trên máy tính, trong bảng): ô vuông bo 4, tắt không nền, bật nền màu nhấn với dấu tích trắng (HIG Toggles). Trên điện thoại dùng switch trong hàng.
+- Con trỏ: mũi tên cho mọi control (kể cả link trông như control); bàn tay chỉ cho link trong văn bản (HIG Pointing devices).
 
 ### ActivityIndicator (web, G2)
 
