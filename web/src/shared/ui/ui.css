@@ -3096,7 +3096,9 @@ a.pw-segment {
   .pw-pager-step,
   .pw-inline-popup,
   .pw-th-sort,
-  .pw-calendar-link {
+  .pw-calendar-link,
+  .pw-calendar-nav,
+  .pw-calendar-title {
     border-radius: var(--radius-md);
   }
 }
@@ -3252,5 +3254,122 @@ a[aria-current='page'],
   .pw-calendar-inline,
   .pw-calendar-inline.is-closing {
     animation-name: pw-result-fade;
+  }
+}
+
+/* The calendar's "Tháng 11, 2026 ›" button (OWNER_UI_REDESIGN §8.12, as the iOS calendar): the month and year in ink,
+   the chevron in the accent; open, the chevron turns down and the days give way to two wheels. The days stay round
+   (as Apple's calendars; owner's choice), the arrows take the button shape of the input. */
+.pw-calendar-title {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 4px;
+  min-height: 36px;
+  margin-left: -8px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: var(--radius-full);
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.pw-calendar-head .pw-calendar-title {
+  flex: 0 1 auto;
+  margin-right: auto;
+}
+.pw-calendar-title svg {
+  width: 16px;
+  height: 16px;
+  color: var(--route);
+  stroke-width: 2.4;
+  transition: transform 0.2s ease;
+}
+.pw-calendar-title.is-open svg {
+  transform: rotate(90deg);
+}
+.pw-calendar-title.is-open span {
+  color: var(--route);
+}
+@media (hover: hover) {
+  .pw-calendar-title:hover {
+    background: color-mix(in srgb, var(--ink) 7%, transparent);
+  }
+}
+.pw-calendar-title:active {
+  background: color-mix(in srgb, var(--ink) 12%, transparent);
+}
+.pw-calendar-title:focus-visible {
+  outline: 2px solid var(--route);
+  outline-offset: 2px;
+}
+
+/* Two wheels side by side, as tall as the days they replace; the value in the middle band (HIG Pickers, Wheels). */
+.pw-wheels {
+  position: relative;
+  display: grid;
+  grid-template-columns: 3fr 2fr;
+  gap: 4px;
+  height: 252px;
+}
+.pw-wheels::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(50% - 18px);
+  height: 36px;
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--ink) 7%, transparent);
+  pointer-events: none;
+}
+.pw-wheel {
+  position: relative;
+  height: 252px;
+  min-width: 0;
+  border-radius: var(--radius-md);
+}
+.pw-wheel:focus-visible {
+  outline: 2px solid var(--route);
+  outline-offset: 2px;
+}
+.pw-wheel-scroller {
+  height: 100%;
+  overflow-y: auto;
+  scroll-snap-type: y mandatory;
+  scrollbar-width: none;
+  overscroll-behavior: contain;
+  /* Room for the first and last value to reach the middle: (252 − 36) / 2 (a percentage would follow the width). */
+  padding-block: 108px;
+  box-sizing: border-box;
+  -webkit-mask-image: linear-gradient(transparent, #000 30%, #000 70%, transparent);
+  mask-image: linear-gradient(transparent, #000 30%, #000 70%, transparent);
+}
+.pw-wheel-scroller::-webkit-scrollbar {
+  display: none;
+}
+.pw-wheel-item {
+  height: 36px;
+  display: grid;
+  place-items: center;
+  scroll-snap-align: center;
+  font-size: 1rem;
+  color: var(--ink-muted);
+  cursor: pointer;
+  user-select: none;
+  font-variant-numeric: tabular-nums;
+}
+.pw-wheel-item.is-current {
+  color: var(--ink);
+  font-weight: 600;
+}
+@media (prefers-reduced-motion: reduce) {
+  .pw-calendar-title svg {
+    transition: none;
   }
 }

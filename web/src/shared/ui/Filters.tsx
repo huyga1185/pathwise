@@ -22,6 +22,7 @@ import {
   ChevronUpDownIcon,
 } from './icons';
 import { cx } from './cx';
+import { Wheel } from './Wheel';
 
 /**
  * A panel that opens from its button and closes on a click outside or Escape, returning focus to the button (HIG
@@ -433,7 +434,7 @@ function dayName(value: string): string {
  * a button that shows the current value in your app's accent color. When people tap the button, the date picker opens
  * a modal view, providing access to a familiar calendar-style editor… before tapping outside the view to confirm").
  * As there, a chosen day applies at once and the calendar stays open until a click outside it or Escape; today is in
- * the accent colour, the chosen day a filled accent circle. "Mọi ngày" removes the date (and closes).
+ * the accent colour, the chosen day a filled accent circle. The clear button ("Bỏ chọn ngày") removes the date (and closes); "Tháng 11, 2026 ›" turns the days into month and year wheels.
  */
 export function DatePickerFilter({
   label,
@@ -443,6 +444,9 @@ export function DatePickerFilter({
   clearText,
   previousMonthText,
   nextMonthText,
+  chooseMonthText = 'Chọn tháng và năm',
+  monthWheelText = 'Tháng',
+  yearWheelText = 'Năm',
   onChange,
 }: {
   label: string;
@@ -453,6 +457,9 @@ export function DatePickerFilter({
   clearText: string;
   previousMonthText: string;
   nextMonthText: string;
+  chooseMonthText?: string;
+  monthWheelText?: string;
+  yearWheelText?: string;
   onChange: (value: string | undefined) => void;
 }) {
   const { open, setOpen, presence, anchor, panel, close } = usePopover();
@@ -467,6 +474,9 @@ export function DatePickerFilter({
   const [focusDay, setFocusDay] = useState(value ?? today);
   const grid = useRef<HTMLDivElement>(null);
   const moved = useRef(false);
+  // Month and year wheels in place of the days (the iOS calendar's "Month Year ›" button, §8.12).
+  const [choosing, setChoosing] = useState(false);
+  const titleButton = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -517,69 +527,108 @@ export function DatePickerFilter({
     }
   };
   const onPanelKey = (event: ReactKeyboardEvent<HTMLDivElement>) => {
-    if (event.key === 'Escape') {
-      event.preventDefault();
+    if (event.key !== 'Escape') return;
+    event.preventDefault();
+    if (choosing) {
+      // First back to the days, then (a second Escape) closed.
+      setChoosing(false);
+      titleButton.current?.focus();
+    } else {
       close(true);
     }
   };
+  const todayYear = parse(today).year;
+  const years = Array.from({ length: 31 }, (_, offset) => todayYear - 20 + offset).map((y) => ({
+    value: y,
+    label: String(y),
+  }));
+  const months = Array.from({ length: 12 }, (_, m) => ({ value: m, label: `Tháng ${m + 1}` }));
+  // Another month or year keeps the day, the last day of a shorter month at most.
+  const toMonth = (nextYear: number, nextMonth: number) =>
+    go(addMonths(focusDay, (nextYear - year) * 12 + (nextMonth - month)));
 
   const monthTitle = `Tháng ${month + 1}, ${year}`;
   const calendar = (
     <>
       <div className="pw-calendar-head">
-        <strong id={titleId} aria-live="polite">
-          {monthTitle}
-        </strong>
         <button
+          ref={titleButton}
           type="button"
-          className="pw-calendar-nav"
-          aria-label={previousMonthText}
-          onClick={() => go(addMonths(focusDay, -1))}
+          className={cx('pw-calendar-title', choosing && 'is-open')}
+          aria-expanded={choosing}
+          aria-describedby={`${titleId}-hint`}
+          onClick={() => setChoosing((was) => !was)}
         >
-          <ChevronLeftIcon />
-        </button>
-        <button
-          type="button"
-          className="pw-calendar-nav"
-          aria-label={nextMonthText}
-          onClick={() => go(addMonths(focusDay, 1))}
-        >
+          <span id={titleId} aria-live="polite">
+            {monthTitle}
+          </span>
           <ChevronRightIcon />
         </button>
+        <span id={`${titleId}-hint`} className="pw-visually-hidden">
+          {chooseMonthText}
+        </span>
+        {/* The arrows step a month; hidden while the wheels are shown (as on iOS). */}
+        {choosing ? null : (
+          <>
+            <button
+              type="button"
+              className="pw-calendar-nav"
+              aria-label={previousMonthText}
+              onClick={() => go(addMonths(focusDay, -1))}
+            >
+              <ChevronLeftIcon />
+            </button>
+            <button
+              type="button"
+              className="pw-calendar-nav"
+              aria-label={nextMonthText}
+              onClick={() => go(addMonths(focusDay, 1))}
+            >
+              <ChevronRightIcon />
+            </button>
+          </>
+        )}
       </div>
-      <div className="pw-calendar-grid" role="grid" aria-labelledby={titleId} ref={grid} onKeyDown={onGridKey}>
-        <div role="row" className="pw-calendar-row">
-          {WEEKDAYS.map((name) => (
-            <span key={name} role="columnheader" className="pw-calendar-weekday">
-              {name}
-            </span>
+      {choosing ? (
+        <div className="pw-wheels">
+          <Wheel label={monthWheelText} items={months} value={month} onChange={(m) => toMonth(year, m)} />
+          <Wheel label={yearWheelText} items={years} value={year} onChange={(y) => toMonth(y, month)} />
+        </div>
+      ) : (
+        <div className="pw-calendar-grid" role="grid" aria-labelledby={titleId} ref={grid} onKeyDown={onGridKey}>
+          <div role="row" className="pw-calendar-row">
+            {WEEKDAYS.map((name) => (
+              <span key={name} role="columnheader" className="pw-calendar-weekday">
+                {name}
+              </span>
+            ))}
+          </div>
+          {Array.from({ length: cells.length / 7 }, (_, week) => (
+            <div role="row" key={week} className="pw-calendar-row">
+              {cells.slice(week * 7, week * 7 + 7).map((day, index) =>
+                day ? (
+                  <span role="gridcell" key={day} aria-selected={day === value}>
+                    <button
+                      type="button"
+                      data-day={day}
+                      tabIndex={day === focusDay ? 0 : -1}
+                      className={cx('pw-calendar-day', day === value && 'is-selected', day === today && 'is-today')}
+                      aria-label={dayName(day)}
+                      aria-current={day === today ? 'date' : undefined}
+                      onClick={() => choose(day)}
+                    >
+                      {parse(day).day}
+                    </button>
+                  </span>
+                ) : (
+                  <span role="gridcell" key={`empty-${index}`} />
+                ),
+              )}
+            </div>
           ))}
         </div>
-        {Array.from({ length: cells.length / 7 }, (_, week) => (
-          <div role="row" key={week} className="pw-calendar-row">
-            {cells.slice(week * 7, week * 7 + 7).map((day, index) =>
-              day ? (
-                <span role="gridcell" key={day} aria-selected={day === value}>
-                  <button
-                    type="button"
-                    data-day={day}
-                    tabIndex={day === focusDay ? 0 : -1}
-                    className={cx('pw-calendar-day', day === value && 'is-selected', day === today && 'is-today')}
-                    aria-label={dayName(day)}
-                    aria-current={day === today ? 'date' : undefined}
-                    onClick={() => choose(day)}
-                  >
-                    {parse(day).day}
-                  </button>
-                </span>
-              ) : (
-                <span role="gridcell" key={`empty-${index}`} />
-              ),
-            )}
-          </div>
-        ))}
-      </div>
-      {value ? (
+      )}
+      {value && !choosing ? (
         <div className="pw-calendar-foot">
           <button
             type="button"
@@ -607,7 +656,10 @@ export function DatePickerFilter({
         aria-label={`${label}: ${value ? shortDate(value) : emptyText}`}
         onClick={() => {
           moved.current = false;
-          if (!open) setFocusDay(value ?? today);
+          if (!open) {
+            setFocusDay(value ?? today);
+            setChoosing(false);
+          }
           setOpen((was) => !was);
         }}
       >

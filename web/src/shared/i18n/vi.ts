@@ -339,7 +339,8 @@ export const vi = {
     status: 'Trạng thái',
     allStatuses: 'Tất cả',
     allDates: 'Tất cả',
-    anyDate: 'Mọi ngày',
+    /** The same words as the store log's (owner, 2026-11-18). */
+    anyDate: 'Bỏ chọn ngày',
     previousMonth: 'Tháng trước',
     nextMonth: 'Tháng sau',
     pagerLabel: 'Trang danh sách kế hoạch',
