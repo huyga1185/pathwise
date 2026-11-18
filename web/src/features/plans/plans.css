@@ -386,6 +386,17 @@
   align-items: flex-start;
   gap: 8px;
 }
+/* "Phóng to bản đồ để đặt ghim chính xác hơn" is longer than a narrow panel (320px): it wraps inside the button
+   instead of running out of the panel (G2.11; HIG Typography "use as many lines as needed"). */
+.pw-geocode-map > .pw-btn {
+  max-width: 100%;
+  height: auto;
+  min-height: 36px;
+  /* One line stays 36px (20px line, 7px above and below, 1px border); two lines grow. */
+  padding-block: 7px;
+  white-space: normal;
+  text-align: center;
+}
 .pw-map-4x3 {
   aspect-ratio: 4 / 3;
 }

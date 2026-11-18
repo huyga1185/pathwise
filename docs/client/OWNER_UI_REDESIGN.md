@@ -488,3 +488,15 @@ Chủ dự án: dòng "Thêm phân công tài xế để tối ưu." (chữ 12px
 - Thiếu phân công: khối trong trang cùng kiểu khối "Còn N điểm chưa có toạ độ" nhưng viền trung tính (không phải lỗi): "Chưa có tài xế nào được phân công." + "Thêm phân công (tài xế, xe, ca làm) để tối ưu lộ trình." + nút "Thêm phân công" mở form sửa.
 - Các lý do khác đã có chỗ riêng: thiếu toạ độ → khối "Còn N điểm…"; đang tìm toạ độ / đang tối ưu → thanh tiến độ, vòng xoay (§9.5).
 
+### 9.8 Chữ dài ở trang kế hoạch và trang sửa (G2.11, đo 2026-11-18)
+
+Chủ dự án hỏi đã xử lý tràn chữ cho tiêu đề và nút quay lại sau "Sửa điểm giao" chưa. Đo tên 150 ký tự (có dấu cách và không dấu cách, giả qua `page.route`) ở 1440/390/320px:
+
+| Chỗ | Trước | Sau |
+|---|---|---|
+| Tiêu đề trang kế hoạch (`h1`), tên không dấu cách | **Tràn ra ngoài màn** (1440 và 390px) | Cắt ở mọi chỗ (`overflow-wrap: anywhere` cho mọi `.pw-page-title`) |
+| Tiêu đề trang kế hoạch, tên có dấu cách | Đủ tên, nhiều dòng (7 dòng ở 390px) | Giữ — G2.11: tên đầy đủ ở trang kế hoạch; HIG Typography *"use as many lines as needed"* |
+| Nút quay lại ở trang sửa (tên kế hoạch) | Một dòng rồi "…", rê chuột hiện tên (`title`) — đúng G4.1 | Giữ |
+| "Sửa kế hoạch" ở 320px | Xuống 2 dòng để chừa Huỷ / ✓, không tràn | Giữ |
+| Nút "Phóng to bản đồ để đặt ghim chính xác hơn" | **Không xuống dòng, tràn khỏi khung sửa điểm** ở 390 và 320px | Xuống dòng trong nút; một dòng vẫn cao 36px |
+

@@ -23,6 +23,9 @@
   line-height: 34px;
   font-weight: 700;
   letter-spacing: -0.01em;
+  /* A long name without spaces breaks too instead of running off the screen (G2.11); in a flex row it may shrink. */
+  overflow-wrap: anywhere;
+  min-width: 0;
 }
 .pw-page-loading {
   padding: 24px;

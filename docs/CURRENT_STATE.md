@@ -337,3 +337,4 @@ Nhóm: (1) nghiệp vụ/hiểu sai yêu cầu · (2) implementation · (3) ki�
 | 2026-11-18 | branch `feat/owner-ui-g4` | — | Chuyển cảnh trong luồng kế hoạch: đổi màn tại chỗ như đổi trang, khối xuất hiện trồi vào, lỗi lặp lại không chạy lại (`OWNER_UI_REDESIGN.md` §9.6). |
 | 2026-11-18 | branch `feat/owner-ui-g4` | — | Hộp "Phóng to bản đồ" mở/đóng có hoạt ảnh; dòng thêm/xoá ở form kế hoạch mờ vào (tô nền) / mờ ra; khung sửa điểm mờ vào khi đổi điểm (`OWNER_UI_REDESIGN.md` §9.6). |
 | 2026-11-18 | branch `feat/owner-ui-g4` | — | Thử: lý do khoá "Tối ưu lộ trình" thành khối "Chưa có tài xế nào được phân công." có nút "Thêm phân công"; bỏ dòng chữ dưới nút (`OWNER_UI_REDESIGN.md` §9.7). |
+| 2026-11-18 | branch `feat/owner-ui-g4` | — | Tên kế hoạch không dấu cách không còn tràn tiêu đề trang; nút "Phóng to bản đồ…" xuống dòng thay vì tràn khung ở màn hẹp (`OWNER_UI_REDESIGN.md` §9.8). |
