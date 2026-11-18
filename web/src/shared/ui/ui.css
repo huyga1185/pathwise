@@ -19,7 +19,6 @@
 
 /* Focus: 2px route ring, 2px away from the control, on every surface. */
 .pw-btn:focus-visible,
-.pw-field-input:focus-visible,
 .pw-row-clickable:focus-visible,
 .pw-toast-action:focus-visible,
 .pw-toast-close:focus-visible {
@@ -172,14 +171,50 @@
   box-sizing: border-box;
   width: 100%;
   min-height: 36px;
-  padding: var(--space-2) var(--space-2);
+  padding: 7px 12px;
   font: inherit;
-  font-size: 14px;
-  line-height: 20px;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
   color: var(--ink);
-  background: var(--surface-raised);
+  /* As the sign-in fields (APPLE_CHECKLIST §3.2): a light fill, the 1px border that marks the control (≥ 3:1, C7). */
+  background: color-mix(in srgb, var(--ink) 6%, transparent);
   border: 1px solid var(--ink-muted);
-  border-radius: var(--radius-sm);
+  /* A medium control on a computer: a rounded rectangle (S3, WWDC25 356); a capsule for touch (below). */
+  border-radius: var(--radius-md);
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    background-color 0.15s ease;
+}
+/* Focus lights the field from within, like the sign-in fields (WWDC25 219: "illuminates from within"). */
+.pw-field-input:focus-visible {
+  outline: none;
+  border-color: var(--route);
+  background: var(--surface-raised);
+  box-shadow:
+    inset 0 0 0 1px var(--route),
+    0 0 12px color-mix(in srgb, var(--route) 30%, transparent);
+}
+.pw-field-error .pw-field-input:focus-visible {
+  border-color: var(--danger);
+  box-shadow:
+    inset 0 0 0 1px var(--danger),
+    0 0 12px color-mix(in srgb, var(--danger) 25%, transparent);
+}
+/* A choice field: the system's own menu (a native select), drawn like a pop-up button with ⌃⌄ at its end (HIG
+   Pop-up buttons). */
+select.pw-field-input {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 36px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2356635E' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M8 9.5l4-4 4 4M8 14.5l4 4 4-4'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 16px 16px;
+  cursor: pointer;
+}
+[data-theme='dark'] select.pw-field-input {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23A2B0AA' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M8 9.5l4-4 4 4M8 14.5l4 4 4-4'/%3E%3C/svg%3E");
 }
 textarea.pw-field-input {
   min-height: 72px;
@@ -193,8 +228,7 @@ textarea.pw-field-input {
 }
 .pw-field-error .pw-field-input {
   border-color: var(--danger);
-  border-width: 2px;
-  padding: 7px;
+  box-shadow: inset 0 0 0 1px var(--danger);
 }
 .pw-field-msg {
   margin: 0;
@@ -818,9 +852,6 @@ textarea.pw-field-input {
 .pw-check input:disabled,
 .pw-check input:disabled + span {
   cursor: not-allowed;
-}
-select.pw-field-input {
-  appearance: auto;
 }
 
 /* Card of a page section (prototype ".card"): form beside a list, invitation form. */
@@ -2977,5 +3008,37 @@ a.pw-segment {
 @media (hover: hover) {
   a.pw-segment:hover {
     color: var(--ink);
+  }
+}
+
+/* ---------- Shapes by input (S3, WWDC25 356; owner's choice 2026-11-18) ----------
+   With a mouse (a dense desktop interface): only the prominent action is a capsule; small and medium controls —
+   secondary and plain buttons, icon buttons, fields, filters, the page button, the role in a row — are rounded
+   rectangles (radius-md 8). With touch: capsules, 44px (the minimum hit target). */
+@media (pointer: fine) {
+  .pw-btn:not(.pw-btn-primary):not(.pw-btn-danger):not(.pw-btn-success):not(.pw-btn-signal),
+  .pw-icon-button:not(.pw-list-add),
+  .pw-filter,
+  .pw-pager-page,
+  .pw-pager-step,
+  .pw-inline-popup,
+  .pw-th-sort,
+  .pw-calendar-link {
+    border-radius: var(--radius-md);
+  }
+}
+@media (pointer: coarse) {
+  .pw-field-input {
+    min-height: 44px;
+    padding: 11px 18px;
+    font-size: 1rem;
+    border-radius: var(--radius-full);
+  }
+  select.pw-field-input {
+    padding-right: 42px;
+    background-position: right 16px center;
+  }
+  textarea.pw-field-input {
+    border-radius: 22px;
   }
 }
