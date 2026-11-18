@@ -2953,12 +2953,32 @@ button.pw-list-row-main:disabled {
 
 /* Segmented control (HIG Segmented controls): equal segments in a grey capsule, the chosen one raised. */
 .pw-segmented {
+  position: relative;
   display: grid;
   grid-template-columns: repeat(var(--segments, 2), minmax(0, 1fr));
-  gap: 2px;
+  gap: 0;
   padding: 2px;
+  /* Not the older design-system segmented's frame (same class name above). */
+  border: 0;
+  overflow: visible;
   border-radius: var(--radius-full);
   background: color-mix(in srgb, var(--ink) 8%, transparent);
+}
+/* The raised piece under the chosen segment; it slides to the next one (as the system's control does). */
+.pw-segmented-thumb {
+  position: absolute;
+  top: 2px;
+  bottom: 2px;
+  left: 2px;
+  width: calc((100% - 4px) / var(--segments, 2));
+  border-radius: var(--radius-full);
+  background: var(--surface-raised);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+  transition: transform 0.32s cubic-bezier(0.34, 1.2, 0.64, 1);
+}
+.pw-segmented > .pw-segment {
+  position: relative;
+  z-index: 1;
 }
 .pw-segment {
   min-height: 32px;
@@ -2977,8 +2997,6 @@ button.pw-list-row-main:disabled {
     box-shadow 0.2s ease;
 }
 .pw-segment.is-selected {
-  background: var(--surface-raised);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
   font-weight: 600;
 }
 .pw-segment:focus-visible {
@@ -3041,4 +3059,39 @@ a.pw-segment {
   padding: 0 16px;
   border-radius: var(--radius-lg);
   background: color-mix(in srgb, var(--ink) 5%, transparent);
+}
+
+/* A tab view's underline (wide): one line that slides and resizes to the current tab (useTabUnderline). */
+.pw-tabs,
+.pw-store-tabs {
+  position: relative;
+}
+.pw-tabs-underline {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 0;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--route);
+  transition:
+    transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1),
+    width 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+/* The other part slides in from its tab's side (like turning a page, G2.9). */
+.pw-members-panel.is-next {
+  animation: pw-page-next 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.pw-members-panel.is-prev {
+  animation: pw-page-prev 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .pw-segmented-thumb,
+  .pw-tabs-underline {
+    transition: none;
+  }
+  .pw-members-panel.is-next,
+  .pw-members-panel.is-prev {
+    animation-name: pw-result-fade;
+  }
 }

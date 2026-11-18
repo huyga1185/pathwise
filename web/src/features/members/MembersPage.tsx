@@ -1,5 +1,5 @@
 import { useStoreReadOnly } from '@/data/meQuery';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useSearchParams } from 'react-router';
 import { ApiError } from '@/data/apiError';
@@ -11,6 +11,7 @@ import { applyServerErrors, errorCode } from '@/shared/forms/serverErrors';
 import { formatDate } from '@/shared/format';
 import { useCountdown } from '@/shared/hooks/useCountdown';
 import { useMediaQuery, WIDE_QUERY } from '@/shared/hooks/useMediaQuery';
+import { useTabUnderline } from '@/shared/hooks/useTabUnderline';
 import { vi } from '@/shared/i18n/vi';
 import {
   Alert,
@@ -85,6 +86,12 @@ export function MembersPage() {
   const [toast, setToast] = useState<string | null>(null);
 
   const select = (next: Tab) => setParams(next === 'invitations' ? { tab: 'invitations' } : {}, { replace: true });
+  const tabBar = useRef<HTMLDivElement>(null);
+  const underline = useRef<HTMLSpanElement>(null);
+  useTabUnderline(tabBar, underline, `${tab}-${wide}`);
+  // The other part slides in from the side its tab is on (members on the left, invitations on the right).
+  const [shownTab, setShownTab] = useState({ tab, motion: '' });
+  if (tab !== shownTab.tab) setShownTab({ tab, motion: tab === 'invitations' ? 'is-next' : 'is-prev' });
   const tabs = [
     { value: 'members' as const, label: m.tabMembers(members.data?.length ?? 0), panelId: 'panel-members' },
     ...(isOwner
@@ -121,7 +128,8 @@ export function MembersPage() {
 
       {tabs.length > 1 ? (
         wide ? (
-          <div className="pw-tabs" role="tablist" aria-label={m.tabsLabel}>
+          <div ref={tabBar} className="pw-tabs" role="tablist" aria-label={m.tabsLabel}>
+            <span ref={underline} className="pw-tabs-underline" aria-hidden="true" />
             {tabs.map((item) => (
               <button
                 key={item.value}
@@ -151,7 +159,13 @@ export function MembersPage() {
       ) : null}
 
       {tab === 'members' ? (
-        <div id="panel-members" role="tabpanel" aria-labelledby="tab-members" className="pw-members-panel">
+        <div
+          key="members"
+          id="panel-members"
+          role="tabpanel"
+          aria-labelledby="tab-members"
+          className={cx('pw-members-panel', shownTab.motion)}
+        >
           {members.isError ? <ErrorBanner title={messageFor(members.error)} /> : null}
           <MembersList
             members={members.data ?? []}
@@ -166,7 +180,13 @@ export function MembersPage() {
           </p>
         </div>
       ) : (
-        <div id="panel-invitations" role="tabpanel" aria-labelledby="tab-invitations" className="pw-members-panel">
+        <div
+          key="invitations"
+          id="panel-invitations"
+          role="tabpanel"
+          aria-labelledby="tab-invitations"
+          className={cx('pw-members-panel', shownTab.motion)}
+        >
           {invitations.isError ? <ErrorBanner title={messageFor(invitations.error)} /> : null}
           <InvitationsList
             invitations={invitations.data ?? []}

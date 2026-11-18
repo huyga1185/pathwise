@@ -59,7 +59,6 @@
 }
 .pw-store-tab.is-active {
   color: var(--route);
-  border-bottom-color: var(--route);
 }
 .pw-store-tab:focus-visible {
   outline: 2px solid var(--route);

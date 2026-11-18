@@ -29,8 +29,14 @@ export function SegmentedControl<T extends string>({
     onChange(next.value);
     refs.current[next.value]?.focus();
   };
+  const index = Math.max(
+    0,
+    options.findIndex((option) => option.value === value),
+  );
   return (
     <div className="pw-segmented" role="tablist" aria-label={label} style={{ '--segments': options.length } as never}>
+      {/* The raised piece slides to the chosen segment, as the system's segmented control does. */}
+      <span className="pw-segmented-thumb" aria-hidden="true" style={{ transform: `translateX(${index * 100}%)` }} />
       {options.map((option) => (
         <button
           key={option.value}

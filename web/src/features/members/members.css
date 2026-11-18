@@ -23,7 +23,6 @@
 }
 .pw-tab[aria-selected='true'] {
   color: var(--route);
-  border-bottom-color: var(--route);
 }
 .pw-tab:focus-visible {
   outline: 2px solid var(--route);

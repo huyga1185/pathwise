@@ -1,4 +1,6 @@
-import { NavLink } from 'react-router';
+import { useRef } from 'react';
+import { NavLink, useLocation } from 'react-router';
+import { useTabUnderline } from '@/shared/hooks/useTabUnderline';
 import { useMediaQuery, WIDE_QUERY } from '@/shared/hooks/useMediaQuery';
 import { vi } from '@/shared/i18n/vi';
 import { cx } from '@/shared/ui/cx';
@@ -10,13 +12,28 @@ import { cx } from '@/shared/ui/cx';
  */
 export function StoreTabs() {
   const wide = useMediaQuery(WIDE_QUERY);
+  const { pathname } = useLocation();
+  const onAudit = pathname.endsWith('/audit');
+  const bar = useRef<HTMLElement>(null);
+  const underline = useRef<HTMLSpanElement>(null);
+  useTabUnderline(bar, underline, `${pathname}-${wide}`);
   const tab = wide ? 'pw-store-tab' : 'pw-segment';
   return (
     <nav
+      ref={bar}
       className={wide ? 'pw-store-tabs' : 'pw-segmented'}
       style={wide ? undefined : ({ '--segments': 2 } as never)}
       aria-label={vi.storeTabs.label}
     >
+      {wide ? (
+        <span ref={underline} className="pw-tabs-underline" aria-hidden="true" />
+      ) : (
+        <span
+          className="pw-segmented-thumb"
+          aria-hidden="true"
+          style={{ transform: `translateX(${onAudit ? 100 : 0}%)` }}
+        />
+      )}
       <NavLink end to="/store" className={({ isActive }) => cx(tab, isActive && (wide ? 'is-active' : 'is-selected'))}>
         {vi.storeTabs.info}
       </NavLink>
