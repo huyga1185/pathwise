@@ -106,6 +106,7 @@ function GeocodeView({ plan }: { plan: PlanDetail }) {
   const busy = plan.processingStatus !== 'IDLE';
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [failure, setFailure] = useState<unknown>(null);
+  const [tries, setTries] = useState(0);
   const [working, setWorking] = useState(false);
   const [copying, setCopying] = useState(false);
   const selected =
@@ -124,13 +125,17 @@ function GeocodeView({ plan }: { plan: PlanDetail }) {
           : g.whyReady;
   const canOptimize = !busy && stops.length > 0 && plan.routes.length > 0 && missing === 0;
 
+  // The last error stays while the next try runs and is replaced in one go by its result: taking it away first made
+  // the page shorter and jump (scrolled to the bottom, the page moved up and down: owner, 2026-11-18). A new try that
+  // fails again draws its banner anew (key), so it is announced again.
   const run = async (action: () => Promise<unknown>) => {
-    setFailure(null);
     setWorking(true);
     try {
       await action();
+      setFailure(null);
     } catch (error) {
       setFailure(error);
+      setTries((n) => n + 1);
       if (error instanceof ApiError && (error.code === 'PLAN_MODIFIED' || error.code === 'PLAN_BUSY')) {
         await planApi.reload(plan.id);
       }
@@ -224,7 +229,7 @@ function GeocodeView({ plan }: { plan: PlanDetail }) {
         }
       />
 
-      {failure ? <ErrorBanner title={messageFor(failure)} /> : null}
+      {failure ? <ErrorBanner key={tries} title={messageFor(failure)} /> : null}
 
       {plan.processingStatus === 'GEOCODING' ? (
         <section className="pw-plans-progress" aria-label={statusInfo('processing', 'GEOCODING')?.label}>
@@ -283,6 +288,7 @@ function FixStop({ plan, stop, busy }: { plan: PlanDetail; stop: PlanStop; busy:
   const [enlarge, setEnlarge] = useState(false);
   const [saved, setSaved] = useState<string | null>(null);
   const [failure, setFailure] = useState<unknown>(null);
+  const [tries, setTries] = useState(0);
   const [working, setWorking] = useState(false);
   const current = stop.lat !== null && stop.lon !== null ? { lat: stop.lat, lon: stop.lon } : null;
   const geocodeMessage =
@@ -292,15 +298,17 @@ function FixStop({ plan, stop, busy }: { plan: PlanDetail; stop: PlanStop; busy:
         : g.notFound
       : undefined;
 
+  // As the page's: the last error stays until this try's result replaces it (no jump), drawn anew when it fails again.
   const run = async (action: () => Promise<unknown>, done?: string) => {
-    setFailure(null);
     setSaved(null);
     setWorking(true);
     try {
       await action();
+      setFailure(null);
       if (done) setSaved(done);
     } catch (error) {
       setFailure(error);
+      setTries((n) => n + 1);
       if (error instanceof ApiError && (error.code === 'PLAN_MODIFIED' || error.code === 'PLAN_BUSY')) {
         await planApi.reload(plan.id);
       }
@@ -330,7 +338,7 @@ function FixStop({ plan, stop, busy }: { plan: PlanDetail; stop: PlanStop; busy:
         <h2 id="fix-title">{g.fixTitle(stopTitle(stop))}</h2>
         <StatusPill kind="geocode" status={stop.geocodeStatus} />
       </div>
-      {failure ? <ErrorBanner title={messageFor(failure)} /> : null}
+      {failure ? <ErrorBanner key={tries} title={messageFor(failure)} /> : null}
       <TextField
         label={g.address}
         maxLength={500}
