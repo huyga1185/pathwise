@@ -3358,3 +3358,33 @@ a[aria-current='page'],
     transition: none;
   }
 }
+
+/* The button at the end of a field in a sheet (show password; APPLE_CHECKLIST T-8, I-3): inside the field, 2px from its
+   edge, concentric with it (S1) — with a mouse a 36px field rounded 8 holds a 32px button rounded 8 − 2 = 6; for touch
+   a 44px capsule (22) holds a 40px circle (22 − 2 = 20), as in the account card (LIQUID_GLASS §9). */
+.pw-sheet .pw-field-end {
+  right: 2px;
+}
+.pw-sheet .pw-field-end .pw-icon-button {
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  min-height: 32px;
+  border-radius: 6px;
+  color: var(--ink-muted);
+}
+.pw-sheet .pw-field-control.has-end .pw-field-input {
+  padding-right: 40px;
+}
+@media (pointer: coarse) {
+  .pw-sheet .pw-field-end .pw-icon-button {
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+    min-height: 40px;
+    border-radius: 20px;
+  }
+  .pw-sheet .pw-field-control.has-end .pw-field-input {
+    padding-right: 48px;
+  }
+}

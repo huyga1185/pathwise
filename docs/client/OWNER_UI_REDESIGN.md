@@ -387,3 +387,8 @@ Chủ dự án: các khung mã trong sheet Đổi mật khẩu trông không câ
 ### 8.15 Sheet Đổi mật khẩu: mã là một thanh (2026-11-18)
 
 Sau §8.14, khung mã vuông cao bằng ô nhập (36/44) quá nhỏ trong sheet; chủ dự án chọn **một thanh nhập** như các ô khác của sheet (bỏ §8.14). Ô vẫn là mã dùng một lần: `autocomplete="one-time-code"` (AutoFill), bàn phím số, chỉ giữ chữ số, tối đa 6. Các màn ngoài app (Quên mật khẩu, Xác nhận email, Đặt lại mật khẩu bằng link) giữ `CodeField` 6 khung trong thẻ tài khoản (§8.13).
+
+### 8.16 Nút hiện mật khẩu trong sheet Đổi mật khẩu (2026-11-18)
+
+Chủ dự án: hai ô mật khẩu của sheet không có nút hiện. Đối chiếu docs: APPLE_CHECKLIST T-8 (nút chức năng thêm ở cuối ô; HIG Text fields: *"the trailing end to offer additional features"*), §3.5 I-1 biểu tượng quen thuộc, **I-2 `aria-label` và `title` khi có chuột**, **I-3 bán kính đồng tâm với ô**; LIQUID_GLASS §9 (nút con mắt 40px cách mép ô 2px). Làm: component chung `PasswordField` (ô ẩn chữ — T-5 — với nút con mắt cuối ô, `aria-label`, `title`, `aria-pressed`), dùng cho "Mật khẩu hiện tại" và "Mật khẩu mới". Trong sheet nút nằm trong ô, cách mép 2px, đồng tâm: chuột — ô 36 bo 8 → nút 32 bo 6; cảm ứng — ô 44 viên thuốc → nút tròn 40 (bo 20). I-3 ghi "hình tròn" vì viết cho ô viên thuốc của thẻ tài khoản; với ô bo 8 khi dùng chuột thì đồng tâm là bo 6. Trang Đăng nhập giữ nút riêng của nó; các màn tài khoản khác (Đăng ký, Quên mật khẩu, Đặt lại mật khẩu bằng link, Nhận lời mời) chưa có nút hiện — chưa đổi, chờ chủ dự án.
+

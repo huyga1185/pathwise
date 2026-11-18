@@ -8,7 +8,7 @@ import { applyServerErrors, errorCode } from '@/shared/forms/serverErrors';
 import { formatDayTime, formatPhone } from '@/shared/format';
 import { useCountdown } from '@/shared/hooks/useCountdown';
 import { vi } from '@/shared/i18n/vi';
-import { Button, ErrorBanner, Sheet, StatusPill, TextField, Toast, ToastDock } from '@/shared/ui';
+import { Button, ErrorBanner, PasswordField, Sheet, StatusPill, TextField, Toast, ToastDock } from '@/shared/ui';
 import { deviceName } from './device';
 import { useDeviceSessions, useMe, useProfileApi, type DeviceSession, type Me } from './profileApi';
 import './profile.css';
@@ -245,9 +245,8 @@ function PasswordCard({ email }: { email: string }) {
       >
         {step === 'current' ? (
           <>
-            <TextField
+            <PasswordField
               label={vi.profile.currentPassword}
-              type="password"
               autoComplete="current-password"
               required
               value={current}
@@ -280,9 +279,8 @@ function PasswordCard({ email }: { email: string }) {
               error={errors.otp}
               onChange={(event) => setOtp(event.target.value.replace(/\D/g, '').slice(0, 6))}
             />
-            <TextField
+            <PasswordField
               label={vi.form.newPassword}
-              type="password"
               autoComplete="new-password"
               required
               maxLength={72}

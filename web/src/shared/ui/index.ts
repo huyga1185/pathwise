@@ -22,6 +22,7 @@ export {
 export { CodeField } from './CodeField';
 export { Wordmark } from './Wordmark';
 export * from './icons';
+export { PasswordField } from './PasswordField';
 export { DatePickerFilter, PageJump, PlaceholderRows, PopUpButton, PopUpFilter } from './Filters';
 export { ActivityIndicator } from './ActivityIndicator';
 export { Alert, Sheet, type AlertProps, type SheetProps } from './Sheet';
