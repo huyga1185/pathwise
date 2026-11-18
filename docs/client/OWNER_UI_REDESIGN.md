@@ -517,3 +517,9 @@ Chủ dự án hỏi có được đưa nút quay lại lên thanh trên, ngang 
 
 Làm: điện thoại — `BackLink` vào đầu thanh trên (`AppShell` có chỗ `pw-topbar-leading`, chỉ ở màn hẹp; nút chờ chỗ đó sẵn sàng rồi mới vẽ, không hiện trong trang một khung hình rồi nhảy lên). Cuộn qua tiêu đề lớn, tiêu đề nhỏ hiện giữa thanh → nút thu về chỉ còn chevron (như iOS khi tên trang trước không đủ chỗ), tên vẫn đọc được. Màn rộng giữ nút trong trang (đầu thanh trên là nút ẩn/hiện sidebar). Trang tạo/sửa: hàng tiêu đề sát dưới thanh trên như các trang khác. Đo 390 và 320px: nút và avatar cùng tâm (y = 30), không tràn; khoảng thanh trên → tiêu đề 16–21px ở mọi trang (trang sửa trước đó 53px).
 
+### 9.12 Ba nút đầu trang chi tiết trên màn hẹp (2026-11-18)
+
+Chủ dự án: "Sửa điểm giao", "Sao chép", "Tối ưu lộ trình" trên màn hẹp đặt chưa hợp lý. Đo: ba nút vừa một hàng từ 440px; hẹp hơn thì vỡ 2 hàng, nút chính đứng lẻ hàng dưới (HIG Toolbars: *"avoid layouts that cause toolbar items to overflow by default"*). HIG gợi ý cho iPhone: giữ nút quan trọng, đưa phần còn lại vào menu More (*"Create a More menu to include additional items"*); chủ dự án chọn **xếp dọc, rộng hết** để luôn thấy đủ ba nút.
+
+Làm: dưới 440px (`(max-width: 439px)`) ba nút xếp dọc rộng hết, **nút chính trên cùng**, rồi "Sửa điểm giao", "Sao chép"; thứ tự trong DOM đổi theo (không đảo bằng CSS) để trình đọc màn hình và Tab đi đúng thứ tự nhìn thấy (WCAG 1.3.2, 2.4.3). Từ 440px: một hàng, nút chính cuối (§9.10). Đo 390 / 320px: ba nút 343 / 273px, cao 44px, không tràn. Màn kết quả và theo dõi: G5.
+

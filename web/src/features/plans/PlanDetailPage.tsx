@@ -23,11 +23,15 @@ import {
   ActivityIndicator,
 } from '@/shared/ui';
 import { PinPickerDialog } from '@/shared/ui/PinPicker';
+import { useMediaQuery } from '@/shared/hooks/useMediaQuery';
 import { allStops, usePlan, usePlanApi, type PlanDetail, type PlanStop } from './planApi';
 import { ResultView } from './ResultView';
 import { TrackView } from './TrackView';
 import { CopySheet, type CopiedNotice } from './CopySheet';
 import './plans.css';
+
+/** Narrower than this, the three header buttons no longer fit one row (measured 2026-11-18): they stack. */
+const STACK_QUERY = '(max-width: 439px)';
 
 const g = vi.geocode;
 
@@ -117,6 +121,7 @@ function GeocodeView({ plan }: { plan: PlanDetail }) {
   const selected =
     stops.find((stop) => stop.id === selectedId) ?? stops.find((stop) => stop.geocodeStatus === 'FAILED') ?? stops[0];
 
+  const stacked = useMediaQuery(STACK_QUERY);
   const why = busy
     ? plan.processingStatus === 'OPTIMIZING'
       ? g.whyOptimizing
@@ -201,6 +206,16 @@ function GeocodeView({ plan }: { plan: PlanDetail }) {
     },
   ];
 
+  const optimizeButton = (
+    <Button
+      variant="primary"
+      disabled={!canOptimize || working || readOnly}
+      aria-describedby="optimize-why"
+      onClick={() => void run(() => planApi.optimize(plan.id, plan.version))}
+    >
+      {g.optimize}
+    </Button>
+  );
   return (
     <section className="pw-page-section" aria-labelledby="plan-title">
       <PlanHeader
@@ -208,7 +223,11 @@ function GeocodeView({ plan }: { plan: PlanDetail }) {
         subtitle={g.subtitle(formatDateLong(plan.planDate), stops.length, plan.routes.length)}
         actions={
           <div className="pw-plan-header-actions">
-            <div className="pw-plan-actions">
+            {/* One row: edit, copy, the primary action last (HIG Toolbars). Too narrow for one row (< 440px, measured):
+                stacked full width, the primary action first (owner's choice, §9.12) — in that order in the page too,
+                so reading and Tab follow what is seen (WCAG 1.3.2, 2.4.3). */}
+            <div className={stacked ? 'pw-plan-actions is-stacked' : 'pw-plan-actions'}>
+              {stacked ? optimizeButton : null}
               <Button
                 variant="secondary"
                 disabled={busy || readOnly}
@@ -217,20 +236,13 @@ function GeocodeView({ plan }: { plan: PlanDetail }) {
                 {g.editStops}
               </Button>
               {/* Copy, in every state (API_SPEC: any status); the list's touch-and-hold menu offers it too. Tinted,
-                  between the grey edit and the primary action that stays last (HIG Toolbars; owner, 2026-11-18). */}
+                  between the grey edit and the primary action (HIG Toolbars; owner, 2026-11-18). */}
               {!readOnly ? (
                 <Button variant="tinted" onClick={() => setCopying(true)}>
                   {vi.planCopy.action}
                 </Button>
               ) : null}
-              <Button
-                variant="primary"
-                disabled={!canOptimize || working || readOnly}
-                aria-describedby="optimize-why"
-                onClick={() => void run(() => planApi.optimize(plan.id, plan.version))}
-              >
-                {g.optimize}
-              </Button>
+              {stacked ? null : optimizeButton}
             </div>
             {/* Read with the button (aria-describedby); on screen each reason has its own place: the block below for
                 what to do, the progress and spinners for a running task (§9.7, owner's trial 2026-11-18). */}

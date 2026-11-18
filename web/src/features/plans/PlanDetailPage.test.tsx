@@ -1,7 +1,7 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http } from 'msw';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { wideWindow } from '@/test/media';
 import { renderApp } from '@/test/renderApp';
 import { sample } from '@/test/samples';
@@ -236,6 +236,33 @@ describe('Nút quay lại (§9.11)', () => {
     renderApp('/plans/83');
     await screen.findByRole('heading', { name: 'Giao sáng 01/12', level: 1 });
     expect(document.querySelector('.pw-back-link')?.closest('main')).not.toBeNull();
+  });
+});
+
+describe('Ba nút đầu trang trên màn hẹp (§9.12)', () => {
+  it('dưới 440px: xếp dọc, nút chính đầu tiên (cả thứ tự trong trang, để Tab theo đúng thứ tự nhìn thấy)', async () => {
+    vi.spyOn(window, 'matchMedia').mockImplementation(
+      (query: string) =>
+        ({
+          matches: query.includes('max-width: 439px'),
+          media: query,
+          addEventListener: () => {},
+          removeEventListener: () => {},
+        }) as unknown as MediaQueryList,
+    );
+    server.use(
+      http.get(`${API}/plans/83`, () => ok(geocoded())),
+      ...signedInHandlers(),
+    );
+    renderApp('/plans/83');
+    await screen.findByRole('heading', { name: 'Giao sáng 01/12', level: 1 });
+    const actions = document.querySelector('.pw-plan-actions') as HTMLElement;
+    expect(actions).toHaveClass('is-stacked');
+    expect(
+      within(actions)
+        .getAllByRole('button')
+        .map((button) => button.textContent),
+    ).toEqual(['Tối ưu lộ trình', 'Sửa điểm giao', 'Sao chép']);
   });
 });
 

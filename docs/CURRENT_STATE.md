@@ -341,3 +341,4 @@ Nhóm: (1) nghiệp vụ/hiểu sai yêu cầu · (2) implementation · (3) ki�
 | 2026-11-18 | branch `feat/owner-ui-g4` | — | Docs: DESIGN_SYSTEM ghi quy tắc nhóm bo 16 không viền của khu đã redesign và trang còn kiểu cũ; chi tiết kế hoạch đổi ô trắng ở G5, khối lỗi nền đỏ nhạt (`OWNER_UI_REDESIGN.md` §9.9). |
 | 2026-11-18 | branch `feat/owner-ui-g4` | — | `Button` thêm kiểu `tinted`; "Sao chép" ở màn tìm toạ độ thành tinted, đứng giữa "Sửa điểm giao" và nút chính (`OWNER_UI_REDESIGN.md` §9.10). |
 | 2026-11-18 | branch `feat/owner-ui-g4` | — | Điện thoại: nút quay lại lên đầu thanh trên, ngang hàng nút tài khoản, theo thiết kế G1 §6 (`OWNER_UI_REDESIGN.md` §9.11). |
+| 2026-11-18 | branch `feat/owner-ui-g4` | — | Màn hẹp (< 440px): ba nút đầu trang chi tiết kế hoạch xếp dọc rộng hết, nút chính trên cùng (`OWNER_UI_REDESIGN.md` §9.12). |
