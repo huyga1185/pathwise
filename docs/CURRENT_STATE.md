@@ -338,3 +338,4 @@ Nhóm: (1) nghiệp vụ/hiểu sai yêu cầu · (2) implementation · (3) ki�
 | 2026-11-18 | branch `feat/owner-ui-g4` | — | Hộp "Phóng to bản đồ" mở/đóng có hoạt ảnh; dòng thêm/xoá ở form kế hoạch mờ vào (tô nền) / mờ ra; khung sửa điểm mờ vào khi đổi điểm (`OWNER_UI_REDESIGN.md` §9.6). |
 | 2026-11-18 | branch `feat/owner-ui-g4` | — | Thử: lý do khoá "Tối ưu lộ trình" thành khối "Chưa có tài xế nào được phân công." có nút "Thêm phân công"; bỏ dòng chữ dưới nút (`OWNER_UI_REDESIGN.md` §9.7). |
 | 2026-11-18 | branch `feat/owner-ui-g4` | — | Tên kế hoạch không dấu cách không còn tràn tiêu đề trang; nút "Phóng to bản đồ…" xuống dòng thay vì tràn khung ở màn hẹp (`OWNER_UI_REDESIGN.md` §9.8). |
+| 2026-11-18 | branch `feat/owner-ui-g4` | — | Docs: DESIGN_SYSTEM ghi quy tắc nhóm bo 16 không viền của khu đã redesign và trang còn kiểu cũ; chi tiết kế hoạch đổi ô trắng ở G5, khối lỗi nền đỏ nhạt (`OWNER_UI_REDESIGN.md` §9.9). |

@@ -105,6 +105,7 @@ Bộ component React (`window.PathWise`) là bản tham chiếu cho web dashboar
 - Khoảng cách theo bậc `space-1` (4), `space-2` (8), `space-4` (16), `space-6` (24); không dùng giá trị lẻ.
 - Panel và thẻ padding `space-4`, cách nhau `space-6`. Ô bảng padding dọc `space-2`.
 - Bo góc: ô nhập, nút, khung bảng, khung bản đồ `radius-sm`; thẻ, panel, hộp thoại `radius-md`; thẻ nổi đứng riêng (thẻ đăng nhập) `radius-lg`; pill và marker `radius-full`.
+  - **Khu chủ cửa hàng đã redesign (G2–G4, `OWNER_UI_REDESIGN.md`) thay quy tắc thẻ/panel trên:** nhóm nội dung là ô nền `surface-raised`, **bo 16, không viền** (`pw-list-group`, `pw-store-group`, `pw-form-group`); bảng trong nhóm không có khung riêng. Trang chưa redesign còn thẻ `radius-md` có viền: **chi tiết kế hoạch** (để G5, chủ dự án chọn 2026-11-18), Báo cáo (G6), khu quản trị. Đo 2026-11-18: chi tiết kế hoạch bo 8 / bảng bo 4, có viền; các trang đã redesign bo 16 không viền.
 - Web dashboard: màn hình soạn plan chia đôi, bảng stop bên trái, bản đồ bên phải; dưới 1024px bản đồ xuống dưới bảng.
 - App tài xế: vùng chạm tối thiểu 48px; ba nút kết quả của stop (Đã giao, Không giao được, Bỏ qua) xếp dọc, cao 56px, ở nửa dưới màn hình để bấm bằng ngón cái.
 
@@ -166,7 +167,7 @@ Nút bấm cho mọi hành động; mỗi màn hình chỉ một nút `primary`,
 
 - `SelectField`: ô chọn (native `select`) cùng nhãn, hint, câu lỗi, `aria-describedby` như `TextField`; `placeholder` là lựa chọn rỗng đầu tiên ("Chọn đơn vị") cho ô bắt buộc chưa có giá trị. Dùng cho đơn vị của xe, vai trò. Ô chọn vai trò trong bảng thành viên dùng `select.pw-field-input` có `aria-label` theo dòng.
 - `Checkbox`: ô 18px màu `route` kèm chữ (prototype `.check`), cao tối thiểu 36px; trong bảng có `aria-label` theo dòng ("Đi giao: Tài xế A").
-- `.pw-card`: khung của form cạnh danh sách (`surface-raised`, viền `line`, `radius-md`, padding 16px, tiêu đề 20/28). Hộp "đã lưu" `.pw-status-ok` (viền `success`).
+- `.pw-card`: khung của form cạnh danh sách (`surface-raised`, viền `line`, `radius-md`, padding 16px, tiêu đề 20/28). Hộp "đã lưu" `.pw-status-ok` (viền `success`). *Kiểu cũ:* các trang đã redesign dùng nhóm bo 16 không viền (mục Bo góc); `.pw-card` còn ở trang chưa redesign (chi tiết kế hoạch tới G5).
 
 ### StatusPill
 

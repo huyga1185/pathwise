@@ -110,6 +110,7 @@ Mỗi giai đoạn một branch, một PR, kiểm theo `APPLE_CHECKLIST.md`, c�
 3. **G3 Xe, Thành viên, Cửa hàng, Hồ sơ, Nhật ký:** cùng mẫu G2 (bộ lọc, bảng/danh sách hàng, hàng giữ chỗ, **menu ngữ cảnh của hàng** như G2.13, thanh trang); hộp thoại sang sheet/alert (D12); nút `secondary` viền rỗng (F-73); kéo đổi độ rộng cột.
 4. **G4 Tạo/sửa kế hoạch** (D16) và hộp thoại nhập file, sao chép.
 5. **G5 Chi tiết kế hoạch:** tìm toạ độ, kết quả tối ưu, chỉnh tay, theo dõi (D15) — cần dữ liệu mẫu.
+   - *Đã chốt cho G5 (chủ dự án, 2026-11-18):* các ô trắng của trang (khối "Còn N điểm…", "Chưa có tài xế…", thanh tiến độ, nhóm bảng, khung sửa điểm, thẻ ở màn kết quả / theo dõi) đổi sang nhóm **bo 16, không viền** như các trang đã redesign; bản đồ trong nhóm bo đồng tâm (S1/S2). Khối **lỗi** (vd "Còn N điểm giao chưa có toạ độ") bỏ viền đỏ, báo bằng **nền đỏ nhạt**. Hiện vẫn kiểu cũ (bo 8, bảng bo 4, có viền) — chủ dự án chọn để G5 cả, không đổi lẻ (§9.9).
 6. **G6 Báo cáo** (D17).
 
 Prototype (artboard) cập nhật theo từng giai đoạn hoặc sau cùng — §5 Q5.
@@ -499,4 +500,8 @@ Chủ dự án hỏi đã xử lý tràn chữ cho tiêu đề và nút quay l�
 | Nút quay lại ở trang sửa (tên kế hoạch) | Một dòng rồi "…", rê chuột hiện tên (`title`) — đúng G4.1 | Giữ |
 | "Sửa kế hoạch" ở 320px | Xuống 2 dòng để chừa Huỷ / ✓, không tràn | Giữ |
 | Nút "Phóng to bản đồ để đặt ghim chính xác hơn" | **Không xuống dòng, tràn khỏi khung sửa điểm** ở 390 và 320px | Xuống dòng trong nút; một dòng vẫn cao 36px |
+
+### 9.9 Bo góc các ô trắng ở trang chi tiết kế hoạch (2026-11-18)
+
+Chủ dự án: bo của các ô trắng ở trang kế hoạch không khớp các trang khác. Đo 1440px: Kế hoạch, Xe, Thành viên, Cửa hàng, Sửa kế hoạch — ô trắng bo 16, không viền; chi tiết kế hoạch — khối "Còn N điểm…" / "Chưa có tài xế…" bo 8 viền 1px (đỏ / xám), bảng bo 4 viền, khung sửa điểm bo 8 viền; Báo cáo (ô trống) bo 8 viền. Nguyên nhân: trang chi tiết thuộc G5 (§9.5 #6, đã chọn để G5), chưa đổi. Docs lệch: `DESIGN_SYSTEM.md` mục Bo góc và `.pw-card` vẫn ghi thẻ `radius-md` có viền như quy tắc chung — đã ghi rõ quy tắc nhóm bo 16 của khu đã redesign và trang nào còn kiểu cũ. Chủ dự án chọn: **để G5 cả** (không đổi code bây giờ); khối lỗi ở G5 dùng **nền đỏ nhạt** thay viền đỏ (ghi ở mục G5, §4).
 
