@@ -18,7 +18,7 @@ test('chủ cửa hàng đi hết luồng MVP tới khi kế hoạch hoàn thàn
     await page.getByLabel(/^Mật khẩu/).fill(password);
     await page.getByRole('button', { name: /Tạo cửa hàng/ }).click();
     await expect(page.getByRole('heading', { name: 'Xác thực email' })).toBeVisible();
-    await page.getByLabel('Chữ số 1 trên 6').fill(await otpSentTo(owner));
+    await page.getByLabel('Mã xác thực').fill(await otpSentTo(owner));
     await page.getByRole('button', { name: 'Xác thực' }).click();
     await expect(page.getByText('Email đã được xác thực.')).toBeVisible();
   });
