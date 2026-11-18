@@ -95,7 +95,7 @@ export function Sheet({
     if (wide) return;
     if ((event.target as HTMLElement).closest('button')) return;
     start.current = { y: event.clientY, time: performance.now() };
-    event.currentTarget.setPointerCapture(event.pointerId);
+    event.currentTarget.setPointerCapture?.(event.pointerId);
   };
   const onMove = (event: PointerEvent<HTMLDivElement>) => {
     if (!start.current) return;

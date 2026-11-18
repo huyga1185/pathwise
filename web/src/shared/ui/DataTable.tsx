@@ -91,7 +91,7 @@ export function DataTable<Row>({
         const width = base[key] ?? 120;
         setWidths(base);
         drag.current = { key, x: event.clientX, width };
-        event.currentTarget.setPointerCapture(event.pointerId);
+        event.currentTarget.setPointerCapture?.(event.pointerId);
       }}
       onPointerMove={(event: PointerEvent<HTMLSpanElement>) => {
         const current = drag.current;

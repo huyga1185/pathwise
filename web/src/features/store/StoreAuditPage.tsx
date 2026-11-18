@@ -7,17 +7,28 @@ import { useStoreQuery } from '@/data/storeQuery';
 import type { Schemas } from '@/data/types';
 import { AUDIT_ACTION_LABELS, AUDIT_ACTIONS, auditSentence } from '@/shared/audit';
 import { messageFor } from '@/shared/errors';
-import { formatDayTime } from '@/shared/format';
+import { formatDayTime, todayIn } from '@/shared/format';
+import { useMediaQuery, WIDE_QUERY } from '@/shared/hooks/useMediaQuery';
 import { vi } from '@/shared/i18n/vi';
-import { Button, DataTable, EmptyState, ErrorBanner, SelectField, TextField } from '@/shared/ui';
+import {
+  DataTable,
+  DatePickerFilter,
+  EmptyState,
+  ErrorBanner,
+  Pager,
+  PlaceholderRows,
+  PopUpFilter,
+  type DataTableColumn,
+} from '@/shared/ui';
 import { StoreTabs } from './StoreTabs';
 
 type StoreAuditEvent = Schemas['StoreAuditEventResponse'];
 const DEVICE_TIME_ZONE = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
 /**
- * Prototype "Nhật ký cửa hàng" (W11, T58): the OWNER's own store log, newest first, days in the store's time zone. An
- * ADMIN's IP is never there (the server leaves it out).
+ * "Nhật ký cửa hàng" (W11, T58; OWNER_UI_REDESIGN §8.3): the OWNER's own store log, newest first, days in the store's
+ * time zone; 20 a page with the shared pager (`?page=`). Filters as on the plan list; a table on a wide window, rows
+ * (what happened, then when · who) on a phone. An ADMIN's IP is never there (the server leaves it out).
  */
 export function StoreAuditPage() {
   const api = useApi();
@@ -59,6 +70,30 @@ export function StoreAuditPage() {
     setParams(merged, { replace: true });
   };
   const page = audit.data;
+  const wide = useMediaQuery(WIDE_QUERY);
+  const actor = (row: StoreAuditEvent) => (row.actorRole === 'ADMIN' ? t.admin : (row.actorEmail ?? '—'));
+  const columns: DataTableColumn<StoreAuditEvent>[] = [
+    {
+      key: 'at',
+      header: t.at,
+      render: (row) => <span className="pw-nowrap pw-tabular">{formatDayTime(row.occurredAt, timeZone)}</span>,
+    },
+    {
+      key: 'actor',
+      header: t.actor,
+      render: (row) =>
+        row.actorRole === 'ADMIN' ? (
+          t.admin
+        ) : (
+          <div>
+            <div className="pw-store-audit-actor">{row.actorEmail ?? '—'}</div>
+            <div className="pw-muted">{row.actorRole ? (vi.roles[row.actorRole] ?? row.actorRole) : ''}</div>
+          </div>
+        ),
+    },
+    { key: 'action', header: t.action, render: (row) => auditSentence(row) },
+    { key: 'ip', header: t.ip, render: (row) => row.ip ?? '—' },
+  ];
 
   return (
     <section className="pw-page-section" aria-labelledby="store-audit-title">
@@ -66,77 +101,73 @@ export function StoreAuditPage() {
         {vi.store.title}
       </h1>
       <StoreTabs />
-      <p className="pw-muted">{t.storeLead}</p>
-      <form className="pw-store-audit-filters" aria-label={t.title} onSubmit={(event) => event.preventDefault()}>
-        <SelectField
+      <p className="pw-muted pw-list-lead-tight">{t.storeLead}</p>
+      {/* Filters like the plan list (G2): pop-up button and compact date pickers, no card. */}
+      <div className="pw-list-filters" role="group" aria-label={t.filterLabel}>
+        <PopUpFilter
           label={t.action}
-          value={filter.action ?? ''}
-          onChange={(event) => change({ action: event.target.value || undefined })}
-          options={[
-            { value: '', label: t.all },
-            ...AUDIT_ACTIONS.map((a) => ({ value: a, label: AUDIT_ACTION_LABELS[a] ?? a })),
-          ]}
+          value={filter.action}
+          emptyText={t.all}
+          options={AUDIT_ACTIONS.map((a) => ({ value: a, label: AUDIT_ACTION_LABELS[a] ?? a }))}
+          onChange={(value) => change({ action: value })}
         />
-        <TextField
+        <DatePickerFilter
           label={t.from}
-          type="date"
-          value={filter.from ?? ''}
-          onChange={(event) => change({ from: event.target.value })}
+          value={filter.from}
+          emptyText={t.any}
+          today={todayIn(timeZone)}
+          clearText={t.anyDate}
+          previousMonthText={vi.plans.previousMonth}
+          nextMonthText={vi.plans.nextMonth}
+          onChange={(value) => change({ from: value })}
         />
-        <TextField
+        <DatePickerFilter
           label={t.to}
-          type="date"
-          value={filter.to ?? ''}
-          onChange={(event) => change({ to: event.target.value })}
+          value={filter.to}
+          emptyText={t.any}
+          today={todayIn(timeZone)}
+          clearText={t.anyDate}
+          previousMonthText={vi.plans.previousMonth}
+          nextMonthText={vi.plans.nextMonth}
+          onChange={(value) => change({ to: value })}
         />
-      </form>
+      </div>
       {audit.isError ? <ErrorBanner title={messageFor(audit.error)} /> : null}
-      {page && page.items.length === 0 ? (
+      {!page && !audit.isError ? (
+        <div className="pw-list-group">
+          <PlaceholderRows rows={6} label={t.loading} />
+        </div>
+      ) : page && page.items.length === 0 ? (
         <EmptyState title={t.empty} />
-      ) : (
+      ) : wide ? (
         <DataTable<StoreAuditEvent>
           caption={t.title}
           rows={page?.items ?? []}
-          columns={[
-            { key: 'at', header: t.at, render: (row) => formatDayTime(row.occurredAt, timeZone) },
-            {
-              key: 'actor',
-              header: t.actor,
-              render: (row) =>
-                row.actorRole === 'ADMIN' ? (
-                  t.admin
-                ) : (
-                  <div>
-                    <div className="pw-store-audit-actor">{row.actorEmail ?? '—'}</div>
-                    <div className="pw-muted">{row.actorRole ? (vi.roles[row.actorRole] ?? row.actorRole) : ''}</div>
-                  </div>
-                ),
-            },
-            { key: 'action', header: t.action, render: (row) => auditSentence(row) },
-            { key: 'ip', header: t.ip, render: (row) => row.ip ?? '—' },
-          ]}
+          columns={columns}
+          resizable
+          className="pw-list-group"
         />
+      ) : (
+        <ul className="pw-list-group pw-list-rows" aria-label={t.title}>
+          {(page?.items ?? []).map((row) => (
+            <li key={row.id} className="pw-list-row">
+              <span className="pw-list-row-main">
+                <span className="pw-list-row-title pw-store-audit-sentence">{auditSentence(row)}</span>
+                <span className="pw-list-row-sub">
+                  {formatDayTime(row.occurredAt, timeZone)} · {actor(row)}
+                </span>
+              </span>
+            </li>
+          ))}
+        </ul>
       )}
-      {page && page.items.length > 0 ? (
-        <nav aria-label="Phân trang" className="pw-store-audit-pager">
-          <span className="pw-muted">{t.page(page.page + 1, page.totalPages, page.totalElements)}</span>
-          <span className="pw-store-audit-pager-buttons">
-            <Button
-              variant="secondary"
-              disabled={page.page === 0}
-              onClick={() => change({ page: String(page.page - 1) })}
-            >
-              {t.newer}
-            </Button>
-            <Button
-              variant="secondary"
-              disabled={page.page + 1 >= page.totalPages}
-              onClick={() => change({ page: String(page.page + 1) })}
-            >
-              {t.older}
-            </Button>
-          </span>
-        </nav>
+      {page ? (
+        <Pager
+          label={t.pagerLabel}
+          page={page.page}
+          totalPages={page.totalPages}
+          onPage={(next) => change({ page: next > 0 ? String(next) : undefined })}
+        />
       ) : null}
     </section>
   );

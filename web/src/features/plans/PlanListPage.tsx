@@ -11,13 +11,12 @@ import { vi } from '@/shared/i18n/vi';
 import {
   Button,
   buttonClass,
-  ChevronLeftIcon,
   ChevronRightIcon,
   CopyIcon,
   DataTable,
   DatePickerFilter,
   ErrorBanner,
-  PageJump,
+  Pager,
   RowMenu,
   useRowMenu,
   PlaceholderRows,
@@ -318,7 +317,7 @@ export function PlanListPage() {
                 </tbody>
               </table>
             </div>
-            <Pager page={0} totalPages={2} onPage={() => {}} />
+            <Pager label={vi.plans.pagerLabel} page={0} totalPages={2} onPage={() => {}} />
           </>
         ) : null}
       </div>
@@ -392,7 +391,9 @@ export function PlanListPage() {
         )}
       </div>
       {/* Outside the result, which is drawn again on each page: the pager keeps its focus while pages turn. */}
-      {data !== undefined && !empty ? <Pager page={page} totalPages={totalPages} onPage={goToPage} /> : null}
+      {data !== undefined && !empty ? (
+        <Pager label={vi.plans.pagerLabel} page={page} totalPages={totalPages} onPage={goToPage} />
+      ) : null}
       {rowMenu.menu ? (
         <RowMenu
           rect={rowMenu.menu.rect}
@@ -405,52 +406,6 @@ export function PlanListPage() {
         <CopyDialog planId={copying.id} planName={copying.name} open onClose={() => setCopying(null)} />
       ) : null}
     </section>
-  );
-}
-
-/**
- * Pages of a list with a clear end: "‹ Trang 4/12 ›", centred under the list (HIG Page controls: "Center a page control
- * at the bottom of the view"). The arrows go one page back or on, round grey buttons (HIG Buttons), dimmed with
- * aria-disabled at either end so a focused arrow keeps its focus. "Trang 4/12" opens a small panel: first page, a
- * field for the page number, last page (PageJump). One page: no pager.
- */
-function Pager({ page, totalPages, onPage }: { page: number; totalPages: number; onPage: (page: number) => void }) {
-  if (totalPages <= 1) return null;
-  const current = Math.min(page, totalPages - 1);
-  const last = totalPages - 1;
-  return (
-    <nav className="pw-pager" aria-label={vi.plans.pagerLabel}>
-      <button
-        type="button"
-        className="pw-pager-step"
-        aria-label={vi.plans.previous}
-        title={vi.plans.previous}
-        aria-disabled={current === 0}
-        onClick={() => current > 0 && onPage(current - 1)}
-      >
-        <ChevronLeftIcon />
-      </button>
-      <PageJump
-        page={current}
-        pages={totalPages}
-        buttonText={vi.plans.pageOf(current + 1, totalPages)}
-        buttonLabel={vi.plans.pageJump(current + 1, totalPages)}
-        fieldLabel={vi.plans.pageField}
-        firstLabel={vi.plans.firstPage}
-        lastLabel={vi.plans.lastPage}
-        onPage={onPage}
-      />
-      <button
-        type="button"
-        className="pw-pager-step"
-        aria-label={vi.plans.next}
-        title={vi.plans.next}
-        aria-disabled={current === last}
-        onClick={() => current < last && onPage(current + 1)}
-      >
-        <ChevronRightIcon />
-      </button>
-    </nav>
   );
 }
 

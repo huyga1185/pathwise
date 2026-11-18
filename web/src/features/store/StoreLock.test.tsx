@@ -1,6 +1,7 @@
 import { screen } from '@testing-library/react';
 import { http } from 'msw';
-import { describe, expect, it } from 'vitest';
+import { wideWindow } from '@/test/media';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Schemas } from '@/data/types';
 import { renderApp } from '@/test/renderApp';
 import { API, ok, owner, server, signedInHandlers } from '@/test/server';
@@ -20,6 +21,8 @@ const event = (patch: Partial<Schemas['StoreAuditEventResponse']>): Schemas['Sto
   ip: null,
   ...patch,
 });
+
+afterEach(() => vi.restoreAllMocks());
 
 describe('Cửa hàng bị khoá (W11, T56)', () => {
   it('băng khoá hiện lý do trên mọi màn; không có nút tạo kế hoạch; form xe không lưu được', async () => {
@@ -63,6 +66,8 @@ describe('Cửa hàng bị khoá (W11, T56)', () => {
       ),
       ...signedInHandlers(),
     );
+    // A wide window: the log is a table (a phone: rows).
+    wideWindow();
     renderApp('/store/audit');
 
     expect(await screen.findByText('Tạm khoá cửa hàng: Chưa thanh toán phí tháng 11')).toBeInTheDocument();
