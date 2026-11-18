@@ -325,3 +325,4 @@ Nhóm: (1) nghiệp vụ/hiểu sai yêu cầu · (2) implementation · (3) ki�
 | 2026-11-18 | branch `feat/owner-ui-g3` | — | Ô vai trò trong bảng Thành viên bo 8 khi dùng chuột (members.css nạp sau ui.css nên đã ghi đè quy tắc chung §8.7); đã rà các file CSS trang khác: không còn nút nào bị ghi đè. |
 | 2026-11-18 | branch `feat/owner-ui-g3` | — | Mọi màn nhập mã dùng `CodeField` (một ô vẽ thành 6 khung): Xác nhận email, Đặt lại mật khẩu bằng link, Đổi mật khẩu; xoá `OtpInput` (`OWNER_UI_REDESIGN.md` §8.13). |
 | 2026-11-18 | branch `feat/owner-ui-g3` | — | Sheet Đổi mật khẩu: khung mã vuông, cao bằng ô nhập (36/44), không kéo giãn (`OWNER_UI_REDESIGN.md` §8.14). |
+| 2026-11-18 | branch `feat/owner-ui-g3` | — | Sheet Đổi mật khẩu: mã xác nhận lại là một thanh nhập (bỏ khung vuông §8.14), các màn tài khoản giữ 6 khung (`OWNER_UI_REDESIGN.md` §8.15). |

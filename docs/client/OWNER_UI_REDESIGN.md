@@ -384,3 +384,6 @@ Chủ dự án đã chọn **một ô thật vẽ thành 6 khung** (`CodeField`,
 
 Chủ dự án: các khung mã trong sheet Đổi mật khẩu trông không cân, lệch tỉ lệ với ô nhập khác (chỉ sửa chỗ này; màn đăng nhập giữ nguyên). Đo: PC khung 73×56 (bè ngang) cạnh ô nhập cao 36; điện thoại 52×56 cạnh ô cao 44. Sửa (chỉ trong `.pw-sheet`): khung **vuông, cao bằng ô nhập** — 36 khi dùng chuột, 44 cảm ứng (HIG: tối thiểu 44pt); không kéo giãn vì mỗi khung chỉ chứa một chữ số (HIG Text fields: *"match the size of a text field to the quantity of anticipated text"*); chữ số cùng cỡ chữ của ô nhập; hàng khung bắt đầu thẳng mép ô nhập, vùng bấm vừa sáu khung. Bo theo §8.13: 8 khi dùng chuột, 22 trên cảm ứng — khung 44×44 bo 22 là hình tròn (capsule: bán kính bằng nửa chiều cao, S1). Đo lại: 1440 → 36×36, 390/320 → 44×44, hàng 256/304px.
 
+### 8.15 Sheet Đổi mật khẩu: mã là một thanh (2026-11-18)
+
+Sau §8.14, khung mã vuông cao bằng ô nhập (36/44) quá nhỏ trong sheet; chủ dự án chọn **một thanh nhập** như các ô khác của sheet (bỏ §8.14). Ô vẫn là mã dùng một lần: `autocomplete="one-time-code"` (AutoFill), bàn phím số, chỉ giữ chữ số, tối đa 6. Các màn ngoài app (Quên mật khẩu, Xác nhận email, Đặt lại mật khẩu bằng link) giữ `CodeField` 6 khung trong thẻ tài khoản (§8.13).

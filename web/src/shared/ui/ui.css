@@ -3339,30 +3339,3 @@ a[aria-current='page'],
     transition: none;
   }
 }
-
-/* The code in a sheet (Tài khoản → Đổi mật khẩu, OWNER_UI_REDESIGN §8.14): boxes in the proportion of the fields
-   beside them — as tall as a field (36 with a mouse, 44 for touch: HIG's 44pt minimum), square, since each holds one
-   digit (HIG Text fields: "match the size of a text field to the quantity of anticipated text"), the digit in the
-   fields' text size; the row starts where the fields start. The sign-in screens keep their large boxes (login.css). */
-.pw-sheet .pw-code-control {
-  width: max-content;
-}
-.pw-sheet .pw-code-cells {
-  justify-content: flex-start;
-}
-.pw-sheet .pw-code-cell {
-  flex: 0 0 auto;
-  width: 36px;
-  height: 36px;
-  font-size: 0.875rem;
-  line-height: 1.25rem;
-  font-weight: 600;
-}
-@media (pointer: coarse) {
-  .pw-sheet .pw-code-cell {
-    width: 44px;
-    height: 44px;
-    font-size: 1rem;
-    line-height: 1.375rem;
-  }
-}

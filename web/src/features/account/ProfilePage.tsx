@@ -8,7 +8,7 @@ import { applyServerErrors, errorCode } from '@/shared/forms/serverErrors';
 import { formatDayTime, formatPhone } from '@/shared/format';
 import { useCountdown } from '@/shared/hooks/useCountdown';
 import { vi } from '@/shared/i18n/vi';
-import { Button, CodeField, ErrorBanner, Sheet, StatusPill, TextField, Toast, ToastDock } from '@/shared/ui';
+import { Button, ErrorBanner, Sheet, StatusPill, TextField, Toast, ToastDock } from '@/shared/ui';
 import { deviceName } from './device';
 import { useDeviceSessions, useMe, useProfileApi, type DeviceSession, type Me } from './profileApi';
 import './profile.css';
@@ -266,7 +266,17 @@ function PasswordCard({ email }: { email: string }) {
             <p role="status" className="pw-profile-status">
               {vi.profile.otpSent(email)}
             </p>
-            <CodeField label={vi.profile.otp} value={otp} error={errors.otp} onChange={setOtp} />
+            {/* One bar like the other fields of the sheet (owner, 2026-11-18, §8.15): six boxes at a field's height
+                were too small. Still a one-time code: AutoFill, numeric keypad, digits only. */}
+            <TextField
+              label={vi.profile.otp}
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              pattern="[0-9]*"
+              value={otp}
+              error={errors.otp}
+              onChange={(event) => setOtp(event.target.value.replace(/\D/g, '').slice(0, 6))}
+            />
             <TextField
               label={vi.form.newPassword}
               type="password"
