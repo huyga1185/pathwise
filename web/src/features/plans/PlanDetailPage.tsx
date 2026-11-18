@@ -238,7 +238,12 @@ function GeocodeView({ plan }: { plan: PlanDetail }) {
 
       {plan.processingStatus === 'GEOCODING' ? (
         <section className="pw-plans-progress" aria-label={statusInfo('processing', 'GEOCODING')?.label}>
-          <ProgressBar label={g.progressLabel} value={summary.total - summary.pending} max={summary.total} />
+          {/* The bar only moves when the plan is read again: a spinner beside it keeps moving meanwhile (HIG Progress
+              indicators: "Keep progress indicators moving"; macOS: a spinner "next to a specific control"). */}
+          <div className="pw-progress-running">
+            <ActivityText text={g.progressLabel} />
+            <ProgressBar label={g.progressLabel} value={summary.total - summary.pending} max={summary.total} />
+          </div>
           <p className="pw-muted">{g.progressNote}</p>
         </section>
       ) : null}
@@ -254,6 +259,7 @@ function GeocodeView({ plan }: { plan: PlanDetail }) {
           <Button
             variant="secondary"
             busy={working}
+            busyLabel={g.searching}
             disabled={readOnly}
             onClick={() => void run(() => planApi.geocode(plan.id, plan.version))}
           >
@@ -367,12 +373,12 @@ function FixStop({ plan, stop, busy }: { plan: PlanDetail; stop: PlanStop; busy:
         <Button
           variant="secondary"
           disabled={disabled}
-          aria-busy={working === 'retry' ? 'true' : undefined}
+          busy={working === 'retry'}
+          busyLabel={g.searching}
           onClick={() => void retry()}
         >
           {g.retryOne}
         </Button>
-        <Working active={working === 'retry'} text={g.searching} />
       </div>
       <div className="pw-or" aria-hidden="true">
         <span />
@@ -400,13 +406,13 @@ function FixStop({ plan, stop, busy }: { plan: PlanDetail; stop: PlanStop; busy:
         {saved ?? (pin ? g.pinAt(formatCoordinates(pin)) : g.pinHint)}
       </p>
       <div className="pw-plan-actions pw-geocode-fix-actions">
-        <Working active={working === 'pin'} text={g.savingPin} />
         <Button variant="quiet" disabled={!pin} onClick={() => setPin(null)}>
           {g.skip}
         </Button>
         <Button
           variant="secondary"
-          aria-busy={working === 'pin' ? 'true' : undefined}
+          busy={working === 'pin'}
+          busyLabel={g.savingPin}
           disabled={!pin || disabled}
           onClick={() => pin && void savePin(pin)}
         >
@@ -442,20 +448,5 @@ function CopiedBanner({ notice, onClose }: { notice: CopiedNotice; onClose: () =
         {vi.planCopy.close}
       </Button>
     </section>
-  );
-}
-
-/**
- * The wait of a request, beside the button that started it (HIG Progress indicators: an activity indicator for a wait
- * of unknown length, "a description that provides additional context… Avoid vague terms like loading", "in a
- * consistent location"). Shown only when the wait lasts more than a moment (0.3 s, CSS; HIG Loading: progress
- * indicators "for situations where loading takes more than a moment or two"), so a quick answer shows nothing. Its
- * words are in a live region that is always there, so screen readers say them without moving focus (WCAG 4.1.3).
- */
-function Working({ active, text }: { active: boolean; text: string }) {
-  return (
-    <span aria-live="polite" className="pw-working">
-      {active ? <ActivityText text={text} className="pw-working-inner" /> : null}
-    </span>
   );
 }

@@ -122,8 +122,8 @@ export function ImportSheet({ open, keptStops, onClose, onAdd }: ImportSheetProp
                 className="pw-visually-hidden"
                 onChange={(event) => void read(event.target.files?.[0])}
               />
-              <Button variant="primary" busy={busy} onClick={() => input.current?.click()}>
-                {busy ? t.reading : t.choose}
+              <Button variant="primary" busy={busy} busyLabel={t.reading} onClick={() => input.current?.click()}>
+                {t.choose}
               </Button>
             </div>
             <div className="pw-import-templates">

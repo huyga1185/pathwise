@@ -3565,3 +3565,36 @@ html {
   width: 12px;
   height: 12px;
 }
+
+/* A busy button (Button busy; HIG Buttons, APPLE_CHECKLIST B-4): an activity indicator within it. For the first
+   0.3 s nothing changes (a quick request shows nothing), then the label gives way to the turning spokes and the busy
+   label; both share one cell so the width stays. */
+.pw-btn.is-busy {
+  cursor: default;
+}
+.pw-btn-busy {
+  display: inline-grid;
+}
+.pw-btn-busy > span {
+  grid-area: 1 / 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.pw-btn-busy-idle {
+  animation: pw-btn-busy-out 0.15s ease 0.3s both;
+}
+.pw-btn-busy-now {
+  animation: pw-activity-show 0.2s ease 0.3s both;
+}
+.pw-btn-spinner {
+  flex: none;
+  animation: pw-activity-turn 0.8s steps(8) infinite;
+}
+@keyframes pw-btn-busy-out {
+  to {
+    opacity: 0;
+    visibility: hidden;
+  }
+}

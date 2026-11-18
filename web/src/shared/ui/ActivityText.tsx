@@ -4,11 +4,12 @@ import { cx } from './cx';
  * A task running, said in place of a static label: the activity indicator turning beside a short description (HIG
  * Progress indicators: an indeterminate task uses an activity indicator; "Keep progress indicators moving so people
  * know something is continuing to happen"; "display a description that provides additional context… Avoid vague
- * terms like loading"). The spokes are drawing only; the words are the text.
+ * terms like loading"). No words beside it (HIG macOS: "Avoid labeling a spinning progress indicator… a label is usually
+ * unnecessary"; owner's choice 2026-11-18: words in buttons only): `text` is its name for assistive technologies.
  */
 export function ActivityText({ text, className }: { text: string; className?: string }) {
   return (
-    <span className={cx('pw-activity-text', className)}>
+    <span className={cx('pw-activity-text', className)} role="img" aria-label={text}>
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
         {Array.from({ length: 8 }, (_, index) => (
           <rect
@@ -24,7 +25,6 @@ export function ActivityText({ text, className }: { text: string; className?: st
           />
         ))}
       </svg>
-      {text}
     </span>
   );
 }
