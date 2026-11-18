@@ -25,7 +25,9 @@
   margin-left: -10px;
   padding: 0 8px 0 10px;
   border: 0;
-  border-radius: var(--radius-full);
+  /* A control in a row: rounded with a mouse, a capsule for touch (S3, §8.7); set here because this file loads after
+     ui.css and would win over its shared rule. */
+  border-radius: var(--radius-md);
   background: transparent;
   color: var(--ink);
   font: inherit;
@@ -138,5 +140,10 @@
   .pw-invitations-table .pw-cell-fold {
     display: -webkit-box;
     margin-top: 2px;
+  }
+}
+@media (pointer: coarse) {
+  .pw-inline-popup {
+    border-radius: var(--radius-full);
   }
 }

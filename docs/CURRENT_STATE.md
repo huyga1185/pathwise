@@ -322,3 +322,4 @@ Nhóm: (1) nghiệp vụ/hiểu sai yêu cầu · (2) implementation · (3) ki�
 | 2026-11-18 | branch `feat/owner-ui-g3` | — | Rà G2.9/G2.11 cho trang G3 (`OWNER_UI_REDESIGN.md` §8.10): Nhật ký phân trang vừa màn hình + sheet chi tiết từng dòng; bảng G3 cắt tên 2 dòng, bảng hẹp gập cột; tiêu đề sheet ngắn; menu tài khoản cắt 2 dòng. |
 | 2026-11-18 | branch `feat/owner-ui-g3` | — | Điện thoại: lịch chọn ngày kiểu inline trong trang thay vì bật ra (không còn bị tab bar che) (`OWNER_UI_REDESIGN.md` §8.11). |
 | 2026-11-18 | branch `feat/owner-ui-g3` | — | Lịch: nút "Tháng x, năm ›" mở bánh xe tháng/năm như iOS; "Bỏ chọn ngày" ở mọi trang; ‹ › bo 8 khi dùng chuột (`OWNER_UI_REDESIGN.md` §8.12). |
+| 2026-11-18 | branch `feat/owner-ui-g3` | — | Ô vai trò trong bảng Thành viên bo 8 khi dùng chuột (members.css nạp sau ui.css nên đã ghi đè quy tắc chung §8.7); đã rà các file CSS trang khác: không còn nút nào bị ghi đè. |
