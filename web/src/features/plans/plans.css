@@ -202,25 +202,29 @@
 /* Each column's least width (G4.7): enough for what it holds; the address and the names take what is left. A table
    that does not fit its group at these widths becomes rows and sheets (measured, PlanFormPage): never sideways. */
 .pw-col-label {
-  width: 6rem;
+  /* Measured: "ĐH-10234" needs 98px with the field's padding. */
+  width: 7rem;
 }
 .pw-col-recipient {
-  width: 7.5rem;
+  /* Measured: "Nguyễn Thị Lan" needs 130px with the field's padding; a longer name scrolls in its field. */
+  width: 10.5rem;
 }
 .pw-col-phone {
-  width: 7rem;
+  /* Measured: "0905 123 456" needs 121px (HIG Text fields: "match the size of a text field to the quantity of
+     anticipated text"). */
+  width: 8.5rem;
 }
 .pw-col-address {
   min-width: 10rem;
 }
 .pw-col-window {
-  width: 11.5rem;
+  width: 9.5rem;
 }
 .pw-col-demand {
   width: 4.5rem;
 }
 .pw-col-note {
-  width: 7rem;
+  width: 6rem;
 }
 .pw-col-person {
   width: 10rem;
@@ -1223,3 +1227,9 @@ html:has(.pw-form-bar) {
   outline-offset: 2px;
   border-radius: var(--radius-md);
 }
+/* A time in a table cell: "08:30" needs 66px with the field's padding. */
+.pw-edit-table .pw-time-input,
+.pw-edit-table .pw-time-button {
+  width: 4.5rem;
+}
+
