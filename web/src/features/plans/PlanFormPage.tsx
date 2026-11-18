@@ -9,6 +9,7 @@ import { errorMessages, fieldErrors, messageFor } from '@/shared/errors';
 import { todayIn } from '@/shared/format';
 import { vi } from '@/shared/i18n/vi';
 import { Button, buttonClass, Dialog, ErrorBanner, TextField, TrashIcon, ActivityIndicator } from '@/shared/ui';
+import { useSelectMenu } from '@/shared/ui/useSelectMenu';
 import {
   useActiveVehicles,
   useAssignableMembers,
@@ -567,20 +568,26 @@ function MemberSelect({
   members: Array<Pick<AssignableMember, 'id' | 'email'> & { fullName?: string | null }>;
   invalid: boolean;
 }) {
+  const { ref, ...field } = register(name);
+  const { selectProps, menu } = useSelectMenu(label, ref);
   return (
-    <select
-      className="pw-field-input"
-      aria-label={label}
-      aria-invalid={invalid ? 'true' : undefined}
-      {...register(name)}
-    >
-      <option value="">{f.chooseDriver}</option>
-      {members.map((member) => (
-        <option key={member.id} value={String(member.id)}>
-          {member.fullName ?? member.email}
-        </option>
-      ))}
-    </select>
+    <>
+      <select
+        className="pw-field-input"
+        aria-label={label}
+        aria-invalid={invalid ? 'true' : undefined}
+        {...field}
+        {...selectProps}
+      >
+        <option value="">{f.chooseDriver}</option>
+        {members.map((member) => (
+          <option key={member.id} value={String(member.id)}>
+            {member.fullName ?? member.email}
+          </option>
+        ))}
+      </select>
+      {menu}
+    </>
   );
 }
 
@@ -597,20 +604,26 @@ function VehicleSelect({
   vehicles: ActiveVehicle[];
   invalid: boolean;
 }) {
+  const { ref, ...field } = register(name);
+  const { selectProps, menu } = useSelectMenu(label, ref);
   return (
-    <select
-      className="pw-field-input"
-      aria-label={label}
-      aria-invalid={invalid ? 'true' : undefined}
-      {...register(name)}
-    >
-      <option value="">{f.chooseVehicle}</option>
-      {vehicles.map((vehicle) => (
-        <option key={vehicle.id} value={String(vehicle.id)}>
-          {`${vehicle.name} · ${formatCapacity(vehicle.capacity, vehicle.capacityUnit)}`}
-        </option>
-      ))}
-    </select>
+    <>
+      <select
+        className="pw-field-input"
+        aria-label={label}
+        aria-invalid={invalid ? 'true' : undefined}
+        {...field}
+        {...selectProps}
+      >
+        <option value="">{f.chooseVehicle}</option>
+        {vehicles.map((vehicle) => (
+          <option key={vehicle.id} value={String(vehicle.id)}>
+            {`${vehicle.name} · ${formatCapacity(vehicle.capacity, vehicle.capacityUnit)}`}
+          </option>
+        ))}
+      </select>
+      {menu}
+    </>
   );
 }
 

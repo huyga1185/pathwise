@@ -1,5 +1,6 @@
-import { useId, type ReactNode, type SelectHTMLAttributes } from 'react';
+import { useId, type ReactNode, type Ref, type SelectHTMLAttributes } from 'react';
 import { cx } from './cx';
+import { useSelectMenu } from './useSelectMenu';
 
 export interface SelectOption {
   value: string;
@@ -7,6 +8,7 @@ export interface SelectOption {
 }
 
 export interface SelectFieldProps extends SelectHTMLAttributes<HTMLSelectElement> {
+  ref?: Ref<HTMLSelectElement>;
   label: ReactNode;
   options: readonly SelectOption[];
   /** First, empty choice ("Chọn đơn vị") for a required field without a default. */
@@ -17,8 +19,9 @@ export interface SelectFieldProps extends SelectHTMLAttributes<HTMLSelectElement
 }
 
 /**
- * A choice in a form (web addition, W03): the native select styled like TextField, with the same label, hint, error
- * and aria-describedby. Prototype "Xe" (unit) and "Thành viên" (role).
+ * A choice in a form (web addition, W03): a native select styled like TextField, with the same label, hint, error
+ * and aria-describedby, that opens as a pop-up button's menu (useSelectMenu). Prototype "Xe" (unit) and "Thành viên"
+ * (role).
  */
 export function SelectField({
   label,
@@ -29,8 +32,10 @@ export function SelectField({
   id,
   className,
   required,
+  ref,
   ...rest
 }: SelectFieldProps) {
+  const { selectProps, menu } = useSelectMenu(typeof label === 'string' ? label : '', ref);
   const autoId = useId();
   const selectId = id ?? autoId;
   const hintId = `${selectId}-hint`;
@@ -48,6 +53,7 @@ export function SelectField({
       </label>
       <select
         {...rest}
+        {...selectProps}
         id={selectId}
         required={required}
         className="pw-field-input"
@@ -61,6 +67,7 @@ export function SelectField({
           </option>
         ))}
       </select>
+      {menu}
       {error ? (
         <p id={errorId} className="pw-field-msg pw-field-msg-error">
           {error}

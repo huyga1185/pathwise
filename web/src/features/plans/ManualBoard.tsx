@@ -2,6 +2,7 @@ import { useId } from 'react';
 import { SortableBoard, type DragHandleProps } from '@/platform/dnd';
 import { vi } from '@/shared/i18n/vi';
 import { cx } from '@/shared/ui/cx';
+import { useSelectMenu } from '@/shared/ui/useSelectMenu';
 import { draftLoad, moveStop, routeColumn, UNASSIGNED, type Draft } from './manualEdit';
 import type { PlanDetail, PlanStop } from './planApi';
 import { driverName, RouteBadge, stopPlace, stopTitle, vehicleText, windowText } from './planShared';
@@ -118,6 +119,7 @@ function StopRow({
   onMove: (to: string) => void;
 }) {
   const selectId = useId();
+  const { selectProps, menu } = useSelectMenu(vi.manual.moveLabel(stopTitle(stop)));
   const window = windowText(stop);
   const demand = Object.entries(stop.demands as Record<string, number>)
     .map(([unit, quantity]) => `${quantity.toLocaleString('vi-VN')} ${vi.units.short[unit] ?? unit}`)
@@ -147,6 +149,7 @@ function StopRow({
       <select
         id={selectId}
         className="pw-manual-move"
+        {...selectProps}
         value=""
         onChange={(event) => {
           if (event.target.value) onMove(event.target.value);
@@ -159,6 +162,7 @@ function StopRow({
           </option>
         ))}
       </select>
+      {menu}
     </div>
   );
 }

@@ -55,22 +55,25 @@ function usePopover() {
  * below it, or above when there is no room below (or `above`); `align` its start or its centre with the button; kept
  * 8px inside the window; following the button when the page scrolls.
  */
-function Panel({
+export function Panel({
   presence,
   anchorRef,
   panelRef,
   className,
   above = false,
   align = 'start',
+  matchWidth = false,
   children,
   ...rest
 }: {
   presence: 'open' | 'closing' | 'closed';
-  anchorRef: RefObject<HTMLButtonElement | null>;
+  anchorRef: RefObject<HTMLElement | null>;
   panelRef: RefObject<HTMLDivElement | null>;
   className: string;
   above?: boolean;
   align?: 'start' | 'center';
+  /** At least as wide as its button (a pop-up menu under a form field). */
+  matchWidth?: boolean;
   children: ReactNode;
   id?: string;
   role?: string;
@@ -85,6 +88,7 @@ function Panel({
       const element = panelRef.current;
       if (!button || !element) return;
       const a = button.getBoundingClientRect();
+      if (matchWidth) element.style.minWidth = `${Math.round(a.width)}px`;
       const width = element.offsetWidth;
       const height = element.offsetHeight;
       const room = document.documentElement.clientWidth;
@@ -102,7 +106,7 @@ function Panel({
       window.removeEventListener('scroll', place, true);
       window.removeEventListener('resize', place);
     };
-  }, [shown, anchorRef, panelRef, above, align]);
+  }, [shown, anchorRef, panelRef, above, align, matchWidth]);
   if (!shown) return null;
   const open = presence === 'open';
   return createPortal(
