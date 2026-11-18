@@ -1,6 +1,6 @@
 # OWNER_UI_REDESIGN — Nghiên cứu thiết kế lại giao diện chính của chủ cửa hàng theo Apple
 
-> **Trạng thái:** nghiên cứu xong; chủ dự án đã trả lời Q1–Q5 (§5, 2026-11-17), quyết định ở P-74. **G1 (khung app) đã làm** (§6, branch `docs/owner-ui-redesign`). **G2 (danh sách kế hoạch) đã làm** (§7, PR #129). **G3 (Xe, Thành viên, Cửa hàng, Nhật ký, Tài khoản) đã làm** (§8, PR #130). **G4 (tạo/sửa kế hoạch, nhập file, sao chép) đã làm** (§9, branch `feat/owner-ui-g4`). Tiếp: G5.
+> **Trạng thái:** nghiên cứu xong; chủ dự án đã trả lời Q1–Q5 (§5, 2026-11-17), quyết định ở P-74. **G1 (khung app) đã làm** (§6, branch `docs/owner-ui-redesign`). **G2 (danh sách kế hoạch) đã làm** (§7, PR #129). **G3 (Xe, Thành viên, Cửa hàng, Nhật ký, Tài khoản) đã làm** (§8, PR #130). **G4 (tạo/sửa kế hoạch, nhập file, sao chép) đã làm** (§9, PR #131). **G5 (chi tiết kế hoạch) đang làm** (§10, branch `feat/owner-ui-g5`).
 >
 > Theo P-71 (hướng dẫn Apple đứng trước), quy tắc ở `docs/client/LIQUID_GLASS.md`, kiểm từng thành phần theo `docs/client/APPLE_CHECKLIST.md`. Nhãn: **[Apple]** trích nguyên văn HIG (bản tải 2026-11-17), **[Web]** điều web buộc phải có, chọn bằng đo, **[Chủ dự án]** chờ hoặc đã có quyết định. Phần "Đề xuất" là ý của agent, mỗi dòng ghi nguồn; chỗ nào Apple không nói thì ghi rõ.
 
@@ -522,4 +522,62 @@ Làm: điện thoại — `BackLink` vào đầu thanh trên (`AppShell` có ch�
 Chủ dự án: "Sửa điểm giao", "Sao chép", "Tối ưu lộ trình" trên màn hẹp đặt chưa hợp lý. Đo: ba nút vừa một hàng từ 440px; hẹp hơn thì vỡ 2 hàng, nút chính đứng lẻ hàng dưới (HIG Toolbars: *"avoid layouts that cause toolbar items to overflow by default"*). HIG gợi ý cho iPhone: giữ nút quan trọng, đưa phần còn lại vào menu More (*"Create a More menu to include additional items"*); chủ dự án chọn **xếp dọc, rộng hết** để luôn thấy đủ ba nút.
 
 Làm: dưới 440px (`(max-width: 439px)`) ba nút xếp dọc rộng hết, **nút chính trên cùng**, rồi "Sửa điểm giao", "Sao chép"; thứ tự trong DOM đổi theo (không đảo bằng CSS) để trình đọc màn hình và Tab đi đúng thứ tự nhìn thấy (WCAG 1.3.2, 2.4.3). Từ 440px: một hàng, nút chính cuối (§9.10). Đo 390 / 320px: ba nút 343 / 273px, cao 44px, không tràn. Màn kết quả và theo dõi: G5.
+
+## 10. Thiết kế G5: chi tiết kế hoạch (2026-11-18, đang làm)
+
+Phạm vi (SCREENS.md, `/plans/:id` là một route, màn chọn theo trạng thái): **tìm toạ độ** (DRAFT chưa tối ưu), **kết quả tối ưu** (DRAFT đã tối ưu), **chỉnh tay tuyến**, **giao việc / huỷ**, **theo dõi** (PUBLISHED → COMPLETED / CANCELLED). Hành vi (API, polling, lỗi, câu chữ) giữ như SCREENS §1.1 và UX_BRIEF; G5 đổi bố cục, control và hộp thoại.
+
+### 10.1 Hiện trạng (chụp 2026-11-18, 1440 và 390px, dữ liệu mẫu `docs/ux/samples/plan-detail-*.json` giả qua `page.route`)
+
+- **Kết quả tối ưu:** 6 nút ở đầu trang (Sao chép, Huỷ kế hoạch, Sửa điểm giao, Chỉnh tay, Tối ưu lại, Giao việc cho N tài xế); 4 thẻ số viền (điểm, quãng đường, thời gian, tài xế); khối "Không xếp được" viền cam; mỗi tuyến một thẻ viền có bảng 5 cột; bản đồ dính bên phải (rộng). **Điện thoại:** 6 nút vỡ 3 hàng; 4 thẻ số xếp dọc chiếm gần cả màn; **bảng tuyến bị cắt cột** (Địa chỉ, Khung giờ, Dự kiến tràn ra ngoài thẻ); bản đồ ở cuối trang (sau 23 điểm).
+- **Chỉnh tay:** băng thông báo + Huỷ / Lưu thay đổi; mỗi điểm một hàng có tay nắm kéo và **`select` của trình duyệt** "Chuyển sang…"; cột "Chưa xếp tuyến".
+- **Giao việc / Huỷ:** `Dialog` cũ (nút "Quay lại" / hành động ở đáy).
+- **Theo dõi:** 4 thẻ số có pill; mỗi tuyến thẻ viền + thanh tiến độ nhiều màu + bảng có cột Kết quả (pill); bản đồ có vị trí tài xế; chú giải màu dưới bản đồ.
+- **Tìm toạ độ:** như §9 (bảng điểm + khung sửa điểm có bản đồ nhỏ, "Phóng to bản đồ").
+
+### 10.2 Câu hỏi và trả lời (2026-11-18)
+
+| # | Câu hỏi | Trả lời |
+|---|---|---|
+| G5-Q1 | Bố cục | **Bản đồ phủ vùng nội dung** (D15, kiểu Apple Maps): rộng — panel nổi bên trái; điện thoại — sheet từ đáy có nấc. |
+| G5-Q2 | Màn nào dùng bố cục bản đồ | **Cả bốn:** kết quả tối ưu, theo dõi, chỉnh tay, tìm toạ độ. |
+| G5-Q3 | Panel (rộng) | **~460px, điểm giao là hàng hai dòng** (bảng 5 cột không vừa panel; thay cho "bảng khi rộng, hàng khi hẹp" đã chọn trước đó với bố cục cũ). |
+| G5-Q4 | Nấc sheet (điện thoại) | **Ba nấc như Maps:** thấp (tiêu đề, trạng thái, nút chính; thấy gần hết bản đồ), giữa (nửa màn), cao (gần đầy). HIG chỉ định nghĩa medium/large; nấc thấp là nấc tự định nghĩa (UIKit custom detent). |
+| G5-Q5 | 6 nút ở đầu màn kết quả | **Menu … + 2 nút:** (…) [Chỉnh tay] [Giao việc cho N tài xế]; menu: Sửa điểm giao, Tối ưu lại, Sao chép, Huỷ kế hoạch (đỏ, cuối). |
+| G5-Q6 | Chọn một điểm | **Thẻ điểm trong panel/sheet** (kiểu place card): panel/sheet chuyển sang thẻ của điểm, có nút quay lại danh sách; marker được làm nổi. |
+| G5-Q7 | Hộp xác nhận giao việc | **Sheet** "Giao việc" (Huỷ / Giao việc; thân liệt kê tài xế, xe, số điểm, giờ; điểm không xếp được; hậu quả; trùng ca hiện trong sheet). Huỷ kế hoạch: **Alert**. |
+| G5-Q8 | Ô trắng | Nhóm **bo 16, không viền**; khối lỗi **nền đỏ nhạt** (đã chốt ở §4 G5, §9.9). |
+
+### 10.3 Thiết kế
+
+| # | Phần | Thiết kế | Nguồn |
+|---|---|---|---|
+| G5.1 | Khung bản đồ (`MapStage`, dùng chung 4 màn) | Bản đồ phủ hết vùng nội dung dưới thanh trên (không đệm trang, không cuộn trang); bản đồ tương tác (kéo, thu phóng); control +/− và "vừa khung" là kính nổi góc trên phải; chú thích bản đồ (MapTiler/OSM) không bị panel/sheet che lâu dài | [Apple] Maps: *"make your map interactive"*, *"enough contrast between custom controls and the map"*, logo/legal *"don't cover these elements all the time"*; LIQUID_GLASS (control nổi = kính) |
+| G5.2 | Panel (rộng ≥ 960px) | Panel nổi bên trái trên bản đồ, rộng ~460px, cao theo vùng nội dung (cách mép 12px, bo đồng tâm), nền kính/đặc theo LIQUID_GLASS; panel tự cuộn, bản đồ đứng yên; khung nhìn bản đồ chừa phần panel che (fit bounds có đệm trái = bề rộng panel) | [Apple] Sheets/Split views (nội dung phụ bên cạnh việc chính, *"nonmodal"*); Maps (place card nổi) |
+| G5.3 | Sheet có nấc (điện thoại) | Sheet không modal từ đáy, nằm trên tab bar; **ba nấc** thấp / giữa / cao (G5-Q4); grabber kéo được và **bấm grabber chuyển nấc** (HIG: *"tap it to cycle through the detents"*; cũng là cách không cần kéo — WCAG 2.5.7); nội dung cuộn trong sheet; bản đồ phía trên vẫn tương tác; khung nhìn bản đồ chừa phần sheet che | [Apple] Sheets: detents, *"Include a grabber in a resizable sheet"*, nonmodal; WCAG 2.5.7 Dragging Movements, 2.4.11 |
+| G5.4 | Đầu panel/sheet | Nút quay lại (rộng: trong panel; điện thoại: thanh trên, §9.11); tên kế hoạch + pill; dòng phụ (ngày · tổng quan ngắn); hàng nút theo màn (G5.6). Nấc thấp (điện thoại) chỉ còn phần này | [Apple] Toolbars; §9.11 |
+| G5.5 | Tổng quan | Thay 4 thẻ số bằng **một dòng tóm tắt** trong đầu panel ("23/24 điểm đã xếp · 15,4 km · 5 giờ 06 phút · 2 tài xế"); theo dõi: thanh tiến độ chung + số đã giao / không giao được / bỏ qua | [Apple] Layout (*"Order content by relative importance"*); panel hẹp |
+| G5.6 | Nút | **Kết quả:** (…) [Chỉnh tay] [Giao việc cho N tài xế] (G5-Q5; menu: Sửa điểm giao, Tối ưu lại, Sao chép, Huỷ kế hoạch — đỏ, cuối). **Tìm toạ độ:** [Sửa điểm giao] [Sao chép] [Tối ưu lộ trình] như §9.10 (hẹp xếp dọc §9.12). **Theo dõi:** Sao chép (+ Huỷ kế hoạch khi PUBLISHED) — chi tiết khi làm G5.11. Nút chính luôn cuối | [Apple] Toolbars: *"Create a More menu"*, primary *"trailing side"*; Menus; Action sheets/Buttons (*"destructive… visually prominent"*) |
+| G5.7 | Tuyến | Mỗi tuyến một nhóm bo 16 không viền trong panel: đầu nhóm là chấm màu tuyến + tài xế · xe + tóm tắt ("11 điểm · 8,3 km · 10:50–13:23 · tải 22/30"), thu gọn được; chọn tuyến làm nổi tuyến đó trên bản đồ (các tuyến khác mờ đi) | [Apple] Maps: *"Clearly identify elements that people select"*; Lists and tables |
+| G5.8 | Điểm giao | **Hàng hai dòng** (G5-Q3): số thứ tự (vòng màu tuyến) · mã đơn · người nhận / địa chỉ · khung giờ; cuối hàng giờ dự kiến (kết quả) hoặc pill kết quả (theo dõi); bấm hàng → thẻ điểm (G5.9); hàng và marker là một cặp chọn | [Apple] Lists and tables (*"Choose a row style that fits"*); G2.5 |
+| G5.9 | Thẻ điểm | Panel/sheet chuyển sang thẻ của điểm (G5-Q6): nút quay lại danh sách ("‹ Tài xế A"), mã đơn · người nhận, điện thoại, địa chỉ, khung giờ, dự kiến, kết quả + lý do, ghi chú; marker nổi (to hơn, viền); Escape / quay lại về danh sách và trả focus về hàng | [Apple] Maps (place cards); WCAG 2.4.3 |
+| G5.10 | Không xếp được | Khối nền đỏ nhạt? — **không**: không xếp được là cần chú ý (`signal`, P-76), không phải lỗi; nhóm "Chưa xếp tuyến" trong panel với câu chung (SCREENS: không tự suy lý do) | P-76; SCREENS §1.1 |
+| G5.11 | Theo dõi | Như kết quả nhưng hàng có pill kết quả; vị trí tài xế trên bản đồ (mũi tên); tuyến tắt chia sẻ vị trí ghi trong đầu nhóm tuyến; tự tải lại 30 s (giữ) | SCREENS §1.1; P-76 |
+| G5.12 | Chỉnh tay | Trong panel/sheet: các tuyến xếp dọc (không còn cột cạnh nhau), kéo thả hàng giữa tuyến (tay nắm; bàn phím như hiện nay); "Chuyển sang…" là **pop-up menu của app** (thay `select` trình duyệt, §8.7); thanh Huỷ / Lưu thay đổi ghim ở đầu panel/sheet | SCREENS (W10); [Apple] Lists and tables (*"Let people edit"*), Menus; WCAG 2.5.7 (có cách không kéo: menu Chuyển sang) |
+| G5.13 | Giao việc | **Sheet** "Giao việc" (G5-Q7): Huỷ / "Giao việc"; thân: từng tài xế (chấm màu, xe, số điểm, giờ đi–về), điểm không xếp được, câu hậu quả; `SHIFT_OVERLAP` hiện trong sheet (danh sách trùng + link + "Sửa phân công") | [Apple] Sheets; Alerts (*"Keep alert messages short"* → nội dung dài dùng sheet) |
+| G5.14 | Huỷ kế hoạch | **Alert** "Huỷ kế hoạch?" + câu hậu quả; "Huỷ kế hoạch" đỏ, "Không" là nút huỷ | [Apple] Alerts (destructive) |
+| G5.15 | Tìm toạ độ | Danh sách điểm (hàng; điểm lỗi nổi, vòng xoay khi đang tìm) trong panel/sheet; thanh tiến độ, khối "Còn N điểm…" (nền đỏ nhạt), "Chưa có tài xế…" ở đầu panel; **sửa điểm = thẻ điểm** (G5.9) có ô địa chỉ, "Tìm lại địa chỉ này", đặt ghim **trực tiếp trên bản đồ lớn** (bỏ bản đồ nhỏ và hộp "Phóng to bản đồ" — bản đồ đã phủ trang) | §9; G5-Q2 |
+| G5.16 | Hộp thoại cũ | Bỏ `Dialog` cũ khỏi trang kế hoạch (giao việc → Sheet, huỷ → Alert, phóng to bản đồ → không cần) | §9.5 (để G5) |
+
+Chưa chốt, hỏi khi tới phần đó: nội dung nhóm nút màn theo dõi theo từng trạng thái; thanh tiến độ chung ở theo dõi; điện thoại khi bàn phím mở trong thẻ sửa điểm (sheet lên nấc cao?).
+
+### 10.4 Thứ tự làm
+
+1. `MapStage` (bản đồ phủ, panel rộng, sheet ba nấc điện thoại, chừa chỗ khi fit bounds) + test bàn phím/trình đọc màn hình của sheet.
+2. Màn kết quả trong `MapStage`: đầu panel, menu …, tóm tắt, nhóm tuyến, hàng điểm, chọn hàng ↔ marker, thẻ điểm, chưa xếp tuyến.
+3. Giao việc (Sheet), huỷ (Alert).
+4. Theo dõi.
+5. Chỉnh tay.
+6. Tìm toạ độ (thẻ sửa điểm, ghim trên bản đồ lớn); bỏ `Dialog` cũ ở trang kế hoạch.
+7. Đo theo APPLE_CHECKLIST (1440/1024/390/320, sáng/tối, giảm chuyển động, tăng tương phản), cập nhật SCREENS, DESIGN_SYSTEM, CURRENT_STATE.
 
