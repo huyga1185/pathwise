@@ -125,7 +125,17 @@ export const vi = {
     webLogin: 'Đăng nhập trên web',
   },
   profile: {
-    title: 'Hồ sơ và bảo mật',
+    /** The page title, under 15 characters (HIG Toolbars; owner's choice Q7). */
+    title: 'Tài khoản',
+    /** The account menu's item that opens it. */
+    menu: 'Hồ sơ và bảo mật',
+    changePassword: 'Đổi mật khẩu…',
+    passwordGroup: 'Mật khẩu',
+    passwordLead: 'Đổi mật khẩu cần mã xác nhận gửi tới email của bạn.',
+    next: 'Tiếp',
+    changeShort: 'Đổi',
+    showMore: 'Xem thêm thiết bị',
+    loadingSessions: 'Đang tải thiết bị',
     info: 'Thông tin cá nhân',
     email: 'Email',
     emailHint: 'Email dùng để đăng nhập, không đổi được.',

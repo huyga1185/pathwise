@@ -53,6 +53,11 @@ export interface SheetProps {
   keepEditingLabel?: ReactNode;
   onSubmit?: (event: FormEvent<HTMLFormElement>) => void;
   onClose: () => void;
+  /** A later step of a multi-step sheet: the leading button goes back a step instead of cancelling (HIG Sheets: "The
+   * Back button lets people navigate to a previous step… Avoid showing all three buttons… together"). Escape and a
+   * swipe still close the sheet. */
+  onBack?: () => void;
+  backLabel?: ReactNode;
 }
 
 /**
@@ -77,6 +82,8 @@ export function Sheet({
   keepEditingLabel = 'Tiếp tục sửa',
   onSubmit,
   onClose,
+  onBack,
+  backLabel = 'Quay lại',
 }: SheetProps) {
   const titleId = useId();
   const formId = useId();
@@ -144,8 +151,8 @@ export function Sheet({
         >
           {!wide ? <span className="pw-sheet-grabber" aria-hidden="true" /> : null}
           <div className="pw-sheet-bar">
-            <Button variant="quiet" onClick={onClose}>
-              {cancelLabel}
+            <Button variant="quiet" onClick={onBack ?? onClose}>
+              {onBack ? backLabel : cancelLabel}
             </Button>
             <h2 id={titleId} className="pw-sheet-title">
               {title}

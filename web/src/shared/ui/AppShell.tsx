@@ -256,7 +256,7 @@ function AccountMenu({ account, crossFade }: { account: ShellAccount; crossFade:
             viewTransition={crossFade}
             onClick={() => setOpen(false)}
           >
-            {vi.profile.title}
+            {vi.profile.menu}
           </Link>
           <button
             type="button"
