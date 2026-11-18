@@ -266,13 +266,16 @@ function PasswordCard({ email }: { email: string }) {
             <p role="status" className="pw-profile-status">
               {vi.profile.otpSent(email)}
             </p>
-            {/* One bar like the other fields of the sheet (owner, 2026-11-18, §8.15): six boxes at a field's height
-                were too small. Still a one-time code: AutoFill, numeric keypad, digits only. */}
+            {/* One field, the digits centred and spaced, a placeholder for the six digits (as before the six boxes; owner,
+                2026-11-18, §8.15). A separate label above (HIG Text fields: placeholder text disappears when people
+                type, so "include a separate label"); numeric keypad and AutoFill of the code. */}
             <TextField
+              className="pw-field-code pw-field-code-sm"
               label={vi.profile.otp}
               inputMode="numeric"
               autoComplete="one-time-code"
-              pattern="[0-9]*"
+              maxLength={6}
+              placeholder="••••••"
               value={otp}
               error={errors.otp}
               onChange={(event) => setOtp(event.target.value.replace(/\D/g, '').slice(0, 6))}

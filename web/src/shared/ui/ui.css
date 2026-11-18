@@ -780,6 +780,25 @@ textarea.pw-field-input {
   max-width: 480px;
   color: var(--ink-muted);
 }
+/* One-line code field (prototype "Quên mật khẩu", "Hồ sơ"; the change-password sheet, §8.15): large spaced digits. */
+.pw-field-code .pw-field-input {
+  min-height: 56px;
+  padding: 8px 16px;
+  font-size: 28px;
+  line-height: 40px;
+  font-weight: 700;
+  letter-spacing: 0.5em;
+  /* The spacing also follows the last digit; the same space before the first keeps the digits truly centred. */
+  text-indent: 0.5em;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.pw-field-code-sm .pw-field-input {
+  min-height: 48px;
+  font-size: 24px;
+  line-height: 32px;
+}
+
 /* Checkbox (web, W03): prototype ".check". */
 .pw-check {
   display: inline-flex;
