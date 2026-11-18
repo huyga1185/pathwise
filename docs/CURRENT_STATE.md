@@ -318,3 +318,4 @@ Nhóm: (1) nghiệp vụ/hiểu sai yêu cầu · (2) implementation · (3) ki�
 | 2026-11-18 | branch `feat/owner-ui-g3` | — | Vòng góp ý 3 (`OWNER_UI_REDESIGN.md` §8.8): tab Cửa hàng hết nhảy; checkbox kiểu macOS; con trỏ mũi tên theo HIG; sheet không bị bàn phím che; ⌃⌄ không lặp khi focus; tên múi giờ ngắn. |
 | 2026-11-18 | branch `feat/owner-ui-g3` | — | Đính chính con trỏ (`OWNER_UI_REDESIGN.md` §8.8 #5): theo CSS web của Apple, bàn tay cho control bấm được, mũi tên cho control bị tắt và mục đang mở. |
 | 2026-11-18 | branch `feat/owner-ui-g3` | — | Tab Thành viên/Lời mời và Cửa hàng/Nhật ký trên máy tính: tabbed control kiểu macOS đặt giữa, bo 8 (`OWNER_UI_REDESIGN.md` §8.9). |
+| 2026-11-18 | branch `feat/owner-ui-g3` | — | Tài khoản: hàng thiết bị cuối không còn dài hơn các hàng khác (bỏ khoảng đệm dưới, như hàng đầu bỏ khoảng đệm trên). |

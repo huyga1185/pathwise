@@ -80,6 +80,10 @@
   padding-top: 0;
   border-top: 0;
 }
+/* Like the first: the card's own padding is the space at the end (the last row looked taller than the others). */
+.pw-profile-session:last-child {
+  padding-bottom: 0;
+}
 .pw-profile-session-text {
   flex: 1 1 320px;
   min-width: 0;
