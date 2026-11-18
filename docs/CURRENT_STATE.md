@@ -323,3 +323,4 @@ Nhóm: (1) nghiệp vụ/hiểu sai yêu cầu · (2) implementation · (3) ki�
 | 2026-11-18 | branch `feat/owner-ui-g3` | — | Điện thoại: lịch chọn ngày kiểu inline trong trang thay vì bật ra (không còn bị tab bar che) (`OWNER_UI_REDESIGN.md` §8.11). |
 | 2026-11-18 | branch `feat/owner-ui-g3` | — | Lịch: nút "Tháng x, năm ›" mở bánh xe tháng/năm như iOS; "Bỏ chọn ngày" ở mọi trang; ‹ › bo 8 khi dùng chuột (`OWNER_UI_REDESIGN.md` §8.12). |
 | 2026-11-18 | branch `feat/owner-ui-g3` | — | Ô vai trò trong bảng Thành viên bo 8 khi dùng chuột (members.css nạp sau ui.css nên đã ghi đè quy tắc chung §8.7); đã rà các file CSS trang khác: không còn nút nào bị ghi đè. |
+| 2026-11-18 | branch `feat/owner-ui-g3` | — | Mọi màn nhập mã dùng `CodeField` (một ô vẽ thành 6 khung): Xác nhận email, Đặt lại mật khẩu bằng link, Đổi mật khẩu; xoá `OtpInput` (`OWNER_UI_REDESIGN.md` §8.13). |

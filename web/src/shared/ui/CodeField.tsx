@@ -70,16 +70,19 @@ export function CodeField({ label, value, onChange, length = 6, hint, error, dis
           onSelect={keepCaretAtEnd}
         />
       </div>
-      {error ? (
-        <p id={errorId} className="pw-field-msg pw-field-msg-error">
-          {error}
-        </p>
-      ) : null}
-      {hint ? (
-        <p id={hintId} className="pw-field-msg">
-          {hint}
-        </p>
-      ) : null}
+      {/* Always there, so a wrong code said after sending is read out (it was the verify-email page's live message). */}
+      <div aria-live="polite">
+        {error ? (
+          <p id={errorId} className="pw-field-msg pw-field-msg-error">
+            {error}
+          </p>
+        ) : null}
+        {hint ? (
+          <p id={hintId} className="pw-field-msg">
+            {hint}
+          </p>
+        ) : null}
+      </div>
     </div>
   );
 }

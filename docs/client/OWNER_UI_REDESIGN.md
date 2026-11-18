@@ -376,3 +376,7 @@ Quyết định: **điện thoại dùng inline**: bấm nút ngày thì lịch 
 | 2 | PC "Mọi ngày", điện thoại "Bỏ chọn ngày" | Khác nhau theo trang, không theo khổ: Kế hoạch "Mọi ngày", Nhật ký "Bỏ chọn ngày" | Cả hai trang "Bỏ chọn ngày" |
 | 3 | Lịch trên PC: hình nút có nhất quán? | Đo: khung bo 16 (khung chứa), "Bỏ chọn ngày" bo 8 (đúng §8.7), **‹ › tròn (sai §8.7)**, ô ngày tròn. Ô ngày tròn như lịch của Apple nhưng tài liệu không có câu chữ, S3 cũng không nói ô ngày có phải nút | ‹ › và nút tiêu đề bo 8 khi dùng chuột; **ô ngày giữ tròn** (chủ dự án chọn) |
 
+### 8.13 Ô mã xác nhận nhất quán (2026-11-18)
+
+Chủ dự án đã chọn **một ô thật vẽ thành 6 khung** (`CodeField`, LIQUID_GLASS §9) nhưng chỉ Quên mật khẩu dùng; Xác nhận email còn `OtpInput` (6 ô nhập riêng), Đặt lại mật khẩu bằng link và sheet Đổi mật khẩu (Tài khoản) là ô nhập thường. Giờ cả bốn dùng `CodeField`; xoá `OtpInput` và kiểu `.pw-otp`, `.pw-field-code`, `.pw-auth-otp`. Thông báo dưới ô mã luôn nằm trong vùng `aria-live` (màn Xác nhận email trước có, để trình đọc màn hình báo mã sai). Trong app, khung mã theo đúng mô tả §9: nền fill nhạt và viền như ô nhập, khung đang nhận số sáng viền như ô đang focus; bo `radius-md` khi dùng chuột, **22 trên màn cảm ứng** (như thẻ tài khoản, cùng bán kính ô nhập viên thuốc 44px).
+

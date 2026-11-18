@@ -8,9 +8,9 @@ import { anonymousHandlers, API, fail, ok, server } from '@/test/server';
 
 const noContent = () => new HttpResponse(null, { status: 204 });
 
-/** Fills the six OTP boxes by pasting into the first one, as a code copied from the email. */
+/** Pastes the code into the one code field (drawn as six boxes), as a code copied from the email. */
 async function pasteCode(user: ReturnType<typeof userEvent.setup>, code: string) {
-  await user.click(screen.getByLabelText('Chữ số 1 trên 6'));
+  await user.click(screen.getByLabelText('Mã xác thực'));
   await user.paste(code);
 }
 
@@ -149,7 +149,7 @@ describe('Xác thực email', () => {
 
     await screen.findByRole('heading', { name: 'Xác thực email' });
     await pasteCode(user, '482913');
-    expect(screen.getByLabelText('Chữ số 6 trên 6')).toHaveValue('3');
+    expect(screen.getByLabelText('Mã xác thực')).toHaveValue('482913');
     await user.click(screen.getByRole('button', { name: 'Xác thực' }));
 
     expect(await screen.findByText('Email đã được xác thực.')).toBeInTheDocument();
@@ -175,7 +175,7 @@ describe('Xác thực email', () => {
     await pasteCode(user, '111111');
     await user.click(verify);
     expect(await screen.findByText('Mã OTP không đúng hoặc đã hết hạn.')).toBeInTheDocument();
-    expect(screen.getByLabelText('Chữ số 1 trên 6')).toHaveAttribute('aria-invalid', 'true');
+    expect(screen.getByLabelText('Mã xác thực')).toHaveAttribute('aria-invalid', 'true');
     await user.click(verify);
     await waitFor(() => expect(verify).toBeEnabled());
     await user.click(verify);
@@ -186,7 +186,7 @@ describe('Xác thực email', () => {
     await user.click(screen.getByRole('button', { name: 'Gửi lại mã' }));
     expect(await screen.findByText('Đã gửi mã mới.')).toBeInTheDocument();
     expect(resent).toBe(1);
-    expect(screen.getByLabelText('Chữ số 1 trên 6')).toHaveValue('');
+    expect(screen.getByLabelText('Mã xác thực')).toHaveValue('');
     expect(screen.getByRole('button', { name: /Gửi lại mã sau/ })).toBeDisabled();
     await pasteCode(user, '222222');
     expect(verify).toBeEnabled();

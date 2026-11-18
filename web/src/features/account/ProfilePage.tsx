@@ -8,7 +8,7 @@ import { applyServerErrors, errorCode } from '@/shared/forms/serverErrors';
 import { formatDayTime, formatPhone } from '@/shared/format';
 import { useCountdown } from '@/shared/hooks/useCountdown';
 import { vi } from '@/shared/i18n/vi';
-import { Button, ErrorBanner, Sheet, StatusPill, TextField, Toast, ToastDock } from '@/shared/ui';
+import { Button, CodeField, ErrorBanner, Sheet, StatusPill, TextField, Toast, ToastDock } from '@/shared/ui';
 import { deviceName } from './device';
 import { useDeviceSessions, useMe, useProfileApi, type DeviceSession, type Me } from './profileApi';
 import './profile.css';
@@ -266,17 +266,7 @@ function PasswordCard({ email }: { email: string }) {
             <p role="status" className="pw-profile-status">
               {vi.profile.otpSent(email)}
             </p>
-            <TextField
-              className="pw-field-code pw-field-code-sm"
-              label={vi.profile.otp}
-              inputMode="numeric"
-              autoComplete="one-time-code"
-              maxLength={6}
-              placeholder="••••••"
-              value={otp}
-              error={errors.otp}
-              onChange={(event) => setOtp(event.target.value.replace(/\D/g, '').slice(0, 6))}
-            />
+            <CodeField label={vi.profile.otp} value={otp} error={errors.otp} onChange={setOtp} />
             <TextField
               label={vi.form.newPassword}
               type="password"
