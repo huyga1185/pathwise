@@ -335,6 +335,8 @@ describe('Danh sách kế hoạch', () => {
     const item = (await screen.findByRole('link', { name: /Giao sáng 01\/12/ })).closest('li') as HTMLElement;
     fireEvent.contextMenu(item);
     await user.click(within(screen.getByRole('menu')).getByRole('menuitem', { name: 'Sao chép…' }));
-    expect(await screen.findByRole('dialog', { name: /Sao chép "Giao sáng 01\/12"/ })).toBeInTheDocument();
+    // The copy sheet: a short title, the plan copied from inside it.
+    const sheet = await screen.findByRole('dialog', { name: 'Sao chép' });
+    expect(within(sheet).getByText('Giao sáng 01/12')).toBeInTheDocument();
   });
 });

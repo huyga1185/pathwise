@@ -82,7 +82,8 @@ describe('Tạo kế hoạch', () => {
         },
       ],
     });
-  });
+    // A long walk through the form (the calendar moved month by month): more than the default 5 s on a busy run.
+  }, 15000);
 
   it('lỗi stops[3].timeWindow.end của server hiện ở ô giờ của dòng 4', async () => {
     server.use(
