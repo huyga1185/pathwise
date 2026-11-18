@@ -3555,3 +3555,13 @@ html {
   flex: none;
   animation: pw-activity-turn 0.8s steps(8) infinite;
 }
+/* In a field's hint line (PinPicker search): the hint's size, shown after a moment as the other waits. */
+.pw-activity-text.pw-hint-activity {
+  font-size: inherit;
+  gap: 4px;
+  animation: pw-activity-show 0.2s ease 0.3s both;
+}
+.pw-activity-text.pw-hint-activity svg {
+  width: 12px;
+  height: 12px;
+}

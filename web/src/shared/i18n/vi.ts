@@ -300,7 +300,7 @@ export const vi = {
     search: 'Tìm địa chỉ',
     searchHint: 'Tìm trong Việt Nam, từ 3 ký tự.',
     results: 'Kết quả tìm',
-    searching: 'Đang tìm…',
+    searching: 'Đang tìm địa chỉ…',
     noResult: 'Không tìm thấy địa chỉ này. Thử ghi rõ hơn hoặc đặt ghim trên bản đồ.',
     pickTitle: 'Chọn vị trí',
     pickConfirm: 'Dùng vị trí này',

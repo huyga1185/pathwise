@@ -332,3 +332,4 @@ Nhóm: (1) nghiệp vụ/hiểu sai yêu cầu · (2) implementation · (3) ki�
 | 2026-11-18 | branch `feat/owner-ui-g4` | — | Sửa sau G4 (`OWNER_UI_REDESIGN.md` §9.5): hộp bản đồ lớn hiện đúng (`Dialog` render trên `body`), "Tìm lại địa chỉ này" không còn nháy, cột Người nhận/SĐT/Mã đơn theo nội dung. |
 | 2026-11-18 | branch `feat/owner-ui-g4` | — | Tìm lại địa chỉ: không khoá bản đồ/nút trong lúc gửi (hết nháy), chỉ báo "Đang tìm toạ độ…" cạnh nút sau 0,3 s (`OWNER_UI_REDESIGN.md` §9.5). |
 | 2026-11-18 | branch `feat/owner-ui-g4` | — | Việc đang chạy ở trang tìm toạ độ dùng vòng xoay thay nhãn tĩnh; bảng trong nhóm của form bỏ khung lồng (`OWNER_UI_REDESIGN.md` §9.5). |
+| 2026-11-18 | branch `feat/owner-ui-g4` | — | Ô tìm địa chỉ (hộp chọn vị trí, Cửa hàng): vòng xoay "Đang tìm địa chỉ…" thay chữ tĩnh (`OWNER_UI_REDESIGN.md` §9.5). |

@@ -2,6 +2,7 @@ import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { DepotIcon, PinMap, type LatLng } from '@/platform/map';
 import { messageFor } from '@/shared/errors';
 import { vi } from '@/shared/i18n/vi';
+import { ActivityText } from './ActivityText';
 import { Dialog } from './Dialog';
 import { TextField } from './TextField';
 
@@ -93,7 +94,16 @@ export function PinPicker({
             type="search"
             autoComplete="off"
             value={query}
-            hint={error ? undefined : searching ? vi.map.searching : vi.map.searchHint}
+            // While the search runs: the activity indicator with what it does (HIG Progress indicators: an
+            // indeterminate task turns, "Avoid vague terms"), shown after a moment (CSS) so a quick answer shows
+            // nothing; the hint line keeps its height.
+            hint={
+              error ? undefined : searching ? (
+                <ActivityText text={vi.map.searching} className="pw-hint-activity" />
+              ) : (
+                vi.map.searchHint
+              )
+            }
             error={error ?? undefined}
             aria-controls={results ? listId : undefined}
             onChange={(event) => setQuery(event.target.value)}
