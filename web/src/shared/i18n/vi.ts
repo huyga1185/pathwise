@@ -548,6 +548,8 @@ export const vi = {
     notFound: 'Không tìm thấy địa chỉ này. Sửa địa chỉ hoặc đặt ghim trên bản đồ.',
     providerError: 'Dịch vụ tìm địa chỉ gặp sự cố khi tìm điểm này. Tìm lại sau hoặc đặt ghim trên bản đồ.',
     retryOne: 'Tìm lại địa chỉ này',
+    searching: 'Đang tìm toạ độ…',
+    savingPin: 'Đang lưu toạ độ…',
     orPin: 'hoặc đặt ghim',
     enlarge: 'Phóng to bản đồ để đặt ghim chính xác hơn',
     pinHint: 'Bấm lên bản đồ để đặt ghim đúng vị trí giao hàng.',

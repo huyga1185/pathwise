@@ -289,7 +289,8 @@ function FixStop({ plan, stop, busy }: { plan: PlanDetail; stop: PlanStop; busy:
   const [saved, setSaved] = useState<string | null>(null);
   const [failure, setFailure] = useState<unknown>(null);
   const [tries, setTries] = useState(0);
-  const [working, setWorking] = useState(false);
+  // Which request runs: its own button shows the wait; nothing else changes while it runs (below).
+  const [working, setWorking] = useState<'retry' | 'pin' | null>(null);
   const current = stop.lat !== null && stop.lon !== null ? { lat: stop.lat, lon: stop.lon } : null;
   const geocodeMessage =
     stop.geocodeStatus === 'FAILED'
@@ -299,9 +300,11 @@ function FixStop({ plan, stop, busy }: { plan: PlanDetail; stop: PlanStop; busy:
       : undefined;
 
   // As the page's: the last error stays until this try's result replaces it (no jump), drawn anew when it fails again.
-  const run = async (action: () => Promise<unknown>, done?: string) => {
+  const run = async (kind: 'retry' | 'pin', action: () => Promise<unknown>, done?: string) => {
+    // A second press while one request runs is ignored, not shown as a disabled button.
+    if (working) return;
     setSaved(null);
-    setWorking(true);
+    setWorking(kind);
     try {
       await action();
       setFailure(null);
@@ -313,7 +316,7 @@ function FixStop({ plan, stop, busy }: { plan: PlanDetail; stop: PlanStop; busy:
         await planApi.reload(plan.id);
       }
     } finally {
-      setWorking(false);
+      setWorking(null);
     }
   };
 
@@ -321,17 +324,21 @@ function FixStop({ plan, stop, busy }: { plan: PlanDetail; stop: PlanStop; busy:
     const next = address.trim();
     // A changed address is geocoded again by the server (PENDING); the same one needs POST /geocode.
     return next && next !== (stop.address ?? '')
-      ? run(() => planApi.patchStop(plan.id, stop.id, { version: plan.version, address: next }))
-      : run(() => planApi.geocode(plan.id, plan.version));
+      ? run('retry', () => planApi.patchStop(plan.id, stop.id, { version: plan.version, address: next }))
+      : run('retry', () => planApi.geocode(plan.id, plan.version));
   };
 
   const savePin = (value: LatLng) =>
     run(
+      'pin',
       () => planApi.patchStop(plan.id, stop.id, { version: plan.version, lat: value.lat, lon: value.lon }),
       g.pinSaved(formatCoordinates(value), stop.label),
     ).then(() => setPin(null));
 
-  const disabled = busy || working;
+  // Only the server's own processing locks the panel. A short request does not: the map, its controls and the
+  // buttons stay as they are (HIG Loading: "Let people do other things… while they wait"); disabling them for the
+  // ~0.15 s of a request made them flash (owner, 2026-11-18).
+  const disabled = busy;
   return (
     <section className="pw-card pw-geocode-fix" aria-labelledby="fix-title">
       <div className="pw-geocode-fix-head">
@@ -347,10 +354,16 @@ function FixStop({ plan, stop, busy }: { plan: PlanDetail; stop: PlanStop; busy:
         error={address === (stop.address ?? '') ? geocodeMessage : undefined}
         onChange={(event) => setAddress(event.target.value)}
       />
-      <div>
-        <Button variant="secondary" busy={working && !pin} disabled={disabled} onClick={() => void retry()}>
+      <div className="pw-inline-action">
+        <Button
+          variant="secondary"
+          disabled={disabled}
+          aria-busy={working === 'retry' ? 'true' : undefined}
+          onClick={() => void retry()}
+        >
           {g.retryOne}
         </Button>
+        <Working active={working === 'retry'} text={g.searching} />
       </div>
       <div className="pw-or" aria-hidden="true">
         <span />
@@ -378,12 +391,13 @@ function FixStop({ plan, stop, busy }: { plan: PlanDetail; stop: PlanStop; busy:
         {saved ?? (pin ? g.pinAt(formatCoordinates(pin)) : g.pinHint)}
       </p>
       <div className="pw-plan-actions pw-geocode-fix-actions">
-        <Button variant="quiet" disabled={!pin || working} onClick={() => setPin(null)}>
+        <Working active={working === 'pin'} text={g.savingPin} />
+        <Button variant="quiet" disabled={!pin} onClick={() => setPin(null)}>
           {g.skip}
         </Button>
         <Button
           variant="secondary"
-          busy={working && pin !== null}
+          aria-busy={working === 'pin' ? 'true' : undefined}
           disabled={!pin || disabled}
           onClick={() => pin && void savePin(pin)}
         >
@@ -419,5 +433,39 @@ function CopiedBanner({ notice, onClose }: { notice: CopiedNotice; onClose: () =
         {vi.planCopy.close}
       </Button>
     </section>
+  );
+}
+
+/**
+ * The wait of a request, beside the button that started it (HIG Progress indicators: an activity indicator for a wait
+ * of unknown length, "a description that provides additional context… Avoid vague terms like loading", "in a
+ * consistent location"). Shown only when the wait lasts more than a moment (0.3 s, CSS; HIG Loading: progress
+ * indicators "for situations where loading takes more than a moment or two"), so a quick answer shows nothing. Its
+ * words are in a live region that is always there, so screen readers say them without moving focus (WCAG 4.1.3).
+ */
+function Working({ active, text }: { active: boolean; text: string }) {
+  return (
+    <span aria-live="polite" className="pw-working">
+      {active ? (
+        <span className="pw-working-inner">
+          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+            {Array.from({ length: 8 }, (_, index) => (
+              <rect
+                key={index}
+                x="11"
+                y="2"
+                width="2"
+                height="6"
+                rx="1"
+                fill="currentColor"
+                opacity={(0.25 + (index / 8) * 0.75).toFixed(2)}
+                transform={`rotate(${index * 45} 12 12)`}
+              />
+            ))}
+          </svg>
+          {text}
+        </span>
+      ) : null}
+    </span>
   );
 }

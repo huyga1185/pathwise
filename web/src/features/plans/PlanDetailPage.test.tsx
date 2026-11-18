@@ -196,3 +196,26 @@ describe('Soạn plan — tìm toạ độ', () => {
     expect(patches[0]).toMatchObject({ version: 1 });
   }, 20000);
 });
+
+describe('Tìm lại một địa chỉ (G4 §9.5)', () => {
+  it('trong lúc chờ: "Đang tìm toạ độ…" cạnh nút; bản đồ và các nút giữ nguyên (không tắt, không mất)', async () => {
+    let answer: () => void = () => {};
+    server.use(
+      http.get(`${API}/plans/83`, () => ok(geocoded())),
+      http.post(`${API}/plans/83/geocode`, () => new Promise((resolve) => (answer = () => resolve(ok(geocoded()))))),
+      ...signedInHandlers(),
+    );
+    renderApp('/plans/83');
+    const user = userEvent.setup();
+
+    const panel = await screen.findByRole('region', { name: 'Sửa ĐH-1008 · Chị Thảo' });
+    const retry = within(panel).getByRole('button', { name: 'Tìm lại địa chỉ này' });
+    await user.click(retry);
+    expect(within(panel).getByText('Đang tìm toạ độ…')).toBeInTheDocument();
+    expect(retry).toBeEnabled();
+    expect(retry).toHaveAttribute('aria-busy', 'true');
+    expect(within(panel).getByRole('button', { name: 'Đặt ghim ở giữa bản đồ' })).toBeEnabled();
+    answer();
+    await waitFor(() => expect(within(panel).queryByText('Đang tìm toạ độ…')).not.toBeInTheDocument());
+  });
+});

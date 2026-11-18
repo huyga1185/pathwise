@@ -28,7 +28,8 @@ export function Button({
       {...rest}
       type={type}
       disabled={disabled || busy}
-      aria-busy={busy ? 'true' : undefined}
+      // busy also disables the button; aria-busy alone (a request runs, the button stays) is passed through.
+      aria-busy={busy ? 'true' : rest['aria-busy']}
       className={cx('pw-btn', `pw-btn-${variant}`, `pw-btn-${size}`, block && 'pw-btn-block', className)}
     />
   );

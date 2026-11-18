@@ -1233,3 +1233,28 @@ html:has(.pw-form-bar) {
   width: 4.5rem;
 }
 
+/* A request's wait beside its button (Working, PlanDetailPage): the activity indicator and its words appear only
+   after 0.3 s, as ActivityIndicator, so a quick answer shows nothing; the spokes turn (HIG: "Keep progress indicators
+   moving"), still with reduced motion. */
+.pw-inline-action {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+.pw-working {
+  display: inline-flex;
+  min-height: 1px;
+}
+.pw-working-inner {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.875rem;
+  color: var(--ink-muted);
+  animation: pw-activity-show 0.2s ease 0.3s both;
+}
+.pw-working-inner svg {
+  color: var(--ink-muted);
+  animation: pw-activity-turn 0.8s steps(8) infinite;
+}
