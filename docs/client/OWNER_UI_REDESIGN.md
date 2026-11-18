@@ -1,6 +1,6 @@
 # OWNER_UI_REDESIGN — Nghiên cứu thiết kế lại giao diện chính của chủ cửa hàng theo Apple
 
-> **Trạng thái:** nghiên cứu xong; chủ dự án đã trả lời Q1–Q5 (§5, 2026-11-17), quyết định ở P-74. **G1 (khung app) đã làm** (§6, branch `docs/owner-ui-redesign`). **G2 (danh sách kế hoạch) đã làm** (§7, PR #129). **G3 đang thiết kế** (§8, branch `feat/owner-ui-g3`).
+> **Trạng thái:** nghiên cứu xong; chủ dự án đã trả lời Q1–Q5 (§5, 2026-11-17), quyết định ở P-74. **G1 (khung app) đã làm** (§6, branch `docs/owner-ui-redesign`). **G2 (danh sách kế hoạch) đã làm** (§7, PR #129). **G3 (Xe, Thành viên, Cửa hàng, Nhật ký, Tài khoản) đã làm** (§8, branch `feat/owner-ui-g3`). Tiếp: G4.
 >
 > Theo P-71 (hướng dẫn Apple đứng trước), quy tắc ở `docs/client/LIQUID_GLASS.md`, kiểm từng thành phần theo `docs/client/APPLE_CHECKLIST.md`. Nhãn: **[Apple]** trích nguyên văn HIG (bản tải 2026-11-17), **[Web]** điều web buộc phải có, chọn bằng đo, **[Chủ dự án]** chờ hoặc đã có quyết định. Phần "Đề xuất" là ý của agent, mỗi dòng ghi nguồn; chỗ nào Apple không nói thì ghi rõ.
 
@@ -243,7 +243,7 @@ Không làm trong G2: tiêu đề lớn thu nhỏ khi cuộn (D5 hẹp; cần th
 | C14 không chữ đè | ✅ (đã sửa) | Tên 150 ký tự: 2 dòng rồi "…" ở mọi khổ (G2.11); hàng lọc xuống dòng khi hẹp. Thấy thêm và đã sửa: tab bar ở 320px cắt nhãn "Thành vi…" (F-74, khung G1) — tab rộng theo nhãn, tối thiểu 44px |
 | C15 sáng/tối | ✅ | Chụp cả hai |
 
-## 8. Thiết kế G3: Xe, Thành viên, Cửa hàng, Nhật ký, Hồ sơ (2026-11-17, đang thiết kế)
+## 8. Thiết kế G3: Xe, Thành viên, Cửa hàng, Nhật ký, Tài khoản (2026-11-17/18, đã làm)
 
 ### 8.1 Hiện trạng (chụp 2026-11-17, 1440 và 390px, tài khoản owner)
 
@@ -284,3 +284,19 @@ Không làm trong G2: tiêu đề lớn thu nhỏ khi cuộn (D5 hẹp; cần th
 | Q7 | "Hồ sơ và bảo mật" 16 ký tự > 15 (Toolbars) | Tiêu đề trang **"Tài khoản"** |
 | Q8 | Danh sách thiết bị dài (hơn 70 phiên trên DB dev) | **Hiện một phần, cuộn tới cuối thì hiện thêm** ("xem thêm" tự động); không lệch HIG: Lists and tables chỉ nói "providing a way for people to view more", không quy định cách |
 | Q9 | Giao G3 thành 1 PR hay 2 PR | **1 PR** |
+
+### 8.5 Kết quả `APPLE_CHECKLIST` cho G3 (đo 2026-11-18, Chromium 320/390/1280/1440px, sáng và tối)
+
+| Mục | Kết quả | Đo / ghi chú |
+|---|---|---|
+| C1 vùng bấm | ✅ | Nút viên thuốc 36 / 44 khi chạm; ô segmented 44 khi chạm; switch 51×31 trong hàng cao ≥ 44; mục menu ngữ cảnh 44 khi chạm; nút trong alert cao 44 |
+| C3 trạng thái nhấn | ✅ | Nút xám, pop-up trong hàng, ô segmented, nút alert / action sheet: rê (chỉ khi có chuột) và nhấn |
+| C6 focus nhìn thấy | ✅ | Sheet focus ô nhập đầu tiên; alert focus "Huỷ"; tay nắm cột hiện vạch màu nhấn khi focus |
+| C8 nhãn trợ năng | ✅ | `dialog` / `alertdialog` có tên; `switch` + `aria-checked`; segmented là `tablist`; tay nắm cột là `separator` có tên |
+| C11 giảm chuyển động | ✅ | Sheet, alert, action sheet chỉ mờ dần; switch không trượt núm; tiêu đề nhỏ không trồi |
+| C12 giảm trong suốt, tăng tương phản | ✅ | Giữ quy tắc của G1/G2 cho menu, popover |
+| C14 không chữ đè / tràn | ✅ (đã sửa) | Không tràn ngang ở cả 6 trang × 320/390/1280px; email trong hàng lời mời chỉ xuống dòng sau "@" (trước bẻ giữa chữ), email thành viên cắt "…" |
+| C15 sáng/tối | ✅ | Chụp giao diện tối 390px cả 6 trang |
+| F-73 nút viền rỗng | ✅ đã sửa | Không còn kiểu viền rỗng trong app |
+
+Để lại: hộp thoại của kế hoạch (sao chép, nhập file, giao việc, huỷ kế hoạch, bản đồ chọn ghim) vẫn dùng `Dialog` cũ — đổi sang `Sheet` / `Alert` ở G4 (form, sao chép, nhập file) và G5 (giao việc, huỷ, ghim); khu quản trị (`/admin`) chưa đổi theo G3 (bảng có viền, nút trong bảng) — làm khi tới phần quản trị.
