@@ -3598,3 +3598,40 @@ html {
     visibility: hidden;
   }
 }
+
+/* Scene changes in the plan flow (OWNER_UI_REDESIGN §9.6), by the motion already set: a plan's screen changing in
+   place comes in as a page (§6.2 CĐ2b: fade, rise 12 px); a block that appears — a banner, the progress, "còn N…",
+   an import or copy notice — settles in as a new result (G2.10: fade, rise 10 px, 0.32 s). The same banner said again
+   after a retry does not move in again (it read as a flash). Selecting another row or adding one does not animate
+   (HIG Motion: "avoid adding motion to UI interactions that occur frequently"). Reduced motion: fades only (CĐ6). */
+.pw-view-switch {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  min-width: 0;
+}
+.pw-view-switch.is-new {
+  animation: pw-page-in 0.28s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.pw-banner,
+.pw-plans-progress,
+.pw-plans-missing,
+.pw-plans-alert,
+.pw-import-added,
+.pw-copy-notice {
+  animation: pw-result-in 0.32s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.pw-banner.is-repeat {
+  animation: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .pw-view-switch.is-new,
+  .pw-banner,
+  .pw-plans-progress,
+  .pw-plans-missing,
+  .pw-plans-alert,
+  .pw-import-added,
+  .pw-copy-notice {
+    animation-name: pw-result-fade;
+  }
+}

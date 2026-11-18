@@ -5,14 +5,17 @@ export function ErrorBanner({
   title,
   children,
   tone = 'danger',
+  repeat = false,
 }: {
   title: ReactNode;
   children?: ReactNode;
   tone?: 'danger' | 'info';
+  /** The same place said again after another try: it does not move in again (that read as a flash). */
+  repeat?: boolean;
 }) {
   return (
     <div
-      className={tone === 'info' ? 'pw-banner pw-banner-info' : 'pw-banner'}
+      className={['pw-banner', tone === 'info' && 'pw-banner-info', repeat && 'is-repeat'].filter(Boolean).join(' ')}
       role={tone === 'danger' ? 'alert' : 'status'}
     >
       <span className="pw-banner-title">{title}</span>

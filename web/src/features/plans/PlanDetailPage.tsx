@@ -52,6 +52,7 @@ export function PlanDetailPage() {
   }
   if (!plan.data) return <ActivityIndicator label={vi.pages.loading} className="is-page" />;
   const data = plan.data;
+  const kind = data.status === 'DRAFT' && !data.optimizedAt ? 'geocode' : data.status === 'DRAFT' ? 'result' : 'track';
   const view =
     data.status === 'DRAFT' && !data.optimizedAt ? (
       <GeocodeView plan={data} />
@@ -67,7 +68,7 @@ export function PlanDetailPage() {
   return (
     <>
       {copied ? <CopiedBanner notice={copied} onClose={() => navigate('.', { replace: true, state: null })} /> : null}
-      {view}
+      <ViewSwitch kind={kind}>{view}</ViewSwitch>
       {toast ? (
         <div className="pw-toast-dock">
           <Toast tone="success" onClose={() => setToast(null)}>
@@ -110,6 +111,7 @@ function GeocodeView({ plan }: { plan: PlanDetail }) {
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [failure, setFailure] = useState<unknown>(null);
   const [tries, setTries] = useState(0);
+  const [repeat, setRepeat] = useState(false);
   const [working, setWorking] = useState(false);
   const [copying, setCopying] = useState(false);
   const selected =
@@ -132,12 +134,14 @@ function GeocodeView({ plan }: { plan: PlanDetail }) {
   // the page shorter and jump (scrolled to the bottom, the page moved up and down: owner, 2026-11-18). A new try that
   // fails again draws its banner anew (key), so it is announced again.
   const run = async (action: () => Promise<unknown>) => {
+    const shownBefore = failure !== null;
     setWorking(true);
     try {
       await action();
       setFailure(null);
     } catch (error) {
       setFailure(error);
+      setRepeat(shownBefore);
       setTries((n) => n + 1);
       if (error instanceof ApiError && (error.code === 'PLAN_MODIFIED' || error.code === 'PLAN_BUSY')) {
         await planApi.reload(plan.id);
@@ -234,7 +238,7 @@ function GeocodeView({ plan }: { plan: PlanDetail }) {
         }
       />
 
-      {failure ? <ErrorBanner key={tries} title={messageFor(failure)} /> : null}
+      {failure ? <ErrorBanner key={tries} repeat={repeat} title={messageFor(failure)} /> : null}
 
       {plan.processingStatus === 'GEOCODING' ? (
         <section className="pw-plans-progress" aria-label={statusInfo('processing', 'GEOCODING')?.label}>
@@ -300,6 +304,7 @@ function FixStop({ plan, stop, busy }: { plan: PlanDetail; stop: PlanStop; busy:
   const [saved, setSaved] = useState<string | null>(null);
   const [failure, setFailure] = useState<unknown>(null);
   const [tries, setTries] = useState(0);
+  const [repeat, setRepeat] = useState(false);
   // Which request runs: its own button shows the wait; nothing else changes while it runs (below).
   const [working, setWorking] = useState<'retry' | 'pin' | null>(null);
   const current = stop.lat !== null && stop.lon !== null ? { lat: stop.lat, lon: stop.lon } : null;
@@ -312,6 +317,7 @@ function FixStop({ plan, stop, busy }: { plan: PlanDetail; stop: PlanStop; busy:
 
   // As the page's: the last error stays until this try's result replaces it (no jump), drawn anew when it fails again.
   const run = async (kind: 'retry' | 'pin', action: () => Promise<unknown>, done?: string) => {
+    const shownBefore = failure !== null;
     // A second press while one request runs is ignored, not shown as a disabled button.
     if (working) return;
     setSaved(null);
@@ -322,6 +328,7 @@ function FixStop({ plan, stop, busy }: { plan: PlanDetail; stop: PlanStop; busy:
       if (done) setSaved(done);
     } catch (error) {
       setFailure(error);
+      setRepeat(shownBefore);
       setTries((n) => n + 1);
       if (error instanceof ApiError && (error.code === 'PLAN_MODIFIED' || error.code === 'PLAN_BUSY')) {
         await planApi.reload(plan.id);
@@ -360,7 +367,7 @@ function FixStop({ plan, stop, busy }: { plan: PlanDetail; stop: PlanStop; busy:
           <StatusPill kind="geocode" status={stop.geocodeStatus} />
         )}
       </div>
-      {failure ? <ErrorBanner key={tries} title={messageFor(failure)} /> : null}
+      {failure ? <ErrorBanner key={tries} repeat={repeat} title={messageFor(failure)} /> : null}
       <TextField
         label={g.address}
         maxLength={500}
@@ -448,5 +455,21 @@ function CopiedBanner({ notice, onClose }: { notice: CopiedNotice; onClose: () =
         {vi.planCopy.close}
       </Button>
     </section>
+  );
+}
+
+/**
+ * The plan's screen changes in place (finding coordinates → optimized result → tracking): the new one comes in as a
+ * page does (OWNER_UI_REDESIGN §6.2 CĐ2b: fades in and rises 12 px), so the change is seen, not a jump. Not on the
+ * first view: the page itself has just come in.
+ */
+function ViewSwitch({ kind, children }: { kind: string; children: ReactNode }) {
+  const [first] = useState(kind);
+  const [moved, setMoved] = useState(false);
+  if (!moved && kind !== first) setMoved(true);
+  return (
+    <div key={kind} className={moved ? 'pw-view-switch is-new' : 'pw-view-switch'}>
+      {children}
+    </div>
   );
 }

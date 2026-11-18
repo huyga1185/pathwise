@@ -464,3 +464,17 @@ Không làm trong G4: chi tiết kế hoạch, giao việc, huỷ kế hoạch, 
 | 7 | Hộp chọn vị trí (phóng to để đặt ghim) vẫn chưa có vòng xoay | Ô "Tìm địa chỉ" (`PinPicker`, dùng cả ở hộp chọn vị trí và trang Cửa hàng) đổi gợi ý thành chữ tĩnh "Đang tìm…" trong lúc tìm | Gợi ý trong lúc tìm là `ActivityText` "Đang tìm địa chỉ…" (HIG Progress indicators: vòng xoay cho việc không biết thời gian, mô tả cụ thể — *"Avoid vague terms"*), hiện sau 0,3 s (HIG Loading), dòng gợi ý giữ chiều cao. Đo: tìm trả lời sau 1,5 s → 0,15 s chưa hiện, 0,85 s hiện vòng xoay + chữ, có kết quả thì về gợi ý thường |
 | 8 | "Tìm lại toạ độ" (còn N điểm chưa có toạ độ) đứng yên; phải có dấu hiệu app đang chạy | **Đọc lại docs (lần trước đọc thiếu):** APPLE_CHECKLIST **B-4** — *"Thao tác chưa xong ngay thì nút hiện vòng xoay"* (HIG Buttons: *"Configure a button to display an activity indicator when you need to provide feedback about an action that doesn't instantly complete. Displaying an activity indicator within a button…"*, nhãn có thể đổi như *"Checkout" → "Checking out…"*) — nhưng `Button busy` chỉ làm mờ nút, không có vòng xoay (lệch ở mọi nút `busy`); vòng trước tao còn đặt chỉ báo **cạnh** nút thay vì **trong** nút. HIG Progress indicators macOS: *"Avoid labeling a spinning progress indicator… a label is usually unnecessary"* (phần chung: *"If it's helpful, display a description"*). Thanh tiến độ đứng yên ~2 s giữa hai lần đọc (*"Keep progress indicators moving"*). WCAG 2.2.2 Note 4: hoạt ảnh lúc tải là cần thiết khi không có nó người dùng tưởng app treo | Chủ dự án chọn: **chữ chỉ trong nút**, nơi khác vòng xoay không chữ; **cả hai** cho thanh tiến độ. `Button busy` (+ `busyLabel`): sau 0,3 s vòng xoay + nhãn bận hiện trong nút (hai nhãn chung một ô nên nút không đổi bề rộng), nút không tắt (không nháy) mà không nhận bấm (`aria-disabled`, `aria-busy`); bỏ chỉ báo cạnh nút; "Tìm lại địa chỉ này", "Lưu toạ độ", "Tìm lại toạ độ" → "Đang tìm toạ độ…" / "Đang lưu toạ độ…". `ActivityText` không hiện chữ (chữ là tên cho trình đọc màn hình). Thanh tìm toạ độ có vòng xoay luôn quay cạnh; lần đọc lại đầu sau 0,5 s rồi 2 s (UX_BRIEF: 2–3 s). Đo: nút xoay từ 0,3 s, thanh + vòng xoay khi server nhận, đọc lại +0,52 s rồi +2 s |
 
+### 9.6 Chuyển cảnh trong luồng kế hoạch (2026-11-18)
+
+Chủ dự án: phần lớn luồng chưa có chuyển cảnh. Theo HIG Motion (*"Add motion purposefully"*, *"brevity and precision"*, *"Let people cancel motion"*, *"avoid adding motion to UI interactions that occur frequently"*) và các chuyển động đã chốt của dự án, không đặt kiểu mới:
+
+| Chỗ | Chuyển động | Theo |
+|---|---|---|
+| Màn của kế hoạch đổi tại chỗ (tìm toạ độ → kết quả tối ưu → theo dõi) | Màn mới mờ vào, nhô lên 12px, 0,28 s; không chạy ở màn đầu (trang đã có chuyển cảnh) | §6.2 CĐ2b |
+| Khối xuất hiện: thông báo lỗi/thông tin, thanh tiến độ, "Còn N điểm chưa có toạ độ", "Còn N ô cần sửa", "Đã thêm N điểm từ file", thông báo sao chép | Mờ vào, trồi 10px, 0,32 s | G2.10 |
+| Cùng thông báo lỗi nói lại sau một lần thử | Không chạy lại (`ErrorBanner repeat`) — chạy lại là nháy (§9.5 #2) | §9.5 |
+| Chọn điểm khác, thêm dòng | Không chuyển động | HIG Motion: thao tác lặp lại thường xuyên |
+| Giảm chuyển động | Chỉ mờ | §6.2 CĐ6 |
+
+Đo (`getAnimations`): bấm "Tìm lại toạ độ" → thanh tiến độ và khối "Còn N điểm…" chạy `pw-result-in` khi đổi chỗ cho nhau.
+
