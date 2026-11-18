@@ -739,6 +739,20 @@ export const vi = {
     reason: (text: string) => `Lý do: ${text}`,
     mapLabel: 'Bản đồ kết quả',
     pickHint: 'Chọn một điểm để xem kết quả.',
+    /** G5 (OWNER_UI_REDESIGN §10, G5-Q12–Q15). */
+    allRoutes: 'Tất cả tuyến',
+    planBar: (parts: string) => `Tiến độ cả kế hoạch: ${parts}`,
+    driverOpen: (driver: string) => `${driver}: xem tài xế`,
+    card: {
+      driver: 'Tài xế',
+      vehicle: 'Xe',
+      location: 'Vị trí',
+      accuracy: 'Sai số',
+      speed: 'Tốc độ',
+      progress: 'Tiến độ',
+      next: 'Điểm kế tiếp',
+      phone: 'Điện thoại',
+    },
   },
   location: {
     legend: 'Vị trí tài xế (mũi tên chỉ hướng đi)',

@@ -550,6 +550,10 @@ Phạm vi (SCREENS.md, `/plans/:id` là một route, màn chọn theo trạng th
 | G5-Q9 | Tổng quan trong panel | **Một dòng tóm tắt** thay 4 thẻ số (G5.5). |
 | G5-Q10 | Điểm không xếp được | **Nhóm "Chưa xếp tuyến"** trong panel, màu `signal` (cần chú ý, P-76), không nền đỏ vì không phải lỗi (G5.10). |
 | G5-Q11 | Đặt ghim ở màn tìm toạ độ | **Trên bản đồ lớn**; bỏ bản đồ nhỏ và hộp "Phóng to bản đồ" (G5.15). |
+| G5-Q12 | Nút màn theo dõi | **Chỉ nút …**: Sao chép, Huỷ kế hoạch (đỏ, cuối, chỉ khi đã giao việc); bỏ "Về danh sách kế hoạch" (nút quay lại đã làm việc đó). |
+| G5-Q13 | Tổng quan tiến độ | **Dòng tóm tắt + thanh chung** nhiều màu cho cả kế hoạch (chữ đi kèm màu, WCAG 1.4.1). |
+| G5-Q14 | Bấm vị trí tài xế | **Thẻ tài xế** (như thẻ điểm): tài xế, xe, vị trí cập nhật lúc nào, tiến độ, điểm kế tiếp, nút gọi. |
+| G5-Q15 | Chú giải màu bản đồ theo dõi | **Trong panel, dưới tóm tắt** (một dòng nhỏ). |
 
 ### 10.3 Thiết kế
 
@@ -572,7 +576,7 @@ Phạm vi (SCREENS.md, `/plans/:id` là một route, màn chọn theo trạng th
 | G5.15 | Tìm toạ độ | Danh sách điểm (hàng; điểm lỗi nổi, vòng xoay khi đang tìm) trong panel/sheet; thanh tiến độ, khối "Còn N điểm…" (nền đỏ nhạt), "Chưa có tài xế…" ở đầu panel; **sửa điểm = thẻ điểm** (G5.9) có ô địa chỉ, "Tìm lại địa chỉ này", đặt ghim **trực tiếp trên bản đồ lớn** (G5-Q11; bỏ bản đồ nhỏ và hộp "Phóng to bản đồ" — bản đồ đã phủ trang) | §9; G5-Q2 |
 | G5.16 | Hộp thoại cũ | Bỏ `Dialog` cũ khỏi trang kế hoạch (giao việc → Sheet, huỷ → Alert, phóng to bản đồ → không cần) | §9.5 (để G5) |
 
-Chưa chốt, hỏi khi tới phần đó: nội dung nhóm nút màn theo dõi theo từng trạng thái; thanh tiến độ chung ở theo dõi; điện thoại khi bàn phím mở trong thẻ sửa điểm (sheet lên nấc cao?).
+Chưa chốt, hỏi khi tới phần đó: điện thoại khi bàn phím mở trong thẻ sửa điểm (sheet lên nấc cao?).
 
 ### 10.4 Thứ tự làm
 
@@ -588,5 +592,6 @@ Chưa chốt, hỏi khi tới phần đó: nội dung nhóm nút màn theo dõi 
 
 - **Bước 1–2 xong:** `MapStage` (`shared/ui/MapStage.tsx`): bản đồ phủ vùng nội dung (trang không đệm, không cuộn), panel kính 460px (rộng), sheet kính ba nấc trên tab bar (điện thoại; grabber bấm chuyển nấc, mũi tên lên/xuống, kéo; nấc thấp đo theo phần đầu đánh dấu `data-peek`); bản đồ canh khung chừa phần panel/sheet che (`RouteMap inset`, `staged` bỏ nút mở rộng và chú giải); chú thích bản quyền bản đồ trên nấc thấp của sheet 10px (HIG Maps). Màn kết quả trong `MapStage`: đầu panel (quay lại, tên, dòng phụ, dòng tóm tắt, nút … / Chỉnh tay / Giao việc), nhóm tuyến (màu tuyến, thu gọn), hàng điểm hai dòng, thẻ điểm (focus vào tiêu đề, quay lại trả focus về hàng), nhóm "Chưa xếp tuyến". Nhóm trong panel bo 8: panel bo 16 đệm 16 nên bán kính đồng tâm là 0 → bán kính dự phòng (S1/S2), khác nhóm bo 16 ở cấp trang. Chỉnh tay và hộp thoại tạm giữ như cũ trong panel (bước 3, 5).
 - **Bước 3 xong:** giao việc là **Sheet** "Giao việc" (Huỷ / Giao việc hoặc "Vẫn giao việc" khi còn vi phạm; câu hỏi "Giao việc cho N tài xế?" là dòng đầu thân sheet — tiêu đề < 15 ký tự như G4; trùng ca biến sheet thành "Trùng ca làm" với link kế hoạch kia và "Sửa phân công"); huỷ kế hoạch là **Alert** với nút "Huỷ" và "Huỷ kế hoạch" đỏ (HIG Alerts: *"Always use the title "Cancel" for a button that cancels an alert's action"*; lỗi nói trong lời nhắn); "Huỷ" khi đang chỉnh tay có thay đổi là **action sheet** "Bỏ thay đổi" / "Tiếp tục chỉnh" (HIG Alerts: *"Use an action sheet — not an alert — to offer choices related to an intentional action"*), có dòng tiêu đề + lời nhắn như iOS (cũng là tên trợ năng); "Tối ưu lại?" và "Rời trang khi chưa lưu?" là Alert. Màn kết quả và theo dõi không còn dùng `Dialog` cũ.
+- **Bước 4 xong:** màn theo dõi trong `MapStage`: đầu panel có thanh tiến độ chung nhiều màu + dòng "2/23 đã giao · 1 không giao được · …" (G5-Q13), chú giải màu một dòng (G5-Q15), nút … ở cuối hàng tiêu đề (Sao chép, Huỷ kế hoạch khi đã giao việc; G5-Q12); mỗi tuyến một nhóm có pill trạng thái tuyến của server, thanh tiến độ, dòng vị trí (bấm được khi có vị trí → thẻ tài xế); hàng điểm có pill kết quả và lý do không giao được; **thẻ tài xế** (G5-Q14: xe, vị trí cập nhật lúc nào, sai số, tốc độ, tiến độ, điểm kế tiếp, điện thoại) mở từ mũi tên trên bản đồ hoặc dòng vị trí; "Về danh sách kế hoạch" bỏ. Đo 1440 / 390px với dữ liệu mẫu đang giao: không lỗi trang.
 - Đo 1440 / 390px (dữ liệu mẫu): trang không cuộn; nấc cao dưới thanh trên (top 84 > 60), nấc thấp chỉ còn phần đầu; số thứ tự màu tuyến; không lỗi trang; axe sạch.
 

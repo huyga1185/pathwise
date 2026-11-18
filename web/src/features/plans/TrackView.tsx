@@ -1,25 +1,16 @@
-import { useState } from 'react';
-import { Link } from 'react-router';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { DriverIcon, RouteMap, routeColour, type MapDriver } from '@/platform/map';
 import { formatDateLong, formatPhone, formatTime } from '@/shared/format';
 import { vi } from '@/shared/i18n/vi';
 import { BackLink } from '@/shared/ui/BackLink';
-import { Button, buttonClass, StatusPill } from '@/shared/ui';
+import { MapStage, StatusPill, type RowMenuItem } from '@/shared/ui';
+import { ChevronLeftIcon } from '@/shared/ui/icons';
 import { useStoreReadOnly } from '@/data/meQuery';
 import { CopySheet } from './CopySheet';
 import { CancelAlert } from './PlanDialogs';
+import { MoreMenu, RouteGroup, StopCard } from './PlanStage';
 import { allStops, useDriverLocations, type DriverLocation, type PlanDetail, type PlanStop } from './planApi';
-import { describeSelection } from './ResultView';
-import {
-  driverName,
-  MAP_LABELS,
-  mapData,
-  RouteBadge,
-  stopPlace,
-  stopTitle,
-  vehicleText,
-  type PlanRoute,
-} from './planShared';
+import { driverName, MAP_LABELS, mapData, stopTitle, vehicleText, type PlanRoute } from './planShared';
 
 const t = vi.track;
 const loc = vi.location;
@@ -57,30 +48,6 @@ function locationLine(route: PlanRoute, found: DriverLocation | undefined, timeZ
   return { located: false, text: why + phone };
 }
 
-/** What the line under the map says about a selected driver. */
-function describeDriver(route: PlanRoute, found: DriverLocation, timeZone: string, now: number) {
-  const position = found.location;
-  if (!position) return null;
-  const ago = minutesAgo(position.recordedAt, now);
-  const next = route.stops.find((stop) => stop.status === 'PENDING');
-  const speed =
-    position.speedMps === null
-      ? ''
-      : position.speedMps === 0
-        ? loc.still
-        : loc.speed(Math.round(position.speedMps * 3.6));
-  return {
-    title: loc.title(driverName(route), route.vehicle.name, formatTime(position.recordedAt, timeZone), ago),
-    detail: [
-      position.accuracyMeters === null ? '' : loc.accuracy(Math.round(position.accuracyMeters)),
-      speed,
-      next ? loc.next(stopTitle(next)) : '',
-    ]
-      .filter(Boolean)
-      .join(' · '),
-  };
-}
-
 /**
  * Prototype "Theo dõi tiến độ" (SCREENS §1.1): counts by result, one block per route with the server's route status
  * (`routes[].status`, T45: never worked out here), a bar split by result, the reason of a failed stop, the map coloured
@@ -114,8 +81,6 @@ export function TrackView({ plan, updatedAt }: { plan: PlanDetail; updatedAt: nu
     ];
   });
   const routed = plan.routes.flatMap((route) => route.stops);
-  const total = countByResult(routed);
-  const infeasible = plan.unassignedStops.filter((stop) => stop.dropReason === 'INFEASIBLE');
   const date = formatDateLong(plan.planDate);
   const headline = live
     ? t.live(date, formatTime(new Date(updatedAt).toISOString(), plan.timezone))
@@ -123,43 +88,84 @@ export function TrackView({ plan, updatedAt }: { plan: PlanDetail; updatedAt: nu
       ? date
       : t.ended(date);
   const { routes, unassigned } = mapData(plan, true);
-  const selection = describeSelection(plan, allStops(plan).find((stop) => stop.id === selectedId) ?? null);
   const selected = allStops(plan).find((stop) => stop.id === selectedId);
   const selectedRoute = plan.routes.find((route) => driverKey(route.id) === selectedId);
   const selectedLocation = selectedRoute ? locationOf(selectedRoute) : undefined;
-  const driverSelection =
-    selectedRoute && selectedLocation ? describeDriver(selectedRoute, selectedLocation, plan.timezone, now) : null;
+
+  const moreItems: RowMenuItem[] = readOnly
+    ? []
+    : [
+        { label: vi.planCopy.action, onSelect: () => setCopying(true) },
+        ...(plan.status === 'PUBLISHED'
+          ? [{ label: vi.result.cancel, destructive: true, onSelect: () => setCancelling(true) }]
+          : []),
+      ];
+  const unplaced = plan.unassignedStops;
+  const back = () => {
+    const id = selectedId;
+    setSelectedId(null);
+    // Back to the list: focus returns to what opened the card (WCAG 2.4.3).
+    window.requestAnimationFrame(() =>
+      document
+        .querySelector<HTMLElement>(typeof id === 'string' ? `[data-driver="${id}"]` : `[data-stop="${id}"]`)
+        ?.focus(),
+    );
+  };
 
   return (
-    <section className="pw-page-section" aria-labelledby="plan-title">
-      <div className="pw-plans-head">
-        <div className="pw-plans-intro">
-          <BackLink to="/plans" label={vi.plans.title} />
-          <div className="pw-plan-title">
-            <h1 id="plan-title" className="pw-page-title">
-              {plan.name}
-            </h1>
-            <StatusPill kind="plan" status={plan.status} />
-          </div>
-          <p className="pw-muted">{headline}</p>
+    <MapStage
+      label={vi.result.panel}
+      map={(inset) => (
+        <RouteMap
+          staged
+          inset={inset}
+          depot={{ lat: plan.depot.lat, lon: plan.depot.lon }}
+          routes={routes}
+          unassigned={unassigned}
+          drivers={drivers}
+          selectedId={selectedId}
+          onSelect={(id) => setSelectedId(typeof id === 'string' && id.startsWith('driver-') ? id : Number(id))}
+          labels={MAP_LABELS}
+        />
+      )}
+    >
+      <div className="pw-stage-head" data-peek>
+        <BackLink to="/plans" label={vi.plans.title} />
+        <div className="pw-plan-title">
+          <h1 id="plan-title" className="pw-page-title pw-stage-title">
+            {plan.name}
+          </h1>
+          <StatusPill kind="plan" status={plan.status} />
+          {/* The only action here: at the trailing end of the title row (HIG Toolbars), not a row of its own. */}
+          <span className="pw-stage-title-more">
+            <MoreMenu items={moreItems} />
+          </span>
         </div>
-        <div className="pw-plan-actions">
-          {!readOnly ? (
-            <Button variant="secondary" onClick={() => setCopying(true)}>
-              {vi.planCopy.action}
-            </Button>
+        <p className="pw-muted">{headline}</p>
+        {/* The whole plan's progress: a bar by result and the same in words (G5-Q13; WCAG 1.4.1). */}
+        <ResultBar stops={routed} label={t.planBar} />
+        <p className="pw-stage-summary pw-tabular">{resultParts(routed).join(' · ')}</p>
+        {/* What the map's colours mean (G5-Q15). */}
+        <ul className="pw-stage-legend" aria-label={vi.map.legend}>
+          <li>
+            <span className="pw-dot pw-seg-ok" aria-hidden="true" />
+            {t.part.DELIVERED}
+          </li>
+          <li>
+            <span className="pw-dot pw-seg-fail" aria-hidden="true" />
+            {t.part.FAILED}
+          </li>
+          <li>
+            <span className="pw-dot pw-seg-skip" aria-hidden="true" />
+            {t.part.SKIPPED}
+          </li>
+          {live ? (
+            <li>
+              <DriverIcon />
+              {loc.legend}
+            </li>
           ) : null}
-          {plan.status === 'PUBLISHED' ? (
-            <Button variant="quiet" onClick={() => setCancelling(true)}>
-              {vi.result.cancel}
-            </Button>
-          ) : null}
-          {plan.status === 'CANCELLED' ? (
-            <Link className={buttonClass('secondary')} to="/plans">
-              {vi.result.backToList}
-            </Link>
-          ) : null}
-        </div>
+        </ul>
       </div>
 
       {copying ? <CopySheet planId={plan.id} planName={plan.name} open onClose={() => setCopying(false)} /> : null}
@@ -171,98 +177,68 @@ export function TrackView({ plan, updatedAt }: { plan: PlanDetail; updatedAt: nu
         </section>
       ) : null}
 
-      <section className="pw-stats" aria-label={t.results}>
-        <div className="pw-stat">
-          <StatusPill kind="stop" status="DELIVERED" />
-          <span className="pw-stat-value">{t.delivered(total.DELIVERED, routed.length)}</span>
-        </div>
-        <div className="pw-stat">
-          <StatusPill kind="stop" status="FAILED" />
-          <span className="pw-stat-value">{t.points(total.FAILED)}</span>
-        </div>
-        <div className="pw-stat">
-          <StatusPill kind="stop" status="SKIPPED" />
-          <span className="pw-stat-value">{t.points(total.SKIPPED)}</span>
-        </div>
-        {infeasible.length > 0 ? (
-          <div className="pw-stat">
-            <StatusPill kind="dropReason" status="INFEASIBLE" />
-            <span className="pw-stat-value">
-              {t.infeasible(infeasible.length, infeasible.map((stop) => stop.label).join(', '))}
-            </span>
-          </div>
-        ) : null}
-      </section>
-
-      <div className="pw-result-layout">
-        <div className="pw-result-routes">
-          {plan.routes.map((route, index) => (
-            <TrackRoute
-              key={route.id}
-              route={route}
-              index={index}
-              timeZone={plan.timezone}
-              selectedId={selectedId}
-              onSelect={setSelectedId}
-              location={locations ? locationLine(route, locationOf(route), plan.timezone, now) : null}
+      {selectedRoute ? (
+        <DriverCard route={selectedRoute} found={selectedLocation} timeZone={plan.timezone} now={now} onBack={back} />
+      ) : selected ? (
+        <StopCard plan={plan} stop={selected} onBack={back} />
+      ) : (
+        <div className="pw-stage-list">
+          {plan.routes.map((route, index) => {
+            const location = locations ? locationLine(route, locationOf(route), plan.timezone, now) : null;
+            const located = Boolean(locationOf(route)?.location) && route.status !== 'COMPLETED';
+            return (
+              <RouteGroup
+                key={route.id}
+                route={route}
+                index={index}
+                summary={resultParts(route.stops).join(' · ')}
+                extra={
+                  <div className="pw-stage-group-extra">
+                    <StatusPill kind="route" status={route.status} />
+                    <ResultBar stops={route.stops} label={(parts) => parts} />
+                    {location ? (
+                      located ? (
+                        <button
+                          type="button"
+                          className="pw-track-loc pw-link-button"
+                          data-driver={driverKey(route.id)}
+                          aria-label={t.driverOpen(driverName(route))}
+                          onClick={() => setSelectedId(driverKey(route.id))}
+                        >
+                          <DriverArrow index={index} />
+                          {location.text}
+                        </button>
+                      ) : (
+                        <p className="pw-track-loc pw-track-loc-none">{location.text}</p>
+                      )
+                    ) : null}
+                  </div>
+                }
+                stops={route.stops}
+                trailing={(stop) => (
+                  <>
+                    <StatusPill kind="stop" status={stop.status} />
+                    {stop.status === 'FAILED' && stop.failureReason ? (
+                      <span className="pw-track-reason">{t.reason(stop.failureReason)}</span>
+                    ) : null}
+                  </>
+                )}
+                onOpen={(stop) => setSelectedId(stop.id)}
+              />
+            );
+          })}
+          {unplaced.length > 0 ? (
+            <RouteGroup
+              title={vi.result.unassignedGroup}
+              tone="signal"
+              summary={vi.result.unassignedLead}
+              stops={unplaced}
+              trailing={(stop) => <StatusPill kind="dropReason" status={stop.dropReason ?? 'INFEASIBLE'} />}
+              onOpen={(stop) => setSelectedId(stop.id)}
             />
-          ))}
+          ) : null}
         </div>
-        <section className="pw-result-map" aria-label={t.mapLabel}>
-          <RouteMap
-            depot={{ lat: plan.depot.lat, lon: plan.depot.lon }}
-            routes={routes}
-            unassigned={unassigned}
-            drivers={drivers}
-            selectedId={selectedId}
-            onSelect={(id) => setSelectedId(typeof id === 'string' && id.startsWith('driver-') ? id : Number(id))}
-            labels={MAP_LABELS}
-          />
-          <div role="status" className="pw-map-selection">
-            {driverSelection ? (
-              <>
-                <strong>{driverSelection.title}</strong>
-                <span className="pw-muted">{driverSelection.detail}</span>
-              </>
-            ) : selection && selected ? (
-              <>
-                <strong>{selection.title}</strong>
-                <span className="pw-muted">
-                  {[
-                    selection.detail,
-                    t.part[selected.status],
-                    selected.failureReason ? t.reason(selected.failureReason) : '',
-                  ]
-                    .filter(Boolean)
-                    .join(' · ')}
-                </span>
-              </>
-            ) : (
-              <span className="pw-muted">{t.pickHint}</span>
-            )}
-          </div>
-          <ul className="pw-result-legend" aria-label={vi.map.legend}>
-            <li>
-              <span className="pw-dot pw-seg-ok" aria-hidden="true" />
-              {t.part.DELIVERED}
-            </li>
-            <li>
-              <span className="pw-dot pw-seg-fail" aria-hidden="true" />
-              {t.part.FAILED}
-            </li>
-            <li>
-              <span className="pw-dot pw-seg-skip" aria-hidden="true" />
-              {t.part.SKIPPED}
-            </li>
-            {live ? (
-              <li>
-                <DriverIcon />
-                {loc.legend}
-              </li>
-            ) : null}
-          </ul>
-        </section>
-      </div>
+      )}
 
       <CancelAlert
         plan={plan}
@@ -270,31 +246,23 @@ export function TrackView({ plan, updatedAt }: { plan: PlanDetail; updatedAt: nu
         onClose={() => setCancelling(false)}
         onCancelled={() => setCancelling(false)}
       />
-    </section>
+    </MapStage>
   );
 }
 
-function TrackRoute({
-  route,
-  index,
-  timeZone,
-  selectedId,
-  onSelect,
-  location,
-}: {
-  route: PlanRoute;
-  index: number;
-  timeZone: string;
-  selectedId: number | string | null;
-  onSelect: (id: number) => void;
-  location: { located: boolean; text: string } | null;
-}) {
-  const count = countByResult(route.stops);
-  const parts = OUTCOMES.filter((outcome) => outcome === 'DELIVERED' || count[outcome] > 0).map((outcome) =>
+/** Results of some stops in words: "2/23 đã giao · 1 không giao được · 1 bỏ qua". */
+function resultParts(stops: PlanStop[]): string[] {
+  const count = countByResult(stops);
+  return OUTCOMES.filter((outcome) => outcome === 'DELIVERED' || count[outcome] > 0).map((outcome) =>
     outcome === 'DELIVERED'
-      ? `${count.DELIVERED}/${route.stops.length} ${t.part.DELIVERED}`
+      ? `${count.DELIVERED}/${stops.length} ${t.part.DELIVERED}`
       : `${count[outcome]} ${t.part[outcome]}`,
   );
+}
+
+/** A bar split by result; its name says the same in words (the colours never stand alone). */
+function ResultBar({ stops, label }: { stops: PlanStop[]; label: (parts: string) => string }) {
+  const count = countByResult(stops);
   const segments: Array<[Outcome, string]> = [
     ['DELIVERED', 'pw-seg-ok'],
     ['FAILED', 'pw-seg-fail'],
@@ -302,80 +270,76 @@ function TrackRoute({
     ['PENDING', 'pw-seg-wait'],
   ];
   return (
-    <section className="pw-route-block" aria-labelledby={`track-${route.id}`}>
-      <div className="pw-route-block-head pw-track-head">
-        <div className="pw-track-title">
-          <RouteBadge index={index} />
-          <h2 id={`track-${route.id}`}>{driverName(route)}</h2>
-          <span className="pw-muted">{vehicleText(route)}</span>
-          <span className="pw-grow" />
-          <StatusPill kind="route" status={route.status} />
-        </div>
-        <div className="pw-track-bar" role="img" aria-label={parts.join(', ')}>
-          {segments.map(([outcome, className]) =>
-            count[outcome] > 0 ? (
-              <span key={outcome} className={className} style={{ flexGrow: count[outcome] }} />
-            ) : null,
-          )}
-        </div>
-        <p className="pw-muted pw-tabular">{parts.join(' · ')}</p>
-        {location ? (
-          <p className={location.located ? 'pw-track-loc' : 'pw-track-loc pw-track-loc-none'}>
-            {location.located ? <DriverArrow index={index} /> : null}
-            {location.text}
-          </p>
-        ) : null}
-      </div>
-      <div className="pw-table-wrap pw-route-table">
-        <table className="pw-table">
-          <caption className="pw-visually-hidden">{t.caption(driverName(route))}</caption>
-          <thead>
-            <tr>
-              <th scope="col" className="pw-num pw-col-seq">
-                {vi.result.sequence}
-              </th>
-              <th scope="col">{vi.result.order}</th>
-              <th scope="col">{vi.result.address}</th>
-              <th scope="col" className="pw-num">
-                {vi.result.eta}
-              </th>
-              <th scope="col">{t.result}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {route.stops.map((stop) => (
-              <tr
-                key={stop.id}
-                className={stop.id === selectedId ? 'pw-row-clickable pw-row-selected' : 'pw-row-clickable'}
-                onClick={() => onSelect(stop.id)}
-              >
-                <td className="pw-num">{stop.sequence}</td>
-                <td>
-                  <button
-                    type="button"
-                    className="pw-stop-pick"
-                    aria-pressed={stop.id === selectedId}
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      onSelect(stop.id);
-                    }}
-                  >
-                    {stopTitle(stop)}
-                  </button>
-                </td>
-                <td>{stop.address ?? <span className="pw-muted">{stopPlace(stop)}</span>}</td>
-                <td className="pw-num">{stop.plannedArrival ? formatTime(stop.plannedArrival, timeZone) : '—'}</td>
-                <td>
-                  <StatusPill kind="stop" status={stop.status} />
-                  {stop.status === 'FAILED' && stop.failureReason ? (
-                    <div className="pw-track-reason">{t.reason(stop.failureReason)}</div>
-                  ) : null}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+    <div className="pw-track-bar" role="img" aria-label={label(resultParts(stops).join(', '))}>
+      {segments.map(([outcome, className]) =>
+        count[outcome] > 0 ? <span key={outcome} className={className} style={{ flexGrow: count[outcome] }} /> : null,
+      )}
+    </div>
+  );
+}
+
+/**
+ * A driver's card (G5-Q14), opened from their arrow on the map or the location line of their route: where and when,
+ * how sure and how fast, the route's progress and the next stop, a call. Back returns to all routes.
+ */
+function DriverCard({
+  route,
+  found,
+  timeZone,
+  now,
+  onBack,
+}: {
+  route: PlanRoute;
+  found: DriverLocation | undefined;
+  timeZone: string;
+  now: number;
+  onBack: () => void;
+}) {
+  const heading = useRef<HTMLHeadingElement>(null);
+  useEffect(() => {
+    heading.current?.focus({ preventScroll: true });
+  }, [route.id]);
+  const c = t.card;
+  const position = found?.location;
+  const next = route.stops.find((stop) => stop.status === 'PENDING');
+  const rows: Array<[string, ReactNode]> = [
+    [c.vehicle, vehicleText(route)],
+    [
+      c.location,
+      position
+        ? loc.updated(minutesAgo(position.recordedAt, now), formatTime(position.recordedAt, timeZone))
+        : (locationLine(route, found, timeZone, now)?.text ?? '—'),
+    ],
+  ];
+  if (position?.accuracyMeters != null) rows.push([c.accuracy, `${Math.round(position.accuracyMeters)} m`]);
+  if (position?.speedMps != null)
+    rows.push([c.speed, position.speedMps === 0 ? loc.still : loc.speed(Math.round(position.speedMps * 3.6))]);
+  rows.push([c.progress, resultParts(route.stops).join(' · ')]);
+  if (next) rows.push([c.next, stopTitle(next)]);
+  if (route.driver.phoneNumber)
+    rows.push([
+      c.phone,
+      <a key="phone" href={`tel:${route.driver.phoneNumber}`}>
+        {formatPhone(route.driver.phoneNumber)}
+      </a>,
+    ]);
+  return (
+    <section className="pw-stop-card" aria-labelledby={`driver-card-${route.id}`}>
+      <button type="button" className="pw-back-link pw-stop-card-back" onClick={onBack}>
+        <ChevronLeftIcon />
+        <span>{t.allRoutes}</span>
+      </button>
+      <h2 id={`driver-card-${route.id}`} ref={heading} tabIndex={-1} className="pw-stop-card-title">
+        {driverName(route)}
+      </h2>
+      <dl className="pw-stage-group pw-stop-card-facts">
+        {rows.map(([term, value]) => (
+          <div key={term}>
+            <dt>{term}</dt>
+            <dd>{value}</dd>
+          </div>
+        ))}
+      </dl>
     </section>
   );
 }

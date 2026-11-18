@@ -215,7 +215,7 @@ describe('accessibility', () => {
 
   it.each([
     ['kết quả tối ưu', 'plan-detail-optimized', 'Tuyến và điểm giao'],
-    ['theo dõi tiến độ', 'plan-detail-completed', 'Kết quả'],
+    ['theo dõi tiến độ', 'plan-detail-completed', 'Tuyến và điểm giao'],
   ])('màn %s không có lỗi axe', async (_name, file, region) => {
     server.use(
       http.get(`${API}/plans/83`, () => ok(sample(file).data)),

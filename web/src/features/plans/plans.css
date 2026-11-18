@@ -1550,3 +1550,45 @@ html:has(.pw-form-bar) {
   margin: 0;
   overflow-wrap: anywhere;
 }
+/* Tracking (G5.11): the colour legend in the header (G5-Q15), each route's status, bar and location under its head. */
+.pw-stage-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--ink-muted);
+  font-size: 0.8125rem;
+}
+.pw-stage-legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.pw-stage-legend svg {
+  width: 16px;
+  height: 16px;
+}
+.pw-stage-group-extra {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 0 12px 10px;
+}
+.pw-stage-group-extra .pw-track-bar {
+  align-self: stretch;
+}
+.pw-stage-head .pw-track-bar {
+  margin-top: 4px;
+}
+.pw-stage-title-more {
+  margin-left: auto;
+}
+.pw-stage-head .pw-plan-title {
+  flex-wrap: nowrap;
+}
+.pw-stage-head .pw-plan-title .pw-page-title {
+  min-width: 0;
+}

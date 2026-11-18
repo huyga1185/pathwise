@@ -33,7 +33,7 @@ import { CopySheet } from './CopySheet';
 import { MoreMenu, RouteGroup, StopCard } from './PlanStage';
 import { CancelAlert, PublishSheet, routesWithStops } from './PlanDialogs';
 import { allStops, useJob, usePlanApi, type Job, type PlanDetail, type PlanStop } from './planApi';
-import { driverName, loadText, MAP_LABELS, mapData, spanText, stopPlace, stopTitle, windowText } from './planShared';
+import { loadText, MAP_LABELS, mapData, spanText } from './planShared';
 
 const r = vi.result;
 const m = vi.manual;
@@ -368,18 +368,4 @@ export function ResultView({
       {copying ? <CopySheet planId={plan.id} planName={plan.name} open onClose={() => setCopying(false)} /> : null}
     </MapStage>
   );
-}
-
-/** The line under the map for the stop selected in a table or on the map. */
-export function describeSelection(plan: PlanDetail, stop: PlanStop | null): { title: string; detail: string } | null {
-  if (!stop) return null;
-  const route = plan.routes.find((item) => item.stops.some((candidate) => candidate.id === stop.id));
-  return {
-    title: route ? r.selection(driverName(route), stop.sequence, stopTitle(stop)) : `${r.noRoute} · ${stopTitle(stop)}`,
-    detail: r.selectionDetail(
-      stopPlace(stop),
-      stop.plannedArrival ? formatTime(stop.plannedArrival, plan.timezone) : '',
-      windowText(stop),
-    ),
-  };
 }

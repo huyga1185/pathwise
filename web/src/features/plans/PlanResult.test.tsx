@@ -180,6 +180,7 @@ describe('Soạn plan — sau khi tối ưu', () => {
 
     expect(await screen.findByText('Kế hoạch đã huỷ.')).toBeInTheDocument();
     expect(body).toEqual({ version: 4 });
-    expect(screen.getByRole('link', { name: 'Về danh sách kế hoạch' })).toHaveAttribute('href', '/plans');
+    // No "Về danh sách kế hoạch" any more: the back button does it (G5-Q12).
+    expect(screen.queryByRole('link', { name: 'Về danh sách kế hoạch' })).not.toBeInTheDocument();
   });
 });
