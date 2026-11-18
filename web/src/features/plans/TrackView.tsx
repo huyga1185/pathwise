@@ -298,6 +298,8 @@ function DriverCard({
   const heading = useRef<HTMLHeadingElement>(null);
   useEffect(() => {
     heading.current?.focus({ preventScroll: true });
+    // The panel / sheet may be scrolled down the list: show the card from its top.
+    heading.current?.closest('section')?.scrollIntoView?.({ block: 'start' });
   }, [route.id]);
   const c = t.card;
   const position = found?.location;

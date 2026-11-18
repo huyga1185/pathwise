@@ -49,6 +49,7 @@ export function RouteGroup({
   onOpen,
   title,
   tone,
+  numbered = true,
 }: {
   route?: PlanRoute;
   index?: number;
@@ -60,6 +61,8 @@ export function RouteGroup({
   /** A group that is not a route ("Chưa xếp tuyến"). */
   title?: string;
   tone?: 'signal';
+  /** No sequence circle: stops not yet in a route's order (finding coordinates). */
+  numbered?: boolean;
 }) {
   const [open, setOpen] = useState(true);
   const heading = title ?? (route ? driverName(route) : '');
@@ -87,7 +90,7 @@ export function RouteGroup({
       </button>
       {extra}
       {open ? (
-        <ul className="pw-stage-rows" id={listId}>
+        <ul className={cx('pw-stage-rows', !numbered && 'is-plain')} id={listId}>
           {stops.map((stop) => (
             <li key={stop.id}>
               <button
@@ -97,9 +100,11 @@ export function RouteGroup({
                 aria-label={r.stopOpen(stopTitle(stop))}
                 onClick={() => onOpen(stop)}
               >
-                <span className={cx('pw-stage-seq', index !== undefined && `pw-marker-r${(index % 7) + 1}`)}>
-                  {stop.sequence ?? '–'}
-                </span>
+                {numbered ? (
+                  <span className={cx('pw-stage-seq', index !== undefined && `pw-marker-r${(index % 7) + 1}`)}>
+                    {stop.sequence ?? '–'}
+                  </span>
+                ) : null}
                 <span className="pw-stage-row-main">
                   <span className="pw-stage-row-title">{stopTitle(stop)}</span>
                   <span className="pw-stage-row-sub">
@@ -137,6 +142,8 @@ export function StopCard({
   const heading = useRef<HTMLHeadingElement>(null);
   useEffect(() => {
     heading.current?.focus({ preventScroll: true });
+    // The panel / sheet may be scrolled down the list: show the card from its top.
+    heading.current?.closest('section')?.scrollIntoView?.({ block: 'start' });
   }, [stop.id]);
   const route = plan.routes.find((item) => item.stops.some((candidate) => candidate.id === stop.id));
   const c = r.card;

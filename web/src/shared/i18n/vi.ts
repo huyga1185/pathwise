@@ -542,6 +542,7 @@ export const vi = {
       `Toạ độ: ${resolved} tìm thấy · ${provided} nhập sẵn · ${failed} không tìm thấy${pending ? ` · ${pending} đang tìm` : ''} · tổng ${total}`,
     retryAll: 'Tìm lại toạ độ',
     tableLabel: 'Điểm giao',
+    listSummary: (n: number) => `${n} điểm`,
     caption: 'Điểm giao của kế hoạch',
     order: 'Đơn · người nhận',
     address: 'Địa chỉ',

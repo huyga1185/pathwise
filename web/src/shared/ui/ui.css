@@ -3847,3 +3847,7 @@ html {
   font-size: 0.8125rem;
   color: var(--ink-muted);
 }
+/* Map buttons at the leading top (e.g. "Đặt ghim ở giữa bản đồ") clear of the panel on a wide window. */
+.pw-map-stage.is-wide .pw-map-actions {
+  left: calc(2 * var(--shell-gap) + 460px + 10px);
+}

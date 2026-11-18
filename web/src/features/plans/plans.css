@@ -1622,4 +1622,6 @@ html:has(.pw-form-bar) {
   margin-left: 80px;
   max-width: calc(100% - 80px);
 }
-
+.pw-stage-rows.is-plain > li + li .pw-stage-row::before {
+  left: 12px;
+}

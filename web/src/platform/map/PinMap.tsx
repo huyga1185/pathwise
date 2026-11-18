@@ -23,8 +23,11 @@ export function PinMap({
   readOnly,
   labels,
   className,
+  start: startAt,
 }: {
   value: LatLng | null;
+  /** Where to open without a pin (the depot), instead of the city's default centre. */
+  start?: LatLng;
   onChange?: (value: LatLng) => void;
   readOnly?: boolean;
   labels: PinMapLabels;
@@ -40,7 +43,7 @@ export function PinMap({
     }
   }, [map, value]);
 
-  const start = value ?? DEFAULT_CENTER;
+  const start = value ?? startAt ?? DEFAULT_CENTER;
   return (
     <MapFrame
       center={start}

@@ -347,3 +347,4 @@ Nhóm: (1) nghiệp vụ/hiểu sai yêu cầu · (2) implementation · (3) ki�
 | 2026-11-18 | branch `feat/owner-ui-g5` | — | G5 bước 3: giao việc là Sheet, huỷ kế hoạch / tối ưu lại / rời trang là Alert, bỏ chỉnh tay là action sheet (`OWNER_UI_REDESIGN.md` §10.5). |
 | 2026-11-18 | branch `feat/owner-ui-g5` | — | G5 bước 4: màn theo dõi trên bản đồ phủ trang — thanh tiến độ chung, chú giải trong panel, nút …, thẻ tài xế (`OWNER_UI_REDESIGN.md` §10.5). |
 | 2026-11-18 | branch `feat/owner-ui-g5` | — | G5 bước 5: chỉnh tay trong panel / sheet (tuyến xếp dọc, không bị cắt; điện thoại "Chuyển sang…" dưới tên điểm) (`OWNER_UI_REDESIGN.md` §10.5). |
+| 2026-11-18 | branch `feat/owner-ui-g5` | — | G5 bước 6: màn tìm toạ độ trên bản đồ phủ trang, thẻ sửa điểm, ghim trên bản đồ lớn, bỏ "Phóng to bản đồ" và `Dialog` cũ ở trang kế hoạch (`OWNER_UI_REDESIGN.md` §10.5). |
