@@ -23,7 +23,9 @@ function useModalFocus(open: boolean, ref: React.RefObject<HTMLElement | null>, 
       root?.querySelector<HTMLElement>('button:not([disabled])');
     first?.focus({ preventScroll: true });
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
+      // An Escape a popover inside already handled (a calendar, a menu, a time picker: they prevent its default)
+      // closes only that popover, not the sheet around it.
+      if (event.key === 'Escape' && !event.defaultPrevented) {
         event.preventDefault();
         escape.current();
       }
@@ -58,6 +60,8 @@ export interface SheetProps {
    * swipe still close the sheet. */
   onBack?: () => void;
   backLabel?: ReactNode;
+  /** A wide window: `large` for content that needs the room (a preview table); a phone's sheet is full width anyway. */
+  size?: 'regular' | 'large';
 }
 
 /**
@@ -84,6 +88,7 @@ export function Sheet({
   onClose,
   onBack,
   backLabel = 'Quay lại',
+  size = 'regular',
 }: SheetProps) {
   const titleId = useId();
   const formId = useId();
@@ -135,7 +140,7 @@ export function Sheet({
     >
       <div
         ref={panel}
-        className={cx('pw-sheet', closing && 'is-closing')}
+        className={cx('pw-sheet', size === 'large' && 'is-large', closing && 'is-closing')}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}

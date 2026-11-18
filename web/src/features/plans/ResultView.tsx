@@ -1,11 +1,12 @@
 import { useStoreReadOnly } from '@/data/meQuery';
 import { useState } from 'react';
-import { Link, useBlocker, useNavigate } from 'react-router';
+import { useBlocker, useNavigate } from 'react-router';
 import { ApiError } from '@/data/apiError';
 import { RouteMap } from '@/platform/map';
 import { jobMessageFor, messageFor } from '@/shared/errors';
 import { formatDateLong, formatDayTime, formatDistance, formatDuration, formatTime } from '@/shared/format';
 import { vi } from '@/shared/i18n/vi';
+import { BackLink } from '@/shared/ui/BackLink';
 import { Button, Dialog, ErrorBanner, ProgressBar, StatusPill } from '@/shared/ui';
 import { ManualBoard } from './ManualBoard';
 import {
@@ -19,7 +20,7 @@ import {
   violationText,
   type Draft,
 } from './manualEdit';
-import { CopyDialog } from './CopyDialog';
+import { CopySheet } from './CopySheet';
 import { CancelDialog, PublishDialog, routesWithStops } from './PlanDialogs';
 import { allStops, useJob, usePlanApi, type Job, type PlanDetail, type PlanStop } from './planApi';
 import {
@@ -150,9 +151,7 @@ export function ResultView({
     <section className="pw-page-section" aria-labelledby="plan-title">
       <div className="pw-plans-head">
         <div className="pw-plans-intro">
-          <Link to="/plans" className="pw-back-link">
-            {vi.plans.back}
-          </Link>
+          <BackLink to="/plans" label={vi.plans.title} />
           <div className="pw-plan-title">
             <h1 id="plan-title" className="pw-page-title">
               {plan.name}
@@ -372,7 +371,7 @@ export function ResultView({
       >
         <p>{m.leaveLead}</p>
       </Dialog>
-      {copying ? <CopyDialog planId={plan.id} planName={plan.name} open onClose={() => setCopying(false)} /> : null}
+      {copying ? <CopySheet planId={plan.id} planName={plan.name} open onClose={() => setCopying(false)} /> : null}
     </section>
   );
 }

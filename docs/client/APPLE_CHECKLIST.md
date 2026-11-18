@@ -100,7 +100,7 @@
 | B-1 | Hành động chính nổi bật bằng **kiểu** (màu nền), không bằng cỡ khác | [Apple] HIG Buttons: "Use style — not size — to visually distinguish the preferred choice" |
 | B-2 | Chữ trên nút ngắn, bắt đầu bằng động từ | [Apple] HIG Buttons: "consider starting the label with a verb" |
 | B-3 | Có nền/hình rõ ràng (trừ nút trong thanh, menu) | [Apple] HIG Buttons, phần visionOS: "Prefer buttons that have a discernible background shape and fill" (áp sang web vì không có câu tương đương chung) |
-| B-4 | Thao tác chưa xong ngay thì nút hiện vòng xoay (`busy`) | [Apple] HIG Buttons: "display an activity indicator" |
+| B-4 | Thao tác chưa xong ngay thì nút hiện vòng xoay **trong nút** (`busy`, nhãn bận `busyLabel`), sau 0,3 s để việc nhanh không nháy | [Apple] HIG Buttons: "display an activity indicator", "within a button", "a different label alongside the activity indicator"; *(trước 2026-11-18 `busy` chỉ làm mờ nút — đã sửa, OWNER_UI_REDESIGN §9.5 #8)* |
 | B-5 | Nút phụ cạnh nhau: cùng cỡ nên cùng hình (cỡ 44 → capsule), tự xuống dòng khi hẹp | [Apple] WWDC25 356 (Large → capsule); HIG Buttons: "Use style — not size"; C1. *Đính chính 2026-11-18: trước trích câu của mục visionOS* |
 | B-6 | Màu chữ/biểu tượng nút không trùng tông nền nội dung sặc sỡ (đơn sắc trên ảnh) | [Apple] HIG Buttons: "Avoid applying a similar color to button labels and content layer backgrounds" |
 

@@ -29,7 +29,7 @@ import {
   type TableSort,
 } from '@/shared/ui';
 import { PAGE_SIZE, usePlans, type PlanStatus, type PlanSummary } from './planApi';
-import { CopyDialog } from './CopyDialog';
+import { CopySheet } from './CopySheet';
 import './plans.css';
 
 const STATUSES = new Set<string>(vi.plans.statusOptions.map((option) => option.value));
@@ -410,9 +410,7 @@ export function PlanListPage() {
           items={[{ label: vi.planCopy.menuItem, icon: <CopyIcon />, onSelect: () => setCopying(rowMenu.menu!.row) }]}
         />
       ) : null}
-      {copying ? (
-        <CopyDialog planId={copying.id} planName={copying.name} open onClose={() => setCopying(null)} />
-      ) : null}
+      {copying ? <CopySheet planId={copying.id} planName={copying.name} open onClose={() => setCopying(null)} /> : null}
     </section>
   );
 }

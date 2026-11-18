@@ -1,6 +1,6 @@
 # OWNER_UI_REDESIGN — Nghiên cứu thiết kế lại giao diện chính của chủ cửa hàng theo Apple
 
-> **Trạng thái:** nghiên cứu xong; chủ dự án đã trả lời Q1–Q5 (§5, 2026-11-17), quyết định ở P-74. **G1 (khung app) đã làm** (§6, branch `docs/owner-ui-redesign`). **G2 (danh sách kế hoạch) đã làm** (§7, PR #129). **G3 (Xe, Thành viên, Cửa hàng, Nhật ký, Tài khoản) đã làm** (§8, branch `feat/owner-ui-g3`). Tiếp: G4.
+> **Trạng thái:** nghiên cứu xong; chủ dự án đã trả lời Q1–Q5 (§5, 2026-11-17), quyết định ở P-74. **G1 (khung app) đã làm** (§6, branch `docs/owner-ui-redesign`). **G2 (danh sách kế hoạch) đã làm** (§7, PR #129). **G3 (Xe, Thành viên, Cửa hàng, Nhật ký, Tài khoản) đã làm** (§8, PR #130). **G4 (tạo/sửa kế hoạch, nhập file, sao chép) đã làm** (§9, branch `feat/owner-ui-g4`). Tiếp: G5.
 >
 > Theo P-71 (hướng dẫn Apple đứng trước), quy tắc ở `docs/client/LIQUID_GLASS.md`, kiểm từng thành phần theo `docs/client/APPLE_CHECKLIST.md`. Nhãn: **[Apple]** trích nguyên văn HIG (bản tải 2026-11-17), **[Web]** điều web buộc phải có, chọn bằng đo, **[Chủ dự án]** chờ hoặc đã có quyết định. Phần "Đề xuất" là ý của agent, mỗi dòng ghi nguồn; chỗ nào Apple không nói thì ghi rõ.
 
@@ -110,6 +110,7 @@ Mỗi giai đoạn một branch, một PR, kiểm theo `APPLE_CHECKLIST.md`, c�
 3. **G3 Xe, Thành viên, Cửa hàng, Hồ sơ, Nhật ký:** cùng mẫu G2 (bộ lọc, bảng/danh sách hàng, hàng giữ chỗ, **menu ngữ cảnh của hàng** như G2.13, thanh trang); hộp thoại sang sheet/alert (D12); nút `secondary` viền rỗng (F-73); kéo đổi độ rộng cột.
 4. **G4 Tạo/sửa kế hoạch** (D16) và hộp thoại nhập file, sao chép.
 5. **G5 Chi tiết kế hoạch:** tìm toạ độ, kết quả tối ưu, chỉnh tay, theo dõi (D15) — cần dữ liệu mẫu.
+   - *Đã chốt cho G5 (chủ dự án, 2026-11-18):* các ô trắng của trang (khối "Còn N điểm…", "Chưa có tài xế…", thanh tiến độ, nhóm bảng, khung sửa điểm, thẻ ở màn kết quả / theo dõi) đổi sang nhóm **bo 16, không viền** như các trang đã redesign; bản đồ trong nhóm bo đồng tâm (S1/S2). Khối **lỗi** (vd "Còn N điểm giao chưa có toạ độ") bỏ viền đỏ, báo bằng **nền đỏ nhạt**. Hiện vẫn kiểu cũ (bo 8, bảng bo 4, có viền) — chủ dự án chọn để G5 cả, không đổi lẻ (§9.9).
 6. **G6 Báo cáo** (D17).
 
 Prototype (artboard) cập nhật theo từng giai đoạn hoặc sau cùng — §5 Q5.
@@ -406,4 +407,119 @@ Chủ dự án: ở mọi danh sách phân trang có điểm kết thúc (Kế h
 | WCAG 2.2 SC 2.4.3 Focus Order | Thứ tự Tab theo thứ tự nhìn thấy | Thanh trang nằm trước danh sách trong DOM, không chỉ dời bằng CSS |
 
 Làm: `Pager` có `pinned` (bọc `pw-pager-bar`, sticky dưới thanh trên cùng 60px, rộng hết màn, nền `surface`; `useStuck` dùng IntersectionObserver để bật mép mờ khi dính); khung nhập số trang mở xuống dưới khi ghim. Đổi trang trên điện thoại: cuộn về đầu danh sách nếu đầu danh sách bị hai thanh ghim che (so với `scroll-padding-top`). Đo 390×844: lúc nghỉ thanh trang ở trên danh sách; cuộn thì dính ở y = 60, mép mờ bật; khung số trang mở xuống cách nút 8px; 844×390 thanh không ghim.
+
+## 9. Thiết kế G4: tạo/sửa kế hoạch, nhập file, sao chép (2026-11-18)
+
+### 9.1 Hiện trạng (chụp 2026-11-18, 1440 và 390px, kế hoạch nháp 17 điểm)
+
+- **Form** (`/plans/new`, `/plans/:id/edit`): link chữ "← Kế hoạch"; "Huỷ" + "Lưu và tìm toạ độ" **hai bộ** (đầu và cuối trang); ba **thẻ viền** (Thông tin chung, Phân công tài xế, Điểm giao); ngày giao là ô ngày của trình duyệt (hiện "11/18/2026", kiểu Mỹ); ca làm và khung giờ là ô giờ của trình duyệt kiểu 12 giờ "--:-- --"; bảng điểm giao 1440px **tràn 83px** (cột Ghi chú bị cắt); điện thoại: hai bảng ô nhập cuộn ngang (thấy 2,5 cột), nút lưu ngay dưới tiêu đề.
+- **Nhập từ file**: `Dialog` cũ, trên máy tính **vỡ bố cục** (lệch trái dưới thanh bên, mất tiêu đề); nút "Quay lại" / "Thêm 0 điểm giao" ở đáy.
+- **Sao chép**: `Dialog` cũ; tiêu đề "Sao chép "{tên}"" dài tới 3 dòng; ô ngày của trình duyệt; "Quay lại" / "Sao chép" ở đáy.
+- **Kế hoạch bị sửa nơi khác** (`PLAN_MODIFIED`): `Dialog` cũ.
+
+### 9.2 Câu hỏi và trả lời (2026-11-18)
+
+| # | Câu hỏi | Trả lời |
+|---|---|---|
+| Q4 | Điểm giao trên điện thoại | **Hàng + sheet** (D16): mỗi điểm một hàng, bấm mở sheet có đủ ô. Áp cùng cách cho **phân công tài xế** (cũng là bảng ô nhập). |
+| G4-Q1 | Nhập giờ (ca làm, khung giờ) | **Theo cách nhập**: chuột/bàn phím gõ "HH:mm" 24 giờ (macOS textual: *"useful when… you expect people to make specific date and time selections"*); cảm ứng: nút hiện giờ, bấm mở bánh xe giờ và phút (iOS compact) |
+| G4-Q2 | Bước phút của bánh xe | **5 phút** (HIG Pickers: *"Consider providing less granularity when specifying minutes"*); ô gõ vẫn nhận mọi phút (API `HH:mm`) |
+| G4-Q3 | Hai bộ nút lưu | **Một bộ ở hàng tiêu đề, ghim khi cuộn** (HIG Toolbars: nút đặt trên nội dung cuộn *"always remain visible"*) |
+
+### 9.3 Thiết kế
+
+| # | Phần | Thiết kế | Nguồn |
+|---|---|---|---|
+| G4.1 | Quay lại | Nút quay lại chuẩn: chevron + tên trang cha ("‹ Kế hoạch" / "‹ {tên kế hoạch}"), không chữ "Quay lại" | [Apple] Toolbars: *"Use the standard Back and Close buttons… don't use a text label that says Back"*; D6 |
+| G4.2 | Hàng tiêu đề | Tiêu đề ngắn **"Tạo kế hoạch"** (giữ, 12 ký tự) / **"Sửa kế hoạch"** (thay "Sửa {tên}"; tên kế hoạch có trong ô Tên và nút quay lại); cuối hàng "Huỷ" (không nền) + "Lưu và tìm toạ độ" (nổi bật, `checkmark`); **một bộ**, hàng này ghim dưới thanh trên cùng khi cuộn (nền đặc như thanh trên, mép mờ khi dính — một hiệu ứng mép cuộn, §8.17); điện thoại: nút lưu thành nút tròn dấu tích như trang Cửa hàng | [Apple] Toolbars (Titles < 15 ký tự, primary action trailing, `.prominent`); Scroll edge effects; Icons (Save → `checkmark`) |
+| G4.3 | Nhóm | Bỏ ba thẻ viền: ba nhóm có tiêu đề, cách nhau bằng khoảng trống, nội dung trong nhóm nền như trang Cửa hàng | [Apple] Layout (*"Group related items… negative space, container shapes"*); D9, D16 |
+| G4.4 | Ngày giao | **Compact date picker** dạng ô của form: nút hiện ngày "T4, 18/11/2026", bấm mở lịch như bộ lọc (máy tính popover, điện thoại inline §8.11, "Tháng ›" mở bánh xe §8.12); không còn ô ngày của trình duyệt | [Apple] Date pickers (Compact: *"a button that shows the current value"*) |
+| G4.5 | Giờ (ca làm, khung giờ) | `TimeField`: **chuột** — ô gõ 24 giờ, chữ số, gõ "830"/"8:30"/"0830" → "08:30" khi rời ô, sai thì báo dưới ô; **cảm ứng** — nút hiện giờ (hoặc "—" khi trống), bấm mở popover/inline hai bánh xe Giờ (00–23) và Phút (bước 5) + "Bỏ giờ"; khung giờ là hai ô "Từ" "Đến" | [Apple] Date pickers (macOS textual, iOS compact), Pickers (Wheels, phút bước 5 — G4-Q2) |
+| G4.6 | Phân công, máy tính | Bảng ô nhập giữ (nhập nhanh, D16); ô chọn tài xế/xe là pop-up của app (§8.7); giờ ca theo G4.5; nút xoá hàng biểu tượng thùng rác, hàng có menu ngữ cảnh "Xoá" | [Apple] Lists and tables (*"Let people edit a table when it makes sense"*); Pop-up buttons; G2.13 |
+| G4.7 | Điểm giao, máy tính | Bảng ô nhập giữ, **không tràn** khung (ô giờ gõ hẹp thay ô giờ trình duyệt); bảng hẹp hơn chỗ cần (đo) thì dùng kiểu hàng + sheet như điện thoại | G2.11 (không cuộn ngang); D16 |
+| G4.8 | Phân công và điểm giao, điện thoại | **Hàng + sheet** (Q4): hàng = dòng chính (tài xế · xe / mã đơn · người nhận), dòng phụ (ca làm / địa chỉ · khung giờ), dấu lỗi khi hàng có ô lỗi, chevron; bấm hàng → sheet "Phân công" / "Điểm giao" (Huỷ / Xong) với đủ ô; "+ Thêm …" mở sheet trống; chạm giữ hàng → menu "Xoá" | [Apple] Lists and tables, Sheets; G3 (Xe, Thành viên) |
+| G4.9 | Nhập từ file | **Sheet** "Nhập điểm giao" (< 15 ký tự): bước 1 chọn/kéo thả file + file mẫu (chỉ "Huỷ"); bước 2 xem trước (thanh: "Quay lại" — HIG: Back cho bước trước — và "Thêm N điểm" khi có dòng hợp lệ) | [Apple] Sheets (multi-step, *"Avoid showing all three buttons"*); Entering data (*"let people provide data by dragging and dropping"*) |
+| G4.10 | Sao chép | **Sheet** "Sao chép" (Huỷ / "Sao chép"): tên kế hoạch gốc trong thân sheet; ngày giao theo G4.4; tên mới; lựa chọn điểm cần chép | [Apple] Sheets; Toolbars (Titles) |
+| G4.11 | Bị sửa nơi khác | `PLAN_MODIFIED` → **Alert** "Kế hoạch đã thay đổi" với "Tải lại" / "Huỷ" | [Apple] Alerts |
+
+Không làm trong G4: chi tiết kế hoạch, giao việc, huỷ kế hoạch, chọn ghim (G5).
+
+### 9.4 Làm và đo (2026-11-18)
+
+- **Khác thiết kế, có lý do:** tiêu đề tạo giữ "Tạo kế hoạch" (12 ký tự, đã dưới 15); bảng phân công cũng theo G4.6/G4.8 (Q4 áp cho cả hai danh sách); bảng điểm giao chọn chế độ bằng phép đo hàng tiêu đề ẩn (`useTableFits`): cột tối thiểu Mã đơn 6rem, Người nhận 7,5, SĐT 7, Địa chỉ ≥ 10, Khung giờ 11,5, Số lượng 4,5, Ghi chú 7 → cần 828px; 1280px dư 105px (lần đầu 41px — e2e dùng font Noto Sans rộng hơn nên chuyển sang hàng, đã nới), 1024/960px dùng hàng + sheet; bảng xem trước nhập file gộp "Dòng, kết quả", "Người nhận" + SĐT, "Khung giờ, số lượng" để vừa sheet lớn ở 1440/1024/960 (HIG Lists and tables: *"Choose a row style that fits the information you need to display"*); bỏ `min-width` cố định cũ (1180px bảng điểm giao, 1080px bảng xem trước). Sao chép: chỉ một lựa chọn (kế hoạch nháp) thì nói thành câu, không thành ô chọn.
+- **Lỗi tìm thấy khi làm:** Escape trong lịch nằm trong sheet đóng luôn sheet (sheet nghe `keydown` trên `document`) → sheet/alert bỏ qua Escape đã được popover xử lý (`defaultPrevented`); test hồi quy trong `Sheet.test.tsx`.
+- **Đo:** 1440/1280/1024/960/390px, sáng và tối: không trang nào cuộn ngang; hàng tiêu đề ghim ở y = 60 khi cuộn; ô ngày và ô tên thẳng hàng (lưới căn trên); sheet điểm giao, bánh xe giờ, sheet nhập file hai bước, sheet sao chép; test web 274, e2e 3/3.
+- **Để G5:** chi tiết kế hoạch, giao việc, huỷ kế hoạch, chọn ghim vẫn dùng `Dialog` cũ (`PlanDialogs.tsx`).
+
+### 9.5 Góp ý của chủ dự án sau G4 (2026-11-18)
+
+| # | Góp ý | Nguyên nhân (đo) | Sửa |
+|---|---|---|---|
+| 1 | Nút "Phóng to bản đồ để đặt ghim chính xác hơn" lỗi | `Dialog` cũ render trong trang: nằm dưới thanh bên và thanh trên, lệch trái; điện thoại rộng 477px trên màn 390; bản đồ 16:9 cao hơn chỗ, chú thích đè lên hai nút | `Dialog` render trên `body` (như Sheet, Alert — sửa luôn các hộp G5 còn dùng nó); một cột rộng bằng hộp (`minmax(0, 1fr)`); bản đồ của hộp toàn màn hình lấp chỗ còn lại. Đo: 1440 hộp trên cùng, bản đồ 582px, không đè nút; 390 hộp 358px |
+| 2 | "Tìm lại địa chỉ này" nhấp nháy khi đã có lỗi và cuộn hết trang | Bấm thì xoá thông báo lỗi trước khi gọi API: trang ngắn đi 54px, đang ở cuối nên trình duyệt kéo lên 54px; 22ms sau lỗi giống hệt hiện lại → nháy | Giữ lỗi cũ tới khi kết quả lần thử mới thay nó trong cùng một lần vẽ; lỗi lặp lại dựng mới banner (`key`) để trình đọc màn hình vẫn đọc (`role="alert"`). Đo từng khung hình: không còn thay đổi chiều cao hay vị trí cuộn (390 và 1440) |
+| 3 | Ô Người nhận và Số điện thoại trong bảng quá ngắn | Vòng trước hạ cột còn 7,5rem / 7rem (nội dung cần: "Nguyễn Thị Lan" 130px, "0905 123 456" 121px, "ĐH-10234" 98px) | Cột theo nội dung đo được (HIG Text fields: *"match the size of a text field to the quantity of anticipated text"*): Mã đơn 7rem, Người nhận 10,5rem, Số điện thoại 8,5rem; bù chỗ bằng ô giờ trong bảng 4,5rem (đủ "08:30" 66px), Khung giờ 9,5rem, Ghi chú 6rem. 1280px: cần 868, khung 933 |
+| 2b | Bấm lại vẫn nháy, lần này ở nút phóng to, "Đặt ghim ở giữa bản đồ"; trong lúc tìm nên có chỉ báo | Trong lúc gửi (~0,15 s) cả khung bị coi là tắt: bản đồ thành chỉ xem (nút "Đặt ghim ở giữa bản đồ" bị gỡ rồi gắn lại), các nút mờ đi rồi sáng lại | Gửi yêu cầu không khoá gì (HIG Loading: *"Let people do other things… while they wait"*); chỉ khi server đang xử lý (`processingStatus`) mới khoá; bấm lần nữa trong lúc chờ thì bỏ qua. Chỉ báo cạnh nút (*đã thay ở dòng 8: vòng xoay trong nút theo B-4*), chỉ hiện khi chờ quá 0,3 s (HIG Loading: *"takes more than a moment"*). Đo từng khung hình khi bấm nhanh: không đổi gì tới khi có kết quả |
+| 4 | "Đang tìm" là nhãn đứng yên, sao không là vòng xoay? | Trong lúc server tìm toạ độ, trang có thanh tiến độ "15/16" (đúng HIG: *"When possible, use a determinate progress indicator"*) và 3 nhãn tĩnh "ĐANG TÌM TOẠ ĐỘ" (tiêu đề, hàng, khung sửa); HIG: *"Keep progress indicators moving"*, việc không biết trước thời gian dùng activity indicator | Chủ dự án chọn **vòng xoay thay nhãn**: điểm đang tìm hiện vòng xoay + "Đang tìm" (`ActivityText`) ở hàng và khung sửa; tiêu đề bỏ nhãn khi đang tìm toạ độ (thanh tiến độ ngay dưới đã nói), đang tối ưu thì vòng xoay + "Đang tối ưu" (trang này không có thanh cho việc đó). Màn kết quả tối ưu (`ResultView`) để G5 |
+| 5 | Bảng lồng trong nhóm ở form có được không, bo góc có đúng không? | Bảng có khung viền 1px bo 4px nằm trong nhóm bo 16 đệm 20: trái DESIGN_SYSTEM (bảng trong nhóm *"không viền"*) và S1/S2 (đồng tâm 16 − 20 < 0 → bán kính dự phòng, không phải 4) | Bảng trong nhóm của form không có khung riêng: một vật chứa (nhóm), hàng giữ đường kẻ |
+| 6 | Bảng chính ở trang chi tiết kế hoạch là bảng kiểu cũ | Đúng (khung viền, thẻ viền bên cạnh) | Chủ dự án chọn để G5 (trang chi tiết theo kế hoạch §4) |
+| 7 | Hộp chọn vị trí (phóng to để đặt ghim) vẫn chưa có vòng xoay | Ô "Tìm địa chỉ" (`PinPicker`, dùng cả ở hộp chọn vị trí và trang Cửa hàng) đổi gợi ý thành chữ tĩnh "Đang tìm…" trong lúc tìm | Gợi ý trong lúc tìm là `ActivityText` "Đang tìm địa chỉ…" (HIG Progress indicators: vòng xoay cho việc không biết thời gian, mô tả cụ thể — *"Avoid vague terms"*), hiện sau 0,3 s (HIG Loading), dòng gợi ý giữ chiều cao. Đo: tìm trả lời sau 1,5 s → 0,15 s chưa hiện, 0,85 s hiện vòng xoay + chữ, có kết quả thì về gợi ý thường |
+| 8 | "Tìm lại toạ độ" (còn N điểm chưa có toạ độ) đứng yên; phải có dấu hiệu app đang chạy | **Đọc lại docs (lần trước đọc thiếu):** APPLE_CHECKLIST **B-4** — *"Thao tác chưa xong ngay thì nút hiện vòng xoay"* (HIG Buttons: *"Configure a button to display an activity indicator when you need to provide feedback about an action that doesn't instantly complete. Displaying an activity indicator within a button…"*, nhãn có thể đổi như *"Checkout" → "Checking out…"*) — nhưng `Button busy` chỉ làm mờ nút, không có vòng xoay (lệch ở mọi nút `busy`); vòng trước tao còn đặt chỉ báo **cạnh** nút thay vì **trong** nút. HIG Progress indicators macOS: *"Avoid labeling a spinning progress indicator… a label is usually unnecessary"* (phần chung: *"If it's helpful, display a description"*). Thanh tiến độ đứng yên ~2 s giữa hai lần đọc (*"Keep progress indicators moving"*). WCAG 2.2.2 Note 4: hoạt ảnh lúc tải là cần thiết khi không có nó người dùng tưởng app treo | Chủ dự án chọn: **chữ chỉ trong nút**, nơi khác vòng xoay không chữ; **cả hai** cho thanh tiến độ. `Button busy` (+ `busyLabel`): sau 0,3 s vòng xoay + nhãn bận hiện trong nút (hai nhãn chung một ô nên nút không đổi bề rộng), nút không tắt (không nháy) mà không nhận bấm (`aria-disabled`, `aria-busy`); bỏ chỉ báo cạnh nút; "Tìm lại địa chỉ này", "Lưu toạ độ", "Tìm lại toạ độ" → "Đang tìm toạ độ…" / "Đang lưu toạ độ…". `ActivityText` không hiện chữ (chữ là tên cho trình đọc màn hình). Thanh tìm toạ độ có vòng xoay luôn quay cạnh; lần đọc lại đầu sau 0,5 s rồi 2 s (UX_BRIEF: 2–3 s). Đo: nút xoay từ 0,3 s, thanh + vòng xoay khi server nhận, đọc lại +0,52 s rồi +2 s |
+
+### 9.6 Chuyển cảnh trong luồng kế hoạch (2026-11-18)
+
+Chủ dự án: phần lớn luồng chưa có chuyển cảnh. Theo HIG Motion (*"Add motion purposefully"*, *"brevity and precision"*, *"Let people cancel motion"*, *"avoid adding motion to UI interactions that occur frequently"*) và các chuyển động đã chốt của dự án, không đặt kiểu mới:
+
+| Chỗ | Chuyển động | Theo |
+|---|---|---|
+| Màn của kế hoạch đổi tại chỗ (tìm toạ độ → kết quả tối ưu → theo dõi) | Màn mới mờ vào, nhô lên 12px, 0,28 s; không chạy ở màn đầu (trang đã có chuyển cảnh) | §6.2 CĐ2b |
+| Khối xuất hiện: thông báo lỗi/thông tin, thanh tiến độ, "Còn N điểm chưa có toạ độ", "Còn N ô cần sửa", "Đã thêm N điểm từ file", thông báo sao chép | Mờ vào, trồi 10px, 0,32 s | G2.10 |
+| Cùng thông báo lỗi nói lại sau một lần thử | Không chạy lại (`ErrorBanner repeat`) — chạy lại là nháy (§9.5 #2) | §9.5 |
+| Chọn điểm khác (khung sửa điểm) | Nội dung khung mờ vào 0,2 s, không trượt. *Ban đầu không chuyển động (thao tác lặp lại); chủ dự án thấy khung "chưa mượt" và chọn mờ chéo nhẹ (2026-11-18)* | HIG Motion: *"brevity and precision"* |
+| Thêm / xoá phân công, điểm giao (form kế hoạch) | Dòng mới mờ vào 0,25 s, nền tô nhạt rồi tan (1,2 s) để thấy dòng vừa thêm; dòng xoá mờ ra 0,2 s rồi mới mất (`useRowMotion`). Trên điện thoại dòng thêm qua sheet chỉ "đến" khi sheet đóng (lúc mở nó bị sheet che), huỷ thì không đến. Dòng có sẵn khi mở form không chạy. *Ban đầu không chuyển động; chủ dự án chọn (2026-11-18)* | HIG Motion: *"The system already provides subtle animations for interactions with standard interface elements"* (bảng chuẩn chèn/xoá dòng có hoạt ảnh) |
+| Hộp "Phóng to bản đồ" (`Dialog` cũ) | Mở: nền mờ vào, hộp bật ra (0,24 s); đóng: thu về (0,2 s) — như Sheet trên màn rộng. Trước đó bật/tắt đột ngột (chủ dự án) | Sheet G2.10 |
+| Giảm chuyển động | Chỉ mờ | §6.2 CĐ6 |
+
+Vòng xoay cạnh thanh tiến độ nằm thẳng hàng với dòng chữ của thanh (tâm trùng nhau, đo). Đo (`getAnimations`): bấm "Tìm lại toạ độ" → thanh tiến độ và khối "Còn N điểm…" chạy `pw-result-in` khi đổi chỗ cho nhau.
+
+### 9.7 Lý do "Tối ưu lộ trình" bị khoá (2026-11-18, thử theo lựa chọn của chủ dự án)
+
+Chủ dự án: dòng "Thêm phân công tài xế để tối ưu." (chữ 12px dưới cụm nút ở đầu trang) "lơ lửng" — đo: ở 1440px nó treo ngang phụ đề, ở 1024px và điện thoại treo lẻ dưới nút. Docs chỉ yêu cầu nút khoá có lý do, không nói đặt ở đâu; chủ dự án chọn thử phương án "khối có nút" (không ưng thì quay lại bằng revert commit này):
+
+- Bỏ dòng chữ nhìn thấy dưới nút; lý do vẫn là `aria-describedby` của nút (chỉ trình đọc màn hình).
+- Thiếu phân công: khối trong trang cùng kiểu khối "Còn N điểm chưa có toạ độ" nhưng viền trung tính (không phải lỗi): "Chưa có tài xế nào được phân công." + "Thêm phân công (tài xế, xe, ca làm) để tối ưu lộ trình." + nút "Thêm phân công" mở form sửa.
+- Các lý do khác đã có chỗ riêng: thiếu toạ độ → khối "Còn N điểm…"; đang tìm toạ độ / đang tối ưu → thanh tiến độ, vòng xoay (§9.5).
+
+### 9.8 Chữ dài ở trang kế hoạch và trang sửa (G2.11, đo 2026-11-18)
+
+Chủ dự án hỏi đã xử lý tràn chữ cho tiêu đề và nút quay lại sau "Sửa điểm giao" chưa. Đo tên 150 ký tự (có dấu cách và không dấu cách, giả qua `page.route`) ở 1440/390/320px:
+
+| Chỗ | Trước | Sau |
+|---|---|---|
+| Tiêu đề trang kế hoạch (`h1`), tên không dấu cách | **Tràn ra ngoài màn** (1440 và 390px) | Cắt ở mọi chỗ (`overflow-wrap: anywhere` cho mọi `.pw-page-title`) |
+| Tiêu đề trang kế hoạch, tên có dấu cách | Đủ tên, nhiều dòng (7 dòng ở 390px) | Giữ — G2.11: tên đầy đủ ở trang kế hoạch; HIG Typography *"use as many lines as needed"* |
+| Nút quay lại ở trang sửa (tên kế hoạch) | Một dòng rồi "…", rê chuột hiện tên (`title`) — đúng G4.1 | Giữ |
+| "Sửa kế hoạch" ở 320px | Xuống 2 dòng để chừa Huỷ / ✓, không tràn | Giữ |
+| Nút "Phóng to bản đồ để đặt ghim chính xác hơn" | **Không xuống dòng, tràn khỏi khung sửa điểm** ở 390 và 320px | Xuống dòng trong nút; một dòng vẫn cao 36px |
+
+### 9.9 Bo góc các ô trắng ở trang chi tiết kế hoạch (2026-11-18)
+
+Chủ dự án: bo của các ô trắng ở trang kế hoạch không khớp các trang khác. Đo 1440px: Kế hoạch, Xe, Thành viên, Cửa hàng, Sửa kế hoạch — ô trắng bo 16, không viền; chi tiết kế hoạch — khối "Còn N điểm…" / "Chưa có tài xế…" bo 8 viền 1px (đỏ / xám), bảng bo 4 viền, khung sửa điểm bo 8 viền; Báo cáo (ô trống) bo 8 viền. Nguyên nhân: trang chi tiết thuộc G5 (§9.5 #6, đã chọn để G5), chưa đổi. Docs lệch: `DESIGN_SYSTEM.md` mục Bo góc và `.pw-card` vẫn ghi thẻ `radius-md` có viền như quy tắc chung — đã ghi rõ quy tắc nhóm bo 16 của khu đã redesign và trang nào còn kiểu cũ. Chủ dự án chọn: **để G5 cả** (không đổi code bây giờ); khối lỗi ở G5 dùng **nền đỏ nhạt** thay viền đỏ (ghi ở mục G5, §4).
+
+### 9.10 Nút "Sao chép" ở đầu trang chi tiết kế hoạch (2026-11-18)
+
+Chủ dự án: "Sao chép" không nền đứng đầu cụm nút trông như chữ lệch, muốn đưa ra thứ 3. HIG Toolbars: *"Only specify one primary action, and put it on the trailing side of the toolbar"* → "Tối ưu lộ trình" phải ở cuối, không đặt "Sao chép" sau nó. Chủ dự án muốn màu khác nút xám bên cạnh; HIG Buttons chỉ dành màu cho vai trò chính (màu nhấn) và nguy hiểm (đỏ), nên dùng kiểu **tinted** của Apple (UIKit `tinted()`), không thêm màu mới. Kiểm WCAG trước khi làm: 1.4.3 chữ ≥ 4.5:1 ở mọi trạng thái (đo, `DESIGN_SYSTEM.md`); 1.4.11 không bắt nền nút đạt 3:1 khi nút nhận ra bằng chữ (như nút xám); 1.4.1 có chữ.
+
+Làm: thứ tự **Sửa điểm giao (xám) · Sao chép (tinted) · Tối ưu lộ trình (nút chính, cuối)**. Ghi nhận: theme sáng, khi "Tối ưu lộ trình" bị khoá (mờ 50%) nó cũng xanh nhạt, gần màu "Sao chép" — phân biệt bằng chữ (xanh đậm / trắng mờ). Màn kết quả tối ưu và theo dõi (`ResultView`, `TrackView`) vẫn để "Sao chép" kiểu cũ — G5.
+
+### 9.11 Nút quay lại lên thanh trên trên điện thoại (2026-11-18)
+
+Chủ dự án hỏi có được đưa nút quay lại lên thanh trên, ngang hàng avatar không. Kiểm tra: **thiết kế G1 (§6) đã quyết** — thanh trên *"Đầu: nút ẩn/hiện sidebar (rộng) hoặc nút quay lại (trang con)… Cuối: … nút tài khoản"*; G4 đặt `BackLink` trong nội dung trang là lệch với §6. HIG Toolbars: *"Elements that let people return to the previous document… appear at the far leading edge"*. WCAG: không tiêu chí nào cấm; giữ 2.4.3 (thứ tự focus quay lại → tài khoản → nội dung), 2.5.8 (vùng bấm 44px), 1.4.10 (320px không tràn: tên cha dài cắt "…", tên đầy đủ vẫn là tên trợ năng và `title`), 2.4.11 (thanh dính không che focus: `scroll-padding` có sẵn); 3.2.3 tốt hơn (nút ở cùng chỗ mọi trang con).
+
+Làm: điện thoại — `BackLink` vào đầu thanh trên (`AppShell` có chỗ `pw-topbar-leading`, chỉ ở màn hẹp; nút chờ chỗ đó sẵn sàng rồi mới vẽ, không hiện trong trang một khung hình rồi nhảy lên). Cuộn qua tiêu đề lớn, tiêu đề nhỏ hiện giữa thanh → nút thu về chỉ còn chevron (như iOS khi tên trang trước không đủ chỗ), tên vẫn đọc được. Màn rộng giữ nút trong trang (đầu thanh trên là nút ẩn/hiện sidebar). Trang tạo/sửa: hàng tiêu đề sát dưới thanh trên như các trang khác. Đo 390 và 320px: nút và avatar cùng tâm (y = 30), không tràn; khoảng thanh trên → tiêu đề 16–21px ở mọi trang (trang sửa trước đó 53px).
+
+### 9.12 Ba nút đầu trang chi tiết trên màn hẹp (2026-11-18)
+
+Chủ dự án: "Sửa điểm giao", "Sao chép", "Tối ưu lộ trình" trên màn hẹp đặt chưa hợp lý. Đo: ba nút vừa một hàng từ 440px; hẹp hơn thì vỡ 2 hàng, nút chính đứng lẻ hàng dưới (HIG Toolbars: *"avoid layouts that cause toolbar items to overflow by default"*). HIG gợi ý cho iPhone: giữ nút quan trọng, đưa phần còn lại vào menu More (*"Create a More menu to include additional items"*); chủ dự án chọn **xếp dọc, rộng hết** để luôn thấy đủ ba nút.
+
+Làm: dưới 440px (`(max-width: 439px)`) ba nút xếp dọc rộng hết, **nút chính trên cùng**, rồi "Sửa điểm giao", "Sao chép"; thứ tự trong DOM đổi theo (không đảo bằng CSS) để trình đọc màn hình và Tab đi đúng thứ tự nhìn thấy (WCAG 1.3.2, 2.4.3). Từ 440px: một hàng, nút chính cuối (§9.10). Đo 390 / 320px: ba nút 343 / 273px, cao 44px, không tràn. Màn kết quả và theo dõi: G5.
 

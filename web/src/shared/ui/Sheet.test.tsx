@@ -32,6 +32,31 @@ describe('Sheet', () => {
   });
 });
 
+describe('Sheet và popover bên trong', () => {
+  it('Escape mà popover bên trong đã xử lý (preventDefault) chỉ đóng popover, không đóng sheet', async () => {
+    const onClose = vi.fn();
+    render(
+      <Sheet open title="Sao chép" onClose={onClose}>
+        <button
+          type="button"
+          onKeyDown={(event) => {
+            if (event.key === 'Escape') event.preventDefault();
+          }}
+        >
+          Lịch
+        </button>
+      </Sheet>,
+    );
+    const user = userEvent.setup();
+    screen.getByRole('button', { name: 'Lịch' }).focus();
+    await user.keyboard('{Escape}');
+    expect(onClose).not.toHaveBeenCalled();
+    screen.getByRole('button', { name: 'Huỷ' }).focus();
+    await user.keyboard('{Escape}');
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+});
+
 describe('Alert', () => {
   it('Huỷ bên trái là nút được focus; hành động bên phải; Escape huỷ; chỉ tô đỏ khi destructive', async () => {
     const onAction = vi.fn();

@@ -5,6 +5,7 @@ import { renderApp } from '@/test/renderApp';
 import { sample } from '@/test/samples';
 import { API, ok, server, signedInHandlers } from '@/test/server';
 import {
+  FIRST_POLL_MS,
   planRefetchInterval,
   POLL_INTERVAL_MS,
   TRACK_INTERVAL_MS,
@@ -165,9 +166,13 @@ describe('Một route cho mọi trạng thái', () => {
     expect(await screen.findByText(subtitle)).toBeInTheDocument();
   });
 
-  it('tải lại: 2 s khi đang xử lý, 30 s khi đang giao (chỉ khi tab hiện), dừng khi kết thúc', () => {
+  it('tải lại: 0,5 s rồi 2 s khi đang xử lý, 30 s khi đang giao (chỉ khi tab hiện), dừng khi kết thúc', () => {
     const plan = optimized();
-    expect(planRefetchInterval({ ...plan, processingStatus: 'OPTIMIZING' })).toBe(POLL_INTERVAL_MS);
+    // A task just started: the first read comes after 0.5 s, then every 2 s.
+    const busy = { ...plan, processingStatus: 'OPTIMIZING' as const };
+    expect(planRefetchInterval(busy, 1000)).toBe(FIRST_POLL_MS);
+    expect(planRefetchInterval(busy, 1600)).toBe(POLL_INTERVAL_MS);
+    expect(planRefetchInterval(plan, 3700)).toBe(false);
     expect(planRefetchInterval({ ...plan, status: 'PUBLISHED' })).toBe(TRACK_INTERVAL_MS);
     expect(planRefetchInterval({ ...plan, status: 'IN_PROGRESS' })).toBe(TRACK_INTERVAL_MS);
     expect(planRefetchInterval(plan)).toBe(false);

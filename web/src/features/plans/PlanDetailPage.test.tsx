@@ -1,7 +1,8 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http } from 'msw';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+import { wideWindow } from '@/test/media';
 import { renderApp } from '@/test/renderApp';
 import { sample } from '@/test/samples';
 import { API, ok, server, signedInHandlers } from '@/test/server';
@@ -180,7 +181,8 @@ describe('Soạn plan — tìm toạ độ', () => {
     const bar = await screen.findByRole('progressbar', { name: 'Đang tìm toạ độ cho các địa chỉ' });
     expect(bar).toHaveAttribute('aria-valuenow', '17');
     expect(screen.getByRole('button', { name: 'Sửa điểm giao' })).toBeDisabled();
-    expect(screen.getByText('ĐANG TÌM TOẠ ĐỘ', { selector: '.pw-plan-title *' })).toBeInTheDocument();
+    // The progress bar says it; the title has no static label for a running task (HIG Progress indicators).
+    expect(screen.queryByText('ĐANG TÌM TOẠ ĐỘ', { selector: '.pw-plan-title *' })).not.toBeInTheDocument();
 
     await waitFor(() => expect(bar).toHaveAttribute('aria-valuenow', '22'), { timeout: 5000 });
     await waitFor(() => expect(screen.queryByRole('progressbar')).not.toBeInTheDocument(), { timeout: 5000 });
@@ -195,4 +197,94 @@ describe('Soạn plan — tìm toạ độ', () => {
     await waitFor(() => expect(patches).toHaveLength(1));
     expect(patches[0]).toMatchObject({ version: 1 });
   }, 20000);
+});
+
+describe('Chưa có phân công (§9.7)', () => {
+  it('hiện khối "Chưa có tài xế nào được phân công." với nút sang form sửa; lý do khoá chỉ cho trình đọc màn hình', async () => {
+    server.use(
+      http.get(`${API}/plans/83`, () => ok({ ...geocoded(), routes: [] })),
+      ...signedInHandlers(),
+    );
+    const { router } = renderApp('/plans/83');
+    const user = userEvent.setup();
+
+    const block = await screen.findByRole('region', { name: 'Chưa có tài xế nào được phân công.' });
+    expect(screen.getByRole('button', { name: 'Tối ưu lộ trình' })).toHaveAccessibleDescription(
+      'Thêm phân công tài xế để tối ưu.',
+    );
+    await user.click(within(block).getByRole('button', { name: 'Thêm phân công' }));
+    await waitFor(() => expect(router.state.location.pathname).toBe('/plans/83/edit'));
+  });
+});
+
+describe('Nút quay lại (§9.11)', () => {
+  it('điện thoại: ở đầu thanh trên, ngang hàng nút tài khoản; màn rộng: trong trang', async () => {
+    server.use(
+      http.get(`${API}/plans/83`, () => ok(geocoded())),
+      ...signedInHandlers(),
+    );
+    // (The tab bar also has a "Kế hoạch" link: the back button is the one with the chevron, .pw-back-link.)
+    const phone = renderApp('/plans/83');
+    await screen.findByRole('heading', { name: 'Giao sáng 01/12', level: 1 });
+    const backs = document.querySelectorAll('.pw-back-link');
+    expect(backs).toHaveLength(1);
+    expect(backs[0]?.closest('.pw-topbar')).not.toBeNull();
+    expect(backs[0]).toHaveAccessibleName('Kế hoạch');
+    phone.unmount();
+
+    wideWindow();
+    renderApp('/plans/83');
+    await screen.findByRole('heading', { name: 'Giao sáng 01/12', level: 1 });
+    expect(document.querySelector('.pw-back-link')?.closest('main')).not.toBeNull();
+  });
+});
+
+describe('Ba nút đầu trang trên màn hẹp (§9.12)', () => {
+  it('dưới 440px: xếp dọc, nút chính đầu tiên (cả thứ tự trong trang, để Tab theo đúng thứ tự nhìn thấy)', async () => {
+    vi.spyOn(window, 'matchMedia').mockImplementation(
+      (query: string) =>
+        ({
+          matches: query.includes('max-width: 439px'),
+          media: query,
+          addEventListener: () => {},
+          removeEventListener: () => {},
+        }) as unknown as MediaQueryList,
+    );
+    server.use(
+      http.get(`${API}/plans/83`, () => ok(geocoded())),
+      ...signedInHandlers(),
+    );
+    renderApp('/plans/83');
+    await screen.findByRole('heading', { name: 'Giao sáng 01/12', level: 1 });
+    const actions = document.querySelector('.pw-plan-actions') as HTMLElement;
+    expect(actions).toHaveClass('is-stacked');
+    expect(
+      within(actions)
+        .getAllByRole('button')
+        .map((button) => button.textContent),
+    ).toEqual(['Tối ưu lộ trình', 'Sửa điểm giao', 'Sao chép']);
+  });
+});
+
+describe('Tìm lại một địa chỉ (G4 §9.5)', () => {
+  it('trong lúc chờ: "Đang tìm toạ độ…" cạnh nút; bản đồ và các nút giữ nguyên (không tắt, không mất)', async () => {
+    let answer: () => void = () => {};
+    server.use(
+      http.get(`${API}/plans/83`, () => ok(geocoded())),
+      http.post(`${API}/plans/83/geocode`, () => new Promise((resolve) => (answer = () => resolve(ok(geocoded()))))),
+      ...signedInHandlers(),
+    );
+    renderApp('/plans/83');
+    const user = userEvent.setup();
+
+    const panel = await screen.findByRole('region', { name: 'Sửa ĐH-1008 · Chị Thảo' });
+    const retry = within(panel).getByRole('button', { name: 'Tìm lại địa chỉ này' });
+    await user.click(retry);
+    expect(within(panel).getByText('Đang tìm toạ độ…')).toBeInTheDocument();
+    expect(retry).toBeEnabled();
+    expect(retry).toHaveAttribute('aria-busy', 'true');
+    expect(within(panel).getByRole('button', { name: 'Đặt ghim ở giữa bản đồ' })).toBeEnabled();
+    answer();
+    await waitFor(() => expect(within(panel).queryByText('Đang tìm toạ độ…')).not.toBeInTheDocument());
+  });
 });

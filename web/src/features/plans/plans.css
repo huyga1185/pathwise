@@ -12,9 +12,27 @@
   gap: 8px;
   min-width: 0;
 }
+/* The standard back button: chevron + the parent page's title (BackLink, G4.1). */
 .pw-back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  max-width: 100%;
+  margin-left: -6px;
   font-weight: 600;
   text-decoration: none;
+}
+.pw-back-link svg {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  stroke-width: 2.4;
+}
+.pw-back-link span {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 .pw-plan-title {
   display: flex;
@@ -123,6 +141,15 @@
   align-items: center;
   gap: 8px;
 }
+/* Too narrow for one row: stacked, full width (§9.12). */
+.pw-plan-actions.is-stacked {
+  flex-direction: column;
+  align-items: stretch;
+}
+.pw-plan-header-actions:has(.pw-plan-actions.is-stacked) {
+  width: 100%;
+  align-items: stretch;
+}
 .pw-plan-footer {
   display: flex;
   justify-content: flex-end;
@@ -156,6 +183,8 @@
 }
 .pw-plan-info {
   display: grid;
+  /* Each field from the top: the depot's hint must not stretch the others and push their boxes down. */
+  align-items: start;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
   gap: 16px;
 }
@@ -171,7 +200,7 @@
 }
 .pw-edit-table td,
 .pw-edit-table th {
-  padding: 8px;
+  padding: 8px 6px;
   vertical-align: top;
 }
 .pw-edit-table .pw-field-input {
@@ -179,26 +208,57 @@
   width: 100%;
   box-sizing: border-box;
 }
-.pw-assign-table {
-  min-width: 820px;
-}
-.pw-stops-table {
-  min-width: 1180px;
-}
+/* Each column's least width (G4.7): enough for what it holds; the address and the names take what is left. A table
+   that does not fit its group at these widths becomes rows and sheets (measured, PlanFormPage): never sideways. */
 .pw-col-label {
-  width: 120px;
+  /* Measured: "ĐH-10234" needs 98px with the field's padding. */
+  width: 7rem;
+}
+.pw-col-recipient {
+  /* Measured: "Nguyễn Thị Lan" needs 130px with the field's padding; a longer name scrolls in its field. */
+  width: 10.5rem;
 }
 .pw-col-phone {
-  width: 140px;
+  /* Measured: "0905 123 456" needs 121px (HIG Text fields: "match the size of a text field to the quantity of
+     anticipated text"). */
+  width: 8.5rem;
 }
 .pw-col-address {
-  width: 300px;
+  min-width: 10rem;
 }
 .pw-col-window {
-  width: 210px;
+  width: 9.5rem;
 }
 .pw-col-demand {
-  width: 80px;
+  width: 4.5rem;
+}
+.pw-col-note {
+  width: 6rem;
+}
+.pw-col-person {
+  width: 10rem;
+}
+.pw-col-time {
+  width: 6rem;
+}
+.pw-col-distance {
+  width: 7rem;
+}
+.pw-col-remove {
+  width: 2.75rem;
+}
+/* The hidden head that measures whether a table fits (as the plan list's probe row, G2.9). */
+.pw-table-probe {
+  position: absolute;
+  /* Its own width, not the group's: the columns at their least widths. */
+  width: max-content;
+  visibility: hidden;
+  pointer-events: none;
+  height: 0;
+  overflow: hidden;
+}
+.pw-table-probe table {
+  width: auto;
 }
 .pw-cell-error .pw-field-input {
   border: 2px solid var(--danger);
@@ -235,12 +295,6 @@
   gap: 4px;
   max-width: 100%;
 }
-.pw-plans-why {
-  text-align: right;
-  font-size: 12px;
-  line-height: 16px;
-  color: var(--ink-muted);
-}
 .pw-plans-progress {
   display: flex;
   flex-direction: column;
@@ -259,6 +313,10 @@
   background: var(--surface-raised);
   border: 1px solid var(--danger);
   border-radius: var(--radius-md);
+}
+/* Something to do before optimizing that is not an error (no assignment yet): the same block, a neutral edge. */
+.pw-plans-missing.is-todo {
+  border-color: var(--line);
 }
 .pw-plans-missing-text {
   flex: 1 1 420px;
@@ -336,6 +394,17 @@
   flex-direction: column;
   align-items: flex-start;
   gap: 8px;
+}
+/* "Phóng to bản đồ để đặt ghim chính xác hơn" is longer than a narrow panel (320px): it wraps inside the button
+   instead of running out of the panel (G2.11; HIG Typography "use as many lines as needed"). */
+.pw-geocode-map > .pw-btn {
+  max-width: 100%;
+  height: auto;
+  min-height: 36px;
+  /* One line stays 36px (20px line, 7px above and below, 1px border); two lines grow. */
+  padding-block: 7px;
+  white-space: normal;
+  text-align: center;
 }
 .pw-map-4x3 {
   aspect-ratio: 4 / 3;
@@ -923,9 +992,6 @@
   font-size: 12px;
   line-height: 16px;
 }
-.pw-import-table .pw-table {
-  min-width: 1080px;
-}
 .pw-import-added {
   margin: 0;
   color: var(--ink-muted);
@@ -977,4 +1043,264 @@
   flex-direction: column;
   gap: var(--space-1);
   flex: 1 1 360px;
+}
+
+/* The plan form (OWNER_UI_REDESIGN §9). The title row holds the one set of actions and stays pinned under the top bar
+   while the form scrolls (G4.2): the same opaque strip as the top bar, a soft edge once stuck (as the pinned pager,
+   §8.17). */
+.pw-form-bar {
+  position: sticky;
+  top: 60px;
+  z-index: 15;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-inline: calc(-1 * clamp(16px, 2vw, 24px));
+  padding: 8px clamp(16px, 2vw, 24px);
+  background: var(--surface);
+}
+.pw-form-bar .pw-page-title {
+  min-width: 0;
+  margin: 0;
+}
+.pw-form-bar::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 100%;
+  height: 16px;
+  background: linear-gradient(var(--surface), transparent);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+.pw-form-bar.is-stuck::after {
+  opacity: 1;
+}
+.pw-form-bar .pw-plan-actions {
+  flex-wrap: nowrap;
+}
+/* Groups by space and a filled container, no outline (G4.3; as the store page's groups). */
+.pw-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+  padding: 20px;
+  border-radius: var(--radius-lg);
+  background: var(--surface-raised);
+}
+.pw-form-group h2 {
+  margin: 0;
+  font-size: 1.0625rem;
+  line-height: 1.375rem;
+  font-weight: 600;
+}
+/* WCAG 2.4.11: a focused field scrolls clear of the top bar and the pinned title row. */
+html:has(.pw-form-bar) {
+  scroll-padding-top: 132px;
+}
+@media (max-height: 500px) {
+  .pw-form-bar {
+    position: static;
+  }
+  .pw-form-bar::after {
+    display: none;
+  }
+  html:has(.pw-form-bar) {
+    scroll-padding-top: 60px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pw-form-bar::after {
+    transition: none;
+  }
+}
+/* The back button sits close over the title row (the invisible sentinel between them must not add the form's gap). */
+.pw-plan-form > .pw-back-link + .pw-pager-sentinel {
+  margin-top: -40px;
+}
+/* Phone: the back button is in the top bar (§9.11), the sentinel comes first; the title row sits as close under the
+   top bar as other pages' titles (~20px), not a form gap plus the sentinel lower. */
+.pw-plan-form > .pw-pager-sentinel:first-child {
+  margin-bottom: -32px;
+}
+
+/* Phone rows of the form (G4.8): a row with a field to fix says so in the danger colour under its lines. */
+.pw-form-rows {
+  margin: 0;
+}
+.pw-form-row-fix {
+  font-size: 0.8125rem;
+  line-height: 1.125rem;
+  font-weight: 600;
+  color: var(--danger);
+}
+.pw-list-row.is-invalid .pw-list-row-title {
+  color: var(--danger);
+}
+/* Two fields side by side in a sheet (shift start/end, from/to, amounts). */
+.pw-sheet-pair {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(7rem, 1fr));
+  gap: 12px;
+}
+.pw-sheet-pair .pw-time-input,
+.pw-sheet-pair .pw-time-button {
+  width: 100%;
+}
+.pw-sheet-fieldset {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+.pw-sheet-fieldset > legend {
+  padding: 0;
+  margin-bottom: 8px;
+}
+.pw-btn.pw-sheet-destructive {
+  color: var(--danger);
+}
+/* The import preview on a phone: one row per line of the file, its result at the end, its errors under it. */
+.pw-import-rows .pw-list-row {
+  align-items: flex-start;
+}
+.pw-import-rows .pw-import-err {
+  font-size: 0.8125rem;
+  line-height: 1.125rem;
+}
+/* Short values stay on one line; the errors take what they need (G2.11), so the preview fits the large sheet. */
+.pw-import-ok,
+.pw-import-bad {
+  white-space: nowrap;
+}
+.pw-import-col-errors {
+  min-width: 10rem;
+}
+.pw-import-col-address {
+  min-width: 9rem;
+}
+
+/* Copy sheet (G4.10). The plan copied from, in full; the stops to copy as a list of options, the chosen one with a
+   checkmark (HIG Lists and tables). */
+.pw-copy-source {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.pw-copy-only {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+}
+.pw-option-list {
+  display: flex;
+  flex-direction: column;
+  margin-top: 8px;
+  padding: 0 16px;
+  border-radius: var(--radius-lg);
+  background: color-mix(in srgb, var(--ink) 5%, transparent);
+}
+.pw-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+  padding: 10px 0;
+  border: 0;
+  border-top: 1px solid var(--line);
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.pw-option:first-child {
+  border-top: 0;
+}
+.pw-option-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.pw-option-title {
+  font-weight: 600;
+}
+.pw-option-check {
+  flex: none;
+  display: inline-grid;
+  width: 20px;
+  color: var(--route);
+}
+.pw-option-check svg {
+  width: 18px;
+  height: 18px;
+  stroke-width: 2.6;
+}
+.pw-option:focus-visible {
+  outline: 2px solid var(--route);
+  outline-offset: 2px;
+  border-radius: var(--radius-md);
+}
+/* A time in a table cell: "08:30" needs 66px with the field's padding. */
+.pw-edit-table .pw-time-input,
+.pw-edit-table .pw-time-button {
+  width: 4.5rem;
+}
+
+/* Finding coordinates: the turning spokes beside the progress bar, which moves only when the plan is read again. */
+.pw-progress-running {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+.pw-progress-running > :last-child {
+  flex: 1;
+  min-width: 0;
+}
+.pw-progress-running .pw-activity-text {
+  /* On the bar's words line (its label is 16px tall): centred on it. */
+  height: 16px;
+}
+
+/* A table inside a form group has no frame of its own: the group is its container (DESIGN_SYSTEM: a table in a group
+   — "nền, bo 16, không viền"; HIG Layout: group with "container shapes, or separator lines", one is enough). Its old
+   4px frame inside the 16px group was a nested shape that was not concentric (S1; 16 − 20 padding < 0, S2). Rows keep
+   their separators; the head its line. */
+.pw-form-group .pw-table-wrap {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+/* Rows arriving and leaving in the plan form (useRowMotion, §9.6): an added row fades in with a tint that dies away,
+   as a standard table inserts a row; a removed row fades out before it goes. The fix panel's content fades in when
+   another stop is chosen (no movement: a frequent action, HIG Motion). Reduced motion keeps the fades (CĐ6). */
+.pw-edit-table tr.is-new,
+.pw-form-rows .pw-list-row.is-new {
+  animation:
+    pw-fade-in 0.25s ease both,
+    pw-row-tint 1.2s ease-out both;
+}
+.pw-edit-table tr.is-leaving,
+.pw-form-rows .pw-list-row.is-leaving {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+@keyframes pw-row-tint {
+  from {
+    background-color: var(--surface-tint);
+  }
+}
+.pw-geocode-fix.is-switching > * {
+  animation: pw-fade-in 0.2s ease both;
 }

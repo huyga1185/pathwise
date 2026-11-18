@@ -105,6 +105,7 @@ Bộ component React (`window.PathWise`) là bản tham chiếu cho web dashboar
 - Khoảng cách theo bậc `space-1` (4), `space-2` (8), `space-4` (16), `space-6` (24); không dùng giá trị lẻ.
 - Panel và thẻ padding `space-4`, cách nhau `space-6`. Ô bảng padding dọc `space-2`.
 - Bo góc: ô nhập, nút, khung bảng, khung bản đồ `radius-sm`; thẻ, panel, hộp thoại `radius-md`; thẻ nổi đứng riêng (thẻ đăng nhập) `radius-lg`; pill và marker `radius-full`.
+  - **Khu chủ cửa hàng đã redesign (G2–G4, `OWNER_UI_REDESIGN.md`) thay quy tắc thẻ/panel trên:** nhóm nội dung là ô nền `surface-raised`, **bo 16, không viền** (`pw-list-group`, `pw-store-group`, `pw-form-group`); bảng trong nhóm không có khung riêng. Trang chưa redesign còn thẻ `radius-md` có viền: **chi tiết kế hoạch** (để G5, chủ dự án chọn 2026-11-18), Báo cáo (G6), khu quản trị. Đo 2026-11-18: chi tiết kế hoạch bo 8 / bảng bo 4, có viền; các trang đã redesign bo 16 không viền.
 - Web dashboard: màn hình soạn plan chia đôi, bảng stop bên trái, bản đồ bên phải; dưới 1024px bản đồ xuống dưới bảng.
 - App tài xế: vùng chạm tối thiểu 48px; ba nút kết quả của stop (Đã giao, Không giao được, Bỏ qua) xếp dọc, cao 56px, ở nửa dưới màn hình để bấm bằng ngón cái.
 
@@ -166,7 +167,7 @@ Nút bấm cho mọi hành động; mỗi màn hình chỉ một nút `primary`,
 
 - `SelectField`: ô chọn (native `select`) cùng nhãn, hint, câu lỗi, `aria-describedby` như `TextField`; `placeholder` là lựa chọn rỗng đầu tiên ("Chọn đơn vị") cho ô bắt buộc chưa có giá trị. Dùng cho đơn vị của xe, vai trò. Ô chọn vai trò trong bảng thành viên dùng `select.pw-field-input` có `aria-label` theo dòng.
 - `Checkbox`: ô 18px màu `route` kèm chữ (prototype `.check`), cao tối thiểu 36px; trong bảng có `aria-label` theo dòng ("Đi giao: Tài xế A").
-- `.pw-card`: khung của form cạnh danh sách (`surface-raised`, viền `line`, `radius-md`, padding 16px, tiêu đề 20/28). Hộp "đã lưu" `.pw-status-ok` (viền `success`).
+- `.pw-card`: khung của form cạnh danh sách (`surface-raised`, viền `line`, `radius-md`, padding 16px, tiêu đề 20/28). Hộp "đã lưu" `.pw-status-ok` (viền `success`). *Kiểu cũ:* các trang đã redesign dùng nhóm bo 16 không viền (mục Bo góc); `.pw-card` còn ở trang chưa redesign (chi tiết kế hoạch tới G5).
 
 ### StatusPill
 
@@ -186,6 +187,7 @@ Nhãn trạng thái viết hoa trên nền màu trạng thái; truyền thẳng 
 - `SegmentedControl`: chuyển giữa các phần liên quan trên điện thoại; ô bằng nhau, ô đang chọn nổi lên.
 - `useRowMenu` + `RowMenu`: menu ngữ cảnh của hàng cho mọi danh sách (chạm giữ, nhấp chuột phải); mục phá huỷ chữ đỏ.
 - `ToastDock`: chỗ hiện toast (góc dưới; điện thoại trên tab bar).
+- Kiểu `tinted` của `Button` (2026-11-18, OWNER_UI_REDESIGN §9.10): chữ màu nhấn trên nền màu nhấn nhạt 16% (như bộ lọc đang bật, G2.2), giữa `secondary` (xám) và `primary`; theo UIKit `UIButton.Configuration.tinted()`. Dùng khi một nút phụ cần tách khỏi nút xám bên cạnh mà không thành nút chính thứ hai (HIG Buttons: ít nút nổi bật; màu chỉ cho vai trò chính / nguy hiểm). Rê / nhấn: nền 22% / 28%, chữ đậm dần để giữ ≥ 4.5:1 (đo sáng 4.73 / 4.99 / 5.26, tối 6.20 / 5.96 / 5.68); tăng tương phản: viền 2px màu chữ.
 - Hình theo cỡ control (S3, WWDC25 356): chuột (cỡ Medium): mọi nút, kể cả `primary`, nút biểu tượng, ô nhập, bộ lọc bo 8, nút chính chỉ khác màu; cảm ứng: viên thuốc 44px; control Large 44px (thẻ tài khoản, nút trạng thái trống) là viên thuốc. `secondary` nền xám, không viền (F-73).
 - Ô nhập, ô chọn: nền fill nhạt, viền 1px `ink-muted`, focus sáng viền màu nhấn (như trang đăng nhập); ô chọn có dấu ⌃⌄.
 - Menu và khung bật ra vẽ trên `body`, đặt theo nút mở. Ô chọn (`<select>`) mở menu của app (`useSelectMenu`), không dùng danh sách của trình duyệt.
@@ -217,6 +219,8 @@ Bảng dữ liệu của web dashboard: danh sách stop, plan, xe, thành viên;
 - `empty`: câu hướng dẫn việc tiếp theo, ví dụ "Chưa có điểm giao. Thêm điểm giao để tối ưu lộ trình."
 - Phân trang theo API (`page`, `size`); component không tự phân trang. Máy tính: thanh trang dưới bảng; điện thoại: `Pager pinned` trên danh sách, ghim dưới thanh trên cùng, có mép mờ khi dính, không ghim khi cửa sổ thấp (§8.17).
 - Chữ dài trong bảng (G2.11): `pw-cell-title` (2 dòng rồi "…", bẻ cả chuỗi không dấu cách, kèm `title`), `pw-cell-sub` (1 dòng), `pw-cell-main` (cột chính tối thiểu 12rem), `pw-nowrap` cho giá trị ngắn; bảng hẹp gập cột phụ thành dòng dưới tên (`pw-col-fold` / `pw-cell-fold`, container query). Chỉ cắt khi có màn xem đủ (trang hoặc sheet của dòng).
+- Việc đang chạy (§9.5): `Button busy` + `busyLabel` — vòng xoay và nhãn bận **trong** nút sau 0,3 s, nút không tắt mà không nhận bấm (APPLE_CHECKLIST B-4, HIG Buttons); thanh tiến độ khi biết tiến độ, kèm vòng xoay cạnh nếu thanh có thể đứng yên; nơi khác `ActivityText` (vòng xoay **không chữ**, chữ là tên trợ năng; HIG macOS *"Avoid labeling a spinning progress indicator"*) thay cho nhãn màu đứng yên.
+- Form (G4, `OWNER_UI_REDESIGN.md` §9): `BackLink` (nút quay lại chuẩn: chevron + tên trang cha; điện thoại: ở đầu thanh trên, thu về chevron khi tiêu đề nhỏ hiện, §9.11); `DateField` (compact date picker dạng ô, ngày màu nhấn, lịch của bộ lọc); `TimeField` (giờ 24h: chuột gõ "HH:mm", cảm ứng nút mở bánh xe giờ/phút bước 5); `Sheet size="large"` cho nội dung cần chỗ (bảng xem trước); danh sách lựa chọn có dấu tích (`pw-option-list`, `role="radio"`) thay nút radio; hàng ghim dưới thanh trên (`useStuck`, nền đặc, mép mờ khi dính) cho thanh trang và hàng tiêu đề form; Escape trong popover chỉ đóng popover, không đóng sheet chứa nó.
 - Chọn ngày (`DatePickerFilter`): máy tính lịch bật ra (compact); điện thoại lịch inline trong trang dưới hàng lọc (HIG Date pickers, §8.11). Đầu lịch "Tháng x, năm ›" mở hai bánh xe tháng/năm (`Wheel`, §8.12); ô ngày tròn; ‹ › theo hình nút của cách nhập; nút xoá ngày "Bỏ chọn ngày".
 - Bảng vừa một màn hình: `useFitRows` (`shared/hooks`) + dòng mẫu ẩn cao nhất có thể (G2.9).
 - Ô chứa trạng thái dùng `StatusPill`.

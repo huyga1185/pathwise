@@ -10,6 +10,7 @@ import {
   type RefObject,
 } from 'react';
 import { createPortal } from 'react-dom';
+import { formatDateShort } from '@/shared/format';
 import { reducedMotion, useExit } from '@/shared/hooks/useExit';
 import { useMediaQuery, WIDE_QUERY } from '@/shared/hooks/useMediaQuery';
 import {
@@ -450,6 +451,7 @@ export function DatePickerFilter({
   chooseMonthText = 'Chọn tháng và năm',
   monthWheelText = 'Tháng',
   yearWheelText = 'Năm',
+  field,
   onChange,
 }: {
   label: string;
@@ -457,7 +459,13 @@ export function DatePickerFilter({
   emptyText: string;
   /** Today in the store's timezone, "YYYY-MM-DD". */
   today: string;
-  clearText: string;
+  /** The button removing the date; none for a required date. */
+  clearText?: string;
+  /**
+   * A form field (DateField, G4.4) instead of a filter: the button looks like the other fields and shows the date in
+   * the accent colour (HIG Date pickers, compact: "a button that shows the current value in your app's accent color").
+   */
+  field?: { id: string; invalid?: boolean; describedBy?: string; required?: boolean };
   previousMonthText: string;
   nextMonthText: string;
   chooseMonthText?: string;
@@ -631,7 +639,7 @@ export function DatePickerFilter({
           ))}
         </div>
       )}
-      {value && !choosing ? (
+      {value && !choosing && clearText ? (
         <div className="pw-calendar-foot">
           <button
             type="button"
@@ -652,7 +660,12 @@ export function DatePickerFilter({
       <button
         ref={anchor}
         type="button"
-        className={cx('pw-filter', value && 'is-set')}
+        id={field?.id}
+        className={
+          field ? cx('pw-field-input pw-date-button', !value && 'is-empty') : cx('pw-filter', value && 'is-set')
+        }
+        aria-invalid={field?.invalid ? 'true' : undefined}
+        aria-describedby={field?.describedBy}
         aria-haspopup={wide ? 'dialog' : undefined}
         aria-expanded={open}
         aria-controls={open ? dialogId : undefined}
@@ -666,9 +679,18 @@ export function DatePickerFilter({
           setOpen((was) => !was);
         }}
       >
-        <CalendarIcon />
-        <span className="pw-filter-label">{label}:</span>
-        <span className="pw-filter-value pw-filter-date">{value ? shortDate(value) : emptyText}</span>
+        {field ? (
+          <>
+            <span className="pw-date-value">{value ? formatDateShort(value) : emptyText}</span>
+            <CalendarIcon />
+          </>
+        ) : (
+          <>
+            <CalendarIcon />
+            <span className="pw-filter-label">{label}:</span>
+            <span className="pw-filter-value pw-filter-date">{value ? shortDate(value) : emptyText}</span>
+          </>
+        )}
       </button>
       {wide ? (
         <Panel

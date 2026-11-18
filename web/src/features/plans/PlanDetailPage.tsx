@@ -1,6 +1,6 @@
 import { useStoreReadOnly } from '@/data/meQuery';
 import { useState, type ReactNode } from 'react';
-import { Link, useLocation, useNavigate, useParams } from 'react-router';
+import { useLocation, useNavigate, useParams } from 'react-router';
 import { ApiError } from '@/data/apiError';
 import { useGeocodingSearch } from '@/data/geocoding';
 import { formatCoordinates } from '@/features/store';
@@ -8,11 +8,13 @@ import { PinMap, type LatLng } from '@/platform/map';
 import { messageFor } from '@/shared/errors';
 import { formatDateLong } from '@/shared/format';
 import { vi } from '@/shared/i18n/vi';
+import { BackLink } from '@/shared/ui/BackLink';
 import { statusInfo } from '@/shared/status';
 import {
   Button,
   DataTable,
   ErrorBanner,
+  ActivityText,
   ProgressBar,
   StatusPill,
   TextField,
@@ -21,11 +23,15 @@ import {
   ActivityIndicator,
 } from '@/shared/ui';
 import { PinPickerDialog } from '@/shared/ui/PinPicker';
+import { useMediaQuery } from '@/shared/hooks/useMediaQuery';
 import { allStops, usePlan, usePlanApi, type PlanDetail, type PlanStop } from './planApi';
 import { ResultView } from './ResultView';
 import { TrackView } from './TrackView';
-import { CopyDialog, type CopiedNotice } from './CopyDialog';
+import { CopySheet, type CopiedNotice } from './CopySheet';
 import './plans.css';
+
+/** Narrower than this, the three header buttons no longer fit one row (measured 2026-11-18): they stack. */
+const STACK_QUERY = '(max-width: 439px)';
 
 const g = vi.geocode;
 
@@ -44,12 +50,13 @@ export function PlanDetailPage() {
     return (
       <section className="pw-page-section">
         <ErrorBanner title={messageFor(plan.error)} />
-        <Link to="/plans">{vi.plans.back}</Link>
+        <BackLink to="/plans" label={vi.plans.title} />
       </section>
     );
   }
   if (!plan.data) return <ActivityIndicator label={vi.pages.loading} className="is-page" />;
   const data = plan.data;
+  const kind = data.status === 'DRAFT' && !data.optimizedAt ? 'geocode' : data.status === 'DRAFT' ? 'result' : 'track';
   const view =
     data.status === 'DRAFT' && !data.optimizedAt ? (
       <GeocodeView plan={data} />
@@ -65,7 +72,7 @@ export function PlanDetailPage() {
   return (
     <>
       {copied ? <CopiedBanner notice={copied} onClose={() => navigate('.', { replace: true, state: null })} /> : null}
-      {view}
+      <ViewSwitch kind={kind}>{view}</ViewSwitch>
       {toast ? (
         <div className="pw-toast-dock">
           <Toast tone="success" onClose={() => setToast(null)}>
@@ -81,13 +88,13 @@ function PlanHeader({ plan, subtitle, actions }: { plan: PlanDetail; subtitle: s
   return (
     <div className="pw-plans-head">
       <div className="pw-plans-intro">
-        <Link to="/plans" className="pw-back-link">
-          {vi.plans.back}
-        </Link>
+        <BackLink to="/plans" label={vi.plans.title} />
         <div className="pw-plan-title">
           <h1 className="pw-page-title">{plan.name}</h1>
           <StatusPill kind="plan" status={plan.status} />
-          <StatusPill kind="processing" status={plan.processingStatus} />
+          {/* A running task turns, it is not a static label (HIG Progress indicators). Finding coordinates has its
+              progress bar under the title, so the title says nothing more; optimizing has none here. */}
+          {plan.processingStatus === 'OPTIMIZING' ? <ActivityText text={g.optimizing} /> : null}
         </div>
         <p className="pw-muted">{subtitle}</p>
       </div>
@@ -107,11 +114,14 @@ function GeocodeView({ plan }: { plan: PlanDetail }) {
   const busy = plan.processingStatus !== 'IDLE';
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [failure, setFailure] = useState<unknown>(null);
+  const [tries, setTries] = useState(0);
+  const [repeat, setRepeat] = useState(false);
   const [working, setWorking] = useState(false);
   const [copying, setCopying] = useState(false);
   const selected =
     stops.find((stop) => stop.id === selectedId) ?? stops.find((stop) => stop.geocodeStatus === 'FAILED') ?? stops[0];
 
+  const stacked = useMediaQuery(STACK_QUERY);
   const why = busy
     ? plan.processingStatus === 'OPTIMIZING'
       ? g.whyOptimizing
@@ -125,13 +135,19 @@ function GeocodeView({ plan }: { plan: PlanDetail }) {
           : g.whyReady;
   const canOptimize = !busy && stops.length > 0 && plan.routes.length > 0 && missing === 0;
 
+  // The last error stays while the next try runs and is replaced in one go by its result: taking it away first made
+  // the page shorter and jump (scrolled to the bottom, the page moved up and down: owner, 2026-11-18). A new try that
+  // fails again draws its banner anew (key), so it is announced again.
   const run = async (action: () => Promise<unknown>) => {
-    setFailure(null);
+    const shownBefore = failure !== null;
     setWorking(true);
     try {
       await action();
+      setFailure(null);
     } catch (error) {
       setFailure(error);
+      setRepeat(shownBefore);
+      setTries((n) => n + 1);
       if (error instanceof ApiError && (error.code === 'PLAN_MODIFIED' || error.code === 'PLAN_BUSY')) {
         await planApi.reload(plan.id);
       }
@@ -180,7 +196,9 @@ function GeocodeView({ plan }: { plan: PlanDetail }) {
       key: 'geo',
       header: g.coordinates,
       render: (row) =>
-        statusInfo('geocode', row.geocodeStatus) ? (
+        row.geocodeStatus === 'PENDING' ? (
+          <ActivityText text={g.finding} />
+        ) : statusInfo('geocode', row.geocodeStatus) ? (
           <StatusPill kind="geocode" status={row.geocodeStatus} />
         ) : (
           <span className="pw-muted">{row.geocodeStatus === 'RESOLVED' ? g.resolved : g.provided}</span>
@@ -188,6 +206,16 @@ function GeocodeView({ plan }: { plan: PlanDetail }) {
     },
   ];
 
+  const optimizeButton = (
+    <Button
+      variant="primary"
+      disabled={!canOptimize || working || readOnly}
+      aria-describedby="optimize-why"
+      onClick={() => void run(() => planApi.optimize(plan.id, plan.version))}
+    >
+      {g.optimize}
+    </Button>
+  );
   return (
     <section className="pw-page-section" aria-labelledby="plan-title">
       <PlanHeader
@@ -195,13 +223,11 @@ function GeocodeView({ plan }: { plan: PlanDetail }) {
         subtitle={g.subtitle(formatDateLong(plan.planDate), stops.length, plan.routes.length)}
         actions={
           <div className="pw-plan-header-actions">
-            <div className="pw-plan-actions">
-              {/* Copy, in every state (API_SPEC: any status); the list's touch-and-hold menu offers it too. */}
-              {!readOnly ? (
-                <Button variant="quiet" onClick={() => setCopying(true)}>
-                  {vi.planCopy.action}
-                </Button>
-              ) : null}
+            {/* One row: edit, copy, the primary action last (HIG Toolbars). Too narrow for one row (< 440px, measured):
+                stacked full width, the primary action first (owner's choice, §9.12) — in that order in the page too,
+                so reading and Tab follow what is seen (WCAG 1.3.2, 2.4.3). */}
+            <div className={stacked ? 'pw-plan-actions is-stacked' : 'pw-plan-actions'}>
+              {stacked ? optimizeButton : null}
               <Button
                 variant="secondary"
                 disabled={busy || readOnly}
@@ -209,27 +235,34 @@ function GeocodeView({ plan }: { plan: PlanDetail }) {
               >
                 {g.editStops}
               </Button>
-              <Button
-                variant="primary"
-                disabled={!canOptimize || working || readOnly}
-                aria-describedby="optimize-why"
-                onClick={() => void run(() => planApi.optimize(plan.id, plan.version))}
-              >
-                {g.optimize}
-              </Button>
+              {/* Copy, in every state (API_SPEC: any status); the list's touch-and-hold menu offers it too. Tinted,
+                  between the grey edit and the primary action (HIG Toolbars; owner, 2026-11-18). */}
+              {!readOnly ? (
+                <Button variant="tinted" onClick={() => setCopying(true)}>
+                  {vi.planCopy.action}
+                </Button>
+              ) : null}
+              {stacked ? null : optimizeButton}
             </div>
-            <span id="optimize-why" className="pw-plans-why">
+            {/* Read with the button (aria-describedby); on screen each reason has its own place: the block below for
+                what to do, the progress and spinners for a running task (§9.7, owner's trial 2026-11-18). */}
+            <span id="optimize-why" className="pw-visually-hidden">
               {why}
             </span>
           </div>
         }
       />
 
-      {failure ? <ErrorBanner title={messageFor(failure)} /> : null}
+      {failure ? <ErrorBanner key={tries} repeat={repeat} title={messageFor(failure)} /> : null}
 
       {plan.processingStatus === 'GEOCODING' ? (
         <section className="pw-plans-progress" aria-label={statusInfo('processing', 'GEOCODING')?.label}>
-          <ProgressBar label={g.progressLabel} value={summary.total - summary.pending} max={summary.total} />
+          {/* The bar only moves when the plan is read again: a spinner beside it keeps moving meanwhile (HIG Progress
+              indicators: "Keep progress indicators moving"; macOS: a spinner "next to a specific control"). */}
+          <div className="pw-progress-running">
+            <ActivityText text={g.progressLabel} />
+            <ProgressBar label={g.progressLabel} value={summary.total - summary.pending} max={summary.total} />
+          </div>
           <p className="pw-muted">{g.progressNote}</p>
         </section>
       ) : null}
@@ -245,10 +278,23 @@ function GeocodeView({ plan }: { plan: PlanDetail }) {
           <Button
             variant="secondary"
             busy={working}
+            busyLabel={g.searching}
             disabled={readOnly}
             onClick={() => void run(() => planApi.geocode(plan.id, plan.version))}
           >
             {g.retryAll}
+          </Button>
+        </section>
+      ) : null}
+
+      {!busy && stops.length > 0 && plan.routes.length === 0 ? (
+        <section className="pw-plans-missing is-todo" aria-labelledby="assign-alert">
+          <div className="pw-plans-missing-text">
+            <h2 id="assign-alert">{g.noAssignmentsTitle}</h2>
+            <p className="pw-muted">{g.noAssignmentsNote}</p>
+          </div>
+          <Button variant="secondary" disabled={readOnly} onClick={() => navigate(`/plans/${plan.id}/edit`)}>
+            {g.addAssignments}
           </Button>
         </section>
       ) : null}
@@ -266,7 +312,7 @@ function GeocodeView({ plan }: { plan: PlanDetail }) {
         </section>
         {selected ? <FixStop key={selected.id} plan={plan} stop={selected} busy={busy} /> : null}
       </div>
-      {copying ? <CopyDialog planId={plan.id} planName={plan.name} open onClose={() => setCopying(false)} /> : null}
+      {copying ? <CopySheet planId={plan.id} planName={plan.name} open onClose={() => setCopying(false)} /> : null}
     </section>
   );
 }
@@ -284,7 +330,10 @@ function FixStop({ plan, stop, busy }: { plan: PlanDetail; stop: PlanStop; busy:
   const [enlarge, setEnlarge] = useState(false);
   const [saved, setSaved] = useState<string | null>(null);
   const [failure, setFailure] = useState<unknown>(null);
-  const [working, setWorking] = useState(false);
+  const [tries, setTries] = useState(0);
+  const [repeat, setRepeat] = useState(false);
+  // Which request runs: its own button shows the wait; nothing else changes while it runs (below).
+  const [working, setWorking] = useState<'retry' | 'pin' | null>(null);
   const current = stop.lat !== null && stop.lon !== null ? { lat: stop.lat, lon: stop.lon } : null;
   const geocodeMessage =
     stop.geocodeStatus === 'FAILED'
@@ -293,20 +342,26 @@ function FixStop({ plan, stop, busy }: { plan: PlanDetail; stop: PlanStop; busy:
         : g.notFound
       : undefined;
 
-  const run = async (action: () => Promise<unknown>, done?: string) => {
-    setFailure(null);
+  // As the page's: the last error stays until this try's result replaces it (no jump), drawn anew when it fails again.
+  const run = async (kind: 'retry' | 'pin', action: () => Promise<unknown>, done?: string) => {
+    const shownBefore = failure !== null;
+    // A second press while one request runs is ignored, not shown as a disabled button.
+    if (working) return;
     setSaved(null);
-    setWorking(true);
+    setWorking(kind);
     try {
       await action();
+      setFailure(null);
       if (done) setSaved(done);
     } catch (error) {
       setFailure(error);
+      setRepeat(shownBefore);
+      setTries((n) => n + 1);
       if (error instanceof ApiError && (error.code === 'PLAN_MODIFIED' || error.code === 'PLAN_BUSY')) {
         await planApi.reload(plan.id);
       }
     } finally {
-      setWorking(false);
+      setWorking(null);
     }
   };
 
@@ -314,24 +369,33 @@ function FixStop({ plan, stop, busy }: { plan: PlanDetail; stop: PlanStop; busy:
     const next = address.trim();
     // A changed address is geocoded again by the server (PENDING); the same one needs POST /geocode.
     return next && next !== (stop.address ?? '')
-      ? run(() => planApi.patchStop(plan.id, stop.id, { version: plan.version, address: next }))
-      : run(() => planApi.geocode(plan.id, plan.version));
+      ? run('retry', () => planApi.patchStop(plan.id, stop.id, { version: plan.version, address: next }))
+      : run('retry', () => planApi.geocode(plan.id, plan.version));
   };
 
   const savePin = (value: LatLng) =>
     run(
+      'pin',
       () => planApi.patchStop(plan.id, stop.id, { version: plan.version, lat: value.lat, lon: value.lon }),
       g.pinSaved(formatCoordinates(value), stop.label),
     ).then(() => setPin(null));
 
-  const disabled = busy || working;
+  // Only the server's own processing locks the panel. A short request does not: the map, its controls and the
+  // buttons stay as they are (HIG Loading: "Let people do other things… while they wait"); disabling them for the
+  // ~0.15 s of a request made them flash (owner, 2026-11-18).
+  const disabled = busy;
   return (
-    <section className="pw-card pw-geocode-fix" aria-labelledby="fix-title">
+    // A new stop chosen: the panel's content fades in (§9.6, owner's answer: a light crossfade, no movement).
+    <section className="pw-card pw-geocode-fix is-switching" aria-labelledby="fix-title">
       <div className="pw-geocode-fix-head">
         <h2 id="fix-title">{g.fixTitle(stopTitle(stop))}</h2>
-        <StatusPill kind="geocode" status={stop.geocodeStatus} />
+        {stop.geocodeStatus === 'PENDING' ? (
+          <ActivityText text={g.finding} />
+        ) : (
+          <StatusPill kind="geocode" status={stop.geocodeStatus} />
+        )}
       </div>
-      {failure ? <ErrorBanner title={messageFor(failure)} /> : null}
+      {failure ? <ErrorBanner key={tries} repeat={repeat} title={messageFor(failure)} /> : null}
       <TextField
         label={g.address}
         maxLength={500}
@@ -340,8 +404,14 @@ function FixStop({ plan, stop, busy }: { plan: PlanDetail; stop: PlanStop; busy:
         error={address === (stop.address ?? '') ? geocodeMessage : undefined}
         onChange={(event) => setAddress(event.target.value)}
       />
-      <div>
-        <Button variant="secondary" busy={working && !pin} disabled={disabled} onClick={() => void retry()}>
+      <div className="pw-inline-action">
+        <Button
+          variant="secondary"
+          disabled={disabled}
+          busy={working === 'retry'}
+          busyLabel={g.searching}
+          onClick={() => void retry()}
+        >
           {g.retryOne}
         </Button>
       </div>
@@ -371,31 +441,31 @@ function FixStop({ plan, stop, busy }: { plan: PlanDetail; stop: PlanStop; busy:
         {saved ?? (pin ? g.pinAt(formatCoordinates(pin)) : g.pinHint)}
       </p>
       <div className="pw-plan-actions pw-geocode-fix-actions">
-        <Button variant="quiet" disabled={!pin || working} onClick={() => setPin(null)}>
+        <Button variant="quiet" disabled={!pin} onClick={() => setPin(null)}>
           {g.skip}
         </Button>
         <Button
           variant="secondary"
-          busy={working && pin !== null}
+          busy={working === 'pin'}
+          busyLabel={g.savingPin}
           disabled={!pin || disabled}
           onClick={() => pin && void savePin(pin)}
         >
           {g.savePin}
         </Button>
       </div>
-      {enlarge ? (
-        <PinPickerDialog
-          open
-          initial={pin ?? current ?? plan.depot}
-          search={search}
-          pinLabel={g.pinLabel}
-          onConfirm={(value) => {
-            setPin(value);
-            setEnlarge(false);
-          }}
-          onClose={() => setEnlarge(false)}
-        />
-      ) : null}
+      {/* Always there, so it closes with its animation (Dialog). */}
+      <PinPickerDialog
+        open={enlarge}
+        initial={pin ?? current ?? plan.depot}
+        search={search}
+        pinLabel={g.pinLabel}
+        onConfirm={(value) => {
+          setPin(value);
+          setEnlarge(false);
+        }}
+        onClose={() => setEnlarge(false)}
+      />
     </section>
   );
 }
@@ -412,5 +482,21 @@ function CopiedBanner({ notice, onClose }: { notice: CopiedNotice; onClose: () =
         {vi.planCopy.close}
       </Button>
     </section>
+  );
+}
+
+/**
+ * The plan's screen changes in place (finding coordinates → optimized result → tracking): the new one comes in as a
+ * page does (OWNER_UI_REDESIGN §6.2 CĐ2b: fades in and rises 12 px), so the change is seen, not a jump. Not on the
+ * first view: the page itself has just come in.
+ */
+function ViewSwitch({ kind, children }: { kind: string; children: ReactNode }) {
+  const [first] = useState(kind);
+  const [moved, setMoved] = useState(false);
+  if (!moved && kind !== first) setMoved(true);
+  return (
+    <div key={kind} className={moved ? 'pw-view-switch is-new' : 'pw-view-switch'}>
+      {children}
+    </div>
   );
 }

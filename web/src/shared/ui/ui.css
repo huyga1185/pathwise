@@ -71,6 +71,12 @@
   background: color-mix(in srgb, var(--ink) 7%, transparent);
   color: var(--ink);
 }
+/* Tinted (UIKit tinted(); DESIGN_SYSTEM): accent text on a light accent fill, as a set filter (G2.2). The text darkens
+   with the fill so it keeps 4.5:1 at rest, on hover and pressed (WCAG 1.4.3; measured, OWNER_UI_REDESIGN §9.10). */
+.pw-btn-tinted {
+  background: color-mix(in srgb, var(--route) 16%, transparent);
+  color: var(--route);
+}
 .pw-btn-quiet {
   background: transparent;
   color: var(--route);
@@ -112,6 +118,10 @@
   .pw-btn-quiet:hover:not(:disabled) {
     background: var(--surface-tint);
   }
+  .pw-btn-tinted:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--route) 22%, transparent);
+    color: color-mix(in srgb, var(--route) 85%, var(--ink));
+  }
 }
 .pw-btn-primary:active:not(:disabled),
 .pw-btn-danger:active:not(:disabled),
@@ -124,6 +134,21 @@
 }
 .pw-btn-quiet:active:not(:disabled) {
   background: color-mix(in srgb, var(--route) 16%, transparent);
+}
+.pw-btn-tinted:active:not(:disabled) {
+  background: color-mix(in srgb, var(--route) 28%, transparent);
+  color: color-mix(in srgb, var(--route) 70%, var(--ink));
+}
+@media (hover: hover) {
+  a.pw-btn-tinted:hover {
+    color: color-mix(in srgb, var(--route) 85%, var(--ink));
+  }
+}
+/* Increased contrast: the light fill alone is faint; an edge in the text colour (APPLE_CHECKLIST C12). */
+@media (prefers-contrast: more) {
+  .pw-btn-tinted {
+    border: 2px solid currentColor;
+  }
 }
 /* A link drawn as a button keeps its button colours: the base link hover (base.css: a:hover → ink) turned the white
    text of a filled button dark on hover. */
@@ -550,6 +575,8 @@ textarea.pw-field-input {
   max-width: 440px;
   padding: var(--space-6);
   display: grid;
+  /* One column as wide as the dialog: content never widens it past the screen (a phone's 390px). */
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--space-4);
   background: var(--surface-raised);
   color: var(--ink);
@@ -569,6 +596,17 @@ textarea.pw-field-input {
   min-height: 0;
   display: flex;
   flex-direction: column;
+}
+/* The map of a full-size dialog (choose a pin) fills the room left under the search, rather than a fixed 16:9 that
+   ran past the buttons on a wide window and left a blank half on a phone. */
+.pw-dialog-full .pw-dialog-body .pw-pin-picker {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+.pw-dialog-full .pw-dialog-body .pw-map {
+  flex: 1 1 auto;
+  min-height: 240px;
+  aspect-ratio: auto;
 }
 .pw-dialog-title {
   margin: 0;
@@ -2581,6 +2619,9 @@ textarea.pw-field-input {
   place-items: center;
   padding: 24px;
 }
+.is-wide > .pw-sheet.is-large {
+  width: min(1040px, 100%);
+}
 .is-wide > .pw-sheet {
   width: min(520px, 100%);
   max-height: calc(100vh - 48px);
@@ -3447,4 +3488,230 @@ html {
   .pw-pager-bar::after {
     transition: none;
   }
+}
+
+/* A time of day (TimeField, OWNER_UI_REDESIGN G4.5): typed "HH:mm" with a mouse, a button opening hour and minute
+   wheels for touch. Five characters wide; the digits line up (tabular). */
+.pw-time-input,
+.pw-time-button {
+  width: 5.5rem;
+  min-width: 0;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+.pw-time-button {
+  display: inline-grid;
+  place-items: center;
+  color: var(--ink);
+  cursor: pointer;
+}
+.pw-time-button.is-empty {
+  color: var(--ink-muted);
+}
+.pw-time-button[aria-expanded='true'] {
+  border-color: var(--route);
+  background-color: var(--surface-raised);
+  box-shadow:
+    inset 0 0 0 1px var(--route),
+    0 0 12px color-mix(in srgb, var(--route) 30%, transparent);
+}
+.pw-time-panel {
+  width: 14rem;
+  padding: 12px;
+}
+.pw-wheels.pw-time-wheels {
+  grid-template-columns: 1fr 1fr;
+  height: 180px;
+}
+.pw-time-wheels .pw-wheel {
+  height: 180px;
+}
+.pw-time-wheels .pw-wheel-scroller {
+  padding-block: 72px;
+}
+
+/* A date in a form (DateField, G4.4): a field-shaped button, the date in the accent colour (HIG Date pickers, compact),
+   the calendar symbol at its end. */
+.pw-date-button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+}
+.pw-date-button .pw-date-value {
+  color: var(--route);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.pw-date-button.is-empty .pw-date-value {
+  color: var(--ink-muted);
+  font-weight: 400;
+}
+.pw-date-button svg {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  color: var(--ink-muted);
+}
+.pw-date-button[aria-expanded='true'] {
+  border-color: var(--route);
+  background-color: var(--surface-raised);
+  box-shadow:
+    inset 0 0 0 1px var(--route),
+    0 0 12px color-mix(in srgb, var(--route) 30%, transparent);
+}
+.pw-date-field .pw-filter-wrap {
+  display: block;
+}
+
+/* A task running in place of a static label (ActivityText): the turning spokes and short words, in the muted ink. */
+.pw-activity-text {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ink-muted);
+  font-size: 0.875rem;
+  white-space: nowrap;
+}
+.pw-activity-text svg {
+  flex: none;
+  animation: pw-activity-turn 0.8s steps(8) infinite;
+}
+/* In a field's hint line (PinPicker search): the hint's size, shown after a moment as the other waits. */
+.pw-activity-text.pw-hint-activity {
+  font-size: inherit;
+  gap: 4px;
+  animation: pw-activity-show 0.2s ease 0.3s both;
+}
+.pw-activity-text.pw-hint-activity svg {
+  width: 12px;
+  height: 12px;
+}
+
+/* A busy button (Button busy; HIG Buttons, APPLE_CHECKLIST B-4): an activity indicator within it. For the first
+   0.3 s nothing changes (a quick request shows nothing), then the label gives way to the turning spokes and the busy
+   label; both share one cell so the width stays. */
+.pw-btn.is-busy {
+  cursor: default;
+}
+.pw-btn-busy {
+  display: inline-grid;
+}
+.pw-btn-busy > span {
+  grid-area: 1 / 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.pw-btn-busy-idle {
+  animation: pw-btn-busy-out 0.15s ease 0.3s both;
+}
+.pw-btn-busy-now {
+  animation: pw-activity-show 0.2s ease 0.3s both;
+}
+.pw-btn-spinner {
+  flex: none;
+  animation: pw-activity-turn 0.8s steps(8) infinite;
+}
+@keyframes pw-btn-busy-out {
+  to {
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+
+/* Scene changes in the plan flow (OWNER_UI_REDESIGN §9.6), by the motion already set: a plan's screen changing in
+   place comes in as a page (§6.2 CĐ2b: fade, rise 12 px); a block that appears — a banner, the progress, "còn N…",
+   an import or copy notice — settles in as a new result (G2.10: fade, rise 10 px, 0.32 s). The same banner said again
+   after a retry does not move in again (it read as a flash). Selecting another row or adding one does not animate
+   (HIG Motion: "avoid adding motion to UI interactions that occur frequently"). Reduced motion: fades only (CĐ6). */
+.pw-view-switch {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  min-width: 0;
+}
+.pw-view-switch.is-new {
+  animation: pw-page-in 0.28s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.pw-banner,
+.pw-plans-progress,
+.pw-plans-missing,
+.pw-plans-alert,
+.pw-import-added,
+.pw-copy-notice {
+  animation: pw-result-in 0.32s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.pw-banner.is-repeat {
+  animation: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .pw-view-switch.is-new,
+  .pw-banner,
+  .pw-plans-progress,
+  .pw-plans-missing,
+  .pw-plans-alert,
+  .pw-import-added,
+  .pw-copy-notice {
+    animation-name: pw-result-fade;
+  }
+}
+
+/* The old Dialog opens and closes as a wide sheet does: the backdrop fades, the box pops in and back (HIG Motion). */
+.pw-dialog-backdrop {
+  animation: pw-fade-in 0.2s ease both;
+}
+.pw-dialog-backdrop.is-closing {
+  animation: pw-fade-out 0.2s ease both;
+}
+.pw-dialog {
+  animation: pw-sheet-pop 0.24s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.pw-dialog.is-closing {
+  animation: pw-sheet-unpop 0.2s ease both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .pw-dialog,
+  .pw-dialog.is-closing {
+    animation-name: pw-fade-in;
+  }
+  .pw-dialog.is-closing {
+    animation-name: pw-fade-out;
+  }
+}
+
+/* Phone: a sub-page's back button at the leading end of the top bar (BackLink, §9.11). Its title takes the room left
+   by the account button, cut with "…"; with the small title shown in the middle, only the chevron (44px) stays. */
+.pw-topbar-leading {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.pw-topbar-leading:empty {
+  display: none;
+}
+.pw-topbar-leading .pw-back-link {
+  min-width: 44px;
+  max-width: 100%;
+  min-height: 44px;
+  margin-left: -10px;
+  padding: 0 10px;
+}
+.pw-topbar-leading .pw-back-link-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pw-topbar.has-title .pw-back-link-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }

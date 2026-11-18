@@ -1,3 +1,5 @@
+import { createPortal } from 'react-dom';
+import { useExit } from '@/shared/hooks/useExit';
 import { useEffect, useId, useRef, type ReactNode } from 'react';
 import { Button } from './Button';
 import { cx } from './cx';
@@ -51,6 +53,8 @@ export function Dialog({
   onClose,
 }: DialogProps) {
   const titleId = useId();
+  // Opens and closes as a sheet on a wide window does (pop in, pop back), so it does not just blink (HIG Motion).
+  const presence = useExit(open, 200);
   const ref = useRef<HTMLDivElement>(null);
   const onCloseRef = useRef(onClose);
   useEffect(() => {
@@ -72,12 +76,15 @@ export function Dialog({
     };
   }, [open]);
 
-  if (!open) return null;
-  return (
-    <div className="pw-dialog-backdrop">
+  if (presence === 'closed') return null;
+  const closing = presence === 'closing';
+  // On document.body, as Sheet and Alert: inside the page it sat under the sidebar and the top bar, off to one side
+  // (an ancestor's stacking context and containing block), and the enlarge-map dialog did not fit a phone.
+  return createPortal(
+    <div className={cx('pw-dialog-backdrop', closing && 'is-closing')} inert={closing}>
       <div
         ref={ref}
-        className={cx('pw-dialog', size !== 'md' && `pw-dialog-${size}`)}
+        className={cx('pw-dialog', size !== 'md' && `pw-dialog-${size}`, closing && 'is-closing')}
         role={tone === 'danger' ? 'alertdialog' : 'dialog'}
         aria-modal="true"
         aria-labelledby={titleId}
@@ -100,6 +107,7 @@ export function Dialog({
           </Button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

@@ -1,6 +1,6 @@
 import { useStoreReadOnly } from '@/data/meQuery';
-import { useMemo, useState, type ReactNode } from 'react';
-import { useFieldArray, useForm, useWatch, type FieldPath, type UseFormRegister } from 'react-hook-form';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react';
+import { Controller, useFieldArray, useForm, useWatch, type FieldPath, type UseFormRegister } from 'react-hook-form';
 import { Link, useNavigate, useParams } from 'react-router';
 import { ApiError } from '@/data/apiError';
 import { useStoreQuery } from '@/data/storeQuery';
@@ -8,7 +8,22 @@ import { formatCapacity } from '@/features/fleet';
 import { errorMessages, fieldErrors, messageFor } from '@/shared/errors';
 import { todayIn } from '@/shared/format';
 import { vi } from '@/shared/i18n/vi';
-import { Button, buttonClass, Dialog, ErrorBanner, TextField, TrashIcon, ActivityIndicator } from '@/shared/ui';
+import { useMediaQuery, WIDE_QUERY } from '@/shared/hooks/useMediaQuery';
+import { useStuck } from '@/shared/hooks/useStuck';
+import {
+  ActivityIndicator,
+  Alert,
+  BackLink,
+  Button,
+  buttonClass,
+  CheckIcon,
+  DateField,
+  ErrorBanner,
+  TextField,
+  TimeField,
+  TrashIcon,
+} from '@/shared/ui';
+import { cx } from '@/shared/ui/cx';
 import { useSelectMenu } from '@/shared/ui/useSelectMenu';
 import {
   useActiveVehicles,
@@ -35,8 +50,10 @@ import {
   type DemandUnit,
   type PlanFormValues,
 } from './planForm';
-import { ImportDialog } from './ImportDialog';
+import { ImportSheet } from './ImportSheet';
+import { AssignmentSheet, assignmentRows, FormRows, StopSheet, stopRows, UNIT_TITLE } from './PlanFormLists';
 import './plans.css';
+import { useRowMotion } from './useRowMotion';
 
 const f = vi.planForm;
 const LABELS: Record<string, string> = {
@@ -58,7 +75,6 @@ const LABELS: Record<string, string> = {
   end: f.windowTo,
   note: f.note,
 };
-const UNIT_TITLE: Record<DemandUnit, string> = { KG: 'Kg', BOX: 'Thùng', PACKAGE: 'Kiện' };
 
 /** `/plans/new` and `/plans/:id/edit` (prototype "Tạo kế hoạch"): one form, a PUT keeps the stops' ids. */
 export function PlanFormPage() {
@@ -119,6 +135,13 @@ function PlanForm({ plan }: { plan: PlanDetail | null }) {
   });
   const assignments = useFieldArray({ control, name: 'assignments' });
   const stops = useFieldArray({ control, name: 'stops' });
+  // The rows as last drawn, for a removal that lands after its fade (useRowMotion).
+  const assignmentsRef = useRef(assignments.fields);
+  const stopsRef = useRef(stops.fields);
+  useEffect(() => {
+    assignmentsRef.current = assignments.fields;
+    stopsRef.current = stops.fields;
+  });
   const watchedAssignments = useWatch({ control, name: 'assignments' });
   const watchedStops = useWatch({ control, name: 'stops' });
 
@@ -178,6 +201,84 @@ function PlanForm({ plan }: { plan: PlanDetail | null }) {
   });
 
   const errorCount = countErrors(errors);
+  const wide = useMediaQuery(WIDE_QUERY);
+  const { sentinel, stuck } = useStuck(true);
+  // A phone, or a table that does not fit its group (G4.7): rows and a sheet per row (G4.8). The sheet edits the row's
+  // own fields; "Huỷ" puts back what was there.
+  const assignProbe = useRef<HTMLDivElement>(null);
+  const stopsProbe = useRef<HTMLDivElement>(null);
+  const assignFits = useTableFits(assignProbe, wide);
+  const stopsFit = useTableFits(stopsProbe, wide, units.length);
+  const assignCompact = !wide || !assignFits;
+  const stopsCompact = !wide || !stopsFit;
+  const [editing, setEditing] = useState<{
+    kind: 'assignment' | 'stop';
+    index: number;
+    isNew: boolean;
+    snapshot: string;
+  } | null>(null);
+  const rowValue = (kind: 'assignment' | 'stop', index: number) =>
+    kind === 'assignment' ? getValues(`assignments.${index}`) : getValues(`stops.${index}`);
+  const openRow = (kind: 'assignment' | 'stop', index: number, isNew = false) =>
+    setEditing({ kind, index, isNew, snapshot: JSON.stringify(rowValue(kind, index)) });
+  const addRow = (kind: 'assignment' | 'stop') => {
+    if (kind === 'assignment') {
+      assignments.append(emptyAssignment(), { shouldFocus: false });
+      openRow('assignment', assignments.fields.length, true);
+    } else {
+      stops.append(emptyStop(), { shouldFocus: false });
+      openRow('stop', stops.fields.length, true);
+    }
+  };
+  const cancelRow = () => {
+    if (!editing) return;
+    const list = editing.kind === 'assignment' ? assignments : stops;
+    if (editing.isNew) list.remove(editing.index);
+    else list.update(editing.index, JSON.parse(editing.snapshot));
+    setEditing(null);
+  };
+  const removeRow = () => {
+    if (!editing) return;
+    const list = editing.kind === 'assignment' ? assignmentList : stopList;
+    const key = (editing.kind === 'assignment' ? assignments : stops).fields[editing.index]?.id;
+    setEditing(null);
+    if (key) list.leave(key);
+  };
+  // Rows arriving and leaving (§9.6): an added row on a phone arrives when its sheet closes.
+  const heldKey = (kind: 'assignment' | 'stop') =>
+    editing?.isNew && editing.kind === kind
+      ? ((kind === 'assignment' ? assignments : stops).fields[editing.index]?.id ?? null)
+      : null;
+  const assignMotion = useRowMotion(
+    assignments.fields.map((field) => field.id),
+    heldKey('assignment'),
+  );
+  const stopMotion = useRowMotion(
+    stops.fields.map((field) => field.id),
+    heldKey('stop'),
+  );
+  // Taken out after fading, at its index then (another row may have gone meanwhile).
+  const assignmentList = {
+    leave: (key: string) =>
+      assignMotion.leave(key, () => {
+        const index = assignmentsRef.current.findIndex((field) => field.id === key);
+        if (index >= 0) assignments.remove(index);
+      }),
+  };
+  const stopList = {
+    leave: (key: string) =>
+      stopMotion.leave(key, () => {
+        const index = stopsRef.current.findIndex((field) => field.id === key);
+        if (index >= 0) stops.remove(index);
+      }),
+  };
+  const editingValue =
+    editing === null
+      ? null
+      : editing.kind === 'assignment'
+        ? watchedAssignments?.[editing.index]
+        : watchedStops?.[editing.index];
+  const rowDirty = editing !== null && JSON.stringify(editingValue) !== editing.snapshot;
   // A driver disabled or a vehicle turned off since the draft was saved stays selectable in that draft.
   const memberOptions = withCurrent(
     members.data ?? [],
@@ -190,16 +291,15 @@ function PlanForm({ plan }: { plan: PlanDetail | null }) {
 
   return (
     <form className="pw-plan-form" aria-labelledby="plan-form-title" onSubmit={onSave} noValidate>
-      <div className="pw-plans-head">
-        <div className="pw-plans-intro">
-          <Link to={plan ? `/plans/${plan.id}` : '/plans'} className="pw-back-link">
-            {vi.plans.back}
-          </Link>
-          <h1 id="plan-form-title" className="pw-page-title">
-            {plan ? f.editTitle(plan.name) : f.createTitle}
-          </h1>
-        </div>
-        <FormActions plan={plan} disabled={noDepot || busy || readOnly} busy={isSubmitting} />
+      <BackLink to={plan ? `/plans/${plan.id}` : '/plans'} label={plan ? plan.name : vi.plans.title} />
+      {/* One set of actions, on the title row, pinned under the top bar while the form scrolls (G4.2, owner G4-Q3;
+          HIG Toolbars: buttons above scrolling content "always remain visible"). */}
+      <div ref={sentinel} className="pw-pager-sentinel" aria-hidden="true" />
+      <div className={cx('pw-form-bar', stuck && 'is-stuck')}>
+        <h1 id="plan-form-title" className="pw-page-title">
+          {plan ? f.editTitle : f.createTitle}
+        </h1>
+        <FormActions plan={plan} disabled={noDepot || busy || readOnly} busy={isSubmitting} wide={wide} />
       </div>
 
       {noDepot || (failure instanceof ApiError && failure.code === 'STORE_DEPOT_REQUIRED') ? (
@@ -219,11 +319,24 @@ function PlanForm({ plan }: { plan: PlanDetail | null }) {
         </section>
       ) : null}
 
-      <section className="pw-card" aria-labelledby="sec-info">
+      <section className="pw-form-group" aria-labelledby="sec-info">
         <h2 id="sec-info">{f.info}</h2>
         <div className="pw-plan-info">
           <TextField label={f.name} required maxLength={150} error={errors.name?.message} {...register('name')} />
-          <TextField label={f.date} type="date" required error={errors.planDate?.message} {...register('planDate')} />
+          <Controller
+            control={control}
+            name="planDate"
+            render={({ field }) => (
+              <DateField
+                label={f.date}
+                required
+                value={field.value}
+                onChange={field.onChange}
+                today={todayIn(timeZone)}
+                error={errors.planDate?.message}
+              />
+            )}
+          />
           <div className="pw-field">
             <span className="pw-field-label">{f.depot}</span>
             <div className="pw-plan-depot">
@@ -235,7 +348,7 @@ function PlanForm({ plan }: { plan: PlanDetail | null }) {
         </div>
       </section>
 
-      <section className="pw-card" aria-labelledby="sec-assign">
+      <section className="pw-form-group" aria-labelledby="sec-assign">
         <div className="pw-card-head">
           <h2 id="sec-assign">{f.assignments}</h2>
           <span className="pw-muted">{f.assignmentsCount(assignments.fields.length)}</span>
@@ -243,28 +356,32 @@ function PlanForm({ plan }: { plan: PlanDetail | null }) {
         {members.data && vehicles.data && (memberOptions.length === 0 || vehicleOptions.length === 0) ? (
           <p className="pw-muted">{f.noAssignable}</p>
         ) : null}
-        {assignments.fields.length > 0 ? (
+        <div ref={assignProbe} className="pw-table-probe" aria-hidden="true" inert>
+          <table className="pw-table pw-edit-table">
+            <AssignHead />
+          </table>
+        </div>
+        {assignCompact ? (
+          <FormRows
+            label={f.assignmentsCaption}
+            rows={withKeys(
+              assignmentRows(watchedAssignments ?? [], errors.assignments, memberOptions, vehicleOptions),
+              assignments.fields,
+            )}
+            rowClass={assignMotion.rowClass}
+            onOpen={(index) => openRow('assignment', index)}
+          />
+        ) : assignments.fields.length > 0 ? (
           <div className="pw-table-wrap">
             <table className="pw-table pw-edit-table pw-assign-table">
               <caption className="pw-visually-hidden">{f.assignmentsCaption}</caption>
-              <thead>
-                <tr>
-                  <th scope="col">{f.driver}</th>
-                  <th scope="col">{f.vehicle}</th>
-                  <th scope="col">{f.shiftStart}</th>
-                  <th scope="col">{f.shiftEnd}</th>
-                  <th scope="col">{f.maxDistance}</th>
-                  <th scope="col">
-                    <span className="pw-visually-hidden">{f.remove}</span>
-                  </th>
-                </tr>
-              </thead>
+              <AssignHead />
               <tbody>
                 {assignments.fields.map((field, i) => {
                   const n = i + 1;
                   const at = errors.assignments?.[i];
                   return (
-                    <tr key={field.id}>
+                    <tr key={field.id} className={assignMotion.rowClass(field.id)}>
                       <Cell error={at?.driverId?.message}>
                         <MemberSelect
                           register={register}
@@ -284,21 +401,29 @@ function PlanForm({ plan }: { plan: PlanDetail | null }) {
                         />
                       </Cell>
                       <Cell error={at?.shiftStart?.message}>
-                        <input
-                          className="pw-field-input"
-                          type="time"
-                          aria-label={f.rowLabel(f.shiftStart, n)}
-                          aria-invalid={at?.shiftStart ? 'true' : undefined}
-                          {...register(`assignments.${i}.shiftStart`)}
+                        <Controller
+                          control={control}
+                          name={`assignments.${i}.shiftStart`}
+                          render={({ field }) => (
+                            <TimeField
+                              {...field}
+                              aria-label={f.rowLabel(f.shiftStart, n)}
+                              invalid={Boolean(at?.shiftStart)}
+                            />
+                          )}
                         />
                       </Cell>
                       <Cell error={at?.shiftEnd?.message}>
-                        <input
-                          className="pw-field-input"
-                          type="time"
-                          aria-label={f.rowLabel(f.shiftEnd, n)}
-                          aria-invalid={at?.shiftEnd ? 'true' : undefined}
-                          {...register(`assignments.${i}.shiftEnd`)}
+                        <Controller
+                          control={control}
+                          name={`assignments.${i}.shiftEnd`}
+                          render={({ field }) => (
+                            <TimeField
+                              {...field}
+                              aria-label={f.rowLabel(f.shiftEnd, n)}
+                              invalid={Boolean(at?.shiftEnd)}
+                            />
+                          )}
                         />
                       </Cell>
                       <Cell error={at?.maxDistanceKm?.message}>
@@ -319,7 +444,7 @@ function PlanForm({ plan }: { plan: PlanDetail | null }) {
                           type="button"
                           className="pw-icon-button pw-row-remove"
                           aria-label={f.removeAssignment(n)}
-                          onClick={() => assignments.remove(i)}
+                          onClick={() => assignmentList.leave(field.id)}
                         >
                           <TrashIcon />
                         </button>
@@ -335,48 +460,35 @@ function PlanForm({ plan }: { plan: PlanDetail | null }) {
           <Button
             variant="quiet"
             disabled={assignments.fields.length >= MAX_ASSIGNMENTS}
-            onClick={() => assignments.append(emptyAssignment())}
+            onClick={() => (assignCompact ? addRow('assignment') : assignments.append(emptyAssignment()))}
           >
             {f.addAssignment}
           </Button>
         </div>
       </section>
 
-      <section className="pw-card" aria-labelledby="sec-stops">
+      <section className="pw-form-group" aria-labelledby="sec-stops">
         <div className="pw-card-head">
           <h2 id="sec-stops">{f.stops}</h2>
           <span className="pw-muted pw-tabular">{f.stopsCount(stops.fields.length)}</span>
         </div>
-        {stops.fields.length > 0 ? (
+        <div ref={stopsProbe} className="pw-table-probe" aria-hidden="true" inert>
+          <table className="pw-table pw-edit-table">
+            <StopsHead units={units} />
+          </table>
+        </div>
+        {stopsCompact ? (
+          <FormRows
+            label={f.stopsCaption}
+            rows={withKeys(stopRows(watchedStops ?? [], errors.stops), stops.fields)}
+            rowClass={stopMotion.rowClass}
+            onOpen={(index) => openRow('stop', index)}
+          />
+        ) : stops.fields.length > 0 ? (
           <div className="pw-table-wrap">
             <table className="pw-table pw-edit-table pw-stops-table">
               <caption className="pw-visually-hidden">{f.stopsCaption}</caption>
-              <thead>
-                <tr>
-                  <th scope="col" className="pw-col-label">
-                    {f.label} *
-                  </th>
-                  <th scope="col">{f.recipient}</th>
-                  <th scope="col" className="pw-col-phone">
-                    {f.phone}
-                  </th>
-                  <th scope="col" className="pw-col-address">
-                    {f.address}
-                  </th>
-                  <th scope="col" className="pw-col-window">
-                    {f.window}
-                  </th>
-                  {units.map((unit) => (
-                    <th key={unit} scope="col" className="pw-col-demand">
-                      {UNIT_TITLE[unit]}
-                    </th>
-                  ))}
-                  <th scope="col">{f.note}</th>
-                  <th scope="col">
-                    <span className="pw-visually-hidden">{f.remove}</span>
-                  </th>
-                </tr>
-              </thead>
+              <StopsHead units={units} />
               <tbody>
                 {stops.fields.map((field, i) => {
                   const n = i + 1;
@@ -384,7 +496,7 @@ function PlanForm({ plan }: { plan: PlanDetail | null }) {
                   const windowError =
                     at?.timeWindow?.end?.message ?? at?.timeWindow?.start?.message ?? at?.timeWindow?.message;
                   return (
-                    <tr key={field.id}>
+                    <tr key={field.id} className={stopMotion.rowClass(field.id)}>
                       <Cell error={at?.label?.message}>
                         <input
                           className="pw-field-input"
@@ -423,20 +535,28 @@ function PlanForm({ plan }: { plan: PlanDetail | null }) {
                       </Cell>
                       <Cell error={windowError}>
                         <div className="pw-window">
-                          <input
-                            className="pw-field-input"
-                            type="time"
-                            aria-label={f.stopField(f.windowFrom, n)}
-                            aria-invalid={at?.timeWindow?.start ? 'true' : undefined}
-                            {...register(`stops.${i}.timeWindow.start`)}
+                          <Controller
+                            control={control}
+                            name={`stops.${i}.timeWindow.start`}
+                            render={({ field }) => (
+                              <TimeField
+                                {...field}
+                                aria-label={f.stopField(f.windowFrom, n)}
+                                invalid={Boolean(at?.timeWindow?.start)}
+                              />
+                            )}
                           />
                           <span aria-hidden="true">–</span>
-                          <input
-                            className="pw-field-input"
-                            type="time"
-                            aria-label={f.stopField(f.windowTo, n)}
-                            aria-invalid={at?.timeWindow?.end ? 'true' : undefined}
-                            {...register(`stops.${i}.timeWindow.end`)}
+                          <Controller
+                            control={control}
+                            name={`stops.${i}.timeWindow.end`}
+                            render={({ field }) => (
+                              <TimeField
+                                {...field}
+                                aria-label={f.stopField(f.windowTo, n)}
+                                invalid={Boolean(at?.timeWindow?.end)}
+                              />
+                            )}
                           />
                         </div>
                       </Cell>
@@ -468,7 +588,7 @@ function PlanForm({ plan }: { plan: PlanDetail | null }) {
                           type="button"
                           className="pw-icon-button pw-row-remove"
                           aria-label={f.removeStop(n)}
-                          onClick={() => stops.remove(i)}
+                          onClick={() => stopList.leave(field.id)}
                         >
                           <TrashIcon />
                         </button>
@@ -481,7 +601,11 @@ function PlanForm({ plan }: { plan: PlanDetail | null }) {
           </div>
         ) : null}
         <div className="pw-plan-add">
-          <Button variant="quiet" disabled={stops.fields.length >= MAX_STOPS} onClick={() => stops.append(emptyStop())}>
+          <Button
+            variant="quiet"
+            disabled={stops.fields.length >= MAX_STOPS}
+            onClick={() => (stopsCompact ? addRow('stop') : stops.append(emptyStop()))}
+          >
             {f.addStop}
           </Button>
           {!readOnly ? (
@@ -496,7 +620,7 @@ function PlanForm({ plan }: { plan: PlanDetail | null }) {
             {vi.planImport.added(imported)}
           </p>
         ) : null}
-        <ImportDialog
+        <ImportSheet
           open={importing}
           keptStops={(watchedStops ?? []).filter((row) => !isBlankStop(row)).length}
           onClose={() => setImporting(false)}
@@ -509,38 +633,81 @@ function PlanForm({ plan }: { plan: PlanDetail | null }) {
         />
       </section>
 
-      <div className="pw-plan-footer">
-        <FormActions plan={plan} disabled={noDepot || busy || readOnly} busy={isSubmitting} />
-      </div>
-
-      <Dialog
+      <AssignmentSheet
+        index={editing?.kind === 'assignment' ? editing.index : null}
+        isNew={Boolean(editing?.isNew)}
+        control={control}
+        register={register}
+        errors={errors}
+        members={memberOptions}
+        vehicles={vehicleOptions}
+        dirty={rowDirty}
+        onDone={() => setEditing(null)}
+        onCancel={cancelRow}
+        onRemove={removeRow}
+      />
+      <StopSheet
+        index={editing?.kind === 'stop' ? editing.index : null}
+        isNew={Boolean(editing?.isNew)}
+        control={control}
+        register={register}
+        errors={errors}
+        units={units}
+        dirty={rowDirty}
+        onDone={() => setEditing(null)}
+        onCancel={cancelRow}
+        onRemove={removeRow}
+      />
+      {/* Changed elsewhere since it was opened (PLAN_MODIFIED): load the saved plan again (HIG Alerts). */}
+      <Alert
         open={modified}
         title={f.modifiedTitle}
-        confirmLabel={f.reload}
-        cancelLabel={vi.members.back}
-        onConfirm={async () => {
+        message={errorMessages.PLAN_MODIFIED}
+        actionLabel={f.reload}
+        onAction={async () => {
           if (!plan) return;
           const fresh = await live.refetch();
           if (fresh.data) reset(planToValues(fresh.data));
           setModified(false);
         }}
-        onClose={() => setModified(false)}
-      >
-        <p>{errorMessages.PLAN_MODIFIED}</p>
-      </Dialog>
+        onCancel={() => setModified(false)}
+      />
     </form>
   );
 }
 
-function FormActions({ plan, disabled, busy }: { plan: PlanDetail | null; disabled: boolean; busy: boolean }) {
+/**
+ * "Huỷ" and the save action at the end of the title row (HIG Toolbars: the primary action trailing, `.prominent`).
+ * Save is a checkmark (HIG Icons: Save → checkmark), with its words on a wide window and alone in a round button on a
+ * phone, as on the store page.
+ */
+function FormActions({
+  plan,
+  disabled,
+  busy,
+  wide,
+}: {
+  plan: PlanDetail | null;
+  disabled: boolean;
+  busy: boolean;
+  wide: boolean;
+}) {
   return (
     <div className="pw-plan-actions">
       <Link className={buttonClass('quiet')} to={plan ? `/plans/${plan.id}` : '/plans'}>
         {f.cancel}
       </Link>
-      <Button type="submit" variant="primary" busy={busy} disabled={disabled}>
-        {f.save}
-      </Button>
+      <button
+        type="submit"
+        className={wide ? buttonClass('primary') : 'pw-icon-button pw-list-add'}
+        aria-label={wide ? undefined : f.save}
+        title={wide ? undefined : f.save}
+        aria-busy={busy ? 'true' : undefined}
+        disabled={disabled || busy}
+      >
+        <CheckIcon />
+        {wide ? f.save : null}
+      </button>
     </div>
   );
 }
@@ -640,4 +807,99 @@ function countErrors(errors: unknown): number {
   return Object.entries(errors as Record<string, unknown>)
     .filter(([key]) => key !== 'ref' && key !== 'root')
     .reduce((sum, [, value]) => sum + countErrors(value), 0);
+}
+
+function AssignHead() {
+  return (
+    <thead>
+      <tr>
+        <th scope="col" className="pw-col-person">
+          {f.driver}
+        </th>
+        <th scope="col" className="pw-col-person">
+          {f.vehicle}
+        </th>
+        <th scope="col" className="pw-col-time">
+          {f.shiftStart}
+        </th>
+        <th scope="col" className="pw-col-time">
+          {f.shiftEnd}
+        </th>
+        <th scope="col" className="pw-col-distance">
+          {f.maxDistance}
+        </th>
+        <th scope="col" className="pw-col-remove">
+          <span className="pw-visually-hidden">{f.remove}</span>
+        </th>
+      </tr>
+    </thead>
+  );
+}
+
+function StopsHead({ units }: { units: DemandUnit[] }) {
+  return (
+    <thead>
+      <tr>
+        <th scope="col" className="pw-col-label">
+          {f.label} *
+        </th>
+        <th scope="col" className="pw-col-recipient">
+          {f.recipient}
+        </th>
+        <th scope="col" className="pw-col-phone">
+          {f.phone}
+        </th>
+        <th scope="col" className="pw-col-address">
+          {f.address}
+        </th>
+        <th scope="col" className="pw-col-window">
+          {f.window}
+        </th>
+        {units.map((unit) => (
+          <th key={unit} scope="col" className="pw-col-demand">
+            {UNIT_TITLE[unit]}
+          </th>
+        ))}
+        <th scope="col" className="pw-col-note">
+          {f.note}
+        </th>
+        <th scope="col" className="pw-col-remove">
+          <span className="pw-visually-hidden">{f.remove}</span>
+        </th>
+      </tr>
+    </thead>
+  );
+}
+
+/**
+ * Whether a table's columns, at their least widths (its hidden head, `.pw-table-probe`), fit the group it sits in
+ * (G4.7). Measured again when the window, the group or the columns change; true until measured.
+ */
+function useTableFits(probe: RefObject<HTMLDivElement | null>, enabled: boolean, columns = 0): boolean {
+  const [fits, setFits] = useState(true);
+  useLayoutEffect(() => {
+    const element = probe.current;
+    const group = element?.parentElement;
+    if (!enabled || !element || !group) return undefined;
+    const measure = () => {
+      const table = element.querySelector('table');
+      if (!table) return;
+      const room = group.clientWidth - 2 * (Number.parseFloat(getComputedStyle(group).paddingLeft) || 0);
+      setFits(table.scrollWidth <= room);
+    };
+    measure();
+    const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(measure);
+    observer?.observe(group);
+    window.addEventListener('resize', measure);
+    return () => {
+      observer?.disconnect();
+      window.removeEventListener('resize', measure);
+    };
+  }, [probe, enabled, columns]);
+  return fits;
+}
+
+/** The phone rows keyed by their field's id, so a row keeps its identity (and its arrival) when others go. */
+function withKeys<T extends { key: string }>(rows: T[], fields: Array<{ id: string }>): T[] {
+  return rows.map((row, i) => ({ ...row, key: fields[i]?.id ?? row.key }));
 }

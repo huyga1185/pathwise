@@ -64,15 +64,26 @@ export function usePlans(filter: PlanFilter, enabled = true) {
 }
 
 /** How often a plan is read again (ARCHITECTURE §5): never once it has ended. */
-export function planRefetchInterval(plan: PlanDetail | undefined): number | false {
+/** The first read after a task starts comes sooner, so a short task ends on screen soon (owner, 2026-11-18). */
+export const FIRST_POLL_MS = 500;
+/** When each plan's current task was first seen running (the first read then comes after FIRST_POLL_MS). */
+const runningSince = new Map<number, number>();
+
+export function planRefetchInterval(plan: PlanDetail | undefined, now = Date.now()): number | false {
   if (!plan) return false;
-  if (plan.processingStatus !== 'IDLE') return POLL_INTERVAL_MS;
+  if (plan.processingStatus !== 'IDLE') {
+    const since = runningSince.get(plan.id) ?? now;
+    runningSince.set(plan.id, since);
+    return now - since < FIRST_POLL_MS ? FIRST_POLL_MS : POLL_INTERVAL_MS;
+  }
+  runningSince.delete(plan.id);
   if (plan.status === 'PUBLISHED' || plan.status === 'IN_PROGRESS') return TRACK_INTERVAL_MS;
   return false;
 }
 
 /**
- * `GET /plans/{id}`, read again every 2 s while `processingStatus` is not `IDLE`, every 30 s while delivered (only
+ * `GET /plans/{id}`, read again 0.5 s after a task is first seen running, then every 2 s while `processingStatus` is
+ * not `IDLE`, every 30 s while delivered (only
  * while the tab is visible: TanStack Query pauses intervals in the background), not at all once ended. The `version`
  * of the last read is the one to send.
  */

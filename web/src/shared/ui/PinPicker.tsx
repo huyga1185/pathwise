@@ -2,6 +2,7 @@ import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { DepotIcon, PinMap, type LatLng } from '@/platform/map';
 import { messageFor } from '@/shared/errors';
 import { vi } from '@/shared/i18n/vi';
+import { ActivityText } from './ActivityText';
 import { Dialog } from './Dialog';
 import { TextField } from './TextField';
 
@@ -93,7 +94,16 @@ export function PinPicker({
             type="search"
             autoComplete="off"
             value={query}
-            hint={error ? undefined : searching ? vi.map.searching : vi.map.searchHint}
+            // While the search runs: the activity indicator with what it does (HIG Progress indicators: an
+            // indeterminate task turns, "Avoid vague terms"), shown after a moment (CSS) so a quick answer shows
+            // nothing; the hint line keeps its height.
+            hint={
+              error ? undefined : searching ? (
+                <ActivityText text={vi.map.searching} className="pw-hint-activity" />
+              ) : (
+                vi.map.searchHint
+              )
+            }
             error={error ?? undefined}
             aria-controls={results ? listId : undefined}
             onChange={(event) => setQuery(event.target.value)}
@@ -175,6 +185,15 @@ export function PinPickerDialog({
 }) {
   const [value, setValue] = useState<LatLng | null>(initial);
   const [place, setPlace] = useState<Place | null>(null);
+  // Kept mounted so it can close with its animation: each opening starts again from `initial`.
+  const [wasOpen, setWasOpen] = useState(open);
+  if (open !== wasOpen) {
+    setWasOpen(open);
+    if (open) {
+      setValue(initial);
+      setPlace(null);
+    }
+  }
   return (
     <Dialog
       open={open}
@@ -188,18 +207,17 @@ export function PinPickerDialog({
       onClose={onClose}
     >
       {children}
-      {open ? (
-        <PinPicker
-          value={value}
-          onChange={(next) => {
-            setValue(next);
-            setPlace(null);
-          }}
-          onPlace={setPlace}
-          search={search}
-          pinLabel={pinLabel}
-        />
-      ) : null}
+      {/* As long as the dialog shows, its closing included (the Dialog drops it all once closed). */}
+      <PinPicker
+        value={value}
+        onChange={(next) => {
+          setValue(next);
+          setPlace(null);
+        }}
+        onPlace={setPlace}
+        search={search}
+        pinLabel={pinLabel}
+      />
     </Dialog>
   );
 }

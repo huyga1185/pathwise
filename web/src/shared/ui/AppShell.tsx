@@ -38,6 +38,18 @@ export function useInAppShell(): boolean {
   return useContext(InShell);
 }
 
+/**
+ * Phone: the leading end of the top bar, where a sub-page's back button goes (OWNER_UI_REDESIGN §6: "Đầu: … nút quay
+ * lại (trang con)"; HIG Toolbars: "Elements that let people return to the previous document… appear at the far leading
+ * edge"). Null on a wide window (its leading end is the sidebar button) and outside the shell: the back button stays
+ * in the page.
+ */
+const TopbarLeading = createContext<HTMLElement | 'pending' | null>(null);
+/** The top bar's leading element; 'pending' on a phone before it is mounted (draw nothing yet, not in the page). */
+export function useTopbarLeading(): HTMLElement | 'pending' | null {
+  return useContext(TopbarLeading);
+}
+
 const SIDEBAR_KEY = 'pw-sidebar';
 /** Wide window: sidebar; narrower: tab bar (the same 960px step as the account screens and the lists). */
 const useWide = () => useMediaQuery(WIDE_QUERY);
@@ -294,6 +306,7 @@ export function AppShell({ items, navLabel, sidebarTitle, account, children }: A
   const main = useRef<HTMLElement>(null);
   const { pathname } = useLocation();
   const smallTitle = useSmallTitle(main, !wide);
+  const [leading, setLeading] = useState<HTMLElement | null>(null);
   const previous = useRef(pathname);
   useEffect(() => {
     const from = previous.current;
@@ -335,7 +348,7 @@ export function AppShell({ items, navLabel, sidebarTitle, account, children }: A
         </div>
       ) : null}
       <div className="pw-shell-main">
-        <div className="pw-topbar">
+        <div className={cx('pw-topbar', smallTitle && 'has-title')}>
           {wide ? (
             <button
               type="button"
@@ -348,6 +361,7 @@ export function AppShell({ items, navLabel, sidebarTitle, account, children }: A
               <SidebarIcon />
             </button>
           ) : null}
+          {!wide ? <div ref={setLeading} className="pw-topbar-leading" /> : null}
           {!wide ? (
             <span className={cx('pw-topbar-title', smallTitle && 'is-shown')} aria-hidden="true">
               {smallTitle}
@@ -356,7 +370,9 @@ export function AppShell({ items, navLabel, sidebarTitle, account, children }: A
           <AccountMenu account={account} crossFade={wide} />
         </div>
         <main ref={main} className="pw-page">
-          <InShell.Provider value={true}>{children}</InShell.Provider>
+          <InShell.Provider value={true}>
+            <TopbarLeading.Provider value={wide ? null : (leading ?? 'pending')}>{children}</TopbarLeading.Provider>
+          </InShell.Provider>
         </main>
       </div>
       {wide ? null : (
