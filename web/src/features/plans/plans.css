@@ -1113,6 +1113,11 @@ html:has(.pw-form-bar) {
 .pw-plan-form > .pw-back-link + .pw-pager-sentinel {
   margin-top: -40px;
 }
+/* Phone: the back button is in the top bar (§9.11), the sentinel comes first; the title row sits as close under the
+   top bar as other pages' titles (~20px), not a form gap plus the sentinel lower. */
+.pw-plan-form > .pw-pager-sentinel:first-child {
+  margin-bottom: -32px;
+}
 
 /* Phone rows of the form (G4.8): a row with a field to fix says so in the danger colour under its lines. */
 .pw-form-rows {

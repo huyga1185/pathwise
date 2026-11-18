@@ -2,6 +2,7 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http } from 'msw';
 import { describe, expect, it } from 'vitest';
+import { wideWindow } from '@/test/media';
 import { renderApp } from '@/test/renderApp';
 import { sample } from '@/test/samples';
 import { API, ok, server, signedInHandlers } from '@/test/server';
@@ -213,6 +214,28 @@ describe('Chưa có phân công (§9.7)', () => {
     );
     await user.click(within(block).getByRole('button', { name: 'Thêm phân công' }));
     await waitFor(() => expect(router.state.location.pathname).toBe('/plans/83/edit'));
+  });
+});
+
+describe('Nút quay lại (§9.11)', () => {
+  it('điện thoại: ở đầu thanh trên, ngang hàng nút tài khoản; màn rộng: trong trang', async () => {
+    server.use(
+      http.get(`${API}/plans/83`, () => ok(geocoded())),
+      ...signedInHandlers(),
+    );
+    // (The tab bar also has a "Kế hoạch" link: the back button is the one with the chevron, .pw-back-link.)
+    const phone = renderApp('/plans/83');
+    await screen.findByRole('heading', { name: 'Giao sáng 01/12', level: 1 });
+    const backs = document.querySelectorAll('.pw-back-link');
+    expect(backs).toHaveLength(1);
+    expect(backs[0]?.closest('.pw-topbar')).not.toBeNull();
+    expect(backs[0]).toHaveAccessibleName('Kế hoạch');
+    phone.unmount();
+
+    wideWindow();
+    renderApp('/plans/83');
+    await screen.findByRole('heading', { name: 'Giao sáng 01/12', level: 1 });
+    expect(document.querySelector('.pw-back-link')?.closest('main')).not.toBeNull();
   });
 });
 

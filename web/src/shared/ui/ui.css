@@ -3683,3 +3683,35 @@ html {
     animation-name: pw-fade-out;
   }
 }
+
+/* Phone: a sub-page's back button at the leading end of the top bar (BackLink, §9.11). Its title takes the room left
+   by the account button, cut with "…"; with the small title shown in the middle, only the chevron (44px) stays. */
+.pw-topbar-leading {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.pw-topbar-leading:empty {
+  display: none;
+}
+.pw-topbar-leading .pw-back-link {
+  min-width: 44px;
+  max-width: 100%;
+  min-height: 44px;
+  margin-left: -10px;
+  padding: 0 10px;
+}
+.pw-topbar-leading .pw-back-link-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pw-topbar.has-title .pw-back-link-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

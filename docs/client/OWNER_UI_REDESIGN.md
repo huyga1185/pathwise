@@ -511,3 +511,9 @@ Chủ dự án: "Sao chép" không nền đứng đầu cụm nút trông như c
 
 Làm: thứ tự **Sửa điểm giao (xám) · Sao chép (tinted) · Tối ưu lộ trình (nút chính, cuối)**. Ghi nhận: theme sáng, khi "Tối ưu lộ trình" bị khoá (mờ 50%) nó cũng xanh nhạt, gần màu "Sao chép" — phân biệt bằng chữ (xanh đậm / trắng mờ). Màn kết quả tối ưu và theo dõi (`ResultView`, `TrackView`) vẫn để "Sao chép" kiểu cũ — G5.
 
+### 9.11 Nút quay lại lên thanh trên trên điện thoại (2026-11-18)
+
+Chủ dự án hỏi có được đưa nút quay lại lên thanh trên, ngang hàng avatar không. Kiểm tra: **thiết kế G1 (§6) đã quyết** — thanh trên *"Đầu: nút ẩn/hiện sidebar (rộng) hoặc nút quay lại (trang con)… Cuối: … nút tài khoản"*; G4 đặt `BackLink` trong nội dung trang là lệch với §6. HIG Toolbars: *"Elements that let people return to the previous document… appear at the far leading edge"*. WCAG: không tiêu chí nào cấm; giữ 2.4.3 (thứ tự focus quay lại → tài khoản → nội dung), 2.5.8 (vùng bấm 44px), 1.4.10 (320px không tràn: tên cha dài cắt "…", tên đầy đủ vẫn là tên trợ năng và `title`), 2.4.11 (thanh dính không che focus: `scroll-padding` có sẵn); 3.2.3 tốt hơn (nút ở cùng chỗ mọi trang con).
+
+Làm: điện thoại — `BackLink` vào đầu thanh trên (`AppShell` có chỗ `pw-topbar-leading`, chỉ ở màn hẹp; nút chờ chỗ đó sẵn sàng rồi mới vẽ, không hiện trong trang một khung hình rồi nhảy lên). Cuộn qua tiêu đề lớn, tiêu đề nhỏ hiện giữa thanh → nút thu về chỉ còn chevron (như iOS khi tên trang trước không đủ chỗ), tên vẫn đọc được. Màn rộng giữ nút trong trang (đầu thanh trên là nút ẩn/hiện sidebar). Trang tạo/sửa: hàng tiêu đề sát dưới thanh trên như các trang khác. Đo 390 và 320px: nút và avatar cùng tâm (y = 30), không tràn; khoảng thanh trên → tiêu đề 16–21px ở mọi trang (trang sửa trước đó 53px).
+
