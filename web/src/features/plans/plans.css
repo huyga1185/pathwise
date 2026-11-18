@@ -1258,3 +1258,14 @@ html:has(.pw-form-bar) {
   color: var(--ink-muted);
   animation: pw-activity-turn 0.8s steps(8) infinite;
 }
+
+/* A table inside a form group has no frame of its own: the group is its container (DESIGN_SYSTEM: a table in a group
+   — "nền, bo 16, không viền"; HIG Layout: group with "container shapes, or separator lines", one is enough). Its old
+   4px frame inside the 16px group was a nested shape that was not concentric (S1; 16 − 20 padding < 0, S2). Rows keep
+   their separators; the head its line. */
+.pw-form-group .pw-table-wrap {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
