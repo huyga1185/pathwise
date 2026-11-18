@@ -76,6 +76,7 @@
   box-shadow: 0 2px 8px rgba(24, 35, 31, 0.18);
   -webkit-backdrop-filter: blur(16px) saturate(1.4);
   backdrop-filter: blur(16px) saturate(1.4);
+  cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   transition: background-color 0.15s ease;
 }
@@ -112,6 +113,7 @@
 }
 .pw-map-ctl:disabled {
   opacity: 0.4;
+  cursor: not-allowed;
 }
 .pw-map-ctl:focus-visible {
   outline: 2px solid #0b6a5c;

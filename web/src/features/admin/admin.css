@@ -109,6 +109,7 @@
   font-weight: inherit;
   color: inherit;
   background: none;
+  cursor: pointer;
 }
 .pw-admin-strong,
 .pw-admin-strong-link {
