@@ -1,6 +1,6 @@
 # OWNER_UI_REDESIGN — Nghiên cứu thiết kế lại giao diện chính của chủ cửa hàng theo Apple
 
-> **Trạng thái:** nghiên cứu xong; chủ dự án đã trả lời Q1–Q5 (§5, 2026-11-17), quyết định ở P-74. **G1 (khung app) đã làm** (§6, branch `docs/owner-ui-redesign`). **G2 (danh sách kế hoạch) đã làm** (§7, PR #129). **G3 (Xe, Thành viên, Cửa hàng, Nhật ký, Tài khoản) đã làm** (§8, branch `feat/owner-ui-g3`). Tiếp: G4.
+> **Trạng thái:** nghiên cứu xong; chủ dự án đã trả lời Q1–Q5 (§5, 2026-11-17), quyết định ở P-74. **G1 (khung app) đã làm** (§6, branch `docs/owner-ui-redesign`). **G2 (danh sách kế hoạch) đã làm** (§7, PR #129). **G3 (Xe, Thành viên, Cửa hàng, Nhật ký, Tài khoản) đã làm** (§8, PR #130). **G4 (tạo/sửa kế hoạch, nhập file, sao chép) đang làm** (§9, branch `feat/owner-ui-g4`).
 >
 > Theo P-71 (hướng dẫn Apple đứng trước), quy tắc ở `docs/client/LIQUID_GLASS.md`, kiểm từng thành phần theo `docs/client/APPLE_CHECKLIST.md`. Nhãn: **[Apple]** trích nguyên văn HIG (bản tải 2026-11-17), **[Web]** điều web buộc phải có, chọn bằng đo, **[Chủ dự án]** chờ hoặc đã có quyết định. Phần "Đề xuất" là ý của agent, mỗi dòng ghi nguồn; chỗ nào Apple không nói thì ghi rõ.
 
@@ -406,4 +406,40 @@ Chủ dự án: ở mọi danh sách phân trang có điểm kết thúc (Kế h
 | WCAG 2.2 SC 2.4.3 Focus Order | Thứ tự Tab theo thứ tự nhìn thấy | Thanh trang nằm trước danh sách trong DOM, không chỉ dời bằng CSS |
 
 Làm: `Pager` có `pinned` (bọc `pw-pager-bar`, sticky dưới thanh trên cùng 60px, rộng hết màn, nền `surface`; `useStuck` dùng IntersectionObserver để bật mép mờ khi dính); khung nhập số trang mở xuống dưới khi ghim. Đổi trang trên điện thoại: cuộn về đầu danh sách nếu đầu danh sách bị hai thanh ghim che (so với `scroll-padding-top`). Đo 390×844: lúc nghỉ thanh trang ở trên danh sách; cuộn thì dính ở y = 60, mép mờ bật; khung số trang mở xuống cách nút 8px; 844×390 thanh không ghim.
+
+## 9. Thiết kế G4: tạo/sửa kế hoạch, nhập file, sao chép (2026-11-18)
+
+### 9.1 Hiện trạng (chụp 2026-11-18, 1440 và 390px, kế hoạch nháp 17 điểm)
+
+- **Form** (`/plans/new`, `/plans/:id/edit`): link chữ "← Kế hoạch"; "Huỷ" + "Lưu và tìm toạ độ" **hai bộ** (đầu và cuối trang); ba **thẻ viền** (Thông tin chung, Phân công tài xế, Điểm giao); ngày giao là ô ngày của trình duyệt (hiện "11/18/2026", kiểu Mỹ); ca làm và khung giờ là ô giờ của trình duyệt kiểu 12 giờ "--:-- --"; bảng điểm giao 1440px **tràn 83px** (cột Ghi chú bị cắt); điện thoại: hai bảng ô nhập cuộn ngang (thấy 2,5 cột), nút lưu ngay dưới tiêu đề.
+- **Nhập từ file**: `Dialog` cũ, trên máy tính **vỡ bố cục** (lệch trái dưới thanh bên, mất tiêu đề); nút "Quay lại" / "Thêm 0 điểm giao" ở đáy.
+- **Sao chép**: `Dialog` cũ; tiêu đề "Sao chép "{tên}"" dài tới 3 dòng; ô ngày của trình duyệt; "Quay lại" / "Sao chép" ở đáy.
+- **Kế hoạch bị sửa nơi khác** (`PLAN_MODIFIED`): `Dialog` cũ.
+
+### 9.2 Câu hỏi và trả lời (2026-11-18)
+
+| # | Câu hỏi | Trả lời |
+|---|---|---|
+| Q4 | Điểm giao trên điện thoại | **Hàng + sheet** (D16): mỗi điểm một hàng, bấm mở sheet có đủ ô. Áp cùng cách cho **phân công tài xế** (cũng là bảng ô nhập). |
+| G4-Q1 | Nhập giờ (ca làm, khung giờ) | **Theo cách nhập**: chuột/bàn phím gõ "HH:mm" 24 giờ (macOS textual: *"useful when… you expect people to make specific date and time selections"*); cảm ứng: nút hiện giờ, bấm mở bánh xe giờ và phút (iOS compact) |
+| G4-Q2 | Bước phút của bánh xe | **5 phút** (HIG Pickers: *"Consider providing less granularity when specifying minutes"*); ô gõ vẫn nhận mọi phút (API `HH:mm`) |
+| G4-Q3 | Hai bộ nút lưu | **Một bộ ở hàng tiêu đề, ghim khi cuộn** (HIG Toolbars: nút đặt trên nội dung cuộn *"always remain visible"*) |
+
+### 9.3 Thiết kế
+
+| # | Phần | Thiết kế | Nguồn |
+|---|---|---|---|
+| G4.1 | Quay lại | Nút quay lại chuẩn: chevron + tên trang cha ("‹ Kế hoạch" / "‹ {tên kế hoạch}"), không chữ "Quay lại" | [Apple] Toolbars: *"Use the standard Back and Close buttons… don't use a text label that says Back"*; D6 |
+| G4.2 | Hàng tiêu đề | Tiêu đề ngắn **"Kế hoạch mới"** / **"Sửa kế hoạch"** (tên kế hoạch đã có trong ô Tên); cuối hàng "Huỷ" (không nền) + "Lưu và tìm toạ độ" (nổi bật, `checkmark`); **một bộ**, hàng này ghim dưới thanh trên cùng khi cuộn (nền đặc như thanh trên, mép mờ khi dính — một hiệu ứng mép cuộn, §8.17); điện thoại: nút lưu thành nút tròn dấu tích như trang Cửa hàng | [Apple] Toolbars (Titles < 15 ký tự, primary action trailing, `.prominent`); Scroll edge effects; Icons (Save → `checkmark`) |
+| G4.3 | Nhóm | Bỏ ba thẻ viền: ba nhóm có tiêu đề, cách nhau bằng khoảng trống, nội dung trong nhóm nền như trang Cửa hàng | [Apple] Layout (*"Group related items… negative space, container shapes"*); D9, D16 |
+| G4.4 | Ngày giao | **Compact date picker** dạng ô của form: nút hiện ngày "T4, 18/11/2026", bấm mở lịch như bộ lọc (máy tính popover, điện thoại inline §8.11, "Tháng ›" mở bánh xe §8.12); không còn ô ngày của trình duyệt | [Apple] Date pickers (Compact: *"a button that shows the current value"*) |
+| G4.5 | Giờ (ca làm, khung giờ) | `TimeField`: **chuột** — ô gõ 24 giờ, chữ số, gõ "830"/"8:30"/"0830" → "08:30" khi rời ô, sai thì báo dưới ô; **cảm ứng** — nút hiện giờ (hoặc "—" khi trống), bấm mở popover/inline hai bánh xe Giờ (00–23) và Phút (bước 5) + "Bỏ giờ"; khung giờ là hai ô "Từ" "Đến" | [Apple] Date pickers (macOS textual, iOS compact), Pickers (Wheels, phút bước 5 — G4-Q2) |
+| G4.6 | Phân công, máy tính | Bảng ô nhập giữ (nhập nhanh, D16); ô chọn tài xế/xe là pop-up của app (§8.7); giờ ca theo G4.5; nút xoá hàng biểu tượng thùng rác, hàng có menu ngữ cảnh "Xoá" | [Apple] Lists and tables (*"Let people edit a table when it makes sense"*); Pop-up buttons; G2.13 |
+| G4.7 | Điểm giao, máy tính | Bảng ô nhập giữ, **không tràn** khung (ô giờ gõ hẹp thay ô giờ trình duyệt); bảng hẹp hơn chỗ cần (đo) thì dùng kiểu hàng + sheet như điện thoại | G2.11 (không cuộn ngang); D16 |
+| G4.8 | Phân công và điểm giao, điện thoại | **Hàng + sheet** (Q4): hàng = dòng chính (tài xế · xe / mã đơn · người nhận), dòng phụ (ca làm / địa chỉ · khung giờ), dấu lỗi khi hàng có ô lỗi, chevron; bấm hàng → sheet "Phân công" / "Điểm giao" (Huỷ / Xong) với đủ ô; "+ Thêm …" mở sheet trống; chạm giữ hàng → menu "Xoá" | [Apple] Lists and tables, Sheets; G3 (Xe, Thành viên) |
+| G4.9 | Nhập từ file | **Sheet** "Nhập điểm giao" (< 15 ký tự): bước 1 chọn/kéo thả file + file mẫu (chỉ "Huỷ"); bước 2 xem trước (thanh: "Quay lại" — HIG: Back cho bước trước — và "Thêm N điểm" khi có dòng hợp lệ) | [Apple] Sheets (multi-step, *"Avoid showing all three buttons"*); Entering data (*"let people provide data by dragging and dropping"*) |
+| G4.10 | Sao chép | **Sheet** "Sao chép" (Huỷ / "Sao chép"): tên kế hoạch gốc trong thân sheet; ngày giao theo G4.4; tên mới; lựa chọn điểm cần chép | [Apple] Sheets; Toolbars (Titles) |
+| G4.11 | Bị sửa nơi khác | `PLAN_MODIFIED` → **Alert** "Kế hoạch đã thay đổi" với "Tải lại" / "Huỷ" | [Apple] Alerts |
+
+Không làm trong G4: chi tiết kế hoạch, giao việc, huỷ kế hoạch, chọn ghim (G5).
 
