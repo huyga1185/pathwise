@@ -2,6 +2,7 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http } from 'msw';
 import { describe, expect, it } from 'vitest';
+import { fromMore } from '@/test/moreMenu';
 import { renderApp } from '@/test/renderApp';
 import { sample } from '@/test/samples';
 import { API, fail, ok, server, signedInHandlers } from '@/test/server';
@@ -25,33 +26,37 @@ function planHandlers(state: { plan: Plan }) {
 }
 
 describe('Soạn plan — sau khi tối ưu', () => {
-  it('tổng quan, cảnh báo điểm không xếp được, khối tuyến thu gọn được, chọn dòng thì chọn marker', async () => {
+  it('tóm tắt, nhóm "Chưa xếp tuyến", nhóm tuyến thu gọn được; chọn điểm mở thẻ điểm và làm nổi marker', async () => {
     server.use(...planHandlers({ plan: optimized() }));
     const { container } = renderApp('/plans/83');
     const user = userEvent.setup();
 
-    const overview = await screen.findByRole('region', { name: 'Tổng quan' });
-    expect(overview).toHaveTextContent('23/24 đã xếp tuyến');
-    expect(overview).toHaveTextContent('15,4 km');
-    expect(overview).toHaveTextContent('5 giờ 06 phút');
-    expect(overview).toHaveTextContent('2 tài xế · 2 xe');
-    expect(screen.getByRole('heading', { name: '1 điểm giao chưa có tài xế: ĐH-1024 · Chị Thảo' })).toBeInTheDocument();
+    // One summary line instead of four number cards (G5.5).
+    expect(await screen.findByText('23/24 điểm đã xếp · 15,4 km · 5 giờ 06 phút · 2 tài xế')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Giao việc cho 2 tài xế' })).toBeEnabled();
+    const unplaced = screen.getByRole('region', { name: 'Chưa xếp tuyến' });
+    expect(unplaced).toHaveTextContent('ĐH-1024 · Chị Thảo');
+    expect(unplaced).toHaveTextContent('KHÔNG XẾP ĐƯỢC');
 
     const routeA = screen.getByRole('region', { name: 'Tài xế A' });
     expect(routeA).toHaveTextContent('Xe 1 · 30 thùng');
     expect(routeA).toHaveTextContent('11 điểm · 8,3 km');
     expect(routeA).toHaveTextContent('10:50–13:23 · tải 22/30 thùng');
-    const table = within(routeA).getByRole('table', { name: 'Điểm giao của Tài xế A' });
-    const firstRow = within(table).getAllByRole('row')[1] as HTMLElement;
-    await user.click(within(firstRow).getByRole('button'));
-    expect(firstRow).toHaveClass('pw-row-selected');
-    expect(container.querySelector('.pw-stop-marker .pw-marker-selected')).toHaveTextContent('1');
-    expect(screen.getByRole('region', { name: 'Bản đồ tuyến' })).toHaveTextContent(/Tài xế A · điểm 1:/);
 
-    await user.click(within(routeA).getByRole('button', { name: /Thu gọn/ }));
-    expect(within(routeA).queryByRole('table')).not.toBeInTheDocument();
-    expect(within(routeA).getByRole('button', { name: /Mở danh sách/ })).toHaveAttribute('aria-expanded', 'false');
+    // A stop's card replaces the list (G5.9); its marker stands out; back returns focus to its row.
+    await user.click(within(routeA).getByRole('button', { name: 'ĐH-1016 · Chị Thảo: xem chi tiết' }));
+    const card = screen.getByRole('region', { name: 'ĐH-1016 · Chị Thảo' });
+    expect(within(card).getByRole('heading', { name: 'ĐH-1016 · Chị Thảo', level: 2 })).toHaveFocus();
+    expect(card).toHaveTextContent('Tài xế A · điểm thứ 1');
+    expect(card).toHaveTextContent('10:51');
+    expect(container.querySelector('.pw-stop-marker .pw-marker-selected')).toHaveTextContent('1');
+    await user.click(within(card).getByRole('button', { name: 'Tài xế A' }));
+    await waitFor(() => expect(screen.getByRole('button', { name: 'ĐH-1016 · Chị Thảo: xem chi tiết' })).toHaveFocus());
+
+    const head = within(screen.getByRole('region', { name: 'Tài xế A' })).getByRole('button', { expanded: true });
+    await user.click(head);
+    expect(head).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.queryByRole('button', { name: 'ĐH-1016 · Chị Thảo: xem chi tiết' })).not.toBeInTheDocument();
   });
 
   it('giao việc: hộp xác nhận nêu từng tài xế và điểm bỏ lại; xong thì toast và sang theo dõi', async () => {
@@ -115,7 +120,7 @@ describe('Soạn plan — sau khi tối ưu', () => {
     renderApp('/plans/83');
     const user = userEvent.setup();
 
-    await user.click(await screen.findByRole('button', { name: 'Tối ưu lại' }));
+    await fromMore(user, 'Tối ưu lại');
 
     expect(
       await screen.findByText(/Không tìm được lộ trình, ca làm hoặc quãng đường tối đa có thể quá chặt/),
@@ -142,7 +147,7 @@ describe('Soạn plan — sau khi tối ưu', () => {
     renderApp('/plans/83');
     const user = userEvent.setup();
 
-    await user.click(await screen.findByRole('button', { name: 'Tối ưu lại' }));
+    await fromMore(user, 'Tối ưu lại');
     expect(await screen.findByRole('progressbar', { name: 'Đang tối ưu lộ trình' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Giao việc cho 2 tài xế' })).toBeDisabled();
 
@@ -165,7 +170,7 @@ describe('Soạn plan — sau khi tối ưu', () => {
     renderApp('/plans/83');
     const user = userEvent.setup();
 
-    await user.click(await screen.findByRole('button', { name: 'Huỷ kế hoạch' }));
+    await fromMore(user, 'Huỷ kế hoạch');
     const dialog = screen.getByRole('alertdialog', { name: 'Huỷ kế hoạch "Giao sáng 01/12"?' });
     expect(dialog).toHaveTextContent('Kế hoạch chưa giao việc nên tài xế chưa thấy tuyến nào.');
     await user.click(within(dialog).getByRole('button', { name: 'Huỷ kế hoạch' }));

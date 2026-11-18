@@ -584,3 +584,8 @@ Chưa chốt, hỏi khi tới phần đó: nội dung nhóm nút màn theo dõi 
 6. Tìm toạ độ (thẻ sửa điểm, ghim trên bản đồ lớn); bỏ `Dialog` cũ ở trang kế hoạch.
 7. Đo theo APPLE_CHECKLIST (1440/1024/390/320, sáng/tối, giảm chuyển động, tăng tương phản), cập nhật SCREENS, DESIGN_SYSTEM, CURRENT_STATE.
 
+### 10.5 Làm (2026-11-18, đang làm)
+
+- **Bước 1–2 xong:** `MapStage` (`shared/ui/MapStage.tsx`): bản đồ phủ vùng nội dung (trang không đệm, không cuộn), panel kính 460px (rộng), sheet kính ba nấc trên tab bar (điện thoại; grabber bấm chuyển nấc, mũi tên lên/xuống, kéo; nấc thấp đo theo phần đầu đánh dấu `data-peek`); bản đồ canh khung chừa phần panel/sheet che (`RouteMap inset`, `staged` bỏ nút mở rộng và chú giải); chú thích bản quyền bản đồ trên nấc thấp của sheet 10px (HIG Maps). Màn kết quả trong `MapStage`: đầu panel (quay lại, tên, dòng phụ, dòng tóm tắt, nút … / Chỉnh tay / Giao việc), nhóm tuyến (màu tuyến, thu gọn), hàng điểm hai dòng, thẻ điểm (focus vào tiêu đề, quay lại trả focus về hàng), nhóm "Chưa xếp tuyến". Nhóm trong panel bo 8: panel bo 16 đệm 16 nên bán kính đồng tâm là 0 → bán kính dự phòng (S1/S2), khác nhóm bo 16 ở cấp trang. Chỉnh tay và hộp thoại tạm giữ như cũ trong panel (bước 3, 5).
+- Đo 1440 / 390px (dữ liệu mẫu): trang không cuộn; nấc cao dưới thanh trên (top 84 > 60), nấc thấp chỉ còn phần đầu; số thứ tự màu tuyến; không lỗi trang; axe sạch.
+

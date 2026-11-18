@@ -34,3 +34,4 @@ export { RowMenu, useRowMenu, type RowMenuItem } from './RowMenu';
 export { SwitchRow } from './Switch';
 export { SegmentedControl } from './SegmentedControl';
 export { Pager } from './Pager';
+export { MapStage, useMapStage, type Detent, type MapInset } from './MapStage';

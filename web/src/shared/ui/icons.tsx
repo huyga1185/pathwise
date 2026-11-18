@@ -285,3 +285,11 @@ export const ChevronsRightIcon = () => (
     <path d="M5.5 6l6 6-6 6M12.5 6l6 6-6 6" />
   </Icon>
 );
+/** More (like "ellipsis"): three dots, for a menu of less-used commands (HIG Toolbars: "Add a More menu"). */
+export const EllipsisIcon = () => (
+  <Icon>
+    <circle cx="5.5" cy="12" r="1.4" fill="currentColor" stroke="none" />
+    <circle cx="12" cy="12" r="1.4" fill="currentColor" stroke="none" />
+    <circle cx="18.5" cy="12" r="1.4" fill="currentColor" stroke="none" />
+  </Icon>
+);

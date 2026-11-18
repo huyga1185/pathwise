@@ -3715,3 +3715,118 @@ html {
   clip-path: inset(50%);
   white-space: nowrap;
 }
+
+/* MapStage (OWNER_UI_REDESIGN §10, G5.1–G5.3): a plan's screens on a map filling the content area below the top bar —
+   the page has no padding and does not scroll. Wide: a panel floating on the leading side; phone: a sheet with three
+   detents above the tab bar. Both Regular glass (LIQUID_GLASS M4, M7), solid with reduced transparency or increased
+   contrast (as the sidebar). */
+.pw-shell-main:has(.pw-map-stage) > .pw-page {
+  padding: 0;
+}
+.pw-map-stage {
+  position: relative;
+  height: calc(100dvh - 60px);
+  min-height: 360px;
+  overflow: hidden;
+}
+.pw-map-stage-map {
+  position: absolute;
+  inset: 0;
+}
+.pw-map-stage-map .pw-map,
+.pw-map-stage-map .pw-route-map {
+  height: 100%;
+}
+.pw-map-stage-map .pw-map {
+  aspect-ratio: auto;
+  min-height: 0;
+  border: 0;
+  border-radius: 0;
+}
+.pw-map-panel,
+.pw-map-sheet {
+  position: absolute;
+  z-index: 1001;
+  box-sizing: border-box;
+  border: 1px solid color-mix(in srgb, var(--line) 70%, transparent);
+  background: var(--shell-glass);
+  box-shadow: var(--shadow-raised);
+  -webkit-backdrop-filter: blur(20px) saturate(1.4);
+  backdrop-filter: blur(20px) saturate(1.4);
+}
+.pw-map-panel {
+  top: var(--shell-gap);
+  bottom: var(--shell-gap);
+  left: var(--shell-gap);
+  width: min(460px, calc(100% - 2 * var(--shell-gap)));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 16px;
+  border-radius: var(--radius-lg);
+}
+.pw-map-sheet {
+  left: 0;
+  right: 0;
+  /* Above the floating tab bar. */
+  bottom: calc(var(--tabbar-height) + 2 * var(--shell-gap) + env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--radius-lg);
+  transition: height 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.pw-map-sheet.is-dragging {
+  transition: none;
+}
+.pw-map-sheet-grabber {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: grab;
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.pw-map-sheet-grabber > span {
+  width: 36px;
+  height: 5px;
+  border-radius: var(--radius-full);
+  background: color-mix(in srgb, var(--ink) 30%, transparent);
+}
+.pw-map-sheet-grabber:focus-visible {
+  outline: 2px solid var(--route);
+  outline-offset: -4px;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+}
+.pw-map-sheet-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0 16px 16px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .pw-map-sheet {
+    transition: none;
+  }
+}
+@media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
+  .pw-map-panel,
+  .pw-map-sheet {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    background: var(--surface-raised);
+  }
+}
+@media (prefers-contrast: more) {
+  .pw-map-panel,
+  .pw-map-sheet {
+    border: 2px solid var(--ink);
+  }
+}
+.pw-map-stage.is-narrow .leaflet-bottom {
+  bottom: var(--map-floor, 0px);
+}

@@ -109,6 +109,8 @@ export function RouteMap({
   selectedId,
   onSelect,
   labels,
+  inset,
+  staged = false,
 }: {
   depot: LatLng | null;
   routes: MapRoute[];
@@ -117,6 +119,10 @@ export function RouteMap({
   selectedId?: string | number | null;
   onSelect?: (id: string | number) => void;
   labels: RouteMapLabels;
+  /** Part of the map covered by a panel or sheet (MapStage): fitting keeps the routes clear of it. */
+  inset?: { top: number; right: number; bottom: number; left: number };
+  /** On a MapStage: the map fills it; no "larger map" button, no legend (the panel shows each route's colour). */
+  staged?: boolean;
 }) {
   const [map, setMap] = useState<LeafletMap | null>(null);
   const [expanded, setExpanded] = useState(false);
@@ -128,7 +134,11 @@ export function RouteMap({
     const size = map.getSize();
     // A map without a size (hidden, or jsdom) cannot compute a zoom that fits: centre on the first place instead.
     if ((points.length === 1 || !size.x || !size.y) && points[0]) map.setView([points[0].lat, points[0].lon], 15);
-    else map.fitBounds(latLngBounds(points.map((point) => [point.lat, point.lon])), { padding: [32, 32] });
+    else
+      map.fitBounds(latLngBounds(points.map((point) => [point.lat, point.lon])), {
+        paddingTopLeft: [32 + (inset?.left ?? 0), 32 + (inset?.top ?? 0)],
+        paddingBottomRight: [32 + (inset?.right ?? 0), 32 + (inset?.bottom ?? 0)],
+      });
     // Fit again only when the set of places changes, not on every render.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [map, boundsKey]);
@@ -146,7 +156,7 @@ export function RouteMap({
   });
 
   return (
-    <div className={expanded ? 'pw-route-map is-expanded' : 'pw-route-map'}>
+    <div className={expanded ? 'pw-route-map is-expanded' : staged ? 'pw-route-map is-staged' : 'pw-route-map'}>
       <MapFrame center={depot ?? DEFAULT_CENTER} zoom={12} labels={labels} className="pw-map-routes" onReady={setMap}>
         {routes.map((route, index) => {
           const colour = routeColour(index);
@@ -197,29 +207,33 @@ export function RouteMap({
             eventHandlers={markerHandlers(driver.id)}
           />
         ))}
-        <MapOverlay className="pw-map-actions">
-          <button
-            type="button"
-            className="pw-map-ctl pw-map-ctl-text"
-            aria-pressed={expanded}
-            onClick={() => setExpanded((open) => !open)}
-          >
-            {expanded ? labels.collapse : labels.expand}
-          </button>
-        </MapOverlay>
+        {staged ? null : (
+          <MapOverlay className="pw-map-actions">
+            <button
+              type="button"
+              className="pw-map-ctl pw-map-ctl-text"
+              aria-pressed={expanded}
+              onClick={() => setExpanded((open) => !open)}
+            >
+              {expanded ? labels.collapse : labels.expand}
+            </button>
+          </MapOverlay>
+        )}
       </MapFrame>
-      <ul className="pw-map-legend" aria-label={labels.legend}>
-        <li>
-          <DepotIcon />
-          {labels.depot}
-        </li>
-        {routes.map((route, index) => (
-          <li key={`legend-${route.key}`}>
-            <span className={`pw-legend-swatch pw-marker-r${routeColour(index)}`} aria-hidden="true" />
-            {route.label}
+      {staged ? null : (
+        <ul className="pw-map-legend" aria-label={labels.legend}>
+          <li>
+            <DepotIcon />
+            {labels.depot}
           </li>
-        ))}
-      </ul>
+          {routes.map((route, index) => (
+            <li key={`legend-${route.key}`}>
+              <span className={`pw-legend-swatch pw-marker-r${routeColour(index)}`} aria-hidden="true" />
+              {route.label}
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }
