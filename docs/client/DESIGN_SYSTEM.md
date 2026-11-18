@@ -185,9 +185,10 @@ Nhãn trạng thái viết hoa trên nền màu trạng thái; truyền thẳng 
 - `SegmentedControl`: chuyển giữa các phần liên quan trên điện thoại; ô bằng nhau, ô đang chọn nổi lên.
 - `useRowMenu` + `RowMenu`: menu ngữ cảnh của hàng cho mọi danh sách (chạm giữ, nhấp chuột phải); mục phá huỷ chữ đỏ.
 - `ToastDock`: chỗ hiện toast (góc dưới; điện thoại trên tab bar).
-- Hình theo cách nhập (S3): chuột: chỉ nút chính (`primary`) là viên thuốc, nút phụ / không nền / biểu tượng, ô nhập, bộ lọc bo 8; cảm ứng: viên thuốc 44px. `secondary` nền xám, không viền (F-73).
+- Hình theo cỡ control (S3, WWDC25 356): chuột (cỡ Medium): mọi nút, kể cả `primary`, nút biểu tượng, ô nhập, bộ lọc bo 8, nút chính chỉ khác màu; cảm ứng: viên thuốc 44px; control Large 44px (thẻ tài khoản, nút trạng thái trống) là viên thuốc. `secondary` nền xám, không viền (F-73).
 - Ô nhập, ô chọn: nền fill nhạt, viền 1px `ink-muted`, focus sáng viền màu nhấn (như trang đăng nhập); ô chọn có dấu ⌃⌄.
-- Menu và khung bật ra vẽ trên `body`, đặt theo nút mở.
+- Menu và khung bật ra vẽ trên `body`, đặt theo nút mở. Ô chọn (`<select>`) mở menu của app (`useSelectMenu`), không dùng danh sách của trình duyệt.
+- Lưu/Xong dùng biểu tượng dấu tích (`CheckIcon`, HIG Icons: Save → `checkmark`).
 
 ### ActivityIndicator (web, G2)
 

@@ -101,7 +101,7 @@
 | B-2 | Chữ trên nút ngắn, bắt đầu bằng động từ | [Apple] HIG Buttons: "consider starting the label with a verb" |
 | B-3 | Có nền/hình rõ ràng (trừ nút trong thanh, menu) | [Apple] HIG Buttons, phần visionOS: "Prefer buttons that have a discernible background shape and fill" (áp sang web vì không có câu tương đương chung) |
 | B-4 | Thao tác chưa xong ngay thì nút hiện vòng xoay (`busy`) | [Apple] HIG Buttons: "display an activity indicator" |
-| B-5 | Nút phụ cạnh nhau: capsule, cao ≥ 44, tự xuống dòng khi hẹp | [Apple] HIG Buttons, phần visionOS: "prefer the capsule shape in a horizontal row of buttons"; C1 |
+| B-5 | Nút phụ cạnh nhau: cùng cỡ nên cùng hình (cỡ 44 → capsule), tự xuống dòng khi hẹp | [Apple] WWDC25 356 (Large → capsule); HIG Buttons: "Use style — not size"; C1. *Đính chính 2026-11-18: trước trích câu của mục visionOS* |
 | B-6 | Màu chữ/biểu tượng nút không trùng tông nền nội dung sặc sỡ (đơn sắc trên ảnh) | [Apple] HIG Buttons: "Avoid applying a similar color to button labels and content layer backgrounds" |
 
 ### 3.5 Nút biểu tượng (hiện mật khẩu, xoá, tạm dừng hoạt ảnh)
