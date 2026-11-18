@@ -1774,10 +1774,11 @@ textarea.pw-field-input {
 
 /* Menus and the calendar pop out of their button, on the same glass as the account menu (WWDC25 219). */
 .pw-popover {
-  position: absolute;
-  top: calc(100% + 8px);
+  /* On document.body, placed against its button by the code (Filters.tsx Panel). */
+  position: fixed;
+  top: 0;
   left: 0;
-  z-index: 40;
+  z-index: 75;
   padding: 8px;
   border: 1px solid color-mix(in srgb, var(--line) 70%, transparent);
   border-radius: var(--radius-lg);
@@ -2352,11 +2353,6 @@ textarea.pw-field-input {
   overflow-y: auto;
   overscroll-behavior: contain;
 }
-.pw-popover.is-above {
-  top: auto;
-  bottom: calc(100% + 8px);
-  transform-origin: bottom left;
-}
 /* The panel: « [ 4 ] », opening upward, centred over its button. A capsule, so its corners are concentric with the
    capsules inside: 18 (half of 36) + padding 8 = 26 = half of its 52px height (HIG Toolbars: "ensure that its corner
    radius is also concentric with the bar's corners"). */
@@ -2365,9 +2361,6 @@ textarea.pw-field-input {
   align-items: center;
   gap: 8px;
   border-radius: var(--radius-full);
-  left: 50%;
-  translate: -50% 0;
-  transform-origin: bottom center;
 }
 .pw-page-jump-field {
   box-sizing: border-box;
