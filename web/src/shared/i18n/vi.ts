@@ -323,9 +323,10 @@ export const vi = {
     depotTitle: 'Kho xuất phát',
     searchDepot: 'Tìm địa chỉ kho',
     mapHelp: 'Bấm lên bản đồ, kéo ghim hoặc chọn kết quả tìm để đổi vị trí kho.',
+    /** Short names, no IANA id (owner, 2026-11-18: the long one made the menu wider than its field); the id is the value. */
     timezones: [
-      { value: 'Asia/Ho_Chi_Minh', label: 'Giờ Việt Nam (UTC+7) · Asia/Ho_Chi_Minh' },
-      { value: 'Asia/Bangkok', label: 'Asia/Bangkok (UTC+7)' },
+      { value: 'Asia/Ho_Chi_Minh', label: 'Giờ Việt Nam (UTC+7)' },
+      { value: 'Asia/Bangkok', label: 'Bangkok (UTC+7)' },
     ],
   },
   plans: {
