@@ -3488,3 +3488,40 @@ html {
 .pw-time-wheels .pw-wheel-scroller {
   padding-block: 72px;
 }
+
+/* A date in a form (DateField, G4.4): a field-shaped button, the date in the accent colour (HIG Date pickers, compact),
+   the calendar symbol at its end. */
+.pw-date-button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+}
+.pw-date-button .pw-date-value {
+  color: var(--route);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.pw-date-button.is-empty .pw-date-value {
+  color: var(--ink-muted);
+  font-weight: 400;
+}
+.pw-date-button svg {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  color: var(--ink-muted);
+}
+.pw-date-button[aria-expanded='true'] {
+  border-color: var(--route);
+  background-color: var(--surface-raised);
+  box-shadow:
+    inset 0 0 0 1px var(--route),
+    0 0 12px color-mix(in srgb, var(--route) 30%, transparent);
+}
+.pw-date-field .pw-filter-wrap {
+  display: block;
+}

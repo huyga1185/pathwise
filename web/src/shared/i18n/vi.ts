@@ -738,6 +738,8 @@ export const vi = {
     close: 'Đóng',
   },
   /** A time field (TimeField, G4.5). */
+  /** A date in a form (DateField, G4.4). */
+  dateField: { empty: 'Chọn ngày', clear: 'Bỏ chọn ngày' },
   time: { title: 'Chọn giờ', hours: 'Giờ', minutes: 'Phút', clear: 'Bỏ giờ', none: 'chưa có giờ' },
   storeTabs: { label: 'Cửa hàng', info: 'Thông tin và kho', audit: 'Nhật ký' },
   resetLink: {
