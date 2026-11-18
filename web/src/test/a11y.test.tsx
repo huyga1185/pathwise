@@ -207,8 +207,9 @@ describe('accessibility', () => {
     );
     const { container } = renderApp(path);
     await screen.findByRole('heading', { name: heading, level: 1 });
-    // Tests run at phone width: the plan list is a list of rows there, the other screens have tables.
-    await screen.findAllByRole(path === '/plans' ? 'listitem' : 'row');
+    // Tests run at phone width: the plan list and the plan form show lists of rows there (G2.5, G4.8), the other
+    // screens have tables.
+    await screen.findAllByRole(path === '/plans' || path.startsWith('/plans/new') ? 'listitem' : 'row');
     expect(await violations(container)).toEqual([]);
   });
 
