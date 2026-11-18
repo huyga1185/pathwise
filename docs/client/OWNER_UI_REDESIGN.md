@@ -380,3 +380,7 @@ Quyết định: **điện thoại dùng inline**: bấm nút ngày thì lịch 
 
 Chủ dự án đã chọn **một ô thật vẽ thành 6 khung** (`CodeField`, LIQUID_GLASS §9) nhưng chỉ Quên mật khẩu dùng; Xác nhận email còn `OtpInput` (6 ô nhập riêng), Đặt lại mật khẩu bằng link và sheet Đổi mật khẩu (Tài khoản) là ô nhập thường. Giờ cả bốn dùng `CodeField`; xoá `OtpInput` và kiểu `.pw-otp`, `.pw-field-code`, `.pw-auth-otp`. Thông báo dưới ô mã luôn nằm trong vùng `aria-live` (màn Xác nhận email trước có, để trình đọc màn hình báo mã sai). Trong app, khung mã theo đúng mô tả §9: nền fill nhạt và viền như ô nhập, khung đang nhận số sáng viền như ô đang focus; bo `radius-md` khi dùng chuột, **22 trên màn cảm ứng** (như thẻ tài khoản, cùng bán kính ô nhập viên thuốc 44px).
 
+### 8.14 Ô mã trong sheet Đổi mật khẩu theo tỉ lệ ô nhập (2026-11-18)
+
+Chủ dự án: các khung mã trong sheet Đổi mật khẩu trông không cân, lệch tỉ lệ với ô nhập khác (chỉ sửa chỗ này; màn đăng nhập giữ nguyên). Đo: PC khung 73×56 (bè ngang) cạnh ô nhập cao 36; điện thoại 52×56 cạnh ô cao 44. Sửa (chỉ trong `.pw-sheet`): khung **vuông, cao bằng ô nhập** — 36 khi dùng chuột, 44 cảm ứng (HIG: tối thiểu 44pt); không kéo giãn vì mỗi khung chỉ chứa một chữ số (HIG Text fields: *"match the size of a text field to the quantity of anticipated text"*); chữ số cùng cỡ chữ của ô nhập; hàng khung bắt đầu thẳng mép ô nhập, vùng bấm vừa sáu khung. Bo theo §8.13: 8 khi dùng chuột, 22 trên cảm ứng — khung 44×44 bo 22 là hình tròn (capsule: bán kính bằng nửa chiều cao, S1). Đo lại: 1440 → 36×36, 390/320 → 44×44, hàng 256/304px.
+
