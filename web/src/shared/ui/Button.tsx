@@ -2,8 +2,12 @@ import type { ButtonHTMLAttributes, ReactNode, Ref } from 'react';
 import { cx } from './cx';
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-  /** primary: one per screen. danger: destructive. success / signal: driver result buttons only. */
-  variant?: 'primary' | 'secondary' | 'quiet' | 'danger' | 'success' | 'signal';
+  /**
+   * primary: one per screen. secondary: grey fill. tinted: accent text on a light accent fill (UIKit
+   * `UIButton.Configuration.tinted()`), between grey and primary — set apart from a grey neighbour without a second
+   * prominent button. quiet: no fill. danger: destructive. success / signal: driver result buttons only.
+   */
+  variant?: 'primary' | 'secondary' | 'tinted' | 'quiet' | 'danger' | 'success' | 'signal';
   /** md 36px (web) · lg 48px · xl 56px. */
   size?: 'md' | 'lg' | 'xl';
   /**

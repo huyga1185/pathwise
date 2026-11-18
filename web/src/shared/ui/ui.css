@@ -71,6 +71,12 @@
   background: color-mix(in srgb, var(--ink) 7%, transparent);
   color: var(--ink);
 }
+/* Tinted (UIKit tinted(); DESIGN_SYSTEM): accent text on a light accent fill, as a set filter (G2.2). The text darkens
+   with the fill so it keeps 4.5:1 at rest, on hover and pressed (WCAG 1.4.3; measured, OWNER_UI_REDESIGN §9.10). */
+.pw-btn-tinted {
+  background: color-mix(in srgb, var(--route) 16%, transparent);
+  color: var(--route);
+}
 .pw-btn-quiet {
   background: transparent;
   color: var(--route);
@@ -112,6 +118,10 @@
   .pw-btn-quiet:hover:not(:disabled) {
     background: var(--surface-tint);
   }
+  .pw-btn-tinted:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--route) 22%, transparent);
+    color: color-mix(in srgb, var(--route) 85%, var(--ink));
+  }
 }
 .pw-btn-primary:active:not(:disabled),
 .pw-btn-danger:active:not(:disabled),
@@ -124,6 +134,21 @@
 }
 .pw-btn-quiet:active:not(:disabled) {
   background: color-mix(in srgb, var(--route) 16%, transparent);
+}
+.pw-btn-tinted:active:not(:disabled) {
+  background: color-mix(in srgb, var(--route) 28%, transparent);
+  color: color-mix(in srgb, var(--route) 70%, var(--ink));
+}
+@media (hover: hover) {
+  a.pw-btn-tinted:hover {
+    color: color-mix(in srgb, var(--route) 85%, var(--ink));
+  }
+}
+/* Increased contrast: the light fill alone is faint; an edge in the text colour (APPLE_CHECKLIST C12). */
+@media (prefers-contrast: more) {
+  .pw-btn-tinted {
+    border: 2px solid currentColor;
+  }
 }
 /* A link drawn as a button keeps its button colours: the base link hover (base.css: a:hover → ink) turned the white
    text of a filled button dark on hover. */

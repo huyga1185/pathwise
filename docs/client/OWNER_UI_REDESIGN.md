@@ -505,3 +505,9 @@ Chủ dự án hỏi đã xử lý tràn chữ cho tiêu đề và nút quay l�
 
 Chủ dự án: bo của các ô trắng ở trang kế hoạch không khớp các trang khác. Đo 1440px: Kế hoạch, Xe, Thành viên, Cửa hàng, Sửa kế hoạch — ô trắng bo 16, không viền; chi tiết kế hoạch — khối "Còn N điểm…" / "Chưa có tài xế…" bo 8 viền 1px (đỏ / xám), bảng bo 4 viền, khung sửa điểm bo 8 viền; Báo cáo (ô trống) bo 8 viền. Nguyên nhân: trang chi tiết thuộc G5 (§9.5 #6, đã chọn để G5), chưa đổi. Docs lệch: `DESIGN_SYSTEM.md` mục Bo góc và `.pw-card` vẫn ghi thẻ `radius-md` có viền như quy tắc chung — đã ghi rõ quy tắc nhóm bo 16 của khu đã redesign và trang nào còn kiểu cũ. Chủ dự án chọn: **để G5 cả** (không đổi code bây giờ); khối lỗi ở G5 dùng **nền đỏ nhạt** thay viền đỏ (ghi ở mục G5, §4).
 
+### 9.10 Nút "Sao chép" ở đầu trang chi tiết kế hoạch (2026-11-18)
+
+Chủ dự án: "Sao chép" không nền đứng đầu cụm nút trông như chữ lệch, muốn đưa ra thứ 3. HIG Toolbars: *"Only specify one primary action, and put it on the trailing side of the toolbar"* → "Tối ưu lộ trình" phải ở cuối, không đặt "Sao chép" sau nó. Chủ dự án muốn màu khác nút xám bên cạnh; HIG Buttons chỉ dành màu cho vai trò chính (màu nhấn) và nguy hiểm (đỏ), nên dùng kiểu **tinted** của Apple (UIKit `tinted()`), không thêm màu mới. Kiểm WCAG trước khi làm: 1.4.3 chữ ≥ 4.5:1 ở mọi trạng thái (đo, `DESIGN_SYSTEM.md`); 1.4.11 không bắt nền nút đạt 3:1 khi nút nhận ra bằng chữ (như nút xám); 1.4.1 có chữ.
+
+Làm: thứ tự **Sửa điểm giao (xám) · Sao chép (tinted) · Tối ưu lộ trình (nút chính, cuối)**. Ghi nhận: theme sáng, khi "Tối ưu lộ trình" bị khoá (mờ 50%) nó cũng xanh nhạt, gần màu "Sao chép" — phân biệt bằng chữ (xanh đậm / trắng mờ). Màn kết quả tối ưu và theo dõi (`ResultView`, `TrackView`) vẫn để "Sao chép" kiểu cũ — G5.
+

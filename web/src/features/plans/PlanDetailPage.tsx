@@ -209,12 +209,6 @@ function GeocodeView({ plan }: { plan: PlanDetail }) {
         actions={
           <div className="pw-plan-header-actions">
             <div className="pw-plan-actions">
-              {/* Copy, in every state (API_SPEC: any status); the list's touch-and-hold menu offers it too. */}
-              {!readOnly ? (
-                <Button variant="quiet" onClick={() => setCopying(true)}>
-                  {vi.planCopy.action}
-                </Button>
-              ) : null}
               <Button
                 variant="secondary"
                 disabled={busy || readOnly}
@@ -222,6 +216,13 @@ function GeocodeView({ plan }: { plan: PlanDetail }) {
               >
                 {g.editStops}
               </Button>
+              {/* Copy, in every state (API_SPEC: any status); the list's touch-and-hold menu offers it too. Tinted,
+                  between the grey edit and the primary action that stays last (HIG Toolbars; owner, 2026-11-18). */}
+              {!readOnly ? (
+                <Button variant="tinted" onClick={() => setCopying(true)}>
+                  {vi.planCopy.action}
+                </Button>
+              ) : null}
               <Button
                 variant="primary"
                 disabled={!canOptimize || working || readOnly}

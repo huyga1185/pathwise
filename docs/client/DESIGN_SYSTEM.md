@@ -187,6 +187,7 @@ Nhãn trạng thái viết hoa trên nền màu trạng thái; truyền thẳng 
 - `SegmentedControl`: chuyển giữa các phần liên quan trên điện thoại; ô bằng nhau, ô đang chọn nổi lên.
 - `useRowMenu` + `RowMenu`: menu ngữ cảnh của hàng cho mọi danh sách (chạm giữ, nhấp chuột phải); mục phá huỷ chữ đỏ.
 - `ToastDock`: chỗ hiện toast (góc dưới; điện thoại trên tab bar).
+- Kiểu `tinted` của `Button` (2026-11-18, OWNER_UI_REDESIGN §9.10): chữ màu nhấn trên nền màu nhấn nhạt 16% (như bộ lọc đang bật, G2.2), giữa `secondary` (xám) và `primary`; theo UIKit `UIButton.Configuration.tinted()`. Dùng khi một nút phụ cần tách khỏi nút xám bên cạnh mà không thành nút chính thứ hai (HIG Buttons: ít nút nổi bật; màu chỉ cho vai trò chính / nguy hiểm). Rê / nhấn: nền 22% / 28%, chữ đậm dần để giữ ≥ 4.5:1 (đo sáng 4.73 / 4.99 / 5.26, tối 6.20 / 5.96 / 5.68); tăng tương phản: viền 2px màu chữ.
 - Hình theo cỡ control (S3, WWDC25 356): chuột (cỡ Medium): mọi nút, kể cả `primary`, nút biểu tượng, ô nhập, bộ lọc bo 8, nút chính chỉ khác màu; cảm ứng: viên thuốc 44px; control Large 44px (thẻ tài khoản, nút trạng thái trống) là viên thuốc. `secondary` nền xám, không viền (F-73).
 - Ô nhập, ô chọn: nền fill nhạt, viền 1px `ink-muted`, focus sáng viền màu nhấn (như trang đăng nhập); ô chọn có dấu ⌃⌄.
 - Menu và khung bật ra vẽ trên `body`, đặt theo nút mở. Ô chọn (`<select>`) mở menu của app (`useSelectMenu`), không dùng danh sách của trình duyệt.
