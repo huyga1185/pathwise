@@ -1,5 +1,5 @@
 import { useStoreReadOnly } from '@/data/meQuery';
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useSearchParams } from 'react-router';
 import { ApiError } from '@/data/apiError';
@@ -11,7 +11,6 @@ import { applyServerErrors, errorCode } from '@/shared/forms/serverErrors';
 import { formatDate } from '@/shared/format';
 import { useCountdown } from '@/shared/hooks/useCountdown';
 import { useMediaQuery, WIDE_QUERY } from '@/shared/hooks/useMediaQuery';
-import { useTabUnderline } from '@/shared/hooks/useTabUnderline';
 import { vi } from '@/shared/i18n/vi';
 import {
   Alert,
@@ -64,8 +63,8 @@ function memberName(member: Member, meId: number | null) {
 /**
  * "Thành viên và lời mời" (SCREENS §1.1, OWNER_UI_REDESIGN §8.3). The OWNER invites from the title row (a sheet),
  * changes roles, "Đi giao" and status of the others (only "Đi giao" of themselves) and manages invitations; a
- * DISPATCHER sees the members read-only and no invitations. Members / invitations: a tab view on a wide window, a
- * segmented control on a phone (owner's choice Q6). Wide: tables with the role as a pop-up button in the row; phone:
+ * DISPATCHER sees the members read-only and no invitations. Members / invitations: a tabbed control, centred, on every width
+ * (owner's choice 2026-11-18, §8.9: the macOS tab view's control; a segmented control on a phone). Wide: tables with the role as a pop-up button in the row; phone:
  * rows that open a sheet with the role, an "Đi giao" switch and "Vô hiệu hoá" (HIG Toggles: a switch only in a list
  * row). Disabling asks first in an alert (people are signed out at once). Touch and hold or right click a row for its
  * commands.
@@ -86,9 +85,6 @@ export function MembersPage() {
   const [toast, setToast] = useState<string | null>(null);
 
   const select = (next: Tab) => setParams(next === 'invitations' ? { tab: 'invitations' } : {}, { replace: true });
-  const tabBar = useRef<HTMLDivElement>(null);
-  const underline = useRef<HTMLSpanElement>(null);
-  useTabUnderline(tabBar, underline, `${tab}-${wide}`);
   // The other part slides in from the side its tab is on (members on the left, invitations on the right).
   const [shownTab, setShownTab] = useState({ tab, motion: '' });
   if (tab !== shownTab.tab) setShownTab({ tab, motion: tab === 'invitations' ? 'is-next' : 'is-prev' });
@@ -126,36 +122,11 @@ export function MembersPage() {
       </div>
       <p className="pw-muted pw-list-lead">{isOwner ? m.leadOwner : m.leadDispatcher}</p>
 
+      {/* One tabbed control on every width: on a Mac a tab view's control looks like a segmented control centred on
+          the top edge of the content (HIG Tab views, Anatomy; Segmented controls, macOS); on a phone a segmented
+          control (iOS). */}
       {tabs.length > 1 ? (
-        wide ? (
-          <div ref={tabBar} className="pw-tabs" role="tablist" aria-label={m.tabsLabel}>
-            <span ref={underline} className="pw-tabs-underline" aria-hidden="true" />
-            {tabs.map((item) => (
-              <button
-                key={item.value}
-                type="button"
-                role="tab"
-                id={`tab-${item.value}`}
-                className="pw-tab"
-                aria-selected={tab === item.value}
-                aria-controls={item.panelId}
-                tabIndex={tab === item.value ? 0 : -1}
-                onClick={() => select(item.value)}
-                onKeyDown={(event) => {
-                  if (event.key !== 'ArrowRight' && event.key !== 'ArrowLeft') return;
-                  event.preventDefault();
-                  const next = tab === 'members' ? 'invitations' : 'members';
-                  select(next);
-                  document.getElementById(`tab-${next}`)?.focus();
-                }}
-              >
-                {item.label}
-              </button>
-            ))}
-          </div>
-        ) : (
-          <SegmentedControl label={m.tabsLabel} value={tab} options={tabs} onChange={select} idPrefix="tab" />
-        )
+        <SegmentedControl label={m.tabsLabel} value={tab} options={tabs} onChange={select} idPrefix="tab" />
       ) : null}
 
       {tab === 'members' ? (

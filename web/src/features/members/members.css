@@ -1,33 +1,5 @@
-/* "Thành viên và lời mời" (OWNER_UI_REDESIGN §8.3). Wide: a tab view on top of the content (HIG Tab views, macOS);
-   phone: a segmented control (ui.css). Lists use the shared list styles. */
-.pw-tabs {
-  display: flex;
-  gap: 24px;
-  border-bottom: 1px solid var(--line);
-}
-.pw-tab {
-  margin-bottom: -1px;
-  padding: 8px 0;
-  font: inherit;
-  font-weight: 600;
-  color: var(--ink-muted);
-  background: none;
-  border: 0;
-  border-bottom: 2px solid transparent;
-  cursor: pointer;
-}
-@media (hover: hover) {
-  .pw-tab:hover {
-    color: var(--ink);
-  }
-}
-.pw-tab[aria-selected='true'] {
-  color: var(--route);
-}
-.pw-tab:focus-visible {
-  outline: 2px solid var(--route);
-  outline-offset: 2px;
-}
+/* "Thành viên và lời mời" (OWNER_UI_REDESIGN §8.3, §8.9): the tabbed control is the shared segmented control (ui.css).
+   Lists use the shared list styles. */
 .pw-members-panel {
   display: flex;
   flex-direction: column;

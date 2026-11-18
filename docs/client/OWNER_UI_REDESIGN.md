@@ -280,7 +280,7 @@ Không làm trong G2: tiêu đề lớn thu nhỏ khi cuộn (D5 hẹp; cần th
 
 | # | Câu hỏi | Trả lời |
 |---|---|---|
-| Q6 | Thành viên / Lời mời: HIG macOS bảo dùng **tab view** trong vùng nội dung chính, HIG iOS bảo dùng **segmented control** | **Rộng: tab view** (như hiện tại), **hẹp: segmented control** (theo từng nền tảng) |
+| Q6 | Thành viên / Lời mời: HIG macOS bảo dùng **tab view** trong vùng nội dung chính, HIG iOS bảo dùng **segmented control** | **Rộng: tab view** (như hiện tại), **hẹp: segmented control** (theo từng nền tảng) | *Cập nhật 2026-11-18 (§8.9): tab view trên máy tính vẽ như tabbed control của macOS, không gạch chân.*
 | Q7 | "Hồ sơ và bảo mật" 16 ký tự > 15 (Toolbars) | Tiêu đề trang **"Tài khoản"** |
 | Q8 | Danh sách thiết bị dài (hơn 70 phiên trên DB dev) | **Hiện một phần, cuộn tới cuối thì hiện thêm** ("xem thêm" tự động); không lệch HIG: Lists and tables chỉ nói "providing a way for people to view more", không quy định cách |
 | Q9 | Giao G3 thành 1 PR hay 2 PR | **1 PR** |
@@ -334,4 +334,14 @@ Không làm trong G2: tiêu đề lớn thu nhỏ khi cuộn (D5 hẹp; cần th
 | 6 | fb_12: sheet bị bàn phím che (Android) | Viewport `interactive-widget=resizes-content`: bàn phím thu nhỏ trang nên sheet bám đáy nổi lên trên bàn phím | — |
 | 6 | fb_13: ⌃⌄ lặp kín ô Vai trò khi focus (giao diện tối) | Quy tắc focus dùng `background` rút gọn, làm mất `no-repeat` của ảnh ⌃⌄ giao diện tối → chỉ đổi `background-color` | — |
 | 7 | fb_11: menu múi giờ to | Dòng 44px là cỡ control mặc định của iOS (HIG Accessibility: 44×44 pt), giữ. Menu rộng hơn ô vì tên dài → chủ dự án chọn rút tên: "Giờ Việt Nam (UTC+7)", "Bangkok (UTC+7)" | [Apple] HIG Accessibility |
+
+### 8.9 Tab trên máy tính (2026-11-18)
+
+Chủ dự án hỏi đổi tab "Thông tin và kho / Nhật ký", "Thành viên / Lời mời" trên PC sang viên thuốc. Đọc lại HIG bản macOS:
+
+- Segmented controls, macOS: *"Use a tab view in the main window area — instead of a segmented control — for view switching. A tab view … is similar in appearance to a box combined with a segmented control."*
+- Tab views, Anatomy: *"The tabbed control appears on the top edge of the content area"*; hình minh hoạ: *"a three-tab tabbed control is centered on the top edge of the content view"*; ảnh Calendar macOS (Day/Week/Month/Year).
+- Kiểu gạch chân (Q6) không có nguồn trong HIG macOS.
+
+Quyết định (chủ dự án chọn): máy tính dùng **tabbed control dạng segmented, đặt giữa** trên nội dung, ô nổi trượt; hình theo S3 (§8.7): **chuột bo 8** (ô nổi bo 6, đồng tâm 8 − 2), cảm ứng viên thuốc. Điện thoại giữ segmented control. Bỏ `useTabUnderline` và kiểu `.pw-tabs`/`.pw-store-tabs`.
 

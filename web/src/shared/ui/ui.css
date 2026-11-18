@@ -1684,8 +1684,6 @@ textarea.pw-field-input {
     min-height: 44px;
   }
   .pw-segmented .pw-segmented-btn,
-  .pw-tab,
-  .pw-store-tab,
   .pw-back-link,
   .pw-check,
   .pw-link-button {
@@ -3112,22 +3110,29 @@ a.pw-segment {
   background: color-mix(in srgb, var(--ink) 5%, transparent);
 }
 
-/* A tab view's underline (wide): one line that slides and resizes to the current tab (useTabUnderline). */
-.pw-tabs,
-.pw-store-tabs {
-  position: relative;
+/* Wide window: the same control as a macOS tab view's tabbed control, centred on the top edge of the content (HIG Tab
+   views, Anatomy: "a three-tab tabbed control is centered on the top edge of the content view"; Segmented controls,
+   macOS: a tab view "is similar in appearance to a box combined with a segmented control"). As wide as its longest
+   segment needs, segments equal. */
+@media (min-width: 960px) {
+  .pw-segmented {
+    width: max-content;
+    min-width: 280px;
+    margin-inline: auto;
+  }
+  .pw-segmented > .pw-segment {
+    padding: 0 20px;
+  }
 }
-.pw-tabs-underline {
-  position: absolute;
-  left: 0;
-  bottom: 0;
-  width: 0;
-  height: 2px;
-  border-radius: 1px;
-  background: var(--route);
-  transition:
-    transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1),
-    width 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+/* With a mouse a medium control is a rounded rectangle (WWDC25 356, §8.7): 8, the thumb concentric inside the 2px
+   padding (8 − 2 = 6, S1). */
+@media (pointer: fine) {
+  .pw-segmented {
+    border-radius: var(--radius-md);
+  }
+  .pw-segmented-thumb {
+    border-radius: 6px;
+  }
 }
 /* The other part slides in from its tab's side (like turning a page, G2.9). */
 .pw-members-panel.is-next {
@@ -3137,8 +3142,7 @@ a.pw-segment {
   animation: pw-page-prev 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 @media (prefers-reduced-motion: reduce) {
-  .pw-segmented-thumb,
-  .pw-tabs-underline {
+  .pw-segmented-thumb {
     transition: none;
   }
   .pw-members-panel.is-next,

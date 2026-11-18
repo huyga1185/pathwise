@@ -43,27 +43,7 @@
 .pw-store-coords {
   font-variant-numeric: tabular-nums;
 }
-/* OWNER sub-pages and the store's audit log (W11). */
-.pw-store-tabs {
-  display: flex;
-  gap: var(--space-6);
-  border-bottom: 1px solid var(--line);
-}
-.pw-store-tab {
-  margin-bottom: -1px;
-  padding: var(--space-2) 0;
-  border-bottom: 2px solid transparent;
-  font-weight: 600;
-  color: var(--ink-muted);
-  text-decoration: none;
-}
-.pw-store-tab.is-active {
-  color: var(--route);
-}
-.pw-store-tab:focus-visible {
-  outline: 2px solid var(--route);
-  outline-offset: 2px;
-}
+/* The store's audit log (W11). */
 .pw-store-audit-actor {
   font-weight: 600;
 }
