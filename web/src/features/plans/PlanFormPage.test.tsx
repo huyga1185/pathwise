@@ -43,8 +43,17 @@ describe('Tạo kế hoạch', () => {
 
     expect(await screen.findByText('Kho 45 Lê Lợi, Hải Châu, Đà Nẵng')).toBeInTheDocument();
     await user.type(screen.getByLabelText(/^Tên kế hoạch/), 'Giao sáng 01/12');
-    await user.clear(screen.getByLabelText(/^Ngày giao/));
-    await user.type(screen.getByLabelText(/^Ngày giao/), '2026-12-01');
+    // The date is a compact date picker: its calendar, moved to December 2026.
+    await user.click(screen.getByRole('button', { name: /^Ngày giao:/ }));
+    const calendar = screen.getByRole('group', { name: 'Ngày giao' });
+    for (let step = 0; step < 24 && !within(calendar).queryByText('Tháng 12, 2026'); step += 1) {
+      const title = within(calendar).getByRole('button', { name: /^Tháng \d+, \d{4}$/ }).textContent ?? '';
+      const [, month = '0', year = '0'] = /Tháng (\d+), (\d{4})/.exec(title) ?? [];
+      const later = Number(year) * 12 + Number(month) < 2026 * 12 + 12;
+      await user.click(within(calendar).getByRole('button', { name: later ? 'Tháng sau' : 'Tháng trước' }));
+    }
+    await user.click(within(calendar).getByRole('button', { name: 'Thứ Ba, 1 tháng 12, 2026' }));
+    await user.click(screen.getByRole('button', { name: /^Ngày giao:/ }));
     await user.click(screen.getByRole('button', { name: '+ Thêm phân công' }));
     await user.selectOptions(await screen.findByLabelText('Tài xế phân công 1'), '451');
     await user.selectOptions(screen.getByLabelText('Xe phân công 1'), '74');
@@ -164,16 +173,18 @@ describe('Sửa kế hoạch', () => {
     const { router } = renderApp('/plans/83/edit');
     const user = userEvent.setup();
 
-    expect(await screen.findByRole('heading', { name: 'Sửa Giao sáng 01/12' })).toBeInTheDocument();
+    // A short title (HIG Toolbars); the plan's name is in its field and in the back button.
+    expect(await screen.findByRole('heading', { name: 'Sửa kế hoạch' })).toBeInTheDocument();
+    expect(screen.getByLabelText(/^Tên kế hoạch/)).toHaveValue('Giao sáng 01/12');
     expect(screen.getByLabelText('Mã đơn dòng 1')).toHaveValue('ĐH-1001');
     expect(screen.getByLabelText('Tài xế phân công 2')).toHaveValue('452');
     await user.click(screen.getAllByRole('button', { name: 'Lưu và tìm toạ độ' })[0] as HTMLElement);
 
-    const dialog = await screen.findByRole('dialog', { name: 'Kế hoạch vừa được người khác thay đổi' });
+    const dialog = await screen.findByRole('alertdialog', { name: 'Kế hoạch vừa được người khác thay đổi' });
     expect(bodies[0]?.version).toBe(1);
     expect(bodies[0]?.stops[0]?.id).toBe(108);
     await user.click(within(dialog).getByRole('button', { name: 'Tải lại' }));
-    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    await waitFor(() => expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument());
 
     await user.click(screen.getAllByRole('button', { name: 'Lưu và tìm toạ độ' })[0] as HTMLElement);
     await waitFor(() => expect(router.state.location.pathname).toBe('/plans/83'));

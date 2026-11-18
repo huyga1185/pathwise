@@ -333,7 +333,6 @@ export const vi = {
   plans: {
     title: 'Kế hoạch',
     create: 'Tạo kế hoạch',
-    back: '← Kế hoạch',
     filterLabel: 'Lọc kế hoạch',
     date: 'Ngày giao',
     status: 'Trạng thái',
@@ -375,7 +374,8 @@ export const vi = {
   },
   planForm: {
     createTitle: 'Tạo kế hoạch',
-    editTitle: (name: string) => `Sửa ${name}`,
+    /** A short title (HIG Toolbars: under 15 characters); the plan's name is in its field. */
+    editTitle: 'Sửa kế hoạch',
     cancel: 'Huỷ',
     save: 'Lưu và tìm toạ độ',
     noDepot: 'Cửa hàng chưa có kho xuất phát. Cập nhật trong phần Cửa hàng rồi tạo kế hoạch.',

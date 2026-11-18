@@ -12,9 +12,27 @@
   gap: 8px;
   min-width: 0;
 }
+/* The standard back button: chevron + the parent page's title (BackLink, G4.1). */
 .pw-back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  max-width: 100%;
+  margin-left: -6px;
   font-weight: 600;
   text-decoration: none;
+}
+.pw-back-link svg {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  stroke-width: 2.4;
+}
+.pw-back-link span {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 .pw-plan-title {
   display: flex;
@@ -156,6 +174,8 @@
 }
 .pw-plan-info {
   display: grid;
+  /* Each field from the top: the depot's hint must not stretch the others and push their boxes down. */
+  align-items: start;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
   gap: 16px;
 }
@@ -978,3 +998,82 @@
   gap: var(--space-1);
   flex: 1 1 360px;
 }
+
+/* The plan form (OWNER_UI_REDESIGN §9). The title row holds the one set of actions and stays pinned under the top bar
+   while the form scrolls (G4.2): the same opaque strip as the top bar, a soft edge once stuck (as the pinned pager,
+   §8.17). */
+.pw-form-bar {
+  position: sticky;
+  top: 60px;
+  z-index: 15;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-inline: calc(-1 * clamp(16px, 2vw, 24px));
+  padding: 8px clamp(16px, 2vw, 24px);
+  background: var(--surface);
+}
+.pw-form-bar .pw-page-title {
+  min-width: 0;
+  margin: 0;
+}
+.pw-form-bar::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 100%;
+  height: 16px;
+  background: linear-gradient(var(--surface), transparent);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+.pw-form-bar.is-stuck::after {
+  opacity: 1;
+}
+.pw-form-bar .pw-plan-actions {
+  flex-wrap: nowrap;
+}
+/* Groups by space and a filled container, no outline (G4.3; as the store page's groups). */
+.pw-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+  padding: 20px;
+  border-radius: var(--radius-lg);
+  background: var(--surface-raised);
+}
+.pw-form-group h2 {
+  margin: 0;
+  font-size: 1.0625rem;
+  line-height: 1.375rem;
+  font-weight: 600;
+}
+/* WCAG 2.4.11: a focused field scrolls clear of the top bar and the pinned title row. */
+html:has(.pw-form-bar) {
+  scroll-padding-top: 132px;
+}
+@media (max-height: 500px) {
+  .pw-form-bar {
+    position: static;
+  }
+  .pw-form-bar::after {
+    display: none;
+  }
+  html:has(.pw-form-bar) {
+    scroll-padding-top: 60px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pw-form-bar::after {
+    transition: none;
+  }
+}
+/* The back button sits close over the title row (the invisible sentinel between them must not add the form's gap). */
+.pw-plan-form > .pw-back-link + .pw-pager-sentinel {
+  margin-top: -40px;
+}
+

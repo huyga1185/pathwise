@@ -3,6 +3,7 @@ import { Link } from 'react-router';
 import { DriverIcon, RouteMap, routeColour, type MapDriver } from '@/platform/map';
 import { formatDateLong, formatPhone, formatTime } from '@/shared/format';
 import { vi } from '@/shared/i18n/vi';
+import { BackLink } from '@/shared/ui/BackLink';
 import { Button, buttonClass, StatusPill } from '@/shared/ui';
 import { useStoreReadOnly } from '@/data/meQuery';
 import { CopyDialog } from './CopyDialog';
@@ -133,9 +134,7 @@ export function TrackView({ plan, updatedAt }: { plan: PlanDetail; updatedAt: nu
     <section className="pw-page-section" aria-labelledby="plan-title">
       <div className="pw-plans-head">
         <div className="pw-plans-intro">
-          <Link to="/plans" className="pw-back-link">
-            {vi.plans.back}
-          </Link>
+          <BackLink to="/plans" label={vi.plans.title} />
           <div className="pw-plan-title">
             <h1 id="plan-title" className="pw-page-title">
               {plan.name}

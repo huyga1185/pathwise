@@ -1,6 +1,6 @@
 import { useStoreReadOnly } from '@/data/meQuery';
 import { useMemo, useState, type ReactNode } from 'react';
-import { useFieldArray, useForm, useWatch, type FieldPath, type UseFormRegister } from 'react-hook-form';
+import { Controller, useFieldArray, useForm, useWatch, type FieldPath, type UseFormRegister } from 'react-hook-form';
 import { Link, useNavigate, useParams } from 'react-router';
 import { ApiError } from '@/data/apiError';
 import { useStoreQuery } from '@/data/storeQuery';
@@ -8,7 +8,22 @@ import { formatCapacity } from '@/features/fleet';
 import { errorMessages, fieldErrors, messageFor } from '@/shared/errors';
 import { todayIn } from '@/shared/format';
 import { vi } from '@/shared/i18n/vi';
-import { Button, buttonClass, Dialog, ErrorBanner, TextField, TrashIcon, ActivityIndicator } from '@/shared/ui';
+import { useMediaQuery, WIDE_QUERY } from '@/shared/hooks/useMediaQuery';
+import { useStuck } from '@/shared/hooks/useStuck';
+import {
+  ActivityIndicator,
+  Alert,
+  BackLink,
+  Button,
+  buttonClass,
+  CheckIcon,
+  DateField,
+  ErrorBanner,
+  TextField,
+  TimeField,
+  TrashIcon,
+} from '@/shared/ui';
+import { cx } from '@/shared/ui/cx';
 import { useSelectMenu } from '@/shared/ui/useSelectMenu';
 import {
   useActiveVehicles,
@@ -178,6 +193,8 @@ function PlanForm({ plan }: { plan: PlanDetail | null }) {
   });
 
   const errorCount = countErrors(errors);
+  const wide = useMediaQuery(WIDE_QUERY);
+  const { sentinel, stuck } = useStuck(true);
   // A driver disabled or a vehicle turned off since the draft was saved stays selectable in that draft.
   const memberOptions = withCurrent(
     members.data ?? [],
@@ -190,16 +207,15 @@ function PlanForm({ plan }: { plan: PlanDetail | null }) {
 
   return (
     <form className="pw-plan-form" aria-labelledby="plan-form-title" onSubmit={onSave} noValidate>
-      <div className="pw-plans-head">
-        <div className="pw-plans-intro">
-          <Link to={plan ? `/plans/${plan.id}` : '/plans'} className="pw-back-link">
-            {vi.plans.back}
-          </Link>
-          <h1 id="plan-form-title" className="pw-page-title">
-            {plan ? f.editTitle(plan.name) : f.createTitle}
-          </h1>
-        </div>
-        <FormActions plan={plan} disabled={noDepot || busy || readOnly} busy={isSubmitting} />
+      <BackLink to={plan ? `/plans/${plan.id}` : '/plans'} label={plan ? plan.name : vi.plans.title} />
+      {/* One set of actions, on the title row, pinned under the top bar while the form scrolls (G4.2, owner G4-Q3;
+          HIG Toolbars: buttons above scrolling content "always remain visible"). */}
+      <div ref={sentinel} className="pw-pager-sentinel" aria-hidden="true" />
+      <div className={cx('pw-form-bar', stuck && 'is-stuck')}>
+        <h1 id="plan-form-title" className="pw-page-title">
+          {plan ? f.editTitle : f.createTitle}
+        </h1>
+        <FormActions plan={plan} disabled={noDepot || busy || readOnly} busy={isSubmitting} wide={wide} />
       </div>
 
       {noDepot || (failure instanceof ApiError && failure.code === 'STORE_DEPOT_REQUIRED') ? (
@@ -219,11 +235,24 @@ function PlanForm({ plan }: { plan: PlanDetail | null }) {
         </section>
       ) : null}
 
-      <section className="pw-card" aria-labelledby="sec-info">
+      <section className="pw-form-group" aria-labelledby="sec-info">
         <h2 id="sec-info">{f.info}</h2>
         <div className="pw-plan-info">
           <TextField label={f.name} required maxLength={150} error={errors.name?.message} {...register('name')} />
-          <TextField label={f.date} type="date" required error={errors.planDate?.message} {...register('planDate')} />
+          <Controller
+            control={control}
+            name="planDate"
+            render={({ field }) => (
+              <DateField
+                label={f.date}
+                required
+                value={field.value}
+                onChange={field.onChange}
+                today={todayIn(timeZone)}
+                error={errors.planDate?.message}
+              />
+            )}
+          />
           <div className="pw-field">
             <span className="pw-field-label">{f.depot}</span>
             <div className="pw-plan-depot">
@@ -235,7 +264,7 @@ function PlanForm({ plan }: { plan: PlanDetail | null }) {
         </div>
       </section>
 
-      <section className="pw-card" aria-labelledby="sec-assign">
+      <section className="pw-form-group" aria-labelledby="sec-assign">
         <div className="pw-card-head">
           <h2 id="sec-assign">{f.assignments}</h2>
           <span className="pw-muted">{f.assignmentsCount(assignments.fields.length)}</span>
@@ -284,21 +313,29 @@ function PlanForm({ plan }: { plan: PlanDetail | null }) {
                         />
                       </Cell>
                       <Cell error={at?.shiftStart?.message}>
-                        <input
-                          className="pw-field-input"
-                          type="time"
-                          aria-label={f.rowLabel(f.shiftStart, n)}
-                          aria-invalid={at?.shiftStart ? 'true' : undefined}
-                          {...register(`assignments.${i}.shiftStart`)}
+                        <Controller
+                          control={control}
+                          name={`assignments.${i}.shiftStart`}
+                          render={({ field }) => (
+                            <TimeField
+                              {...field}
+                              aria-label={f.rowLabel(f.shiftStart, n)}
+                              invalid={Boolean(at?.shiftStart)}
+                            />
+                          )}
                         />
                       </Cell>
                       <Cell error={at?.shiftEnd?.message}>
-                        <input
-                          className="pw-field-input"
-                          type="time"
-                          aria-label={f.rowLabel(f.shiftEnd, n)}
-                          aria-invalid={at?.shiftEnd ? 'true' : undefined}
-                          {...register(`assignments.${i}.shiftEnd`)}
+                        <Controller
+                          control={control}
+                          name={`assignments.${i}.shiftEnd`}
+                          render={({ field }) => (
+                            <TimeField
+                              {...field}
+                              aria-label={f.rowLabel(f.shiftEnd, n)}
+                              invalid={Boolean(at?.shiftEnd)}
+                            />
+                          )}
                         />
                       </Cell>
                       <Cell error={at?.maxDistanceKm?.message}>
@@ -342,7 +379,7 @@ function PlanForm({ plan }: { plan: PlanDetail | null }) {
         </div>
       </section>
 
-      <section className="pw-card" aria-labelledby="sec-stops">
+      <section className="pw-form-group" aria-labelledby="sec-stops">
         <div className="pw-card-head">
           <h2 id="sec-stops">{f.stops}</h2>
           <span className="pw-muted pw-tabular">{f.stopsCount(stops.fields.length)}</span>
@@ -423,20 +460,28 @@ function PlanForm({ plan }: { plan: PlanDetail | null }) {
                       </Cell>
                       <Cell error={windowError}>
                         <div className="pw-window">
-                          <input
-                            className="pw-field-input"
-                            type="time"
-                            aria-label={f.stopField(f.windowFrom, n)}
-                            aria-invalid={at?.timeWindow?.start ? 'true' : undefined}
-                            {...register(`stops.${i}.timeWindow.start`)}
+                          <Controller
+                            control={control}
+                            name={`stops.${i}.timeWindow.start`}
+                            render={({ field }) => (
+                              <TimeField
+                                {...field}
+                                aria-label={f.stopField(f.windowFrom, n)}
+                                invalid={Boolean(at?.timeWindow?.start)}
+                              />
+                            )}
                           />
                           <span aria-hidden="true">–</span>
-                          <input
-                            className="pw-field-input"
-                            type="time"
-                            aria-label={f.stopField(f.windowTo, n)}
-                            aria-invalid={at?.timeWindow?.end ? 'true' : undefined}
-                            {...register(`stops.${i}.timeWindow.end`)}
+                          <Controller
+                            control={control}
+                            name={`stops.${i}.timeWindow.end`}
+                            render={({ field }) => (
+                              <TimeField
+                                {...field}
+                                aria-label={f.stopField(f.windowTo, n)}
+                                invalid={Boolean(at?.timeWindow?.end)}
+                              />
+                            )}
                           />
                         </div>
                       </Cell>
@@ -509,38 +554,56 @@ function PlanForm({ plan }: { plan: PlanDetail | null }) {
         />
       </section>
 
-      <div className="pw-plan-footer">
-        <FormActions plan={plan} disabled={noDepot || busy || readOnly} busy={isSubmitting} />
-      </div>
-
-      <Dialog
+      {/* Changed elsewhere since it was opened (PLAN_MODIFIED): load the saved plan again (HIG Alerts). */}
+      <Alert
         open={modified}
         title={f.modifiedTitle}
-        confirmLabel={f.reload}
-        cancelLabel={vi.members.back}
-        onConfirm={async () => {
+        message={errorMessages.PLAN_MODIFIED}
+        actionLabel={f.reload}
+        onAction={async () => {
           if (!plan) return;
           const fresh = await live.refetch();
           if (fresh.data) reset(planToValues(fresh.data));
           setModified(false);
         }}
-        onClose={() => setModified(false)}
-      >
-        <p>{errorMessages.PLAN_MODIFIED}</p>
-      </Dialog>
+        onCancel={() => setModified(false)}
+      />
     </form>
   );
 }
 
-function FormActions({ plan, disabled, busy }: { plan: PlanDetail | null; disabled: boolean; busy: boolean }) {
+/**
+ * "Huỷ" and the save action at the end of the title row (HIG Toolbars: the primary action trailing, `.prominent`).
+ * Save is a checkmark (HIG Icons: Save → checkmark), with its words on a wide window and alone in a round button on a
+ * phone, as on the store page.
+ */
+function FormActions({
+  plan,
+  disabled,
+  busy,
+  wide,
+}: {
+  plan: PlanDetail | null;
+  disabled: boolean;
+  busy: boolean;
+  wide: boolean;
+}) {
   return (
     <div className="pw-plan-actions">
       <Link className={buttonClass('quiet')} to={plan ? `/plans/${plan.id}` : '/plans'}>
         {f.cancel}
       </Link>
-      <Button type="submit" variant="primary" busy={busy} disabled={disabled}>
-        {f.save}
-      </Button>
+      <button
+        type="submit"
+        className={wide ? buttonClass('primary') : 'pw-icon-button pw-list-add'}
+        aria-label={wide ? undefined : f.save}
+        title={wide ? undefined : f.save}
+        aria-busy={busy ? 'true' : undefined}
+        disabled={disabled || busy}
+      >
+        <CheckIcon />
+        {wide ? f.save : null}
+      </button>
     </div>
   );
 }

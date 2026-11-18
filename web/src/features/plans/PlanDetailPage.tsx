@@ -1,6 +1,6 @@
 import { useStoreReadOnly } from '@/data/meQuery';
 import { useState, type ReactNode } from 'react';
-import { Link, useLocation, useNavigate, useParams } from 'react-router';
+import { useLocation, useNavigate, useParams } from 'react-router';
 import { ApiError } from '@/data/apiError';
 import { useGeocodingSearch } from '@/data/geocoding';
 import { formatCoordinates } from '@/features/store';
@@ -8,6 +8,7 @@ import { PinMap, type LatLng } from '@/platform/map';
 import { messageFor } from '@/shared/errors';
 import { formatDateLong } from '@/shared/format';
 import { vi } from '@/shared/i18n/vi';
+import { BackLink } from '@/shared/ui/BackLink';
 import { statusInfo } from '@/shared/status';
 import {
   Button,
@@ -44,7 +45,7 @@ export function PlanDetailPage() {
     return (
       <section className="pw-page-section">
         <ErrorBanner title={messageFor(plan.error)} />
-        <Link to="/plans">{vi.plans.back}</Link>
+        <BackLink to="/plans" label={vi.plans.title} />
       </section>
     );
   }
@@ -81,9 +82,7 @@ function PlanHeader({ plan, subtitle, actions }: { plan: PlanDetail; subtitle: s
   return (
     <div className="pw-plans-head">
       <div className="pw-plans-intro">
-        <Link to="/plans" className="pw-back-link">
-          {vi.plans.back}
-        </Link>
+        <BackLink to="/plans" label={vi.plans.title} />
         <div className="pw-plan-title">
           <h1 className="pw-page-title">{plan.name}</h1>
           <StatusPill kind="plan" status={plan.status} />
