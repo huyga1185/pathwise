@@ -1592,3 +1592,34 @@ html:has(.pw-form-bar) {
 .pw-stage-head .pw-plan-title .pw-page-title {
   min-width: 0;
 }
+/* Manual editing in the panel / sheet (G5.12): the panel scrolls, its blocks keep their height (a flex column would
+   squeeze a block with overflow hidden down to fit); routes are groups like the others; an over-capacity route keeps a
+   danger edge (with its load in danger words). */
+.pw-map-panel > *,
+.pw-map-sheet-body > * {
+  flex-shrink: 0;
+}
+.pw-map-stage .pw-manual-column {
+  border: 0;
+  border-radius: var(--radius-md);
+}
+.pw-map-stage .pw-manual-column.pw-manual-over {
+  box-shadow: inset 0 0 0 2px var(--danger);
+}
+.pw-map-stage .pw-manual-banner {
+  position: static;
+}
+/* Phone sheet: "Chuyển sang…" under the stop's lines, so its name keeps the row's width. */
+.pw-map-sheet .pw-manual-row {
+  flex-wrap: wrap;
+  row-gap: 4px;
+  padding-bottom: 8px;
+}
+.pw-map-sheet .pw-manual-stop {
+  flex-basis: calc(100% - 96px);
+}
+.pw-map-sheet .pw-manual-move {
+  margin-left: 80px;
+  max-width: calc(100% - 80px);
+}
+
