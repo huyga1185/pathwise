@@ -159,7 +159,7 @@ describe('Xe', () => {
     const user = userEvent.setup();
 
     await user.click(await screen.findByRole('button', { name: 'Sửa Xe 1' }));
-    const sheet = screen.getByRole('dialog', { name: 'Sửa Xe 1' });
+    const sheet = screen.getByRole('dialog', { name: 'Sửa xe' });
     expect(within(sheet).getByLabelText(/^Sức chứa/)).toHaveValue(30);
     expect(within(sheet).getByLabelText(/^Đơn vị/)).toHaveValue('BOX');
 

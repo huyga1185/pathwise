@@ -152,8 +152,17 @@ export function VehiclesPage() {
   };
 
   const columns: DataTableColumn<Vehicle>[] = [
-    { key: 'name', header: v.name, render: (row) => <strong className="pw-fleet-name">{row.name}</strong> },
-    { key: 'plate', header: v.plate, render: (row) => row.plateNumber ?? '—' },
+    {
+      key: 'name',
+      header: v.name,
+      className: 'pw-cell-main',
+      render: (row) => (
+        <span className="pw-cell-title" title={row.name}>
+          {row.name}
+        </span>
+      ),
+    },
+    { key: 'plate', header: v.plate, className: 'pw-nowrap', render: (row) => row.plateNumber ?? '—' },
     {
       key: 'capacity',
       header: v.capacity,
@@ -279,7 +288,7 @@ export function VehiclesPage() {
 
       <Sheet
         open={sheet !== null}
-        title={editing ? v.formEdit(editing.name) : v.formAdd}
+        title={editing ? v.formEdit : v.formAdd}
         doneLabel={editing ? v.save : v.add}
         busy={isSubmitting}
         dirty={isDirty}

@@ -237,7 +237,9 @@ describe('Thành viên (điện thoại)', () => {
     expect(within(tabs).getByRole('tab', { name: /^Thành viên/ })).toHaveAttribute('aria-selected', 'true');
 
     await user.click(await screen.findByRole('button', { name: 'Xem và đổi Điều phối' }));
-    const sheet = screen.getByRole('dialog', { name: 'Điều phối' });
+    // A short title (HIG Toolbars); the person's name leads the sheet.
+    const sheet = screen.getByRole('dialog', { name: 'Thành viên' });
+    expect(within(sheet).getByText('Điều phối')).toBeInTheDocument();
     const drive = within(sheet).getByRole('switch', { name: /^Đi giao/ });
     expect(drive).toHaveAttribute('aria-checked', 'false');
     await user.click(drive);

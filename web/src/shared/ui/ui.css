@@ -1320,6 +1320,14 @@ textarea.pw-field-input {
   border-bottom: 1px solid var(--line);
   overflow-wrap: anywhere;
 }
+.pw-account-who strong,
+.pw-account-who span {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+}
 .pw-account-who span {
   font-size: 0.8125rem;
   line-height: 1.125rem;
@@ -2669,6 +2677,11 @@ textarea.pw-field-input {
   line-height: 1.375rem;
   font-weight: 600;
   text-align: center;
+  /* Titles are short (HIG Toolbars: "keep the title under 15 characters"); should one still be long, one line. */
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 .pw-sheet-body {
   min-height: 0;
@@ -3163,4 +3176,37 @@ input:disabled,
 a[aria-current='page'],
 [role='tab'][aria-selected='true'] {
   cursor: default;
+}
+
+/* ---------- Long text in tables (G2.11, as the plan list) ----------
+   A name takes at most two lines, then "…", breaking a string without spaces too; the whole text is in its title (on
+   hover) and in the row's sheet. A secondary line under it (an email) takes one. Short values (plates, roles, dates)
+   stay on one line, so a long name never pushes the other columns out of the table. */
+.pw-cell-title,
+.pw-cell-sub {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+.pw-cell-title {
+  font-weight: 600;
+}
+.pw-cell-sub {
+  -webkit-line-clamp: 1;
+  line-clamp: 1;
+  font-size: 0.8125rem;
+  line-height: 1.125rem;
+  color: var(--ink-muted);
+}
+/* 12rem (the plan list's name takes 14): with the member table's five columns at the narrowest wide window (960px,
+   sidebar shown) 14 pushed the table 18px past its frame. Still two lines of about 20 characters. */
+.pw-cell-main {
+  min-width: 12rem;
+}
+/* An email as the row's text: two lines like a name, not bold. */
+.pw-cell-plain {
+  font-weight: 400;
 }

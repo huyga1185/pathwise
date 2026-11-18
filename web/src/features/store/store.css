@@ -46,6 +46,9 @@
 /* The store's audit log (W11). */
 .pw-store-audit-actor {
   font-weight: 600;
+  /* In full: a log row has no view of its own to read the rest (HIG Typography: "Avoid truncating text in scrollable
+     regions unless people can open a separate view"); a long address breaks anywhere instead of overflowing. */
+  overflow-wrap: anywhere;
 }
 /* A phone row of the log: the sentence may take two lines. */
 .pw-store-audit-sentence {

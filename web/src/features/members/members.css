@@ -95,3 +95,48 @@
   display: flex;
   margin-top: 4px;
 }
+/* The member sheet starts with who it is: the name (two lines at most), then the email. */
+.pw-members-sheet-who {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.pw-members-sheet-who p {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+/* In full here: this is the view where a name cut in the list can be read (HIG Typography: truncate in a list only
+   when "people can open a separate view to read the rest"). */
+.pw-members-sheet-name {
+  font-weight: 600;
+}
+
+/* A narrow table (G2.11, as the plan list): a less important column moves under the name instead of squeezing it or
+   scrolling sideways (HIG Lists and tables: a narrow table keeps content "recognizable and easy to read"). Measured at
+   the narrowest wide window (960px, sidebar shown): members need 710px in a 663px frame, invitations 672px; so status
+   folds below 46rem, the expiry below 44rem. */
+.pw-members-table,
+.pw-invitations-table {
+  container-type: inline-size;
+}
+.pw-cell-fold {
+  display: none;
+}
+@container (max-width: 46rem) {
+  .pw-members-table .pw-col-fold {
+    display: none;
+  }
+  .pw-members-table .pw-cell-fold {
+    display: flex;
+    margin-top: 4px;
+  }
+}
+@container (max-width: 44rem) {
+  .pw-invitations-table .pw-col-fold {
+    display: none;
+  }
+  .pw-invitations-table .pw-cell-fold {
+    display: -webkit-box;
+    margin-top: 2px;
+  }
+}

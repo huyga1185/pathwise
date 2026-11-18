@@ -199,7 +199,8 @@ export const vi = {
     empty: 'Chưa có xe nào. Thêm xe để phân công khi lập kế hoạch.',
     emptyActive: 'Không có xe đang dùng.',
     formAdd: 'Thêm xe',
-    formEdit: (name: string) => `Sửa ${name}`,
+    /** A short sheet title (HIG Toolbars: under 15 characters); the name is in the field below. */
+    formEdit: 'Sửa xe',
     nameHint: 'Không trùng tên xe khác trong cửa hàng.',
     platePlaceholder: '43A-123.45',
     plateHint: 'Tuỳ chọn.',

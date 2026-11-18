@@ -270,16 +270,26 @@ function MembersList({
     {
       key: 'member',
       header: m.member,
+      className: 'pw-cell-main',
       render: (row) => (
         <div>
-          <div className="pw-members-name">{memberName(row, meId)}</div>
-          <div className="pw-members-email">{row.email}</div>
+          <div className="pw-cell-title" title={memberName(row, meId)}>
+            {memberName(row, meId)}
+          </div>
+          <div className="pw-cell-sub" title={row.email}>
+            {row.email}
+          </div>
+          {/* The status column's value, shown here when the table is too narrow for that column (members.css). */}
+          <div className="pw-cell-fold">
+            <StatusPill kind="member" status={row.status} />
+          </div>
         </div>
       ),
     },
     {
       key: 'role',
       header: m.role,
+      className: 'pw-nowrap',
       render: (row) =>
         manageable(row) ? (
           <PopUpButton
@@ -297,7 +307,12 @@ function MembersList({
           (vi.roles[row.role] ?? row.role)
         ),
     },
-    { key: 'status', header: m.status, render: (row) => <StatusPill kind="member" status={row.status} /> },
+    {
+      key: 'status',
+      header: m.status,
+      className: 'pw-col-fold',
+      render: (row) => <StatusPill kind="member" status={row.status} />,
+    },
     {
       key: 'drive',
       header: m.drive,
@@ -351,7 +366,7 @@ function MembersList({
           columns={columns}
           rows={members}
           resizable
-          className="pw-list-group"
+          className="pw-list-group pw-members-table"
           onRowContextMenu={
             isOwner ? (row, point) => menuItems(row).length > 0 && rowMenu.openAt(row, point) : undefined
           }
@@ -406,13 +421,17 @@ function MembersList({
 
       <Sheet
         open={opened !== null}
-        title={opened ? memberName(opened, meId) : ''}
+        // A short title (HIG Toolbars: under 15 characters); the person's name and email lead the sheet.
+        title={m.member}
         cancelLabel={m.close}
         onClose={() => setOpenId(null)}
       >
         {opened ? (
           <>
-            <p className="pw-muted pw-members-sheet-email">{opened.email}</p>
+            <div className="pw-members-sheet-who">
+              <p className="pw-members-sheet-name">{memberName(opened, meId)}</p>
+              <p className="pw-muted pw-members-sheet-email">{opened.email}</p>
+            </div>
             {manageable(opened) ? (
               <SelectField
                 label={m.role}
@@ -597,12 +616,26 @@ function InvitationsList({
     ) : null;
 
   const columns: DataTableColumn<Invitation>[] = [
-    { key: 'email', header: m.email, render: (row) => row.email },
-    { key: 'role', header: m.role, render: (row) => vi.roles[row.role] ?? row.role },
+    {
+      key: 'email',
+      header: m.email,
+      className: 'pw-cell-main',
+      render: (row) => (
+        <>
+          <span className="pw-cell-title pw-cell-plain" title={row.email}>
+            {row.email}
+          </span>
+          {/* The expiry column's value when the table is too narrow for it (members.css). */}
+          <span className="pw-cell-fold pw-cell-sub">{`${m.expires} ${formatDate(row.expiresAt, timeZone)}`}</span>
+        </>
+      ),
+    },
+    { key: 'role', header: m.role, className: 'pw-nowrap', render: (row) => vi.roles[row.role] ?? row.role },
     { key: 'status', header: m.status, render: (row) => <StatusPill kind="invitation" status={row.status} /> },
     {
       key: 'expires',
       header: m.expires,
+      className: 'pw-col-fold',
       render: (row) => <span className="pw-members-date">{formatDate(row.expiresAt, timeZone)}</span>,
     },
     {
@@ -630,7 +663,7 @@ function InvitationsList({
           columns={columns}
           rows={invitations}
           resizable
-          className="pw-list-group"
+          className="pw-list-group pw-invitations-table"
           onRowContextMenu={(row, point) => canRevoke(row) && rowMenu.openAt(row, point)}
         />
       ) : (
