@@ -9,7 +9,9 @@ import {
   type ReactNode,
   type RefObject,
 } from 'react';
-import { useExit } from '@/shared/hooks/useExit';
+import { createPortal } from 'react-dom';
+import { reducedMotion, useExit } from '@/shared/hooks/useExit';
+import { useMediaQuery, WIDE_QUERY } from '@/shared/hooks/useMediaQuery';
 import {
   CalendarIcon,
   CheckIcon,
@@ -20,18 +22,17 @@ import {
   ChevronUpDownIcon,
 } from './icons';
 import { cx } from './cx';
+import { Wheel } from './Wheel';
 
 /**
  * A panel that opens from its button and closes on a click outside or Escape, returning focus to the button (HIG
- * Popovers; WWDC25 219: it "pops open… right where you just tapped"). It stays inside the window: shifted left when the
- * button sits near the right edge.
+ * Popovers; WWDC25 219: it "pops open… right where you just tapped").
  */
 function usePopover() {
   const [open, setOpen] = useState(false);
   const presence = useExit(open, 140);
   const anchor = useRef<HTMLButtonElement>(null);
   const panel = useRef<HTMLDivElement>(null);
-  const [shift, setShift] = useState(0);
 
   useEffect(() => {
     if (!open) return undefined;
@@ -43,52 +44,83 @@ function usePopover() {
     return () => document.removeEventListener('pointerdown', close);
   }, [open]);
 
-  useLayoutEffect(() => {
-    if (!open || !panel.current) return;
-    const rect = panel.current.getBoundingClientRect();
-    const room = document.documentElement.clientWidth - 16;
-    setShift(rect.right - shift > room ? Math.min(rect.left - shift - 16, rect.right - shift - room) : 0);
-    // Measured once per opening.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open]);
-
   const close = (focusButton: boolean) => {
     setOpen(false);
     if (focusButton) anchor.current?.focus();
   };
-  return { open, setOpen, presence, anchor, panel, shift, close };
+  return { open, setOpen, presence, anchor, panel, close };
 }
 
-function Panel({
+/**
+ * The panel floats over the page on document.body, so it never pushes or scrolls the content under it (a menu in the
+ * last row of a table scrolled the table: HIG Menus and Popovers float above the content). Placed against its button:
+ * below it, or above when there is no room below (or `above`); `align` its start or its centre with the button; kept
+ * 8px inside the window; following the button when the page scrolls.
+ */
+export function Panel({
   presence,
-  shift,
+  anchorRef,
   panelRef,
   className,
+  above = false,
+  align = 'start',
+  matchWidth = false,
   children,
   ...rest
 }: {
   presence: 'open' | 'closing' | 'closed';
-  shift: number;
+  anchorRef: RefObject<HTMLElement | null>;
   panelRef: RefObject<HTMLDivElement | null>;
   className: string;
+  above?: boolean;
+  align?: 'start' | 'center';
+  /** At least as wide as its button (a pop-up menu under a form field). */
+  matchWidth?: boolean;
   children: ReactNode;
   id?: string;
   role?: string;
   'aria-label'?: string;
   onKeyDown?: (event: ReactKeyboardEvent<HTMLDivElement>) => void;
 }) {
-  if (presence === 'closed') return null;
+  const shown = presence !== 'closed';
+  useLayoutEffect(() => {
+    if (!shown) return undefined;
+    const place = () => {
+      const button = anchorRef.current;
+      const element = panelRef.current;
+      if (!button || !element) return;
+      const a = button.getBoundingClientRect();
+      if (matchWidth) element.style.minWidth = `${Math.round(a.width)}px`;
+      const width = element.offsetWidth;
+      const height = element.offsetHeight;
+      const room = document.documentElement.clientWidth;
+      const start = align === 'center' ? a.left + a.width / 2 - width / 2 : a.left;
+      const left = Math.max(8, Math.min(start, room - 8 - width));
+      const upward = above || (a.bottom + 8 + height > window.innerHeight - 8 && a.top - 8 - height > 8);
+      element.style.left = `${Math.round(left)}px`;
+      element.style.top = `${Math.round(upward ? a.top - 8 - height : a.bottom + 8)}px`;
+      element.style.transformOrigin = `${align === 'center' ? 'center' : 'left'} ${upward ? 'bottom' : 'top'}`;
+    };
+    place();
+    window.addEventListener('scroll', place, true);
+    window.addEventListener('resize', place);
+    return () => {
+      window.removeEventListener('scroll', place, true);
+      window.removeEventListener('resize', place);
+    };
+  }, [shown, anchorRef, panelRef, above, align, matchWidth]);
+  if (!shown) return null;
   const open = presence === 'open';
-  return (
+  return createPortal(
     <div
       ref={panelRef}
       className={cx('pw-popover', className, !open && 'is-closing')}
-      style={shift ? { transform: `translateX(${-shift}px)` } : undefined}
       {...(open ? rest : { 'aria-hidden': true })}
       inert={!open}
     >
       {children}
-    </div>
+    </div>,
+    document.body,
   );
 }
 
@@ -120,7 +152,7 @@ export function PopUpButton({
   onChange: (value: string) => void;
   children: ReactNode;
 }) {
-  const { open, setOpen, presence, anchor, panel, shift, close } = usePopover();
+  const { open, setOpen, presence, anchor, panel, close } = usePopover();
   const menuId = useId();
 
   useEffect(() => {
@@ -163,9 +195,10 @@ export function PopUpButton({
       </button>
       <Panel
         presence={presence}
-        shift={shift}
+        anchorRef={anchor}
         panelRef={panel}
-        className={cx('pw-menu', above && 'is-above')}
+        className="pw-menu"
+        above={above}
         id={menuId}
         role="menu"
         aria-label={menuLabel}
@@ -243,8 +276,11 @@ export function PageJump({
   fieldLabel,
   firstLabel,
   lastLabel,
+  above = true,
   onPage,
 }: {
+  /** The jump panel opens above the button (a pager at the bottom) or below it (a pager pinned at the top). */
+  above?: boolean;
   /** 0-based. */
   page: number;
   pages: number;
@@ -255,7 +291,7 @@ export function PageJump({
   lastLabel: string;
   onPage: (page: number) => void;
 }) {
-  const { open, setOpen, presence, anchor, panel, shift, close } = usePopover();
+  const { open, setOpen, presence, anchor, panel, close } = usePopover();
   const dialogId = useId();
   const field = useRef<HTMLInputElement>(null);
   const [draft, setDraft] = useState(String(page + 1));
@@ -303,9 +339,11 @@ export function PageJump({
       </button>
       <Panel
         presence={presence}
-        shift={shift}
+        anchorRef={anchor}
         panelRef={panel}
-        className="pw-page-jump is-above"
+        className="pw-page-jump"
+        above={above}
+        align="center"
         id={dialogId}
         role="dialog"
         aria-label={buttonLabel}
@@ -399,7 +437,7 @@ function dayName(value: string): string {
  * a button that shows the current value in your app's accent color. When people tap the button, the date picker opens
  * a modal view, providing access to a familiar calendar-style editor… before tapping outside the view to confirm").
  * As there, a chosen day applies at once and the calendar stays open until a click outside it or Escape; today is in
- * the accent colour, the chosen day a filled accent circle. "Mọi ngày" removes the date (and closes).
+ * the accent colour, the chosen day a filled accent circle. The clear button ("Bỏ chọn ngày") removes the date (and closes); "Tháng 11, 2026 ›" turns the days into month and year wheels.
  */
 export function DatePickerFilter({
   label,
@@ -409,6 +447,9 @@ export function DatePickerFilter({
   clearText,
   previousMonthText,
   nextMonthText,
+  chooseMonthText = 'Chọn tháng và năm',
+  monthWheelText = 'Tháng',
+  yearWheelText = 'Năm',
   onChange,
 }: {
   label: string;
@@ -419,24 +460,38 @@ export function DatePickerFilter({
   clearText: string;
   previousMonthText: string;
   nextMonthText: string;
+  chooseMonthText?: string;
+  monthWheelText?: string;
+  yearWheelText?: string;
   onChange: (value: string | undefined) => void;
 }) {
-  const { open, setOpen, presence, anchor, panel, shift, close } = usePopover();
+  const { open, setOpen, presence, anchor, panel, close } = usePopover();
+  // A wide window: a compact date picker, the calendar in a popover from the button (HIG Date pickers, macOS graphical
+  // style in a popover). A phone: an inline date picker, the calendar in the page under the filters, pushing the list
+  // down (HIG Date pickers: "Inline — … an inline calendar view"; a picker "works well when displayed in context, below
+  // … the field"): a popover there could reach under the tab bar or over the title (owner, 2026-11-18, §8.11).
+  const wide = useMediaQuery(WIDE_QUERY);
   const dialogId = useId();
   const titleId = useId();
   // The day with keyboard focus; the month shown is its month.
   const [focusDay, setFocusDay] = useState(value ?? today);
   const grid = useRef<HTMLDivElement>(null);
   const moved = useRef(false);
+  // Month and year wheels in place of the days (the iOS calendar's "Month Year ›" button, §8.12).
+  const [choosing, setChoosing] = useState(false);
+  const titleButton = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (!open) return;
     if (!moved.current) {
-      grid.current?.querySelector<HTMLElement>('[tabindex="0"]')?.focus();
+      grid.current?.querySelector<HTMLElement>('[tabindex="0"]')?.focus({ preventScroll: !wide });
+      // Inline: bring the whole calendar into view, above the tab bar, scrolling only as much as needed (HIG Scroll
+      // views: "scroll automatically… only as much as necessary"; ui.css scroll-margin).
+      if (!wide) panel.current?.scrollIntoView?.({ block: 'nearest', behavior: reducedMotion() ? 'auto' : 'smooth' });
       return;
     }
     grid.current?.querySelector<HTMLElement>(`[data-day="${focusDay}"]`)?.focus();
-  }, [focusDay, open]);
+  }, [focusDay, open, wide, panel]);
 
   const { year, month } = parse(focusDay);
   const first = new Date(Date.UTC(year, month, 1));
@@ -475,64 +530,74 @@ export function DatePickerFilter({
     }
   };
   const onPanelKey = (event: ReactKeyboardEvent<HTMLDivElement>) => {
-    if (event.key === 'Escape') {
-      event.preventDefault();
+    if (event.key !== 'Escape') return;
+    event.preventDefault();
+    if (choosing) {
+      // First back to the days, then (a second Escape) closed.
+      setChoosing(false);
+      titleButton.current?.focus();
+    } else {
       close(true);
     }
   };
+  const todayYear = parse(today).year;
+  const years = Array.from({ length: 31 }, (_, offset) => todayYear - 20 + offset).map((y) => ({
+    value: y,
+    label: String(y),
+  }));
+  const months = Array.from({ length: 12 }, (_, m) => ({ value: m, label: `Tháng ${m + 1}` }));
+  // Another month or year keeps the day, the last day of a shorter month at most.
+  const toMonth = (nextYear: number, nextMonth: number) =>
+    go(addMonths(focusDay, (nextYear - year) * 12 + (nextMonth - month)));
 
   const monthTitle = `Tháng ${month + 1}, ${year}`;
-  return (
-    <span className="pw-filter-wrap">
-      <button
-        ref={anchor}
-        type="button"
-        className={cx('pw-filter', value && 'is-set')}
-        aria-haspopup="dialog"
-        aria-expanded={open}
-        aria-controls={open ? dialogId : undefined}
-        aria-label={`${label}: ${value ? shortDate(value) : emptyText}`}
-        onClick={() => {
-          moved.current = false;
-          if (!open) setFocusDay(value ?? today);
-          setOpen((was) => !was);
-        }}
-      >
-        <CalendarIcon />
-        <span className="pw-filter-label">{label}:</span>
-        <span className="pw-filter-value pw-filter-date">{value ? shortDate(value) : emptyText}</span>
-      </button>
-      <Panel
-        presence={presence}
-        shift={shift}
-        panelRef={panel}
-        className="pw-calendar"
-        id={dialogId}
-        role="dialog"
-        aria-label={label}
-        onKeyDown={onPanelKey}
-      >
-        <div className="pw-calendar-head">
-          <strong id={titleId} aria-live="polite">
+  const calendar = (
+    <>
+      <div className="pw-calendar-head">
+        <button
+          ref={titleButton}
+          type="button"
+          className={cx('pw-calendar-title', choosing && 'is-open')}
+          aria-expanded={choosing}
+          aria-describedby={`${titleId}-hint`}
+          onClick={() => setChoosing((was) => !was)}
+        >
+          <span id={titleId} aria-live="polite">
             {monthTitle}
-          </strong>
-          <button
-            type="button"
-            className="pw-calendar-nav"
-            aria-label={previousMonthText}
-            onClick={() => go(addMonths(focusDay, -1))}
-          >
-            <ChevronLeftIcon />
-          </button>
-          <button
-            type="button"
-            className="pw-calendar-nav"
-            aria-label={nextMonthText}
-            onClick={() => go(addMonths(focusDay, 1))}
-          >
-            <ChevronRightIcon />
-          </button>
+          </span>
+          <ChevronRightIcon />
+        </button>
+        <span id={`${titleId}-hint`} className="pw-visually-hidden">
+          {chooseMonthText}
+        </span>
+        {/* The arrows step a month; hidden while the wheels are shown (as on iOS). */}
+        {choosing ? null : (
+          <>
+            <button
+              type="button"
+              className="pw-calendar-nav"
+              aria-label={previousMonthText}
+              onClick={() => go(addMonths(focusDay, -1))}
+            >
+              <ChevronLeftIcon />
+            </button>
+            <button
+              type="button"
+              className="pw-calendar-nav"
+              aria-label={nextMonthText}
+              onClick={() => go(addMonths(focusDay, 1))}
+            >
+              <ChevronRightIcon />
+            </button>
+          </>
+        )}
+      </div>
+      {choosing ? (
+        <div className="pw-wheels">
+          <Wheel label={monthWheelText} items={months} value={month} onChange={(m) => toMonth(year, m)} />
+          <Wheel label={yearWheelText} items={years} value={year} onChange={(y) => toMonth(y, month)} />
         </div>
+      ) : (
         <div className="pw-calendar-grid" role="grid" aria-labelledby={titleId} ref={grid} onKeyDown={onGridKey}>
           <div role="row" className="pw-calendar-row">
             {WEEKDAYS.map((name) => (
@@ -565,21 +630,72 @@ export function DatePickerFilter({
             </div>
           ))}
         </div>
-        {value ? (
-          <div className="pw-calendar-foot">
-            <button
-              type="button"
-              className="pw-calendar-link"
-              onClick={() => {
-                onChange(undefined);
-                close(true);
-              }}
-            >
-              {clearText}
-            </button>
-          </div>
-        ) : null}
-      </Panel>
+      )}
+      {value && !choosing ? (
+        <div className="pw-calendar-foot">
+          <button
+            type="button"
+            className="pw-calendar-link"
+            onClick={() => {
+              onChange(undefined);
+              close(true);
+            }}
+          >
+            {clearText}
+          </button>
+        </div>
+      ) : null}
+    </>
+  );
+  return (
+    <span className={cx('pw-filter-wrap', !wide && 'has-inline-calendar')}>
+      <button
+        ref={anchor}
+        type="button"
+        className={cx('pw-filter', value && 'is-set')}
+        aria-haspopup={wide ? 'dialog' : undefined}
+        aria-expanded={open}
+        aria-controls={open ? dialogId : undefined}
+        aria-label={`${label}: ${value ? shortDate(value) : emptyText}`}
+        onClick={() => {
+          moved.current = false;
+          if (!open) {
+            setFocusDay(value ?? today);
+            setChoosing(false);
+          }
+          setOpen((was) => !was);
+        }}
+      >
+        <CalendarIcon />
+        <span className="pw-filter-label">{label}:</span>
+        <span className="pw-filter-value pw-filter-date">{value ? shortDate(value) : emptyText}</span>
+      </button>
+      {wide ? (
+        <Panel
+          presence={presence}
+          anchorRef={anchor}
+          panelRef={panel}
+          className="pw-calendar"
+          id={dialogId}
+          role="dialog"
+          aria-label={label}
+          onKeyDown={onPanelKey}
+        >
+          {calendar}
+        </Panel>
+      ) : presence !== 'closed' ? (
+        <div
+          ref={panel}
+          id={dialogId}
+          role="group"
+          aria-label={label}
+          className={cx('pw-calendar pw-calendar-inline', presence === 'closing' && 'is-closing')}
+          onKeyDown={onPanelKey}
+          {...(presence === 'closing' ? { 'aria-hidden': true, inert: true } : {})}
+        >
+          {calendar}
+        </div>
+      ) : null}
     </span>
   );
 }

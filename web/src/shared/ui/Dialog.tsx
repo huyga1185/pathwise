@@ -21,7 +21,7 @@ const FOCUSABLE =
   'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 /** Tab and Shift+Tab cycle inside the dialog (aria-modal): focus never reaches the page behind it. */
-function keepFocusInside(dialog: HTMLElement, event: KeyboardEvent) {
+export function keepFocusInside(dialog: HTMLElement, event: KeyboardEvent) {
   const items = Array.from(dialog.querySelectorAll<HTMLElement>(FOCUSABLE));
   const first = items[0];
   const last = items[items.length - 1];

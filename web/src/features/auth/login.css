@@ -300,14 +300,6 @@ a.pw-auth-logo:focus-visible {
 .pw-auth-strong {
   color: var(--ink);
 }
-.pw-auth-otp {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.pw-auth-otp .pw-field-msg {
-  margin: 0;
-}
 .pw-auth-resend {
   display: flex;
   flex-direction: column;

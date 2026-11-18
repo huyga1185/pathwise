@@ -700,12 +700,6 @@
   line-height: 16px;
   color: var(--danger);
 }
-.pw-toast-dock {
-  position: fixed;
-  left: 24px;
-  bottom: 24px;
-  z-index: 60;
-}
 
 /* Manual route editing (W10, T28, P-58) */
 .pw-manual-banner {

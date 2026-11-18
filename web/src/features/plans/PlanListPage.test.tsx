@@ -128,7 +128,9 @@ describe('Danh sách kế hoạch', () => {
     expect(router.state.location.pathname).toBe('/plans/83');
   });
 
-  it('chọn ngày bằng lịch: ngày áp dụng ngay, lịch đóng khi bấm Escape; "Mọi ngày" bỏ ngày', async () => {
+  it('chọn ngày bằng lịch: ngày áp dụng ngay, lịch đóng khi bấm Escape; "Bỏ chọn ngày" bỏ ngày', async () => {
+    // A wide window: the calendar is a popover (compact date picker).
+    wideWindow();
     server.use(
       http.get(`${API}/plans`, () => ok(sample<{ data: Page }>('plan-list').data)),
       ...signedInHandlers(),
@@ -151,8 +153,82 @@ describe('Danh sách kế hoạch', () => {
     await user.keyboard('{Escape}');
     expect(screen.getByRole('button', { name: 'Ngày giao: 15/01/2027' })).toHaveFocus();
     await user.click(screen.getByRole('button', { name: 'Ngày giao: 15/01/2027' }));
-    await user.click(screen.getByRole('button', { name: 'Mọi ngày' }));
+    await user.click(screen.getByRole('button', { name: 'Bỏ chọn ngày' }));
     await waitFor(() => expect(router.state.location.search).toBe(''));
+  });
+
+  it('điện thoại: lịch inline nằm trong trang dưới hàng lọc (không bật ra); chọn ngày vẫn mở; bấm lại nút thì đóng', async () => {
+    server.use(
+      http.get(`${API}/plans`, () => ok(sample<{ data: Page }>('plan-list').data)),
+      ...signedInHandlers(),
+    );
+    const { router } = renderApp('/plans?date=2026-12-01');
+    const user = userEvent.setup();
+
+    const button = await screen.findByRole('button', { name: 'Ngày giao: 01/12/2026' });
+    expect(button).not.toHaveAttribute('aria-haspopup');
+    await user.click(button);
+    const calendar = screen.getByRole('group', { name: 'Ngày giao' });
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    // In the page, inside the filter row (not on document.body like a popover).
+    expect(screen.getByRole('group', { name: 'Lọc kế hoạch' }).contains(calendar)).toBe(true);
+    expect(button).toHaveAttribute('aria-expanded', 'true');
+
+    await user.click(within(calendar).getByRole('button', { name: 'Thứ Sáu, 4 tháng 12, 2026' }));
+    await waitFor(() => expect(router.state.location.search).toBe('?date=2026-12-04'));
+    expect(screen.getByRole('group', { name: 'Ngày giao' })).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Ngày giao: 04/12/2026' }));
+    await waitFor(() => expect(screen.queryByRole('group', { name: 'Ngày giao' })).not.toBeInTheDocument());
+  });
+
+  it('"Tháng 12, 2026 ›" đổi lưới ngày thành bánh xe tháng và năm; phím mũi tên đổi; bấm lại thì về lưới ngày', async () => {
+    wideWindow();
+    server.use(
+      http.get(`${API}/plans`, () => ok(sample<{ data: Page }>('plan-list').data)),
+      ...signedInHandlers(),
+    );
+    renderApp('/plans?date=2026-12-01');
+    const user = userEvent.setup();
+
+    await user.click(await screen.findByRole('button', { name: 'Ngày giao: 01/12/2026' }));
+    const calendar = screen.getByRole('dialog', { name: 'Ngày giao' });
+    const title = within(calendar).getByRole('button', { name: 'Tháng 12, 2026' });
+    expect(title).toHaveAttribute('aria-expanded', 'false');
+    await user.click(title);
+    expect(title).toHaveAttribute('aria-expanded', 'true');
+    expect(within(calendar).queryByRole('grid')).not.toBeInTheDocument();
+    expect(within(calendar).queryByRole('button', { name: 'Tháng sau' })).not.toBeInTheDocument();
+
+    const months = within(calendar).getByRole('spinbutton', { name: 'Tháng' });
+    const years = within(calendar).getByRole('spinbutton', { name: 'Năm' });
+    expect(months).toHaveAttribute('aria-valuetext', 'Tháng 12');
+    expect(years).toHaveAttribute('aria-valuetext', '2026');
+    months.focus();
+    await user.keyboard('{ArrowUp}');
+    years.focus();
+    await user.keyboard('{ArrowDown}');
+    expect(within(calendar).getByRole('button', { name: 'Tháng 11, 2027' })).toBeInTheDocument();
+
+    // Escape goes back to the days first; the calendar stays open.
+    await user.keyboard('{Escape}');
+    expect(within(calendar).getByRole('grid')).toBeInTheDocument();
+    expect(within(calendar).getByRole('button', { name: 'Tháng 11, 2027' })).toHaveFocus();
+  });
+
+  it('điện thoại: thanh trang nằm trên danh sách (trước danh sách theo thứ tự đọc), ghim dưới thanh trên cùng', async () => {
+    const item = sample<{ data: Page }>('plan-list').data.items[0];
+    server.use(
+      http.get(`${API}/plans`, () => ok({ items: [item], page: 0, size: 20, totalPages: 2, totalElements: 21 })),
+      ...signedInHandlers(),
+    );
+    renderApp('/plans');
+
+    const pager = await screen.findByRole('navigation', { name: 'Trang danh sách kế hoạch' });
+    expect(pager.closest('.pw-pager-bar')).not.toBeNull();
+    const list = screen.getByRole('list', { name: /kế hoạch/i });
+    // Before the list in the document: reading and Tab order follow what is seen (WCAG 2.4.3).
+    expect(pager.compareDocumentPosition(list) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   it('thanh trang ‹ Trang 1/2 ›: trang trên URL, trang sau gửi page=1, hai đầu mờ nút', async () => {

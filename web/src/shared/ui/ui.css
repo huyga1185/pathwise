@@ -19,7 +19,6 @@
 
 /* Focus: 2px route ring, 2px away from the control, on every surface. */
 .pw-btn:focus-visible,
-.pw-field-input:focus-visible,
 .pw-row-clickable:focus-visible,
 .pw-toast-action:focus-visible,
 .pw-toast-close:focus-visible {
@@ -43,7 +42,8 @@
   text-decoration: none;
   white-space: nowrap;
   border: 1px solid transparent;
-  border-radius: var(--radius-sm);
+  /* Capsules; with a mouse only the prominent action stays one (S3, WWDC25 356: rules at the end of this file). */
+  border-radius: var(--radius-full);
   cursor: pointer;
 }
 .pw-btn-lg {
@@ -66,15 +66,16 @@
   color: var(--on-accent);
 }
 .pw-btn-secondary {
-  background: var(--surface-raised);
+  /* Grey fill, no outline (F-73; HIG Buttons: the system's styles are prominent, grey, plain or glass — no hollow
+     outline). */
+  background: color-mix(in srgb, var(--ink) 7%, transparent);
   color: var(--ink);
-  border-color: var(--ink-muted);
 }
 .pw-btn-quiet {
   background: transparent;
   color: var(--route);
-  /* No visible shape at rest; its hover and press fill is a capsule like every other button around it (HIG Buttons:
-     "prefer circular or capsule-shape buttons"), not a near-square 4px box. */
+  /* No visible shape at rest; its hover and press fill takes the button shape of its input (S3: rounded with a mouse,
+     capsule for touch), not a near-square 4px box. */
   border-radius: var(--radius-full);
 }
 .pw-btn-danger {
@@ -105,7 +106,9 @@
   .pw-btn-signal:hover:not(:disabled) {
     filter: brightness(0.92);
   }
-  .pw-btn-secondary:hover:not(:disabled),
+  .pw-btn-secondary:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--ink) 11%, transparent);
+  }
   .pw-btn-quiet:hover:not(:disabled) {
     background: var(--surface-tint);
   }
@@ -116,7 +119,9 @@
 .pw-btn-signal:active:not(:disabled) {
   filter: brightness(0.84);
 }
-.pw-btn-secondary:active:not(:disabled),
+.pw-btn-secondary:active:not(:disabled) {
+  background: color-mix(in srgb, var(--ink) 16%, transparent);
+}
 .pw-btn-quiet:active:not(:disabled) {
   background: color-mix(in srgb, var(--route) 16%, transparent);
 }
@@ -142,10 +147,6 @@
 }
 .pw-btn:disabled {
   opacity: 0.5;
-  cursor: not-allowed;
-}
-.pw-btn[aria-busy='true'] {
-  cursor: progress;
 }
 
 /* ---------- TextField ---------- */
@@ -166,14 +167,53 @@
   box-sizing: border-box;
   width: 100%;
   min-height: 36px;
-  padding: var(--space-2) var(--space-2);
+  padding: 7px 12px;
   font: inherit;
-  font-size: 14px;
-  line-height: 20px;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
   color: var(--ink);
-  background: var(--surface-raised);
+  /* As the sign-in fields (APPLE_CHECKLIST §3.2): a light fill, the 1px border that marks the control (≥ 3:1, C7). */
+  background: color-mix(in srgb, var(--ink) 6%, transparent);
   border: 1px solid var(--ink-muted);
-  border-radius: var(--radius-sm);
+  /* A medium control on a computer: a rounded rectangle (S3, WWDC25 356); a capsule for touch (below). */
+  border-radius: var(--radius-md);
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    background-color 0.15s ease;
+}
+/* Focus lights the field from within, like the sign-in fields (WWDC25 219: "illuminates from within"). */
+/* A select whose menu is open stays lit, as every other pop-up button keeps its pressed look while its menu is open.
+   background-color only: the shorthand would reset a select's ⌃⌄ image to repeat (seen in dark mode). */
+.pw-field-input:focus-visible,
+select.pw-field-input[aria-expanded='true'] {
+  outline: none;
+  border-color: var(--route);
+  background-color: var(--surface-raised);
+  box-shadow:
+    inset 0 0 0 1px var(--route),
+    0 0 12px color-mix(in srgb, var(--route) 30%, transparent);
+}
+.pw-field-error .pw-field-input:focus-visible {
+  border-color: var(--danger);
+  box-shadow:
+    inset 0 0 0 1px var(--danger),
+    0 0 12px color-mix(in srgb, var(--danger) 25%, transparent);
+}
+/* A choice field: the system's own menu (a native select), drawn like a pop-up button with ⌃⌄ at its end (HIG
+   Pop-up buttons). */
+select.pw-field-input {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 36px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2356635E' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M8 9.5l4-4 4 4M8 14.5l4 4 4-4'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 16px 16px;
+  cursor: pointer;
+}
+[data-theme='dark'] select.pw-field-input {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23A2B0AA' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M8 9.5l4-4 4 4M8 14.5l4 4 4-4'/%3E%3C/svg%3E");
 }
 textarea.pw-field-input {
   min-height: 72px;
@@ -187,8 +227,7 @@ textarea.pw-field-input {
 }
 .pw-field-error .pw-field-input {
   border-color: var(--danger);
-  border-width: 2px;
-  padding: 7px;
+  box-shadow: inset 0 0 0 1px var(--danger);
 }
 .pw-field-msg {
   margin: 0;
@@ -663,7 +702,7 @@ textarea.pw-field-input {
   padding: 0;
   background: transparent;
   border: 0;
-  /* An icon-only button is a circle (HIG Buttons: "an icon-only button uses a circle shape"). */
+  /* Round for touch; with a mouse a rounded rectangle (S3, rules at the end of this file). */
   border-radius: 50%;
   color: var(--ink-muted);
   cursor: pointer;
@@ -719,39 +758,6 @@ textarea.pw-field-input {
 .pw-banner-info .pw-banner-title {
   color: var(--ink);
 }
-.pw-otp {
-  display: flex;
-  gap: var(--space-2);
-}
-.pw-otp-box {
-  box-sizing: border-box;
-  flex: 1 1 0;
-  min-width: 0;
-  max-width: 56px;
-  height: 64px;
-  padding: 0;
-  font: inherit;
-  font-size: 28px;
-  line-height: 1;
-  font-weight: 700;
-  text-align: center;
-  font-variant-numeric: tabular-nums;
-  color: var(--ink);
-  background: var(--surface-raised);
-  border: 1px solid var(--ink-muted);
-  border-radius: var(--radius-md);
-}
-.pw-otp-box:nth-child(4) {
-  margin-left: 12px;
-}
-.pw-otp-box:focus-visible {
-  outline: 2px solid var(--route);
-  outline-offset: 2px;
-  border-color: var(--route);
-}
-.pw-otp-error .pw-otp-box {
-  border: 2px solid var(--danger);
-}
 .pw-empty {
   display: flex;
   flex-direction: column;
@@ -774,7 +780,7 @@ textarea.pw-field-input {
   max-width: 480px;
   color: var(--ink-muted);
 }
-/* One-line code field (prototype "Quên mật khẩu", "Hồ sơ"): large spaced digits. */
+/* One-line code field (prototype "Quên mật khẩu", "Hồ sơ"; the change-password sheet, §8.15): large spaced digits. */
 .pw-field-code .pw-field-input {
   min-height: 56px;
   padding: 8px 16px;
@@ -782,6 +788,8 @@ textarea.pw-field-input {
   line-height: 40px;
   font-weight: 700;
   letter-spacing: 0.5em;
+  /* The spacing also follows the last digit; the same space before the first keeps the digits truly centred. */
+  text-indent: 0.5em;
   text-align: center;
   font-variant-numeric: tabular-nums;
 }
@@ -800,21 +808,68 @@ textarea.pw-field-input {
   cursor: pointer;
 }
 .pw-check input {
-  width: 18px;
-  height: 18px;
+  /* macOS checkbox (HIG Toggles, Checkboxes; images: off "a small rounded square with no fill", on "a small rounded
+     square with blue fill and a white checkmark"): drawn here, not the browser's box; the app accent stands for blue.
+     Border ink-muted for 3:1 against the page (WCAG 1.4.11). */
+  appearance: none;
+  -webkit-appearance: none;
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 16px;
+  height: 16px;
   margin: 0;
-  accent-color: var(--route);
+  border: 1px solid var(--ink-muted);
+  border-radius: 4px;
+  background: var(--surface-raised);
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.08);
+  cursor: inherit;
+  transition:
+    background-color 0.12s ease,
+    border-color 0.12s ease;
+}
+.pw-check input::after {
+  content: '';
+  width: 10px;
+  height: 10px;
+  background: var(--on-accent);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4.5 12.5l5 5L19.5 6.5'/%3E%3C/svg%3E")
+    center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4.5 12.5l5 5L19.5 6.5'/%3E%3C/svg%3E")
+    center / contain no-repeat;
+  transform: scale(0);
+  transition: transform 0.12s ease;
+}
+.pw-check input:checked {
+  border-color: var(--route);
+  background: var(--route);
+}
+.pw-check input:checked::after {
+  transform: none;
+}
+@media (hover: hover) {
+  .pw-check input:not(:disabled):not(:checked):hover {
+    border-color: var(--ink);
+  }
+}
+.pw-check input:active:not(:disabled) {
+  filter: brightness(0.9);
 }
 .pw-check input:focus-visible {
   outline: 2px solid var(--route);
   outline-offset: 2px;
 }
-.pw-check input:disabled,
-.pw-check input:disabled + span {
-  cursor: not-allowed;
+.pw-check input:disabled {
+  opacity: 0.45;
 }
-select.pw-field-input {
-  appearance: auto;
+@media (prefers-reduced-motion: reduce) {
+  .pw-check input,
+  .pw-check input::after {
+    transition: none;
+  }
+}
+.pw-check:has(input:disabled) {
+  cursor: default;
 }
 
 /* Card of a page section (prototype ".card"): form beside a list, invitation form. */
@@ -1008,19 +1063,31 @@ select.pw-field-input {
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   color: var(--ink);
-  background: var(--surface-raised);
+  /* As a field (LIQUID_GLASS §9: "nền fill nhạt và viền như ô nhập"); radius-md is the fallback outside the account
+     card. */
+  background: color-mix(in srgb, var(--ink) 6%, transparent);
   border: 1px solid var(--ink-muted);
   border-radius: var(--radius-md);
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
 }
+/* The box taking the next digit lights up like a focused field. */
 .pw-code-cell.is-active {
   border-color: var(--route);
-  box-shadow: inset 0 0 0 1px var(--route);
+  background: var(--surface-raised);
+  box-shadow:
+    inset 0 0 0 1px var(--route),
+    0 0 12px color-mix(in srgb, var(--route) 30%, transparent);
 }
 .pw-field-error .pw-code-cell {
   border-color: var(--danger);
 }
 .pw-field-error .pw-code-cell.is-active {
-  box-shadow: inset 0 0 0 1px var(--danger);
+  box-shadow:
+    inset 0 0 0 1px var(--danger),
+    0 0 12px color-mix(in srgb, var(--danger) 25%, transparent);
 }
 /* The real input covers the boxes, so a tap anywhere focuses it; its own text, caret and selection are invisible
    (the boxes show them). 16px text: iOS Safari does not zoom in on focus. */
@@ -1130,6 +1197,7 @@ select.pw-field-input {
   position: sticky;
   top: 0;
   z-index: 20;
+  /* The small title is placed in the middle of the bar (phone). */
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1232,6 +1300,14 @@ select.pw-field-input {
   margin-bottom: 4px;
   border-bottom: 1px solid var(--line);
   overflow-wrap: anywhere;
+}
+.pw-account-who strong,
+.pw-account-who span {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
 }
 .pw-account-who span {
   font-size: 0.8125rem;
@@ -1597,8 +1673,6 @@ select.pw-field-input {
     min-height: 44px;
   }
   .pw-segmented .pw-segmented-btn,
-  .pw-tab,
-  .pw-store-tab,
   .pw-back-link,
   .pw-check,
   .pw-link-button {
@@ -1639,9 +1713,6 @@ select.pw-field-input {
   justify-content: space-between;
   gap: 16px;
 }
-.pw-list-head .pw-btn {
-  border-radius: var(--radius-full);
-}
 /* Phone: the action is a round "+" (like the add button of an iOS toolbar). */
 .pw-list-add {
   border-radius: 50%;
@@ -1671,7 +1742,7 @@ select.pw-field-input {
   margin-top: -8px;
 }
 /* A filter is a capsule button showing its value, filled grey, no outline (HIG Buttons: system styles are filled —
-   prominent, grey, plain or glass; "prefer the capsule shape in a horizontal row of buttons"). While it filters, it is
+   prominent, grey, plain or glass; shape by input, S3). While it filters, it is
    tinted with the accent colour. */
 .pw-filter-wrap {
   position: relative;
@@ -1736,10 +1807,11 @@ select.pw-field-input {
 
 /* Menus and the calendar pop out of their button, on the same glass as the account menu (WWDC25 219). */
 .pw-popover {
-  position: absolute;
-  top: calc(100% + 8px);
+  /* On document.body, placed against its button by the code (Filters.tsx Panel). */
+  position: fixed;
+  top: 0;
   left: 0;
-  z-index: 40;
+  z-index: 75;
   padding: 8px;
   border: 1px solid color-mix(in srgb, var(--line) 70%, transparent);
   border-radius: var(--radius-lg);
@@ -2146,7 +2218,8 @@ select.pw-field-input {
   width: min(100%, 280px);
   margin-top: 16px;
 }
-.pw-list-empty-actions .pw-btn {
+/* 44px: a large control, so a capsule with a mouse too (WWDC25 356). */
+.pw-list-empty-actions .pw-btn.pw-btn {
   height: 44px;
   border-radius: var(--radius-full);
 }
@@ -2314,11 +2387,6 @@ select.pw-field-input {
   overflow-y: auto;
   overscroll-behavior: contain;
 }
-.pw-popover.is-above {
-  top: auto;
-  bottom: calc(100% + 8px);
-  transform-origin: bottom left;
-}
 /* The panel: « [ 4 ] », opening upward, centred over its button. A capsule, so its corners are concentric with the
    capsules inside: 18 (half of 36) + padding 8 = 26 = half of its 52px height (HIG Toolbars: "ensure that its corner
    radius is also concentric with the bar's corners"). */
@@ -2327,9 +2395,6 @@ select.pw-field-input {
   align-items: center;
   gap: 8px;
   border-radius: var(--radius-full);
-  left: 50%;
-  translate: -50% 0;
-  transform-origin: bottom center;
 }
 .pw-page-jump-field {
   box-sizing: border-box;
@@ -2473,5 +2538,913 @@ select.pw-field-input {
 @media (prefers-reduced-motion: reduce) {
   .pw-list-row.is-held {
     transform: none;
+  }
+}
+
+/* ---------- Sheet, Alert, Action sheet (OWNER_UI_REDESIGN §8, S1 S2) ---------- */
+.pw-sheet-backdrop,
+.pw-alert-backdrop,
+.pw-action-sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: grid;
+  background: rgba(15, 21, 19, 0.45);
+  animation: pw-fade-in 0.2s ease both;
+}
+.pw-sheet-backdrop.is-closing,
+.pw-alert-backdrop.is-closing {
+  animation: pw-fade-out 0.2s ease both;
+}
+@keyframes pw-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes pw-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+.pw-sheet {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--surface-raised);
+  color: var(--ink);
+  box-shadow: var(--shadow-overlay);
+  transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+/* Wide: a card in the middle, sized to its content. */
+.pw-sheet-backdrop.is-wide {
+  place-items: center;
+  padding: 24px;
+}
+.is-wide > .pw-sheet {
+  width: min(520px, 100%);
+  max-height: calc(100vh - 48px);
+  border-radius: var(--radius-lg);
+  animation: pw-sheet-pop 0.24s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.is-wide > .pw-sheet.is-closing {
+  animation: pw-sheet-unpop 0.2s ease both;
+}
+@keyframes pw-sheet-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+}
+@keyframes pw-sheet-unpop {
+  to {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+}
+/* Narrow: rises from the bottom edge, full width, rounded top, a grabber. */
+.pw-sheet-backdrop.is-narrow {
+  align-items: end;
+}
+.is-narrow > .pw-sheet {
+  width: 100%;
+  max-height: calc(100dvh - 40px);
+  border-radius: 20px 20px 0 0;
+  padding-bottom: env(safe-area-inset-bottom);
+  animation: pw-sheet-rise 0.32s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.is-narrow > .pw-sheet.is-closing {
+  animation: pw-sheet-sink 0.22s ease-in both;
+}
+@keyframes pw-sheet-rise {
+  from {
+    transform: translateY(100%);
+  }
+}
+@keyframes pw-sheet-sink {
+  to {
+    transform: translateY(100%);
+  }
+}
+.pw-sheet-top {
+  flex: none;
+  touch-action: none;
+}
+.pw-sheet-grabber {
+  display: block;
+  width: 36px;
+  height: 5px;
+  margin: 6px auto 0;
+  border-radius: var(--radius-full);
+  background: color-mix(in srgb, var(--ink) 25%, transparent);
+}
+.pw-sheet-bar {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--line);
+}
+.pw-sheet-bar > :first-child {
+  justify-self: start;
+}
+.pw-sheet-bar > :last-child {
+  justify-self: end;
+}
+.pw-sheet-title {
+  margin: 0;
+  font-size: 1.0625rem;
+  line-height: 1.375rem;
+  font-weight: 600;
+  text-align: center;
+  /* Titles are short (HIG Toolbars: "keep the title under 15 characters"); should one still be long, one line. */
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.pw-sheet-body {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  display: grid;
+  gap: 16px;
+  padding: 20px 20px 24px;
+}
+/* Alert: a small card in the middle; Cancel and the action side by side, equal widths. */
+.pw-alert-backdrop {
+  place-items: center;
+  padding: 24px;
+  z-index: 80;
+}
+.pw-alert {
+  box-sizing: border-box;
+  width: min(300px, 100%);
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  background: var(--surface-raised);
+  color: var(--ink);
+  box-shadow: var(--shadow-overlay);
+  text-align: center;
+  animation: pw-sheet-pop 0.2s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.pw-alert.is-closing {
+  animation: pw-sheet-unpop 0.16s ease both;
+}
+.pw-alert-text {
+  padding: 20px 16px 16px;
+}
+.pw-alert-title {
+  margin: 0;
+  font-size: 1.0625rem;
+  line-height: 1.375rem;
+  font-weight: 600;
+}
+.pw-alert-message {
+  margin: 6px 0 0;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  color: var(--ink-muted);
+}
+.pw-alert-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border-top: 1px solid var(--line);
+}
+.pw-alert-button {
+  min-height: 44px;
+  padding: 0 8px;
+  border: 0;
+  background: transparent;
+  color: var(--route);
+  font: inherit;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+.pw-alert-button + .pw-alert-button {
+  border-left: 1px solid var(--line);
+}
+.pw-alert-button.is-action {
+  font-weight: 600;
+}
+.pw-alert-button.is-destructive {
+  color: var(--danger);
+}
+.pw-alert-button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+@media (hover: hover) {
+  .pw-alert-button:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--ink) 6%, transparent);
+  }
+}
+.pw-alert-button:active:not(:disabled) {
+  background: color-mix(in srgb, var(--ink) 12%, transparent);
+}
+.pw-alert-button:focus-visible {
+  outline: 2px solid var(--route);
+  outline-offset: -2px;
+}
+/* Action sheet: choices at the bottom, the way back separate below them. */
+.pw-action-sheet-backdrop {
+  align-items: end;
+  justify-items: center;
+  padding: 8px 8px max(8px, env(safe-area-inset-bottom));
+  z-index: 90;
+}
+.pw-action-sheet {
+  display: grid;
+  gap: 8px;
+  width: min(420px, 100%);
+  animation: pw-sheet-rise 0.28s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.pw-action-sheet-group {
+  display: grid;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  background: var(--surface-raised);
+}
+.pw-action-sheet-button {
+  min-height: 56px;
+  border: 0;
+  background: var(--surface-raised);
+  color: var(--route);
+  font: inherit;
+  font-size: 1.0625rem;
+  cursor: pointer;
+}
+.pw-action-sheet-group .pw-action-sheet-button + .pw-action-sheet-button {
+  border-top: 1px solid var(--line);
+}
+.pw-action-sheet-button.is-destructive {
+  color: var(--danger);
+}
+.pw-action-sheet-button.is-cancel {
+  border-radius: var(--radius-lg);
+  font-weight: 600;
+}
+.pw-action-sheet-button:active {
+  background: color-mix(in srgb, var(--ink) 8%, var(--surface-raised));
+}
+.pw-action-sheet-button:focus-visible {
+  outline: 2px solid var(--route);
+  outline-offset: -2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .pw-sheet,
+  .pw-alert,
+  .pw-action-sheet,
+  .is-narrow > .pw-sheet,
+  .is-wide > .pw-sheet {
+    animation-name: pw-fade-in;
+  }
+  .pw-sheet.is-closing,
+  .pw-alert.is-closing,
+  .is-narrow > .pw-sheet.is-closing,
+  .is-wide > .pw-sheet.is-closing {
+    animation-name: pw-fade-out;
+  }
+}
+/* A destructive menu item, in red (HIG Context menus: "identify them as destructive… red text color"). */
+.pw-menu-item.is-destructive {
+  color: var(--danger);
+}
+
+/* Column resizing (HIG Lists and tables, macOS: "Let people resize columns"): a thin handle on each heading's trailing
+   edge; a line shows on hover, focus and while dragging. Double click: back to automatic widths. Headings are sticky,
+   so the handle is placed against its heading. */
+.pw-table.is-resized {
+  table-layout: fixed;
+}
+.pw-table.is-resized td,
+.pw-table.is-resized th {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pw-th-resize {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2;
+  width: 10px;
+  cursor: col-resize;
+  touch-action: none;
+}
+.pw-th-resize::after {
+  content: '';
+  position: absolute;
+  top: 8px;
+  bottom: 8px;
+  right: 0;
+  width: 2px;
+  border-radius: 1px;
+  background: transparent;
+  transition: background-color 0.15s ease;
+}
+@media (hover: hover) {
+  .pw-th-resize:hover::after {
+    background: var(--line);
+  }
+}
+.pw-th-resize:active::after,
+.pw-th-resize:focus-visible::after {
+  background: var(--route);
+}
+.pw-th-resize:focus-visible {
+  outline: none;
+}
+
+/* Phone: the small title in the middle of the top bar, shown once the large title has scrolled under it (HIG
+   Toolbars: large title → standard title). */
+.pw-topbar-title {
+  position: absolute;
+  left: 72px;
+  right: 72px;
+  overflow: hidden;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 1.0625rem;
+  font-weight: 600;
+  color: var(--ink);
+  opacity: 0;
+  transform: translateY(4px);
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
+  pointer-events: none;
+}
+.pw-topbar-title.is-shown {
+  opacity: 1;
+  transform: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .pw-topbar-title {
+    transform: none;
+  }
+}
+
+/* A short message after a sheet closes ("Đã thêm xe."), bottom leading corner; on a phone above the tab bar. */
+.pw-toast-dock {
+  position: fixed;
+  left: 24px;
+  bottom: 24px;
+  z-index: 60;
+}
+@media (max-width: 959.98px) {
+  .pw-toast-dock {
+    left: 16px;
+    right: 16px;
+    bottom: calc(var(--tabbar-height, 64px) + 24px + env(safe-area-inset-bottom));
+  }
+}
+.pw-list-lead {
+  margin: -12px 0 0;
+}
+/* A row that opens a sheet (not a page) is a button: no button look of its own. */
+button.pw-list-row-main {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+button.pw-list-row-main:disabled {
+  cursor: default;
+}
+
+/* Switch in a list row (HIG Toggles). */
+.pw-switch-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 0;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.pw-switch-row:disabled {
+  cursor: default;
+}
+.pw-switch-text {
+  display: grid;
+  gap: 2px;
+}
+.pw-switch-label {
+  font-size: 1rem;
+}
+.pw-switch-hint {
+  font-size: 0.8125rem;
+  color: var(--ink-muted);
+}
+.pw-switch {
+  position: relative;
+  flex: none;
+  width: 51px;
+  height: 31px;
+  border-radius: var(--radius-full);
+  background: color-mix(in srgb, var(--ink) 18%, transparent);
+  transition: background-color 0.2s ease;
+}
+.pw-switch-knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 27px;
+  height: 27px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  transition: transform 0.2s cubic-bezier(0.34, 1.3, 0.64, 1);
+}
+.is-on > .pw-switch {
+  background: var(--route);
+}
+.is-on > .pw-switch > .pw-switch-knob {
+  transform: translateX(20px);
+}
+.pw-switch-row:disabled > .pw-switch {
+  opacity: 0.45;
+}
+.pw-switch-row:focus-visible {
+  outline: none;
+}
+.pw-switch-row:focus-visible > .pw-switch {
+  outline: 2px solid var(--route);
+  outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .pw-switch-knob {
+    transition: none;
+  }
+}
+
+/* Segmented control (HIG Segmented controls): equal segments in a grey capsule, the chosen one raised. */
+.pw-segmented {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(var(--segments, 2), minmax(0, 1fr));
+  gap: 0;
+  padding: 2px;
+  /* Not the older design-system segmented's frame (same class name above). */
+  border: 0;
+  overflow: visible;
+  border-radius: var(--radius-full);
+  background: color-mix(in srgb, var(--ink) 8%, transparent);
+}
+/* The raised piece under the chosen segment; it slides to the next one (as the system's control does). */
+.pw-segmented-thumb {
+  position: absolute;
+  top: 2px;
+  bottom: 2px;
+  left: 2px;
+  width: calc((100% - 4px) / var(--segments, 2));
+  border-radius: var(--radius-full);
+  background: var(--surface-raised);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+  transition: transform 0.32s cubic-bezier(0.34, 1.2, 0.64, 1);
+}
+.pw-segmented > .pw-segment {
+  position: relative;
+  z-index: 1;
+}
+.pw-segment {
+  min-height: 32px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: var(--radius-full);
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+.pw-segment.is-selected {
+  font-weight: 600;
+}
+.pw-segment:focus-visible {
+  outline: 2px solid var(--route);
+  outline-offset: 1px;
+}
+@media (pointer: coarse) {
+  .pw-segment {
+    min-height: 44px;
+  }
+}
+/* A segment that is a link (sub-pages, e.g. Cửa hàng / Nhật ký). */
+a.pw-segment {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ink);
+  text-decoration: none;
+}
+@media (hover: hover) {
+  a.pw-segment:hover {
+    color: var(--ink);
+  }
+}
+
+/* ---------- Shapes by input (S3, WWDC25 356; owner's choice 2026-11-18) ----------
+   The shape follows the control's size, not its role ("On macOS, Mini, Small, and Medium controls will continue using
+   rounded rectangles… Large controls will now use capsule shapes"); buttons side by side share one size and shape and
+   the preferred one differs by style (HIG Buttons: "Use style — not size"; Toolbars: Done is .prominent). With a mouse
+   (a dense desktop interface, medium controls): every button — prominent or not —, icon button, field, filter, the
+   page button, the role in a row is a rounded rectangle (radius-md 8). With touch: capsules, 44px (the minimum hit
+   target). The account card's large 44px controls stay capsules (login.css). */
+@media (pointer: fine) {
+  .pw-btn,
+  .pw-icon-button,
+  .pw-sidebar-toggle,
+  .pw-filter,
+  .pw-pager-page,
+  .pw-pager-step,
+  .pw-inline-popup,
+  .pw-th-sort,
+  .pw-calendar-link,
+  .pw-calendar-nav,
+  .pw-calendar-title {
+    border-radius: var(--radius-md);
+  }
+}
+@media (pointer: coarse) {
+  .pw-field-input {
+    min-height: 44px;
+    padding: 11px 18px;
+    font-size: 1rem;
+    border-radius: var(--radius-full);
+  }
+  select.pw-field-input {
+    padding-right: 42px;
+    background-position: right 16px center;
+  }
+  textarea.pw-field-input {
+    border-radius: 22px;
+  }
+  /* Code boxes take the capsule fields' 22 (as in the account card, LIQUID_GLASS §9). */
+  .pw-code-cell {
+    border-radius: 22px;
+  }
+}
+
+/* A group of switch rows inside a sheet (like the member sheet's). */
+.pw-sheet-group {
+  padding: 0 16px;
+  border-radius: var(--radius-lg);
+  background: color-mix(in srgb, var(--ink) 5%, transparent);
+}
+
+/* Wide window: the same control as a macOS tab view's tabbed control, centred on the top edge of the content (HIG Tab
+   views, Anatomy: "a three-tab tabbed control is centered on the top edge of the content view"; Segmented controls,
+   macOS: a tab view "is similar in appearance to a box combined with a segmented control"). As wide as its longest
+   segment needs, segments equal. */
+@media (min-width: 960px) {
+  .pw-segmented {
+    width: max-content;
+    min-width: 280px;
+    margin-inline: auto;
+  }
+  .pw-segmented > .pw-segment {
+    padding: 0 20px;
+  }
+}
+/* With a mouse a medium control is a rounded rectangle (WWDC25 356, §8.7): 8, the thumb concentric inside the 2px
+   padding (8 − 2 = 6, S1). */
+@media (pointer: fine) {
+  .pw-segmented {
+    border-radius: var(--radius-md);
+  }
+  .pw-segmented-thumb {
+    border-radius: 6px;
+  }
+}
+/* The other part slides in from its tab's side (like turning a page, G2.9). */
+.pw-members-panel.is-next {
+  animation: pw-page-next 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.pw-members-panel.is-prev {
+  animation: pw-page-prev 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .pw-segmented-thumb {
+    transition: none;
+  }
+  .pw-members-panel.is-next,
+  .pw-members-panel.is-prev {
+    animation-name: pw-result-fade;
+  }
+}
+
+/* ---------- Pointer (as Apple's own websites do) ----------
+   apple.com and developer.apple.com style "button { cursor: pointer }", "select { cursor: pointer }",
+   "button:disabled { cursor: default }" and the current menu link ".current { cursor: default }"; WCAG 2.2 has no
+   criterion on the pointer's shape. HIG Pointing devices is for native macOS apps, not web pages. So: the hand on
+   whatever can be clicked, the arrow on a disabled control (not "not-allowed") and on the item already open. */
+button:disabled,
+select:disabled,
+input:disabled,
+[aria-disabled='true'],
+a[aria-current='page'],
+[role='tab'][aria-selected='true'] {
+  cursor: default;
+}
+
+/* ---------- Long text in tables (G2.11, as the plan list) ----------
+   A name takes at most two lines, then "…", breaking a string without spaces too; the whole text is in its title (on
+   hover) and in the row's sheet. A secondary line under it (an email) takes one. Short values (plates, roles, dates)
+   stay on one line, so a long name never pushes the other columns out of the table. */
+.pw-cell-title,
+.pw-cell-sub {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+.pw-cell-title {
+  font-weight: 600;
+}
+.pw-cell-sub {
+  -webkit-line-clamp: 1;
+  line-clamp: 1;
+  font-size: 0.8125rem;
+  line-height: 1.125rem;
+  color: var(--ink-muted);
+}
+/* 12rem (the plan list's name takes 14): with the member table's five columns at the narrowest wide window (960px,
+   sidebar shown) 14 pushed the table 18px past its frame. Still two lines of about 20 characters. */
+.pw-cell-main {
+  min-width: 12rem;
+}
+/* An email as the row's text: two lines like a name, not bold. */
+.pw-cell-plain {
+  font-weight: 400;
+}
+
+/* Inline date picker on a phone (HIG Date pickers, Inline; OWNER_UI_REDESIGN §8.11): the calendar is a block of the
+   page on its own line under every filter, as wide as the list, pushing the list down; nothing can cover it. The
+   filter's wrapper steps aside so the calendar is an item of the filter row. */
+@media (max-width: 959.98px) {
+  .pw-filter-wrap.has-inline-calendar {
+    display: contents;
+  }
+}
+.pw-calendar-inline {
+  order: 99;
+  flex-basis: 100%;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px;
+  border-radius: var(--radius-lg);
+  background: var(--surface-raised);
+  transform-origin: top center;
+  /* Scrolled into view clear of the floating tab bar and of the top bar. */
+  scroll-margin-bottom: calc(var(--tabbar-height) + 2 * var(--shell-gap) + env(safe-area-inset-bottom) + 8px);
+  scroll-margin-top: 72px;
+  animation: pw-calendar-inline-in 0.22s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.pw-calendar-inline.is-closing {
+  animation: pw-calendar-inline-out 0.14s ease-in both;
+}
+@keyframes pw-calendar-inline-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+}
+@keyframes pw-calendar-inline-out {
+  to {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pw-calendar-inline,
+  .pw-calendar-inline.is-closing {
+    animation-name: pw-result-fade;
+  }
+}
+
+/* The calendar's "Tháng 11, 2026 ›" button (OWNER_UI_REDESIGN §8.12, as the iOS calendar): the month and year in ink,
+   the chevron in the accent; open, the chevron turns down and the days give way to two wheels. The days stay round
+   (as Apple's calendars; owner's choice), the arrows take the button shape of the input. */
+.pw-calendar-title {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 4px;
+  min-height: 36px;
+  margin-left: -8px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: var(--radius-full);
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.pw-calendar-head .pw-calendar-title {
+  flex: 0 1 auto;
+  margin-right: auto;
+}
+.pw-calendar-title svg {
+  width: 16px;
+  height: 16px;
+  color: var(--route);
+  stroke-width: 2.4;
+  transition: transform 0.2s ease;
+}
+.pw-calendar-title.is-open svg {
+  transform: rotate(90deg);
+}
+.pw-calendar-title.is-open span {
+  color: var(--route);
+}
+@media (hover: hover) {
+  .pw-calendar-title:hover {
+    background: color-mix(in srgb, var(--ink) 7%, transparent);
+  }
+}
+.pw-calendar-title:active {
+  background: color-mix(in srgb, var(--ink) 12%, transparent);
+}
+.pw-calendar-title:focus-visible {
+  outline: 2px solid var(--route);
+  outline-offset: 2px;
+}
+
+/* Two wheels side by side, as tall as the days they replace; the value in the middle band (HIG Pickers, Wheels). */
+.pw-wheels {
+  position: relative;
+  display: grid;
+  grid-template-columns: 3fr 2fr;
+  gap: 4px;
+  height: 252px;
+}
+.pw-wheels::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(50% - 18px);
+  height: 36px;
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--ink) 7%, transparent);
+  pointer-events: none;
+}
+.pw-wheel {
+  position: relative;
+  height: 252px;
+  min-width: 0;
+  border-radius: var(--radius-md);
+}
+.pw-wheel:focus-visible {
+  outline: 2px solid var(--route);
+  outline-offset: 2px;
+}
+.pw-wheel-scroller {
+  height: 100%;
+  overflow-y: auto;
+  scroll-snap-type: y mandatory;
+  scrollbar-width: none;
+  overscroll-behavior: contain;
+  /* Room for the first and last value to reach the middle: (252 − 36) / 2 (a percentage would follow the width). */
+  padding-block: 108px;
+  box-sizing: border-box;
+  -webkit-mask-image: linear-gradient(transparent, #000 30%, #000 70%, transparent);
+  mask-image: linear-gradient(transparent, #000 30%, #000 70%, transparent);
+}
+.pw-wheel-scroller::-webkit-scrollbar {
+  display: none;
+}
+.pw-wheel-item {
+  height: 36px;
+  display: grid;
+  place-items: center;
+  scroll-snap-align: center;
+  font-size: 1rem;
+  color: var(--ink-muted);
+  cursor: pointer;
+  user-select: none;
+  font-variant-numeric: tabular-nums;
+}
+.pw-wheel-item.is-current {
+  color: var(--ink);
+  font-weight: 600;
+}
+@media (prefers-reduced-motion: reduce) {
+  .pw-calendar-title svg {
+    transition: none;
+  }
+}
+
+/* The button at the end of a field in a sheet (show password; APPLE_CHECKLIST T-8, I-3): inside the field, 2px from its
+   edge, concentric with it (S1) — with a mouse a 36px field rounded 8 holds a 32px button rounded 8 − 2 = 6; for touch
+   a 44px capsule (22) holds a 40px circle (22 − 2 = 20), as in the account card (LIQUID_GLASS §9). */
+.pw-sheet .pw-field-end {
+  right: 2px;
+}
+.pw-sheet .pw-field-end .pw-icon-button {
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  min-height: 32px;
+  border-radius: 6px;
+  color: var(--ink-muted);
+}
+.pw-sheet .pw-field-control.has-end .pw-field-input {
+  padding-right: 40px;
+}
+@media (pointer: coarse) {
+  .pw-sheet .pw-field-end .pw-icon-button {
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+    min-height: 40px;
+    border-radius: 20px;
+  }
+  .pw-sheet .pw-field-control.has-end .pw-field-input {
+    padding-right: 48px;
+  }
+}
+
+/* ---------- A phone's pager pinned at the top (OWNER_UI_REDESIGN §8.17) ----------
+   Above the list, it sticks under the top bar while the list scrolls under it (HIG Toolbars, iOS: buttons "above
+   scrolling content… always remain visible, as the content scrolls under them"). The same opaque strip as the top
+   bar, full width, so the two read as one bar; stuck, a soft edge separates it from the rows under it (HIG Scroll edge
+   effects; "one scroll edge effect per view": the top bar has none of its own). */
+.pw-pager-sentinel {
+  height: 0;
+}
+.pw-pager-bar {
+  position: sticky;
+  top: 60px;
+  z-index: 15;
+  margin-inline: calc(-1 * clamp(16px, 2vw, 24px));
+  padding: 8px clamp(16px, 2vw, 24px);
+  background: var(--surface);
+}
+.pw-pager-bar::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 100%;
+  height: 16px;
+  background: linear-gradient(var(--surface), transparent);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+.pw-pager-bar.is-stuck::after {
+  opacity: 1;
+}
+/* WCAG 2.4.11 Focus Not Obscured: what gets focus scrolls clear of the pinned bars (C43, scroll-padding): the top bar
+   (60) on every page, plus the pager bar (60) where there is one. */
+html {
+  scroll-padding-top: 60px;
+}
+@media (max-width: 959.98px) {
+  html:has(.pw-pager-bar) {
+    scroll-padding-top: 120px;
+  }
+}
+/* WCAG 1.4.10 Reflow: in a short window (a phone on its side, zoomed text) a pinned bar would take too much of the
+   view: the pager scrolls with the page there. */
+@media (max-width: 959.98px) and (max-height: 500px) {
+  .pw-pager-bar {
+    position: static;
+  }
+  .pw-pager-bar::after {
+    display: none;
+  }
+  html:has(.pw-pager-bar) {
+    scroll-padding-top: 60px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pw-pager-bar::after {
+    transition: none;
   }
 }

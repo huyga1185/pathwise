@@ -6,7 +6,7 @@ import { errorCode } from '@/shared/forms/serverErrors';
 import { formatClock } from '@/shared/format';
 import { useCountdown } from '@/shared/hooks/useCountdown';
 import { vi } from '@/shared/i18n/vi';
-import { Button, buttonClass, ErrorBanner, MailIcon, OtpInput, TextField } from '@/shared/ui';
+import { Button, buttonClass, CodeField, ErrorBanner, MailIcon, TextField } from '@/shared/ui';
 import { useAccountApi } from './accountApi';
 import { AuthCardHead, AuthLayout, CompactArt } from './AuthLayout';
 import { EMAIL_PATTERN, MAX_OTP_TRIES, RESEND_COOLDOWN_SECONDS } from './rules';
@@ -159,25 +159,17 @@ export function VerifyEmailPage() {
                 onChange={(event) => setEmailInput(event.target.value)}
               />
             ) : null}
-            <div className="pw-auth-otp">
-              <OtpInput
-                label={vi.form.otp}
-                value={code}
-                onChange={(value) => {
-                  setCode(value);
-                  setLastWrong(false);
-                }}
-                invalid={lastWrong || tooManyTries}
-                describedBy="otp-msg"
-              />
-              <p
-                id="otp-msg"
-                className={lastWrong || tooManyTries ? 'pw-field-msg pw-field-msg-error' : 'pw-field-msg'}
-                aria-live="polite"
-              >
-                {otpMessage}
-              </p>
-            </div>
+            {/* One field drawn as six boxes, as on every code screen (LIQUID_GLASS §9, owner's choice). */}
+            <CodeField
+              label={vi.form.otp}
+              value={code}
+              onChange={(value) => {
+                setCode(value);
+                setLastWrong(false);
+              }}
+              error={lastWrong || tooManyTries ? otpMessage : undefined}
+              hint={lastWrong || tooManyTries ? undefined : otpMessage}
+            />
             <Button
               type="submit"
               variant="primary"

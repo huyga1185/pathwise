@@ -8,9 +8,8 @@ export { DataTable, type DataTableColumn, type TableSort, type DataTableProps } 
 export { StopCard, type StopCardProps } from './StopCard';
 export { MapMarker, type MapMarkerProps } from './MapMarker';
 export { Dialog, type DialogProps } from './Dialog';
-export { Toast, type ToastProps } from './Toast';
+export { Toast, ToastDock, type ToastProps } from './Toast';
 export { ErrorBanner, FieldError, EmptyState } from './Feedback';
-export { OtpInput, type OtpInputProps } from './OtpInput';
 export { Stat } from './Stat';
 export {
   AppShell,
@@ -23,5 +22,11 @@ export {
 export { CodeField } from './CodeField';
 export { Wordmark } from './Wordmark';
 export * from './icons';
+export { PasswordField } from './PasswordField';
 export { DatePickerFilter, PageJump, PlaceholderRows, PopUpButton, PopUpFilter } from './Filters';
 export { ActivityIndicator } from './ActivityIndicator';
+export { Alert, Sheet, type AlertProps, type SheetProps } from './Sheet';
+export { RowMenu, useRowMenu, type RowMenuItem } from './RowMenu';
+export { SwitchRow } from './Switch';
+export { SegmentedControl } from './SegmentedControl';
+export { Pager } from './Pager';

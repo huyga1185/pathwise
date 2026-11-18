@@ -6,7 +6,7 @@ import { errorCode } from '@/shared/forms/serverErrors';
 import { formatClock } from '@/shared/format';
 import { useCountdown } from '@/shared/hooks/useCountdown';
 import { vi } from '@/shared/i18n/vi';
-import { Button, buttonClass, ErrorBanner, TextField } from '@/shared/ui';
+import { Button, buttonClass, CodeField, ErrorBanner, TextField } from '@/shared/ui';
 import { useAccountApi } from './accountApi';
 import { AuthCardHead, AuthLayout, CompactArt } from './AuthLayout';
 import { MAX_OTP_TRIES, passwordRules, RESEND_COOLDOWN_SECONDS } from './rules';
@@ -143,17 +143,12 @@ export function ResetPasswordPage() {
             <div className="pw-auth-notice" role="status">
               {t.sent}
             </div>
-            <TextField
-              className="pw-field-code"
+            <CodeField
               label={t.otp}
-              inputMode="numeric"
-              autoComplete="one-time-code"
-              maxLength={6}
-              placeholder="••••••"
               value={code}
               hint={errors.code ? undefined : t.otpHint}
               error={errors.code ?? undefined}
-              onChange={(event) => setCode(event.target.value.replace(/\D/g, '').slice(0, 6))}
+              onChange={setCode}
             />
             <TextField
               label={t.newPassword}

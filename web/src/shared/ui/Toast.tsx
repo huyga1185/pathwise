@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { cx } from './cx';
 
 export interface ToastProps {
@@ -28,4 +29,9 @@ export function Toast({ tone = 'info', children, actionLabel, onAction, onClose,
       ) : null}
     </div>
   );
+}
+
+/** Where toasts show: the bottom leading corner (phone: above the tab bar), on document.body above the shell. */
+export function ToastDock({ children }: { children: ReactNode }) {
+  return createPortal(<div className="pw-toast-dock">{children}</div>, document.body);
 }

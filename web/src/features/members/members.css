@@ -1,77 +1,149 @@
-/* Prototype "Thành viên và lời mời": two tabs; members table; invitation form beside the list. */
-.pw-members-intro {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.pw-tabs {
-  display: flex;
-  gap: 24px;
-  border-bottom: 1px solid var(--line);
-}
-.pw-tab {
-  margin-bottom: -1px;
-  padding: 8px 0;
-  font: inherit;
-  font-weight: 600;
-  color: var(--ink-muted);
-  background: none;
-  border: 0;
-  border-bottom: 2px solid transparent;
-  cursor: pointer;
-}
-@media (hover: hover) {
-  .pw-tab:hover {
-    color: var(--ink);
-  }
-}
-.pw-tab[aria-selected='true'] {
-  color: var(--route);
-  border-bottom-color: var(--route);
-}
-.pw-tab:focus-visible {
-  outline: 2px solid var(--route);
-  outline-offset: 2px;
-}
+/* "Thành viên và lời mời" (OWNER_UI_REDESIGN §8.3, §8.9): the tabbed control is the shared segmented control (ui.css).
+   Lists use the shared list styles. */
 .pw-members-panel {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-}
-.pw-members-table table {
-  min-width: 820px;
+  gap: 12px;
 }
 .pw-members-name {
   font-weight: 600;
 }
 .pw-members-email {
-  font-size: 12px;
-  line-height: 16px;
+  font-size: 0.8125rem;
+  line-height: 1.125rem;
   color: var(--ink-muted);
-}
-.pw-members-role {
-  width: auto;
-}
-.pw-members-invite {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
-  gap: 24px;
-}
-.pw-members-invite-form {
-  flex: 1 1 340px;
-  min-width: 0;
-}
-.pw-members-invitations {
-  flex: 999 1 560px;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.pw-members-invitations-table table {
-  min-width: 640px;
 }
 .pw-members-date {
   font-variant-numeric: tabular-nums;
+}
+/* The role in a table row: a pop-up button with no fill at rest (HIG Pop-up buttons), like "Trang 4/12". */
+.pw-inline-popup {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 32px;
+  margin-left: -10px;
+  padding: 0 8px 0 10px;
+  border: 0;
+  /* A control in a row: rounded with a mouse, a capsule for touch (S3, §8.7); set here because this file loads after
+     ui.css and would win over its shared rule. */
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  white-space: nowrap;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color 0.15s ease;
+}
+.pw-inline-popup svg {
+  width: 14px;
+  height: 14px;
+  color: var(--ink-muted);
+}
+@media (hover: hover) {
+  .pw-inline-popup:hover {
+    background: color-mix(in srgb, var(--ink) 7%, transparent);
+  }
+}
+.pw-inline-popup:active,
+.pw-inline-popup[aria-expanded='true'] {
+  background: color-mix(in srgb, var(--ink) 12%, transparent);
+}
+.pw-inline-popup:focus-visible {
+  outline: 2px solid var(--route);
+  outline-offset: 2px;
+}
+/* The member sheet (phone). */
+.pw-members-sheet-email {
+  margin: -8px 0 0;
+}
+.pw-members-sheet-group {
+  padding: 0 16px;
+  border-radius: var(--radius-lg);
+  background: color-mix(in srgb, var(--ink) 5%, transparent);
+}
+/* "Vô hiệu hoá" in the sheet: red text (HIG Buttons: "a destructive button uses the system red color"). */
+.pw-btn.pw-members-disable {
+  color: var(--danger);
+}
+.pw-members-sub {
+  display: flex;
+  min-width: 0;
+  gap: 4px;
+}
+.pw-members-sub > span {
+  flex: none;
+}
+.pw-members-sub > span::after {
+  content: ' ·';
+}
+.pw-members-sub > .pw-members-sub-email {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pw-members-sub > .pw-members-sub-email::after {
+  content: none;
+}
+/* Invitation rows (phone): an email breaks only where <wbr> allows (after "@"), not mid-word. */
+.pw-list-row-title.pw-email-title {
+  overflow-wrap: normal;
+  word-break: normal;
+}
+.pw-members-row-status {
+  display: flex;
+  margin-top: 4px;
+}
+/* The member sheet starts with who it is: the name (two lines at most), then the email. */
+.pw-members-sheet-who {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.pw-members-sheet-who p {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+/* In full here: this is the view where a name cut in the list can be read (HIG Typography: truncate in a list only
+   when "people can open a separate view to read the rest"). */
+.pw-members-sheet-name {
+  font-weight: 600;
+}
+
+/* A narrow table (G2.11, as the plan list): a less important column moves under the name instead of squeezing it or
+   scrolling sideways (HIG Lists and tables: a narrow table keeps content "recognizable and easy to read"). Measured at
+   the narrowest wide window (960px, sidebar shown): members need 710px in a 663px frame, invitations 672px; so status
+   folds below 46rem, the expiry below 44rem. */
+.pw-members-table,
+.pw-invitations-table {
+  container-type: inline-size;
+}
+.pw-cell-fold {
+  display: none;
+}
+@container (max-width: 46rem) {
+  .pw-members-table .pw-col-fold {
+    display: none;
+  }
+  .pw-members-table .pw-cell-fold {
+    display: flex;
+    margin-top: 4px;
+  }
+}
+@container (max-width: 44rem) {
+  .pw-invitations-table .pw-col-fold {
+    display: none;
+  }
+  .pw-invitations-table .pw-cell-fold {
+    display: -webkit-box;
+    margin-top: 2px;
+  }
+}
+@media (pointer: coarse) {
+  .pw-inline-popup {
+    border-radius: var(--radius-full);
+  }
 }

@@ -1,31 +1,25 @@
 import { useStoreReadOnly } from '@/data/meQuery';
-import {
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-  type MouseEvent,
-  type PointerEvent,
-  type RefObject,
-} from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router';
 import { useStoreQuery } from '@/data/storeQuery';
 import { messageFor } from '@/shared/errors';
 import { formatDateShort, formatDayTime, formatDistance, formatDuration, todayIn } from '@/shared/format';
 import { reducedMotion, useExit } from '@/shared/hooks/useExit';
 import { cx } from '@/shared/ui/cx';
+import { useFitRows } from '@/shared/hooks/useFitRows';
 import { useMediaQuery, WIDE_QUERY } from '@/shared/hooks/useMediaQuery';
 import { vi } from '@/shared/i18n/vi';
 import {
   Button,
   buttonClass,
-  ChevronLeftIcon,
   ChevronRightIcon,
   CopyIcon,
   DataTable,
   DatePickerFilter,
   ErrorBanner,
-  PageJump,
+  Pager,
+  RowMenu,
+  useRowMenu,
   PlaceholderRows,
   PlusIcon,
   RouteIcon,
@@ -80,7 +74,7 @@ export function PlanListPage() {
   const result = useRef<HTMLDivElement>(null);
   const probe = useRef<HTMLDivElement>(null);
   const filters = useRef<HTMLDivElement>(null);
-  const fit = useFitRows(wide, result, probe, filters);
+  const fit = useFitRows(wide, result, probe, filters, PAGE_SIZE);
   const size = wide ? (fit?.rows ?? null) : PAGE_SIZE;
   const plans = usePlans({ date, status, sort: order?.api, page, size: size ?? PAGE_SIZE }, size !== null);
   const store = useStoreQuery();
@@ -96,8 +90,10 @@ export function PlanListPage() {
     update({ page: target > 0 ? String(target) : undefined });
     // On a phone the next page starts at the top of the list: scroll back only as far as needed to see its start
     // (HIG Scroll views: "scroll automatically to help people find their place… only as much as necessary").
+    // Hidden means above the pinned bars, whose height is the page's scroll padding (ui.css).
     const top = result.current?.getBoundingClientRect().top ?? 0;
-    if (!wide && top < 0) {
+    const pinned = Number.parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop) || 0;
+    if (!wide && top < pinned) {
       result.current?.scrollIntoView({ block: 'start', behavior: reducedMotion() ? 'auto' : 'smooth' });
     }
   };
@@ -121,51 +117,10 @@ export function PlanListPage() {
     update({ order: next === 'date-desc' ? undefined : next });
   };
 
-  // Phone: touch and hold a row for its context menu ("Sao chép…"), like Mail and Notes; the plan's own page has the
-  // same command (HIG Context menus: "Always make context menu items available in the main interface, too").
-  const [menuFor, setMenuFor] = useState<{ row: PlanSummary; rect: DOMRect } | null>(null);
-  const held = useRef(false);
-  const hold = useRef<{ timer: number; x: number; y: number } | null>(null);
-  const stopHold = () => {
-    if (hold.current) window.clearTimeout(hold.current.timer);
-    hold.current = null;
-  };
-  const holdHandlers = (row: PlanSummary) => ({
-    onPointerDown: (event: PointerEvent<HTMLLIElement>) => {
-      if (event.pointerType !== 'touch') return;
-      const element = event.currentTarget;
-      held.current = false;
-      stopHold();
-      hold.current = {
-        x: event.clientX,
-        y: event.clientY,
-        timer: window.setTimeout(() => {
-          held.current = true;
-          hold.current = null;
-          setMenuFor({ row, rect: element.getBoundingClientRect() });
-        }, 500),
-      };
-    },
-    onPointerMove: (event: PointerEvent<HTMLLIElement>) => {
-      const start = hold.current;
-      if (start && Math.hypot(event.clientX - start.x, event.clientY - start.y) > 10) stopHold();
-    },
-    onPointerUp: stopHold,
-    onPointerCancel: stopHold,
-    // Android's long press and a right click: the same menu instead of the browser's.
-    onContextMenu: (event: MouseEvent<HTMLLIElement>) => {
-      event.preventDefault();
-      stopHold();
-      // A right click opens it at the pointer; Android's long press, under the row like touch and hold.
-      const touch = (event.nativeEvent as globalThis.PointerEvent).pointerType === 'touch';
-      setMenuFor({
-        row,
-        rect: touch
-          ? event.currentTarget.getBoundingClientRect()
-          : new DOMRect(event.clientX - 8, event.clientY - 8, 0, 0),
-      });
-    },
-  });
+  // Phone: touch and hold a row for its context menu ("Sao chép…"), like Mail and Notes; a right click on a wide
+  // window. The plan's own page has the same command (HIG Context menus: "Always make context menu items available in
+  // the main interface, too").
+  const rowMenu = useRowMenu<PlanSummary>();
 
   const copyButton = (row: PlanSummary) =>
     readOnly ? null : (
@@ -365,10 +320,15 @@ export function PlanListPage() {
                 </tbody>
               </table>
             </div>
-            <Pager page={0} totalPages={2} onPage={() => {}} />
+            <Pager label={vi.plans.pagerLabel} page={0} totalPages={2} onPage={() => {}} />
           </>
         ) : null}
       </div>
+      {/* A phone: the pager above the list, pinned under the top bar (§8.17); before the list in reading and Tab order
+          too (WCAG 2.4.3). */}
+      {!wide && data !== undefined && !empty ? (
+        <Pager label={vi.plans.pagerLabel} page={page} totalPages={totalPages} onPage={goToPage} pinned />
+      ) : null}
       <div
         ref={result}
         key={shown.key}
@@ -410,31 +370,18 @@ export function PlanListPage() {
                 className="pw-list-group pw-plans-table"
                 sort={sort}
                 onSort={onSort}
-                onRowContextMenu={
-                  readOnly
-                    ? undefined
-                    : (row, point) => setMenuFor({ row, rect: new DOMRect(point.x - 8, point.y - 8, 0, 0) })
-                }
+                onRowContextMenu={readOnly ? undefined : rowMenu.openAt}
+                resizable
               />
             ) : (
               <ul className="pw-list-group pw-list-rows" aria-label={vi.plans.caption}>
                 {items.map((row) => (
                   <li
                     key={row.id}
-                    className={cx('pw-list-row', menuFor?.row.id === row.id && 'is-held')}
-                    {...(readOnly ? {} : holdHandlers(row))}
+                    className={cx('pw-list-row', rowMenu.menu?.row.id === row.id && 'is-held')}
+                    {...(readOnly ? {} : rowMenu.holdHandlers(row))}
                   >
-                    <Link
-                      to={`/plans/${row.id}`}
-                      className="pw-list-row-main"
-                      onClick={(event) => {
-                        // The touch-and-hold that opened the menu is not also a tap on the row.
-                        if (held.current) {
-                          event.preventDefault();
-                          held.current = false;
-                        }
-                      }}
-                    >
+                    <Link to={`/plans/${row.id}`} className="pw-list-row-main" onClick={rowMenu.consumeHold}>
                       <span className="pw-list-row-title">{row.name}</span>
                       <span className="pw-list-row-sub">
                         {formatDateShort(row.planDate)} · {vi.plans.stopCount(row.stopCount)}
@@ -452,13 +399,15 @@ export function PlanListPage() {
         )}
       </div>
       {/* Outside the result, which is drawn again on each page: the pager keeps its focus while pages turn. */}
-      {data !== undefined && !empty ? <Pager page={page} totalPages={totalPages} onPage={goToPage} /> : null}
-      {menuFor ? (
+      {wide && data !== undefined && !empty ? (
+        <Pager label={vi.plans.pagerLabel} page={page} totalPages={totalPages} onPage={goToPage} />
+      ) : null}
+      {rowMenu.menu ? (
         <RowMenu
-          rect={menuFor.rect}
-          label={menuFor.row.name}
-          onClose={() => setMenuFor(null)}
-          items={[{ label: vi.planCopy.menuItem, onSelect: () => setCopying(menuFor.row) }]}
+          rect={rowMenu.menu.rect}
+          label={rowMenu.menu.row.name}
+          onClose={rowMenu.close}
+          items={[{ label: vi.planCopy.menuItem, icon: <CopyIcon />, onSelect: () => setCopying(rowMenu.menu!.row) }]}
         />
       ) : null}
       {copying ? (
@@ -466,101 +415,6 @@ export function PlanListPage() {
       ) : null}
     </section>
   );
-}
-
-/**
- * Pages of a list with a clear end: "‹ Trang 4/12 ›", centred under the list (HIG Page controls: "Center a page control
- * at the bottom of the view"). The arrows go one page back or on, round grey buttons (HIG Buttons), dimmed with
- * aria-disabled at either end so a focused arrow keeps its focus. "Trang 4/12" opens a small panel: first page, a
- * field for the page number, last page (PageJump). One page: no pager.
- */
-function Pager({ page, totalPages, onPage }: { page: number; totalPages: number; onPage: (page: number) => void }) {
-  if (totalPages <= 1) return null;
-  const current = Math.min(page, totalPages - 1);
-  const last = totalPages - 1;
-  return (
-    <nav className="pw-pager" aria-label={vi.plans.pagerLabel}>
-      <button
-        type="button"
-        className="pw-pager-step"
-        aria-label={vi.plans.previous}
-        title={vi.plans.previous}
-        aria-disabled={current === 0}
-        onClick={() => current > 0 && onPage(current - 1)}
-      >
-        <ChevronLeftIcon />
-      </button>
-      <PageJump
-        page={current}
-        pages={totalPages}
-        buttonText={vi.plans.pageOf(current + 1, totalPages)}
-        buttonLabel={vi.plans.pageJump(current + 1, totalPages)}
-        fieldLabel={vi.plans.pageField}
-        firstLabel={vi.plans.firstPage}
-        lastLabel={vi.plans.lastPage}
-        onPage={onPage}
-      />
-      <button
-        type="button"
-        className="pw-pager-step"
-        aria-label={vi.plans.next}
-        title={vi.plans.next}
-        aria-disabled={current === last}
-        onClick={() => current < last && onPage(current + 1)}
-      >
-        <ChevronRightIcon />
-      </button>
-    </nav>
-  );
-}
-
-/**
- * Rows of the table that fit the window under the list's top with the pager below, nothing to scroll; measured again
- * when the window, the filters' row or the text size changes (rows grow with larger text, so fewer fit — HIG Layout).
- * At least 3 (a very short window scrolls), at most 100 (API_SPEC §1). `null` until measured; 20 where nothing can
- * be measured (tests). Also the height of a full page, which the list keeps on a short last page.
- */
-function useFitRows(
-  enabled: boolean,
-  result: RefObject<HTMLDivElement | null>,
-  probe: RefObject<HTMLDivElement | null>,
-  filters: RefObject<HTMLDivElement | null>,
-): { rows: number; height: number } | null {
-  const [fit, setFit] = useState<{ rows: number; height: number } | null>(null);
-  useLayoutEffect(() => {
-    if (!enabled) return undefined;
-    const measure = () => {
-      const list = result.current;
-      const sample = probe.current;
-      if (!list || !sample) return;
-      const head = sample.querySelector('thead')?.getBoundingClientRect().height ?? 0;
-      const row = sample.querySelector('tbody tr')?.getBoundingClientRect().height ?? 0;
-      const pager = sample.querySelector('.pw-pager')?.getBoundingClientRect().height ?? 0;
-      if (row <= 0) {
-        setFit({ rows: PAGE_SIZE, height: 0 });
-        return;
-      }
-      const main = list.closest('main');
-      const bottom = main ? Number.parseFloat(getComputedStyle(main).paddingBottom) || 0 : 0;
-      const top = list.getBoundingClientRect().top + window.scrollY;
-      const gap = Number.parseFloat(getComputedStyle(list.parentElement ?? list).rowGap) || 0; // table ↔ pager
-      const room = window.innerHeight - top - head - gap - pager - bottom - 2;
-      // Whole pixels: a row measures 56.5 here and 57 in the table (borders), which adds up over a page.
-      const rows = Math.max(3, Math.min(100, Math.floor(room / Math.ceil(row))));
-      const height = Math.ceil(head + rows * Math.ceil(row) + 2);
-      setFit((was) => (was && was.rows === rows && was.height === height ? was : { rows, height }));
-    };
-    measure();
-    window.addEventListener('resize', measure);
-    const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(measure);
-    if (probe.current) observer?.observe(probe.current);
-    if (filters.current) observer?.observe(filters.current);
-    return () => {
-      window.removeEventListener('resize', measure);
-      observer?.disconnect();
-    };
-  }, [enabled, result, probe, filters]);
-  return enabled ? fit : null;
 }
 
 /**
@@ -637,84 +491,5 @@ function ClearFilters({ closing, onClear }: { closing: boolean; onClear: () => v
     >
       {vi.plans.clearFilters}
     </Button>
-  );
-}
-
-/**
- * A row's context menu (touch and hold on a phone; right click): a short list of commands under the row, or above it
- * near the bottom of the screen (HIG Context menus: "Aim for a small number of menu items"; HIG Menus: an ellipsis when
- * more input follows). Closes on a choice, a tap outside, Escape or scrolling; focus goes to its first item and back
- * where it was afterwards.
- */
-function RowMenu({
-  rect,
-  label,
-  items,
-  onClose,
-}: {
-  rect: DOMRect;
-  label: string;
-  items: { label: string; onSelect: () => void }[];
-  onClose: () => void;
-}) {
-  const menu = useRef<HTMLDivElement>(null);
-  // The latest onClose, so the listeners below are set once while the menu is open.
-  const close = useRef(onClose);
-  useEffect(() => {
-    close.current = onClose;
-  });
-  useEffect(() => {
-    const onClose = () => close.current();
-    const before = document.activeElement as HTMLElement | null;
-    menu.current?.querySelector<HTMLElement>('[role="menuitem"]')?.focus({ preventScroll: true });
-    const outside = (event: globalThis.PointerEvent) => {
-      if (!menu.current?.contains(event.target as Node)) onClose();
-    };
-    const key = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose();
-    };
-    // The finger that opened it is still lifting: listen for taps outside from the next frame.
-    const frame = window.requestAnimationFrame(() => document.addEventListener('pointerdown', outside));
-    document.addEventListener('keydown', key);
-    window.addEventListener('scroll', onClose, { passive: true });
-    return () => {
-      window.cancelAnimationFrame(frame);
-      document.removeEventListener('pointerdown', outside);
-      document.removeEventListener('keydown', key);
-      window.removeEventListener('scroll', onClose);
-      before?.focus?.({ preventScroll: true });
-    };
-  }, []);
-  const below = rect.bottom + 8 + 56 * items.length < window.innerHeight - 96;
-  return (
-    <div
-      ref={menu}
-      className={cx('pw-popover pw-menu pw-row-menu', !below && 'is-above')}
-      role="menu"
-      aria-label={label}
-      style={{
-        position: 'fixed',
-        left: rect.left + 8,
-        ...(below ? { top: rect.bottom + 8 } : { top: 'auto', bottom: window.innerHeight - rect.top + 8 }),
-      }}
-    >
-      {items.map((item) => (
-        <button
-          key={item.label}
-          type="button"
-          role="menuitem"
-          className="pw-menu-item"
-          onClick={() => {
-            onClose();
-            item.onSelect();
-          }}
-        >
-          <span className="pw-menu-check" aria-hidden="true">
-            <CopyIcon />
-          </span>
-          {item.label}
-        </button>
-      ))}
-    </div>
   );
 }

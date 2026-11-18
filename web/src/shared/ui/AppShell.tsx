@@ -151,8 +151,12 @@ function inViewTransition(): boolean {
   }
 }
 
+/** Pages that are tabs of one page: switching between them is a tab switch (only the underline moves), not a page change. */
+const TAB_PAGES = [['/store', '/store/audit']];
+
 export function pageMotion(from: string, to: string, roots: string[]): Keyframe[] | null {
   if (from === to) return null;
+  if (TAB_PAGES.some((group) => group.includes(from) && group.includes(to))) return null;
   const fade: Keyframe[] = [{ opacity: 0 }, { opacity: 1 }];
   if (reducedMotion()) return fade;
   const rise: Keyframe[] = [
@@ -170,12 +174,12 @@ export function pageMotion(from: string, to: string, roots: string[]): Keyframe[
       { opacity: 0, transform: 'translateX(-32px)' },
       { opacity: 1, transform: 'none' },
     ];
-  // Any other change (an area outside the menu such as "Hồ sơ và bảo mật", one plan to another): like switching areas.
+  // Any other change (an area outside the menu such as "Tài khoản", one plan to another): like switching areas.
   return rise;
 }
 
 /**
- * The account button (initials) and its menu: who is signed in, the store, "Hồ sơ và bảo mật", "Đăng xuất". One
+ * The account button (initials) and its menu: who is signed in, the store, "Tài khoản", "Đăng xuất". One
  * button instead of the store, the name and "Đăng xuất" always on screen (HIG Toolbars: "Choose items deliberately to
  * avoid overcrowding"; P-74). A menu button: Escape, a click outside or choosing an item closes it, focus goes back to
  * the button.
@@ -256,7 +260,7 @@ function AccountMenu({ account, crossFade }: { account: ShellAccount; crossFade:
             viewTransition={crossFade}
             onClick={() => setOpen(false)}
           >
-            {vi.profile.title}
+            {vi.profile.menu}
           </Link>
           <button
             type="button"
@@ -289,6 +293,7 @@ export function AppShell({ items, navLabel, sidebarTitle, account, children }: A
   const sidebar = useExit(sidebarShown, 200);
   const main = useRef<HTMLElement>(null);
   const { pathname } = useLocation();
+  const smallTitle = useSmallTitle(main, !wide);
   const previous = useRef(pathname);
   useEffect(() => {
     const from = previous.current;
@@ -343,6 +348,11 @@ export function AppShell({ items, navLabel, sidebarTitle, account, children }: A
               <SidebarIcon />
             </button>
           ) : null}
+          {!wide ? (
+            <span className={cx('pw-topbar-title', smallTitle && 'is-shown')} aria-hidden="true">
+              {smallTitle}
+            </span>
+          ) : null}
           <AccountMenu account={account} crossFade={wide} />
         </div>
         <main ref={main} className="pw-page">
@@ -360,4 +370,43 @@ export function AppShell({ items, navLabel, sidebarTitle, account, children }: A
       )}
     </div>
   );
+}
+
+/**
+ * Phone: the page's large title (its h1) gives way to a small one in the middle of the top bar once it scrolls under
+ * the bar, and comes back when people scroll to the top (HIG Toolbars: "Use a large title to help people stay oriented
+ * as they navigate and scroll. By default, a large title transitions to a standard title as people begin scrolling…
+ * and transitions back to large when people scroll to the top"). Follows the h1 as pages and their content change.
+ */
+function useSmallTitle(main: React.RefObject<HTMLElement | null>, enabled: boolean): string | null {
+  const [title, setTitle] = useState<string | null>(null);
+  useEffect(() => {
+    const root = main.current;
+    if (!enabled || !root || typeof IntersectionObserver === 'undefined') return undefined;
+    let watched: HTMLElement | null = null;
+    let observer: IntersectionObserver | null = null;
+    const bind = () => {
+      const heading = root.querySelector<HTMLElement>('h1');
+      if (heading === watched) return;
+      observer?.disconnect();
+      watched = heading;
+      setTitle(null);
+      if (!heading) return;
+      const bar = (root.previousElementSibling as HTMLElement | null)?.offsetHeight ?? 60;
+      observer = new IntersectionObserver(
+        ([entry]) =>
+          setTitle(entry && !entry.isIntersecting && entry.boundingClientRect.top < bar ? heading.textContent : null),
+        { rootMargin: `-${bar}px 0px 0px 0px` },
+      );
+      observer.observe(heading);
+    };
+    bind();
+    const changes = new MutationObserver(bind);
+    changes.observe(root, { childList: true, subtree: true });
+    return () => {
+      changes.disconnect();
+      observer?.disconnect();
+    };
+  }, [main, enabled]);
+  return enabled ? title : null;
 }

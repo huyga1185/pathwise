@@ -155,9 +155,10 @@ Nút bấm cho mọi hành động; mỗi màn hình chỉ một nút `primary`,
 - `error`: câu lỗi lấy từ bảng thông điệp theo mã lỗi API (`docs/ux/UX_BRIEF.md` §6); nói chuyện gì sai và sửa thế nào. Ô lỗi có viền `danger` 2px, câu lỗi `small` màu `danger` ngay dưới ô, liên kết qua `aria-describedby`.
 - Với lỗi validation từ API (`fields`), gắn từng câu vào đúng ô theo tên field.
 - `multiline` cho ghi chú stop và ô dán mã mời (web làm từ W02).
-- Ô mã một dòng (web W02, class `pw-field-code`, thêm `pw-field-code-sm` trong thẻ Hồ sơ): chữ số lớn, giãn chữ, căn giữa, `inputmode="numeric"`, `autocomplete="one-time-code"`; dùng ở đổi mật khẩu (Hồ sơ) theo prototype. Màn Xác thực email dùng `OtpInput` 6 ô.
+- Ô mã xác nhận: `CodeField`, một `<input autocomplete="one-time-code">` vẽ thành 6 khung (LIQUID_GLASS §9) ở các màn nhập mã của thẻ tài khoản (sheet Đổi mật khẩu trong app: một thanh nhập `one-time-code`, §8.15); khung nền fill nhạt, viền như ô nhập, khung đang nhận số sáng viền; bo `radius-md` khi dùng chuột, 22 trên cảm ứng và trong thẻ tài khoản (`OWNER_UI_REDESIGN.md` §8.13). Kiểu cũ `pw-field-code` và `OtpInput` đã bỏ.
 - **`AppShell`** (web, P-74, thay `AppHeader`): khung mọi trang đã đăng nhập. Màn ≥ 960px: sidebar kính nổi bên trái (rộng 232, cách mép 12, bo `radius-lg`, mục cao 36/44 bo `radius-md`, mục đang mở nền `route` 16%), ẩn/hiện được; màn hẹp: tab bar kính hình viên thuốc nổi dưới đáy (cao 64, mục biểu tượng + nhãn 11px). Thanh trên gần đặc, nút tròn chữ viết tắt mở menu tài khoản (kính dày 90%). Control 36px với chuột, 44px khi chạm (`pointer: coarse`). Giảm trong suốt/tăng tương phản: nền đặc; forced colors: viền hệ thống. Chuyển động (OWNER_UI_REDESIGN §6.2): ô đánh dấu mục đang mở trượt giữa các mục, đổi khu: màn rộng chuyển cảnh mờ ra/mờ vào (View Transitions), điện thoại trang mới mờ vào và nhô lên tại chỗ; trượt khi đi sâu/quay lên, menu bật ra từ nút, sidebar trượt khi ẩn/hiện; giảm chuyển động thì chỉ mờ.
 - **`CodeField`** (web, chuẩn mới cho mã một lần): **một** `<input>` thật (`autocomplete="one-time-code"`, `inputmode="numeric"`, chỉ giữ chữ số, tối đa 6) vẽ thành 6 khung; khung kế tiếp sáng viền `route` thay con trỏ; trình đọc màn hình thấy một ô có nhãn, các khung `aria-hidden`. Lý do: tài liệu AutoFill của Apple mô tả việc điền mã cho một ô được đánh dấu one-time-code; Apple không quy định 1 ô hay 6 ô. Đang dùng ở Quên mật khẩu bước 2; Xác thực email và Hồ sơ chuyển sang khi làm lại các màn đó.
+- `PasswordField`: ô mật khẩu ẩn chữ + nút con mắt cuối ô (`aria-label`, `title`, `aria-pressed`), nút đồng tâm với ô (sheet: chuột 32 bo 6 trong ô 36 bo 8; cảm ứng tròn 40 trong ô 44) — §8.16.
 - Web (W01) thêm `startIcon` (icon trong ô, ví dụ thư, ổ khoá ở màn tài khoản), `endAction` (nút trong ô, ví dụ hiện mật khẩu, có `aria-label` và `aria-pressed`) và `size="lg"` (48px, chữ 16px cho màn tài khoản). Thêm `clearable`: nút xoá nội dung ⓧ ở cuối ô khi ô có chữ (HIG Text fields: "Display a Clear button in the trailing end of a text field"); chỉ ô một dòng không có `endAction`, không dùng cho mật khẩu; ngoài thứ tự Tab (bàn phím chọn rồi xoá), bấm không lấy focus khỏi ô. Đang bật ở các ô chữ của màn tài khoản (email, tên cửa hàng, họ tên, số điện thoại, mã mời); form khác bật dần.
 - Trong app tài xế, form hiếm khi xuất hiện (chỉ lý do không giao được); khi có, dùng cỡ chữ `body-touch` qua CSS của client.
 
@@ -176,6 +177,21 @@ Nhãn trạng thái viết hoa trên nền màu trạng thái; truyền thẳng 
 - Trạng thái không cần pill thì không hiện gì: geocode `PROVIDED`/`RESOLVED`, processing `IDLE`.
 - Màu không bao giờ đứng một mình: pill luôn có chữ. Stop `FAILED` đi kèm lý do ngay dưới, chữ `small`.
 - Chữ pill dùng `on-accent` (trắng ở theme sáng, gần đen ở theme tối).
+
+### Sheet, Alert, SwitchRow, SegmentedControl (web, G3)
+
+- `Sheet`: việc có nhập liệu; "Huỷ" đầu thanh trên, nút xong (động từ) cuối; điện thoại trồi từ đáy, grabber, vuốt xuống để đóng (còn thay đổi chưa lưu thì hỏi bằng action sheet "Bỏ thay đổi" / "Tiếp tục sửa"); máy tính là thẻ giữa màn hình. Không `doneLabel` = sheet áp dụng ngay, chỉ có "Đóng".
+- `Alert`: chỉ xác nhận việc khó đảo ngược; "Huỷ" bên trái (được focus), hành động bên phải; `destructive` (đỏ) chỉ khi người dùng không chủ động chọn việc phá huỷ.
+- `SwitchRow`: switch trong một hàng danh sách (nhãn trái, switch phải), `role="switch"`.
+- `SegmentedControl`: chuyển giữa các phần liên quan trên điện thoại; ô bằng nhau, ô đang chọn nổi lên.
+- `useRowMenu` + `RowMenu`: menu ngữ cảnh của hàng cho mọi danh sách (chạm giữ, nhấp chuột phải); mục phá huỷ chữ đỏ.
+- `ToastDock`: chỗ hiện toast (góc dưới; điện thoại trên tab bar).
+- Hình theo cỡ control (S3, WWDC25 356): chuột (cỡ Medium): mọi nút, kể cả `primary`, nút biểu tượng, ô nhập, bộ lọc bo 8, nút chính chỉ khác màu; cảm ứng: viên thuốc 44px; control Large 44px (thẻ tài khoản, nút trạng thái trống) là viên thuốc. `secondary` nền xám, không viền (F-73).
+- Ô nhập, ô chọn: nền fill nhạt, viền 1px `ink-muted`, focus sáng viền màu nhấn (như trang đăng nhập); ô chọn có dấu ⌃⌄.
+- Menu và khung bật ra vẽ trên `body`, đặt theo nút mở. Ô chọn (`<select>`) mở menu của app (`useSelectMenu`), không dùng danh sách của trình duyệt.
+- Lưu/Xong dùng biểu tượng dấu tích (`CheckIcon`, HIG Icons: Save → `checkmark`).
+- Checkbox (chỉ trên máy tính, trong bảng): ô vuông bo 4, tắt không nền, bật nền màu nhấn với dấu tích trắng (HIG Toggles). Trên điện thoại dùng switch trong hàng.
+- Con trỏ như web của Apple (apple.com, developer.apple.com): bàn tay cho mọi thứ bấm được; mũi tên cho control bị tắt và mục đang mở. HIG Pointing devices là của app macOS native, không áp cho web.
 
 ### ActivityIndicator (web, G2)
 
@@ -199,7 +215,10 @@ Bảng dữ liệu của web dashboard: danh sách stop, plan, xe, thành viên;
 - Cột số (`numeric`): ETA, khung giờ, km, tải — căn phải, `tabular-nums`.
 - `onRowClick` + `selectedKey`: dòng đang chọn nền `surface-tint`; chọn được bằng bàn phím (Tab, Enter). Trên màn soạn plan, chọn dòng thì marker tương ứng trên bản đồ `selected`, và ngược lại.
 - `empty`: câu hướng dẫn việc tiếp theo, ví dụ "Chưa có điểm giao. Thêm điểm giao để tối ưu lộ trình."
-- Phân trang theo API (`page`, `size`) đặt dưới bảng; component không tự phân trang.
+- Phân trang theo API (`page`, `size`); component không tự phân trang. Máy tính: thanh trang dưới bảng; điện thoại: `Pager pinned` trên danh sách, ghim dưới thanh trên cùng, có mép mờ khi dính, không ghim khi cửa sổ thấp (§8.17).
+- Chữ dài trong bảng (G2.11): `pw-cell-title` (2 dòng rồi "…", bẻ cả chuỗi không dấu cách, kèm `title`), `pw-cell-sub` (1 dòng), `pw-cell-main` (cột chính tối thiểu 12rem), `pw-nowrap` cho giá trị ngắn; bảng hẹp gập cột phụ thành dòng dưới tên (`pw-col-fold` / `pw-cell-fold`, container query). Chỉ cắt khi có màn xem đủ (trang hoặc sheet của dòng).
+- Chọn ngày (`DatePickerFilter`): máy tính lịch bật ra (compact); điện thoại lịch inline trong trang dưới hàng lọc (HIG Date pickers, §8.11). Đầu lịch "Tháng x, năm ›" mở hai bánh xe tháng/năm (`Wheel`, §8.12); ô ngày tròn; ‹ › theo hình nút của cách nhập; nút xoá ngày "Bỏ chọn ngày".
+- Bảng vừa một màn hình: `useFitRows` (`shared/hooks`) + dòng mẫu ẩn cao nhất có thể (G2.9).
 - Ô chứa trạng thái dùng `StatusPill`.
 - `onRowContextMenu(row, {x, y})`: nhấp chuột phải hàng → trang mở menu ngữ cảnh của hàng tại con trỏ (G2.13); danh sách hàng trên điện thoại mở cùng menu bằng chạm giữ.
 

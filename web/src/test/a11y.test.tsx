@@ -11,7 +11,7 @@ import {
   Dialog,
   ErrorBanner,
   MapMarker,
-  OtpInput,
+  CodeField,
   ProgressBar,
   StatusPill,
   StopCard,
@@ -57,7 +57,7 @@ function ComponentGallery() {
       />
       <MapMarker sequence={3} routeIndex={1} />
       <ErrorBanner title="Email hoặc mật khẩu không đúng." />
-      <OtpInput label="Mã xác thực" value="48" onChange={() => {}} />
+      <CodeField label="Mã xác thực" value="48" onChange={() => {}} />
       <Toast tone="success" onClose={() => {}}>
         Đã giao việc cho 2 tài xế.
       </Toast>
@@ -180,7 +180,8 @@ describe('accessibility', () => {
     );
     const { container } = renderApp(path);
     await screen.findByRole('heading', { name: heading, level: 1 });
-    await screen.findAllByRole('row');
+    // Tests run at phone width: vehicles, members and invitations are lists of rows there (G3).
+    await screen.findAllByRole('listitem');
     expect(await violations(container)).toEqual([]);
   });
 

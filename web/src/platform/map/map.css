@@ -1,6 +1,6 @@
 /*
- * Maps (prototype "Cửa hàng", "Soạn plan"): always light, + / − in the top-right corner (".map-ctl"), attribution
- * bottom-right. Fixed colours here are the map's own (tiles are light in both themes, DESIGN_SYSTEM).
+ * Maps (prototype "Cửa hàng", "Soạn plan"): always light, + / − in the top-right corner on glass (OWNER_UI_REDESIGN
+ * §8, D15), attribution bottom-right. Fixed colours here are the map's own (tiles are light in both themes, DESIGN_SYSTEM).
  */
 .pw-map {
   position: relative;
@@ -9,7 +9,8 @@
   min-height: 240px;
   overflow: hidden;
   border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
+  /* In a group with 20px padding a concentric radius would be negative: the fallback radius (S2). */
+  border-radius: var(--radius-md);
   background: #f2efe9;
   isolation: isolate;
 }
@@ -22,19 +23,39 @@
 .pw-map-pick .pw-map-canvas {
   cursor: crosshair;
 }
+/* Controls float over the map on glass, with a thin stroke and a light shadow so they stand out from it (HIG Maps:
+   "Consider using a thin stroke or light drop shadow"; H5: glass for controls over content). Zoom is one group: + over
+   −, a hairline between. With a mouse rounded rectangles (S3); for touch 44px, the group a capsule. */
 .pw-map-zoom {
   position: absolute;
-  top: 8px;
-  right: 8px;
+  top: 10px;
+  right: 10px;
   z-index: 1000;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  overflow: hidden;
+  border: 1px solid rgba(24, 35, 31, 0.14);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.78);
+  box-shadow: 0 2px 8px rgba(24, 35, 31, 0.18);
+  -webkit-backdrop-filter: blur(16px) saturate(1.4);
+  backdrop-filter: blur(16px) saturate(1.4);
+}
+.pw-map-zoom .pw-map-ctl {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+.pw-map-zoom .pw-map-ctl + .pw-map-ctl {
+  border-top: 1px solid rgba(24, 35, 31, 0.14);
 }
 .pw-map-actions {
   position: absolute;
-  left: 8px;
-  top: 8px;
+  left: 10px;
+  top: 10px;
   z-index: 1000;
 }
 .pw-map-ctl {
@@ -49,10 +70,18 @@
   line-height: 1;
   font-weight: 600;
   color: #18231f;
-  background: #ffffff;
-  border: 1px solid #56635e;
-  border-radius: 4px;
+  border: 1px solid rgba(24, 35, 31, 0.14);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.78);
+  box-shadow: 0 2px 8px rgba(24, 35, 31, 0.18);
+  -webkit-backdrop-filter: blur(16px) saturate(1.4);
+  backdrop-filter: blur(16px) saturate(1.4);
   cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color 0.15s ease;
+}
+.pw-map-ctl:active:not(:disabled) {
+  background: rgba(220, 235, 230, 0.95);
 }
 .pw-map-ctl-text {
   padding: 0 12px;
@@ -60,13 +89,31 @@
   line-height: 20px;
 }
 @media (hover: hover) {
-  .pw-map-ctl:hover {
-    background: #dcebe6;
+  .pw-map-ctl:hover:not(:disabled) {
+    background: rgba(220, 235, 230, 0.9);
+  }
+}
+@media (pointer: coarse) {
+  .pw-map-ctl {
+    min-width: 44px;
+    height: 44px;
+  }
+  .pw-map-ctl-text,
+  .pw-map-zoom {
+    border-radius: 22px;
+  }
+}
+@media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
+  .pw-map-zoom,
+  .pw-map-ctl {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    background: #ffffff;
   }
 }
 .pw-map-ctl:disabled {
   opacity: 0.4;
-  cursor: not-allowed;
+  cursor: default;
 }
 .pw-map-ctl:focus-visible {
   outline: 2px solid #0b6a5c;
