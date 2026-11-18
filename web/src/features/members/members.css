@@ -14,7 +14,6 @@
   background: none;
   border: 0;
   border-bottom: 2px solid transparent;
-  cursor: pointer;
 }
 @media (hover: hover) {
   .pw-tab:hover {
@@ -58,7 +57,6 @@
   color: var(--ink);
   font: inherit;
   white-space: nowrap;
-  cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   transition: background-color 0.15s ease;
 }

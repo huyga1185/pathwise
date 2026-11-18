@@ -299,7 +299,6 @@
   color: var(--ink);
   background: none;
   border: 0;
-  cursor: pointer;
 }
 .pw-stop-pick:focus-visible {
   outline: 2px solid var(--route);
@@ -421,7 +420,6 @@
   color: var(--route);
   background: none;
   border: 0;
-  cursor: pointer;
 }
 @media (hover: hover) {
   .pw-link-button:hover {
@@ -519,7 +517,6 @@
   color: inherit;
   background: none;
   border: 0;
-  cursor: pointer;
 }
 .pw-route-toggle:focus-visible {
   outline: 2px solid var(--route);
@@ -950,7 +947,6 @@
   align-items: flex-start;
   gap: var(--space-2);
   padding: var(--space-2) 0;
-  cursor: pointer;
 }
 .pw-copy-option input {
   margin-top: 3px;

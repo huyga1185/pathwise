@@ -44,7 +44,6 @@
   border: 1px solid transparent;
   /* Capsules; with a mouse only the prominent action stays one (S3, WWDC25 356: rules at the end of this file). */
   border-radius: var(--radius-full);
-  cursor: pointer;
 }
 .pw-btn-lg {
   height: 48px;
@@ -147,10 +146,8 @@
 }
 .pw-btn:disabled {
   opacity: 0.5;
-  cursor: not-allowed;
 }
 .pw-btn[aria-busy='true'] {
-  cursor: progress;
 }
 
 /* ---------- TextField ---------- */
@@ -214,7 +211,6 @@ select.pw-field-input {
   background-repeat: no-repeat;
   background-position: right 12px center;
   background-size: 16px 16px;
-  cursor: pointer;
 }
 [data-theme='dark'] select.pw-field-input {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23A2B0AA' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M8 9.5l4-4 4 4M8 14.5l4 4 4-4'/%3E%3C/svg%3E");
@@ -378,7 +374,6 @@ textarea.pw-field-input {
   text-align: right;
 }
 .pw-row-clickable {
-  cursor: pointer;
 }
 @media (hover: hover) {
   .pw-row-clickable:hover td {
@@ -645,7 +640,6 @@ textarea.pw-field-input {
   border: 0;
   border-radius: var(--radius-sm);
   color: var(--route);
-  cursor: pointer;
 }
 .pw-toast-close {
   color: var(--ink-muted);
@@ -709,7 +703,6 @@ textarea.pw-field-input {
   /* Round for touch; with a mouse a rounded rectangle (S3, rules at the end of this file). */
   border-radius: 50%;
   color: var(--ink-muted);
-  cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   transition:
     background-color 0.15s ease,
@@ -840,7 +833,6 @@ textarea.pw-field-input {
   align-items: center;
   gap: var(--space-2);
   min-height: 36px;
-  cursor: pointer;
 }
 .pw-check input {
   /* macOS checkbox (HIG Toggles, Checkboxes; images: off "a small rounded square with no fill", on "a small rounded
@@ -905,7 +897,6 @@ textarea.pw-field-input {
 }
 .pw-check input:disabled,
 .pw-check input:disabled + span {
-  cursor: not-allowed;
 }
 
 /* Card of a page section (prototype ".card"): form beside a list, invitation form. */
@@ -966,7 +957,6 @@ textarea.pw-field-input {
   background: none;
   border: 0;
   border-bottom: 1px solid var(--line);
-  cursor: pointer;
 }
 .pw-pin-results li:last-child .pw-pin-result {
   border-bottom: 0;
@@ -1055,7 +1045,6 @@ textarea.pw-field-input {
   font-weight: 600;
   color: var(--ink-muted);
   background: var(--surface-raised);
-  cursor: pointer;
 }
 
 .pw-segmented-btn[aria-pressed='true'] {
@@ -1240,7 +1229,6 @@ textarea.pw-field-input {
   border-radius: 50%;
   background: transparent;
   color: var(--ink-muted);
-  cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }
 @media (hover: hover) {
@@ -1271,7 +1259,6 @@ textarea.pw-field-input {
   font: inherit;
   font-size: 0.875rem;
   font-weight: 700;
-  cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }
 /* States on one scale for every shell control (route tint): rest, +8 hover (pointer only), +10 while its menu is open,
@@ -1343,7 +1330,6 @@ textarea.pw-field-input {
   font-size: 0.875rem;
   text-align: left;
   text-decoration: none;
-  cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }
 @media (hover: hover) {
@@ -1779,7 +1765,6 @@ textarea.pw-field-input {
   font: inherit;
   font-size: 0.875rem;
   white-space: nowrap;
-  cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   transition: background-color 0.15s ease;
 }
@@ -1864,7 +1849,6 @@ textarea.pw-field-input {
   font-size: 0.875rem;
   text-align: left;
   white-space: nowrap;
-  cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   transition: background-color 0.15s ease;
 }
@@ -1914,7 +1898,6 @@ textarea.pw-field-input {
   border: 0;
   background: transparent;
   font: inherit;
-  cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   transition: background-color 0.15s ease;
 }
@@ -2049,7 +2032,6 @@ textarea.pw-field-input {
   background: transparent;
   color: inherit;
   font: inherit;
-  cursor: pointer;
 }
 .pw-th-sort-mark {
   display: inline-flex;
@@ -2345,7 +2327,6 @@ textarea.pw-field-input {
   border-radius: 50%;
   background: color-mix(in srgb, var(--ink) 7%, transparent);
   color: var(--ink);
-  cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   transition: background-color 0.15s ease;
 }
@@ -2382,7 +2363,6 @@ textarea.pw-field-input {
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
-  cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   transition: background-color 0.15s ease;
 }
@@ -2733,7 +2713,6 @@ textarea.pw-field-input {
   color: var(--route);
   font: inherit;
   font-size: 1rem;
-  cursor: pointer;
   transition: background-color 0.15s ease;
 }
 .pw-alert-button + .pw-alert-button {
@@ -2787,7 +2766,6 @@ textarea.pw-field-input {
   color: var(--route);
   font: inherit;
   font-size: 1.0625rem;
-  cursor: pointer;
 }
 .pw-action-sheet-group .pw-action-sheet-button + .pw-action-sheet-button {
   border-top: 1px solid var(--line);
@@ -2925,7 +2903,6 @@ button.pw-list-row-main {
   background: transparent;
   font: inherit;
   text-align: left;
-  cursor: pointer;
 }
 button.pw-list-row-main:disabled {
   cursor: default;
@@ -2945,7 +2922,6 @@ button.pw-list-row-main:disabled {
   color: var(--ink);
   font: inherit;
   text-align: left;
-  cursor: pointer;
 }
 .pw-switch-row:disabled {
   cursor: default;
@@ -3043,7 +3019,6 @@ button.pw-list-row-main:disabled {
   font-size: 0.875rem;
   font-weight: 500;
   white-space: nowrap;
-  cursor: pointer;
   transition:
     background-color 0.2s ease,
     box-shadow 0.2s ease;
@@ -3150,4 +3125,35 @@ a.pw-segment {
   .pw-members-panel.is-prev {
     animation-name: pw-result-fade;
   }
+}
+
+/* ---------- Pointer (HIG Pointing devices, macOS pointers) ----------
+   Arrow: "Standard pointer for selecting and interacting with content and interface elements", so buttons, checkboxes,
+   switches, selects, tabs, rows and the links that work as controls (sidebar, tab bar, tabs, button links, rows, back)
+   show the arrow, enabled or not. Pointing hand only for "a URL link to a webpage, document, or other item": a link in
+   text keeps the browser's hand. Others kept for what they mean: I-beam in text fields, open hand on a drag handle,
+   resize left-right on a column edge, cross on the map while placing a pin (owner's choice 2026-11-18). */
+button,
+select,
+label,
+summary,
+[role='button'],
+[role='tab'],
+[role='switch'],
+[role='menuitem'],
+[role='menuitemradio'],
+[role='option'],
+input[type='checkbox'],
+input[type='radio'],
+.pw-row-clickable,
+a.pw-btn,
+a.pw-sidebar-item,
+a.pw-tabbar-item,
+a.pw-segment,
+a.pw-store-tab,
+a.pw-list-row-main,
+a.pw-back-link,
+a.pw-account-item,
+a.pw-auth-logo {
+  cursor: default;
 }
