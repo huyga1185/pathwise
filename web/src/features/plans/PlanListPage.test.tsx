@@ -129,6 +129,8 @@ describe('Danh sách kế hoạch', () => {
   });
 
   it('chọn ngày bằng lịch: ngày áp dụng ngay, lịch đóng khi bấm Escape; "Mọi ngày" bỏ ngày', async () => {
+    // A wide window: the calendar is a popover (compact date picker).
+    wideWindow();
     server.use(
       http.get(`${API}/plans`, () => ok(sample<{ data: Page }>('plan-list').data)),
       ...signedInHandlers(),
@@ -153,6 +155,31 @@ describe('Danh sách kế hoạch', () => {
     await user.click(screen.getByRole('button', { name: 'Ngày giao: 15/01/2027' }));
     await user.click(screen.getByRole('button', { name: 'Mọi ngày' }));
     await waitFor(() => expect(router.state.location.search).toBe(''));
+  });
+
+  it('điện thoại: lịch inline nằm trong trang dưới hàng lọc (không bật ra); chọn ngày vẫn mở; bấm lại nút thì đóng', async () => {
+    server.use(
+      http.get(`${API}/plans`, () => ok(sample<{ data: Page }>('plan-list').data)),
+      ...signedInHandlers(),
+    );
+    const { router } = renderApp('/plans?date=2026-12-01');
+    const user = userEvent.setup();
+
+    const button = await screen.findByRole('button', { name: 'Ngày giao: 01/12/2026' });
+    expect(button).not.toHaveAttribute('aria-haspopup');
+    await user.click(button);
+    const calendar = screen.getByRole('group', { name: 'Ngày giao' });
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    // In the page, inside the filter row (not on document.body like a popover).
+    expect(screen.getByRole('group', { name: 'Lọc kế hoạch' }).contains(calendar)).toBe(true);
+    expect(button).toHaveAttribute('aria-expanded', 'true');
+
+    await user.click(within(calendar).getByRole('button', { name: 'Thứ Sáu, 4 tháng 12, 2026' }));
+    await waitFor(() => expect(router.state.location.search).toBe('?date=2026-12-04'));
+    expect(screen.getByRole('group', { name: 'Ngày giao' })).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Ngày giao: 04/12/2026' }));
+    await waitFor(() => expect(screen.queryByRole('group', { name: 'Ngày giao' })).not.toBeInTheDocument());
   });
 
   it('thanh trang ‹ Trang 1/2 ›: trang trên URL, trang sau gửi page=1, hai đầu mờ nút', async () => {

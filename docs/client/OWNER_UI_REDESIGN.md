@@ -360,3 +360,11 @@ Quyết định (chủ dự án chọn): máy tính dùng **tabbed control dạn
 | Sheet sửa xe, sheet thành viên | Tiêu đề ngắn: "Sửa xe", "Thành viên"; tên đầy đủ nằm trong sheet (ô Tên xe; dòng tên + email đầu sheet thành viên, không cắt vì đây là màn để đọc phần bị cắt). Tiêu đề sheet nếu vẫn dài thì một dòng "…" | [Apple] Toolbars: *"keep the title under 15 characters"*; Typography |
 | Menu tài khoản | Họ tên, email, tên cửa hàng mỗi dòng tối đa 2 dòng rồi "…" (đủ chữ ở trang Tài khoản, Cửa hàng) | G2.11 |
 
+### 8.11 Chọn ngày trên điện thoại: inline (2026-11-18)
+
+Chủ dự án: lịch kiểu bật ra (compact) trên điện thoại có thể bị che. Đo: 320×568 trang Kế hoạch đáy lịch y = 519 dưới mép trên tab bar (496); 390×844 "Đến ngày" của Nhật ký đáy 766, sát tab bar (768); 320px Nhật ký lịch lật lên che tiêu đề và tab.
+
+HIG Date pickers (iOS): *"Compact — A button that displays editable date and time content in a modal view"*; *"Inline — … for dates and times, an inline calendar view"* (hình: lịch tháng hiện ngay dưới hàng của nó); *"A picker works well when displayed in context, below or in proximity to the field people are editing."*
+
+Quyết định: **điện thoại dùng inline**: bấm nút ngày thì lịch thành một khối của trang, dòng riêng dưới mọi bộ lọc, rộng bằng danh sách, đẩy danh sách xuống; mở ra thì tự cuộn vừa đủ để cả lịch nằm trên tab bar (Scroll views: *"only as much as necessary"*); chọn ngày áp dụng ngay và lịch vẫn mở; bấm lại nút ngày, Escape hoặc bấm ra ngoài thì đóng; mỗi lần một lịch. Nút không còn `aria-haspopup`, lịch là `role="group"` có tên. **Máy tính giữ compact** (popover; macOS graphical trong popover). Đo lại: 390×844 và 320×568, cả ba nút ngày (Kế hoạch, Nhật ký Từ/Đến), lịch không bị che.
+

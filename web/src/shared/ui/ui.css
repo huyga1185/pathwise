@@ -3210,3 +3210,47 @@ a[aria-current='page'],
 .pw-cell-plain {
   font-weight: 400;
 }
+
+/* Inline date picker on a phone (HIG Date pickers, Inline; OWNER_UI_REDESIGN §8.11): the calendar is a block of the
+   page on its own line under every filter, as wide as the list, pushing the list down; nothing can cover it. The
+   filter's wrapper steps aside so the calendar is an item of the filter row. */
+@media (max-width: 959.98px) {
+  .pw-filter-wrap.has-inline-calendar {
+    display: contents;
+  }
+}
+.pw-calendar-inline {
+  order: 99;
+  flex-basis: 100%;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px;
+  border-radius: var(--radius-lg);
+  background: var(--surface-raised);
+  transform-origin: top center;
+  /* Scrolled into view clear of the floating tab bar and of the top bar. */
+  scroll-margin-bottom: calc(var(--tabbar-height) + 2 * var(--shell-gap) + env(safe-area-inset-bottom) + 8px);
+  scroll-margin-top: 72px;
+  animation: pw-calendar-inline-in 0.22s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.pw-calendar-inline.is-closing {
+  animation: pw-calendar-inline-out 0.14s ease-in both;
+}
+@keyframes pw-calendar-inline-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+}
+@keyframes pw-calendar-inline-out {
+  to {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pw-calendar-inline,
+  .pw-calendar-inline.is-closing {
+    animation-name: pw-result-fade;
+  }
+}

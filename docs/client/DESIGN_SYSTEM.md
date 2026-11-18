@@ -216,6 +216,7 @@ Bảng dữ liệu của web dashboard: danh sách stop, plan, xe, thành viên;
 - `empty`: câu hướng dẫn việc tiếp theo, ví dụ "Chưa có điểm giao. Thêm điểm giao để tối ưu lộ trình."
 - Phân trang theo API (`page`, `size`) đặt dưới bảng; component không tự phân trang.
 - Chữ dài trong bảng (G2.11): `pw-cell-title` (2 dòng rồi "…", bẻ cả chuỗi không dấu cách, kèm `title`), `pw-cell-sub` (1 dòng), `pw-cell-main` (cột chính tối thiểu 12rem), `pw-nowrap` cho giá trị ngắn; bảng hẹp gập cột phụ thành dòng dưới tên (`pw-col-fold` / `pw-cell-fold`, container query). Chỉ cắt khi có màn xem đủ (trang hoặc sheet của dòng).
+- Chọn ngày (`DatePickerFilter`): máy tính lịch bật ra (compact); điện thoại lịch inline trong trang dưới hàng lọc (HIG Date pickers, §8.11).
 - Bảng vừa một màn hình: `useFitRows` (`shared/hooks`) + dòng mẫu ẩn cao nhất có thể (G2.9).
 - Ô chứa trạng thái dùng `StatusPill`.
 - `onRowContextMenu(row, {x, y})`: nhấp chuột phải hàng → trang mở menu ngữ cảnh của hàng tại con trỏ (G2.13); danh sách hàng trên điện thoại mở cùng menu bằng chạm giữ.

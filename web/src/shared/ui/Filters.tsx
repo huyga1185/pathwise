@@ -10,7 +10,8 @@ import {
   type RefObject,
 } from 'react';
 import { createPortal } from 'react-dom';
-import { useExit } from '@/shared/hooks/useExit';
+import { reducedMotion, useExit } from '@/shared/hooks/useExit';
+import { useMediaQuery, WIDE_QUERY } from '@/shared/hooks/useMediaQuery';
 import {
   CalendarIcon,
   CheckIcon,
@@ -455,6 +456,11 @@ export function DatePickerFilter({
   onChange: (value: string | undefined) => void;
 }) {
   const { open, setOpen, presence, anchor, panel, close } = usePopover();
+  // A wide window: a compact date picker, the calendar in a popover from the button (HIG Date pickers, macOS graphical
+  // style in a popover). A phone: an inline date picker, the calendar in the page under the filters, pushing the list
+  // down (HIG Date pickers: "Inline — … an inline calendar view"; a picker "works well when displayed in context, below
+  // … the field"): a popover there could reach under the tab bar or over the title (owner, 2026-11-18, §8.11).
+  const wide = useMediaQuery(WIDE_QUERY);
   const dialogId = useId();
   const titleId = useId();
   // The day with keyboard focus; the month shown is its month.
@@ -465,11 +471,14 @@ export function DatePickerFilter({
   useEffect(() => {
     if (!open) return;
     if (!moved.current) {
-      grid.current?.querySelector<HTMLElement>('[tabindex="0"]')?.focus();
+      grid.current?.querySelector<HTMLElement>('[tabindex="0"]')?.focus({ preventScroll: !wide });
+      // Inline: bring the whole calendar into view, above the tab bar, scrolling only as much as needed (HIG Scroll
+      // views: "scroll automatically… only as much as necessary"; ui.css scroll-margin).
+      if (!wide) panel.current?.scrollIntoView?.({ block: 'nearest', behavior: reducedMotion() ? 'auto' : 'smooth' });
       return;
     }
     grid.current?.querySelector<HTMLElement>(`[data-day="${focusDay}"]`)?.focus();
-  }, [focusDay, open]);
+  }, [focusDay, open, wide, panel]);
 
   const { year, month } = parse(focusDay);
   const first = new Date(Date.UTC(year, month, 1));
@@ -515,13 +524,84 @@ export function DatePickerFilter({
   };
 
   const monthTitle = `Tháng ${month + 1}, ${year}`;
+  const calendar = (
+    <>
+      <div className="pw-calendar-head">
+        <strong id={titleId} aria-live="polite">
+          {monthTitle}
+        </strong>
+        <button
+          type="button"
+          className="pw-calendar-nav"
+          aria-label={previousMonthText}
+          onClick={() => go(addMonths(focusDay, -1))}
+        >
+          <ChevronLeftIcon />
+        </button>
+        <button
+          type="button"
+          className="pw-calendar-nav"
+          aria-label={nextMonthText}
+          onClick={() => go(addMonths(focusDay, 1))}
+        >
+          <ChevronRightIcon />
+        </button>
+      </div>
+      <div className="pw-calendar-grid" role="grid" aria-labelledby={titleId} ref={grid} onKeyDown={onGridKey}>
+        <div role="row" className="pw-calendar-row">
+          {WEEKDAYS.map((name) => (
+            <span key={name} role="columnheader" className="pw-calendar-weekday">
+              {name}
+            </span>
+          ))}
+        </div>
+        {Array.from({ length: cells.length / 7 }, (_, week) => (
+          <div role="row" key={week} className="pw-calendar-row">
+            {cells.slice(week * 7, week * 7 + 7).map((day, index) =>
+              day ? (
+                <span role="gridcell" key={day} aria-selected={day === value}>
+                  <button
+                    type="button"
+                    data-day={day}
+                    tabIndex={day === focusDay ? 0 : -1}
+                    className={cx('pw-calendar-day', day === value && 'is-selected', day === today && 'is-today')}
+                    aria-label={dayName(day)}
+                    aria-current={day === today ? 'date' : undefined}
+                    onClick={() => choose(day)}
+                  >
+                    {parse(day).day}
+                  </button>
+                </span>
+              ) : (
+                <span role="gridcell" key={`empty-${index}`} />
+              ),
+            )}
+          </div>
+        ))}
+      </div>
+      {value ? (
+        <div className="pw-calendar-foot">
+          <button
+            type="button"
+            className="pw-calendar-link"
+            onClick={() => {
+              onChange(undefined);
+              close(true);
+            }}
+          >
+            {clearText}
+          </button>
+        </div>
+      ) : null}
+    </>
+  );
   return (
-    <span className="pw-filter-wrap">
+    <span className={cx('pw-filter-wrap', !wide && 'has-inline-calendar')}>
       <button
         ref={anchor}
         type="button"
         className={cx('pw-filter', value && 'is-set')}
-        aria-haspopup="dialog"
+        aria-haspopup={wide ? 'dialog' : undefined}
         aria-expanded={open}
         aria-controls={open ? dialogId : undefined}
         aria-label={`${label}: ${value ? shortDate(value) : emptyText}`}
@@ -535,84 +615,32 @@ export function DatePickerFilter({
         <span className="pw-filter-label">{label}:</span>
         <span className="pw-filter-value pw-filter-date">{value ? shortDate(value) : emptyText}</span>
       </button>
-      <Panel
-        presence={presence}
-        anchorRef={anchor}
-        panelRef={panel}
-        className="pw-calendar"
-        id={dialogId}
-        role="dialog"
-        aria-label={label}
-        onKeyDown={onPanelKey}
-      >
-        <div className="pw-calendar-head">
-          <strong id={titleId} aria-live="polite">
-            {monthTitle}
-          </strong>
-          <button
-            type="button"
-            className="pw-calendar-nav"
-            aria-label={previousMonthText}
-            onClick={() => go(addMonths(focusDay, -1))}
-          >
-            <ChevronLeftIcon />
-          </button>
-          <button
-            type="button"
-            className="pw-calendar-nav"
-            aria-label={nextMonthText}
-            onClick={() => go(addMonths(focusDay, 1))}
-          >
-            <ChevronRightIcon />
-          </button>
+      {wide ? (
+        <Panel
+          presence={presence}
+          anchorRef={anchor}
+          panelRef={panel}
+          className="pw-calendar"
+          id={dialogId}
+          role="dialog"
+          aria-label={label}
+          onKeyDown={onPanelKey}
+        >
+          {calendar}
+        </Panel>
+      ) : presence !== 'closed' ? (
+        <div
+          ref={panel}
+          id={dialogId}
+          role="group"
+          aria-label={label}
+          className={cx('pw-calendar pw-calendar-inline', presence === 'closing' && 'is-closing')}
+          onKeyDown={onPanelKey}
+          {...(presence === 'closing' ? { 'aria-hidden': true, inert: true } : {})}
+        >
+          {calendar}
         </div>
-        <div className="pw-calendar-grid" role="grid" aria-labelledby={titleId} ref={grid} onKeyDown={onGridKey}>
-          <div role="row" className="pw-calendar-row">
-            {WEEKDAYS.map((name) => (
-              <span key={name} role="columnheader" className="pw-calendar-weekday">
-                {name}
-              </span>
-            ))}
-          </div>
-          {Array.from({ length: cells.length / 7 }, (_, week) => (
-            <div role="row" key={week} className="pw-calendar-row">
-              {cells.slice(week * 7, week * 7 + 7).map((day, index) =>
-                day ? (
-                  <span role="gridcell" key={day} aria-selected={day === value}>
-                    <button
-                      type="button"
-                      data-day={day}
-                      tabIndex={day === focusDay ? 0 : -1}
-                      className={cx('pw-calendar-day', day === value && 'is-selected', day === today && 'is-today')}
-                      aria-label={dayName(day)}
-                      aria-current={day === today ? 'date' : undefined}
-                      onClick={() => choose(day)}
-                    >
-                      {parse(day).day}
-                    </button>
-                  </span>
-                ) : (
-                  <span role="gridcell" key={`empty-${index}`} />
-                ),
-              )}
-            </div>
-          ))}
-        </div>
-        {value ? (
-          <div className="pw-calendar-foot">
-            <button
-              type="button"
-              className="pw-calendar-link"
-              onClick={() => {
-                onChange(undefined);
-                close(true);
-              }}
-            >
-              {clearText}
-            </button>
-          </div>
-        ) : null}
-      </Panel>
+      ) : null}
     </span>
   );
 }
