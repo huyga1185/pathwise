@@ -233,7 +233,7 @@ Không làm trong G2: tiêu đề lớn thu nhỏ khi cuộn (D5 hẹp; cần th
 | Mục | Kết quả | Đo / ghi chú |
 |---|---|---|
 | C1 vùng bấm | ✅ | Viên thuốc lọc 36px với chuột, 44px khi chạm; mục menu 36 / 44; ô ngày trong lịch 40 / 44 (lịch rộng 320 / 344, hẹp hơn thì ô co theo màn); nút "+" 44×44; hàng danh sách cao 60px; nút sao chép 36 / 44 |
-| C3 trạng thái nhấn | ✅ (đã sửa) | Viên thuốc, tiêu đề cột, hàng: rê (chỉ khi có chuột) và nhấn có màu riêng. Chủ dự án thấy vùng rê/nhấn của "Xoá bộ lọc" và nút sao chép vẫn vuông, không nhất quán: cả app đổi nút không nền (`pw-btn-quiet`) và nút tiêu đề cột thành viên thuốc, nút chỉ có biểu tượng (`pw-icon-button`) thành hình tròn có trạng thái nhấn ([Apple] Buttons: "prefer circular or capsule-shape buttons", "an icon-only button uses a circle shape") |
+| C3 trạng thái nhấn | ✅ (đã sửa) | Viên thuốc, tiêu đề cột, hàng: rê (chỉ khi có chuột) và nhấn có màu riêng. Chủ dự án thấy vùng rê/nhấn của "Xoá bộ lọc" và nút sao chép vẫn vuông, không nhất quán: cả app đổi nút không nền (`pw-btn-quiet`) và nút tiêu đề cột thành viên thuốc, nút chỉ có biểu tượng (`pw-icon-button`) thành hình tròn có trạng thái nhấn (*Đính chính 2026-11-18:* hai câu Buttons trích ở đây — "prefer circular or capsule-shape buttons", "an icon-only button uses a circle shape" — nằm trong mục visionOS; quy tắc đúng là S3 (WWDC25 356), xem §8.6) |
 | C4 hover chỉ khi có chuột | ✅ | Mọi hover mới nằm trong `@media (hover: hover)` |
 | C6 focus nhìn thấy | ✅ | Viên thuốc viền `route` 2px khi focus bên trong (`:focus-within`) |
 | C8 nhãn trợ năng | ✅ | "Ngày giao: Tất cả" (nút mở `dialog` lịch, ô ngày đọc "Thứ Ba, 17 tháng 11, 2026", `aria-current=date` cho hôm nay), "Trạng thái: Tất cả" (nút mở `menu`, mục `menuitemradio` + `aria-checked`), "Tạo kế hoạch" (nút +), `aria-sort`, nhóm "Lọc kế hoạch" |
@@ -300,3 +300,16 @@ Không làm trong G2: tiêu đề lớn thu nhỏ khi cuộn (D5 hẹp; cần th
 | F-73 nút viền rỗng | ✅ đã sửa | Không còn kiểu viền rỗng trong app |
 
 Để lại: hộp thoại của kế hoạch (sao chép, nhập file, giao việc, huỷ kế hoạch, bản đồ chọn ghim) vẫn dùng `Dialog` cũ — đổi sang `Sheet` / `Alert` ở G4 (form, sao chép, nhập file) và G5 (giao việc, huỷ, ghim); khu quản trị (`/admin`) chưa đổi theo G3 (bảng có viền, nút trong bảng) — làm khi tới phần quản trị.
+
+### 8.6 Sửa sau góp ý của chủ dự án (2026-11-18)
+
+| # | Góp ý | Sửa | Nguồn |
+|---|---|---|---|
+| 1 | Thành viên → Lời mời không có chuyển động | Ô nổi của segmented control trượt sang ô mới; gạch chân của tab trượt và co giãn theo tab (`useTabUnderline`); phần mới trượt vào từ phía tab của nó (như lật trang G2.9); áp cả tab Cửa hàng / Nhật ký. Giảm chuyển động: không trượt | [Apple] Segmented controls; Motion |
+| 2 | "Đi giao" nhảy | Chữ "Có/Không" cạnh checkbox đổi theo trạng thái làm cột rộng 122 → 155px: bỏ chữ, checkbox trong hàng bảng không có tiêu đề (tiêu đề cột nói nó là gì). Vẫn chờ server rồi mới đổi tick (chủ dự án giữ quy tắc SCREENS) | [Apple] Toggles: "In an editable checklist, a checkbox can appear without a title" |
+| 3 | Menu vai trò ở hàng cuối đẩy bảng lên | Menu nằm trong khung bảng (cuộn được) nên khung cuộn 74px: mọi menu/khung bật ra (pop-up, lịch, chọn trang) vẽ trên `body`, đặt theo nút, lật lên khi bên dưới hết chỗ, bám theo khi cuộn | [Apple] Menus, Popovers (nổi trên nội dung) |
+| 4 | Checkbox có thể lệch Apple | iOS không có checkbox, switch chỉ trong hàng danh sách: "Đang dùng" trong sheet xe → switch; checkbox chỉ còn trong bảng màn rộng (macOS) | [Apple] Toggles (iOS: "Use the switch toggle style only in a list row"; macOS: checkbox) |
+| 5, 6, 8 | Ô nhập, ô chọn trong sheet, Cửa hàng, Tài khoản chưa chuẩn | Ô nhập/ô chọn của app dùng đúng kiểu đã đối chiếu ở trang đăng nhập (`APPLE_CHECKLIST` §3.2): nền fill nhạt, viền 1px đạt 3:1, focus sáng viền; ô chọn có ⌃⌄; nút trên bản đồ thành kính nổi có viền mảnh và bóng nhẹ, khung bản đồ bán kính dự phòng 8 | [Apple] HIG Text fields; Maps ("thin stroke or light drop shadow"); H5; S2 |
+| — | **Đính chính hình dạng** | Câu "prefer circular or capsule-shape buttons" (dùng ở G2 và đầu G3) thuộc mục **visionOS**. Quy tắc đúng (S3, WWDC25 356; chủ dự án chọn áp toàn app): **chuột**: chỉ hành động nổi bật là viên thuốc, nút phụ / không nền / biểu tượng, ô nhập, bộ lọc, nút "Trang x/y", ô vai trò bo góc 8; **cảm ứng**: viên thuốc 44px | [Apple] WWDC25 356 (S3) |
+| 7 | "Hồ sơ và bảo mật" chưa đổi | Mục trong menu tài khoản cũng thành "Tài khoản" | Q7 |
+| 9 | Báo cáo đổi chút ít | Do component chung; trang Báo cáo làm ở G6 | — |

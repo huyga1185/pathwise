@@ -42,7 +42,7 @@
   text-decoration: none;
   white-space: nowrap;
   border: 1px solid transparent;
-  /* Capsules (HIG Buttons: "prefer circular or capsule-shape buttons… the capsule shape in a horizontal row"). */
+  /* Capsules; with a mouse only the prominent action stays one (S3, WWDC25 356: rules at the end of this file). */
   border-radius: var(--radius-full);
   cursor: pointer;
 }
@@ -74,8 +74,8 @@
 .pw-btn-quiet {
   background: transparent;
   color: var(--route);
-  /* No visible shape at rest; its hover and press fill is a capsule like every other button around it (HIG Buttons:
-     "prefer circular or capsule-shape buttons"), not a near-square 4px box. */
+  /* No visible shape at rest; its hover and press fill takes the button shape of its input (S3: rounded with a mouse,
+     capsule for touch), not a near-square 4px box. */
   border-radius: var(--radius-full);
 }
 .pw-btn-danger {
@@ -703,7 +703,7 @@ textarea.pw-field-input {
   padding: 0;
   background: transparent;
   border: 0;
-  /* An icon-only button is a circle (HIG Buttons: "an icon-only button uses a circle shape"). */
+  /* Round for touch; with a mouse a rounded rectangle (S3, rules at the end of this file). */
   border-radius: 50%;
   color: var(--ink-muted);
   cursor: pointer;
@@ -1709,7 +1709,7 @@ textarea.pw-field-input {
   margin-top: -8px;
 }
 /* A filter is a capsule button showing its value, filled grey, no outline (HIG Buttons: system styles are filled —
-   prominent, grey, plain or glass; "prefer the capsule shape in a horizontal row of buttons"). While it filters, it is
+   prominent, grey, plain or glass; shape by input, S3). While it filters, it is
    tinted with the accent colour. */
 .pw-filter-wrap {
   position: relative;
