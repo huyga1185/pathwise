@@ -202,25 +202,25 @@
 /* Each column's least width (G4.7): enough for what it holds; the address and the names take what is left. A table
    that does not fit its group at these widths becomes rows and sheets (measured, PlanFormPage): never sideways. */
 .pw-col-label {
-  width: 6.5rem;
+  width: 6rem;
 }
 .pw-col-recipient {
-  width: 8rem;
-}
-.pw-col-phone {
   width: 7.5rem;
 }
+.pw-col-phone {
+  width: 7rem;
+}
 .pw-col-address {
-  min-width: 11rem;
+  min-width: 10rem;
 }
 .pw-col-window {
-  width: 12rem;
+  width: 11.5rem;
 }
 .pw-col-demand {
   width: 4.5rem;
 }
 .pw-col-note {
-  width: 8rem;
+  width: 7rem;
 }
 .pw-col-person {
   width: 10rem;

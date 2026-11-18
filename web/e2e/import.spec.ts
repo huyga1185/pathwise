@@ -49,7 +49,7 @@ test('nhập file điểm giao vào kế hoạch mới rồi lưu', async ({ pag
   await test.step('nhập file trong form tạo kế hoạch', async () => {
     await page.goto('plans/new');
     await page.getByRole('button', { name: 'Nhập từ file' }).click();
-    const dialog = page.getByRole('dialog', { name: 'Nhập điểm giao từ file' });
+    const dialog = page.getByRole('dialog', { name: 'Nhập từ file' });
     await dialog.getByLabel('File điểm giao (.xlsx hoặc .csv)').setInputFiles(FIXTURE);
     await expect(dialog.getByText('diem-giao.csv')).toBeVisible();
     await expect(dialog.getByText('2 thêm được')).toBeVisible();
