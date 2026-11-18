@@ -46,8 +46,26 @@
 /* The store's audit log (W11). */
 .pw-store-audit-actor {
   font-weight: 600;
-  /* In full: a log row has no view of its own to read the rest (HIG Typography: "Avoid truncating text in scrollable
-     regions unless people can open a separate view"); a long address breaks anywhere instead of overflowing. */
+  color: var(--ink);
+}
+.pw-store-audit-col-actor {
+  min-width: 10rem;
+  max-width: 18rem;
+}
+/* A row's sheet: label over value, everything in full. */
+.pw-store-audit-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin: 0;
+}
+.pw-store-audit-detail dt {
+  font-size: 0.8125rem;
+  line-height: 1.125rem;
+  color: var(--ink-muted);
+}
+.pw-store-audit-detail dd {
+  margin: 2px 0 0;
   overflow-wrap: anywhere;
 }
 /* A phone row of the log: the sentence may take two lines. */

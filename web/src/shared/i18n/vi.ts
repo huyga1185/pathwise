@@ -732,6 +732,9 @@ export const vi = {
     anyDate: 'Bỏ chọn ngày',
     loading: 'Đang tải nhật ký',
     pagerLabel: 'Trang nhật ký',
+    /** A short sheet title (HIG Toolbars: under 15 characters). */
+    detailTitle: 'Chi tiết',
+    close: 'Đóng',
   },
   storeTabs: { label: 'Cửa hàng', info: 'Thông tin và kho', audit: 'Nhật ký' },
   resetLink: {

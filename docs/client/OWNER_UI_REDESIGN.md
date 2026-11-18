@@ -345,3 +345,18 @@ Chủ dự án hỏi đổi tab "Thông tin và kho / Nhật ký", "Thành viên
 
 Quyết định (chủ dự án chọn): máy tính dùng **tabbed control dạng segmented, đặt giữa** trên nội dung, ô nổi trượt; hình theo S3 (§8.7): **chuột bo 8** (ô nổi bo 6, đồng tâm 8 − 2), cảm ứng viên thuốc. Điện thoại giữ segmented control. Bỏ `useTabUnderline` và kiểu `.pw-tabs`/`.pw-store-tabs`.
 
+### 8.10 Rà phân trang và cắt chữ các trang G3 (2026-11-18)
+
+Đối chiếu G2.9 (phân trang) và G2.11 (chữ dài) với các trang G3, thử bằng dữ liệu dài tối đa (tên xe 100, họ tên 100, email ~100, tên cửa hàng 150, chuỗi không dấu cách) ở 1440/1024/960/390/320px.
+
+**Phân trang.** Theo API_SPEC §1 chỉ Nhật ký phân trang phía server (xe, thành viên, lời mời, thiết bị là "danh sách nhỏ theo bản chất"; thiết bị hiện dần theo Q8). Nhật ký trước chỉ có `?page=` và thanh trang, cố định 20 dòng, trang cuộn. Muốn mỗi trang vừa một màn hình thì dòng phải có chiều cao giới hạn, tức phải cắt chữ, mà HIG Typography: *"Avoid truncating text in scrollable regions unless people can open a separate view to read the rest"*, và dòng nhật ký chưa có màn chi tiết. Chủ dự án chọn: **mỗi dòng mở sheet "Chi tiết"** (hành động, thời điểm có năm, người làm, IP, đủ chữ), nhờ đó áp đủ G2.9 như trang Kế hoạch: máy tính số dòng vừa cửa sổ (đo bằng dòng mẫu cao nhất: email 1 dòng + vai trò, câu 2 dòng; `useFitRows` tách ra `shared/hooks` dùng chung), điện thoại 20 dòng; giữ chiều cao một trang đầy nên thanh trang không nhảy; trang trượt, lọc mới trồi lên; trang quá cuối về trang cuối; đổi cỡ cửa sổ giữ dòng đầu. Đo: 1440×900 → 8 dòng, 1920×1080 → 11, 1280×640 → 3 (tối thiểu, đầu trang Nhật ký cao hơn Kế hoạch vì có tab và lời giới thiệu); thanh trang cùng y ở trang 1 và trang cuối; không cuộn.
+
+**Chữ dài.** Điện thoại đã đúng. Máy tính trước đây: tên dài đẩy các cột khác ra khỏi bảng (bảng cuộn ngang), biển số bẻ 3 dòng, vai trò bẻ 2 dòng; tiêu đề sheet sửa xe 5 dòng; menu tài khoản 5 dòng. Sửa:
+
+| Chỗ | Sửa | Nguồn |
+|---|---|---|
+| Bảng Xe, Thành viên, Lời mời, Nhật ký | Tên/email/câu hành động `pw-cell-title`: 2 dòng rồi "…", bẻ cả chuỗi không dấu cách, `title` có đủ chữ; email dưới tên `pw-cell-sub` 1 dòng; biển số, vai trò, IP một dòng (`pw-nowrap`); cột chính tối thiểu 12rem (bảng Kế hoạch 14rem; bảng thành viên 5 cột ở 960px thì 14 vẫn tràn 18px) | G2.11 |
+| Bảng hẹp (960px, thanh bên mở) | Thành viên cần 710px trong khung 663: dưới 46rem cột Trạng thái gập xuống dưới tên; Lời mời cần 672: dưới 44rem cột Hết hạn thành dòng phụ "Hết hạn …" | G2.11; [Apple] Lists and tables |
+| Sheet sửa xe, sheet thành viên | Tiêu đề ngắn: "Sửa xe", "Thành viên"; tên đầy đủ nằm trong sheet (ô Tên xe; dòng tên + email đầu sheet thành viên, không cắt vì đây là màn để đọc phần bị cắt). Tiêu đề sheet nếu vẫn dài thì một dòng "…" | [Apple] Toolbars: *"keep the title under 15 characters"*; Typography |
+| Menu tài khoản | Họ tên, email, tên cửa hàng mỗi dòng tối đa 2 dòng rồi "…" (đủ chữ ở trang Tài khoản, Cửa hàng) | G2.11 |
+

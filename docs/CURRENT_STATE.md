@@ -319,3 +319,4 @@ Nhóm: (1) nghiệp vụ/hiểu sai yêu cầu · (2) implementation · (3) ki�
 | 2026-11-18 | branch `feat/owner-ui-g3` | — | Đính chính con trỏ (`OWNER_UI_REDESIGN.md` §8.8 #5): theo CSS web của Apple, bàn tay cho control bấm được, mũi tên cho control bị tắt và mục đang mở. |
 | 2026-11-18 | branch `feat/owner-ui-g3` | — | Tab Thành viên/Lời mời và Cửa hàng/Nhật ký trên máy tính: tabbed control kiểu macOS đặt giữa, bo 8 (`OWNER_UI_REDESIGN.md` §8.9). |
 | 2026-11-18 | branch `feat/owner-ui-g3` | — | Tài khoản: hàng thiết bị cuối không còn dài hơn các hàng khác (bỏ khoảng đệm dưới, như hàng đầu bỏ khoảng đệm trên). |
+| 2026-11-18 | branch `feat/owner-ui-g3` | — | Rà G2.9/G2.11 cho trang G3 (`OWNER_UI_REDESIGN.md` §8.10): Nhật ký phân trang vừa màn hình + sheet chi tiết từng dòng; bảng G3 cắt tên 2 dòng, bảng hẹp gập cột; tiêu đề sheet ngắn; menu tài khoản cắt 2 dòng. |

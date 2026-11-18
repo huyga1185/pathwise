@@ -1,11 +1,12 @@
 import { useStoreReadOnly } from '@/data/meQuery';
-import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router';
 import { useStoreQuery } from '@/data/storeQuery';
 import { messageFor } from '@/shared/errors';
 import { formatDateShort, formatDayTime, formatDistance, formatDuration, todayIn } from '@/shared/format';
 import { reducedMotion, useExit } from '@/shared/hooks/useExit';
 import { cx } from '@/shared/ui/cx';
+import { useFitRows } from '@/shared/hooks/useFitRows';
 import { useMediaQuery, WIDE_QUERY } from '@/shared/hooks/useMediaQuery';
 import { vi } from '@/shared/i18n/vi';
 import {
@@ -73,7 +74,7 @@ export function PlanListPage() {
   const result = useRef<HTMLDivElement>(null);
   const probe = useRef<HTMLDivElement>(null);
   const filters = useRef<HTMLDivElement>(null);
-  const fit = useFitRows(wide, result, probe, filters);
+  const fit = useFitRows(wide, result, probe, filters, PAGE_SIZE);
   const size = wide ? (fit?.rows ?? null) : PAGE_SIZE;
   const plans = usePlans({ date, status, sort: order?.api, page, size: size ?? PAGE_SIZE }, size !== null);
   const store = useStoreQuery();
@@ -407,55 +408,6 @@ export function PlanListPage() {
       ) : null}
     </section>
   );
-}
-
-/**
- * Rows of the table that fit the window under the list's top with the pager below, nothing to scroll; measured again
- * when the window, the filters' row or the text size changes (rows grow with larger text, so fewer fit — HIG Layout).
- * At least 3 (a very short window scrolls), at most 100 (API_SPEC §1). `null` until measured; 20 where nothing can
- * be measured (tests). Also the height of a full page, which the list keeps on a short last page.
- */
-function useFitRows(
-  enabled: boolean,
-  result: RefObject<HTMLDivElement | null>,
-  probe: RefObject<HTMLDivElement | null>,
-  filters: RefObject<HTMLDivElement | null>,
-): { rows: number; height: number } | null {
-  const [fit, setFit] = useState<{ rows: number; height: number } | null>(null);
-  useLayoutEffect(() => {
-    if (!enabled) return undefined;
-    const measure = () => {
-      const list = result.current;
-      const sample = probe.current;
-      if (!list || !sample) return;
-      const head = sample.querySelector('thead')?.getBoundingClientRect().height ?? 0;
-      const row = sample.querySelector('tbody tr')?.getBoundingClientRect().height ?? 0;
-      const pager = sample.querySelector('.pw-pager')?.getBoundingClientRect().height ?? 0;
-      if (row <= 0) {
-        setFit({ rows: PAGE_SIZE, height: 0 });
-        return;
-      }
-      const main = list.closest('main');
-      const bottom = main ? Number.parseFloat(getComputedStyle(main).paddingBottom) || 0 : 0;
-      const top = list.getBoundingClientRect().top + window.scrollY;
-      const gap = Number.parseFloat(getComputedStyle(list.parentElement ?? list).rowGap) || 0; // table ↔ pager
-      const room = window.innerHeight - top - head - gap - pager - bottom - 2;
-      // Whole pixels: a row measures 56.5 here and 57 in the table (borders), which adds up over a page.
-      const rows = Math.max(3, Math.min(100, Math.floor(room / Math.ceil(row))));
-      const height = Math.ceil(head + rows * Math.ceil(row) + 2);
-      setFit((was) => (was && was.rows === rows && was.height === height ? was : { rows, height }));
-    };
-    measure();
-    window.addEventListener('resize', measure);
-    const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(measure);
-    if (probe.current) observer?.observe(probe.current);
-    if (filters.current) observer?.observe(filters.current);
-    return () => {
-      window.removeEventListener('resize', measure);
-      observer?.disconnect();
-    };
-  }, [enabled, result, probe, filters]);
-  return enabled ? fit : null;
 }
 
 /**
