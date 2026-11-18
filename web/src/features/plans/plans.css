@@ -286,12 +286,6 @@
   gap: 4px;
   max-width: 100%;
 }
-.pw-plans-why {
-  text-align: right;
-  font-size: 12px;
-  line-height: 16px;
-  color: var(--ink-muted);
-}
 .pw-plans-progress {
   display: flex;
   flex-direction: column;
@@ -310,6 +304,10 @@
   background: var(--surface-raised);
   border: 1px solid var(--danger);
   border-radius: var(--radius-md);
+}
+/* Something to do before optimizing that is not an error (no assignment yet): the same block, a neutral edge. */
+.pw-plans-missing.is-todo {
+  border-color: var(--line);
 }
 .pw-plans-missing-text {
   flex: 1 1 420px;

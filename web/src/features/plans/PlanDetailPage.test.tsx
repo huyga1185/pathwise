@@ -198,6 +198,24 @@ describe('Soạn plan — tìm toạ độ', () => {
   }, 20000);
 });
 
+describe('Chưa có phân công (§9.7)', () => {
+  it('hiện khối "Chưa có tài xế nào được phân công." với nút sang form sửa; lý do khoá chỉ cho trình đọc màn hình', async () => {
+    server.use(
+      http.get(`${API}/plans/83`, () => ok({ ...geocoded(), routes: [] })),
+      ...signedInHandlers(),
+    );
+    const { router } = renderApp('/plans/83');
+    const user = userEvent.setup();
+
+    const block = await screen.findByRole('region', { name: 'Chưa có tài xế nào được phân công.' });
+    expect(screen.getByRole('button', { name: 'Tối ưu lộ trình' })).toHaveAccessibleDescription(
+      'Thêm phân công tài xế để tối ưu.',
+    );
+    await user.click(within(block).getByRole('button', { name: 'Thêm phân công' }));
+    await waitFor(() => expect(router.state.location.pathname).toBe('/plans/83/edit'));
+  });
+});
+
 describe('Tìm lại một địa chỉ (G4 §9.5)', () => {
   it('trong lúc chờ: "Đang tìm toạ độ…" cạnh nút; bản đồ và các nút giữ nguyên (không tắt, không mất)', async () => {
     let answer: () => void = () => {};

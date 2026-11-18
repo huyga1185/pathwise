@@ -231,7 +231,9 @@ function GeocodeView({ plan }: { plan: PlanDetail }) {
                 {g.optimize}
               </Button>
             </div>
-            <span id="optimize-why" className="pw-plans-why">
+            {/* Read with the button (aria-describedby); on screen each reason has its own place: the block below for
+                what to do, the progress and spinners for a running task (§9.7, owner's trial 2026-11-18). */}
+            <span id="optimize-why" className="pw-visually-hidden">
               {why}
             </span>
           </div>
@@ -268,6 +270,18 @@ function GeocodeView({ plan }: { plan: PlanDetail }) {
             onClick={() => void run(() => planApi.geocode(plan.id, plan.version))}
           >
             {g.retryAll}
+          </Button>
+        </section>
+      ) : null}
+
+      {!busy && stops.length > 0 && plan.routes.length === 0 ? (
+        <section className="pw-plans-missing is-todo" aria-labelledby="assign-alert">
+          <div className="pw-plans-missing-text">
+            <h2 id="assign-alert">{g.noAssignmentsTitle}</h2>
+            <p className="pw-muted">{g.noAssignmentsNote}</p>
+          </div>
+          <Button variant="secondary" disabled={readOnly} onClick={() => navigate(`/plans/${plan.id}/edit`)}>
+            {g.addAssignments}
           </Button>
         </section>
       ) : null}

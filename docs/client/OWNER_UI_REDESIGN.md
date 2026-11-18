@@ -480,3 +480,11 @@ Chủ dự án: phần lớn luồng chưa có chuyển cảnh. Theo HIG Motion 
 
 Vòng xoay cạnh thanh tiến độ nằm thẳng hàng với dòng chữ của thanh (tâm trùng nhau, đo). Đo (`getAnimations`): bấm "Tìm lại toạ độ" → thanh tiến độ và khối "Còn N điểm…" chạy `pw-result-in` khi đổi chỗ cho nhau.
 
+### 9.7 Lý do "Tối ưu lộ trình" bị khoá (2026-11-18, thử theo lựa chọn của chủ dự án)
+
+Chủ dự án: dòng "Thêm phân công tài xế để tối ưu." (chữ 12px dưới cụm nút ở đầu trang) "lơ lửng" — đo: ở 1440px nó treo ngang phụ đề, ở 1024px và điện thoại treo lẻ dưới nút. Docs chỉ yêu cầu nút khoá có lý do, không nói đặt ở đâu; chủ dự án chọn thử phương án "khối có nút" (không ưng thì quay lại bằng revert commit này):
+
+- Bỏ dòng chữ nhìn thấy dưới nút; lý do vẫn là `aria-describedby` của nút (chỉ trình đọc màn hình).
+- Thiếu phân công: khối trong trang cùng kiểu khối "Còn N điểm chưa có toạ độ" nhưng viền trung tính (không phải lỗi): "Chưa có tài xế nào được phân công." + "Thêm phân công (tài xế, xe, ca làm) để tối ưu lộ trình." + nút "Thêm phân công" mở form sửa.
+- Các lý do khác đã có chỗ riêng: thiếu toạ độ → khối "Còn N điểm…"; đang tìm toạ độ / đang tối ưu → thanh tiến độ, vòng xoay (§9.5).
+
