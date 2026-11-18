@@ -10,7 +10,16 @@ import { requiredRule } from '@/shared/forms/rules';
 import { applyServerErrors, errorCode } from '@/shared/forms/serverErrors';
 import { useMediaQuery, WIDE_QUERY } from '@/shared/hooks/useMediaQuery';
 import { vi } from '@/shared/i18n/vi';
-import { Button, ErrorBanner, SelectField, TextField, Toast, ToastDock, ActivityIndicator } from '@/shared/ui';
+import {
+  buttonClass,
+  CheckIcon,
+  ErrorBanner,
+  SelectField,
+  TextField,
+  Toast,
+  ToastDock,
+  ActivityIndicator,
+} from '@/shared/ui';
 import { PinPicker } from '@/shared/ui/PinPicker';
 import { useStoreApi, type Store } from './storeApi';
 import { StoreTabs } from './StoreTabs';
@@ -125,9 +134,19 @@ function StoreForm({ store, editable, tabs }: { store: Store; editable: boolean;
           {vi.store.title}
         </h1>
         {editable ? (
-          <Button type="submit" variant="primary" busy={isSubmitting} disabled={!pin}>
-            {wide ? vi.store.save : vi.store.saveShort}
-          </Button>
+          // Save is a checkmark (HIG Icons, standard icons: Done/Save → checkmark), with its words on a wide window and
+          // alone in a round button on a phone, like "+" on the other pages.
+          <button
+            type="submit"
+            className={wide ? buttonClass('primary') : 'pw-icon-button pw-list-add'}
+            aria-label={wide ? undefined : vi.store.save}
+            title={wide ? undefined : vi.store.save}
+            aria-busy={isSubmitting ? 'true' : undefined}
+            disabled={!pin || isSubmitting}
+          >
+            <CheckIcon />
+            {wide ? vi.store.save : null}
+          </button>
         ) : null}
       </div>
       <p className="pw-muted pw-list-lead">{editable ? vi.store.leadOwner : vi.store.leadViewer}</p>

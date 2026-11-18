@@ -306,7 +306,6 @@ export const vi = {
   },
   store: {
     title: 'Cửa hàng',
-    saveShort: 'Lưu',
     leadOwner: 'Kho xuất phát là nơi mọi tuyến bắt đầu và quay về.',
     leadViewer: 'Chỉ chủ cửa hàng mới sửa được thông tin này.',
     save: 'Lưu thay đổi',

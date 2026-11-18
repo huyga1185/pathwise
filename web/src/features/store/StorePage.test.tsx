@@ -61,7 +61,7 @@ describe('Cửa hàng', () => {
 
     expect(screen.getByText('16,07310 / 108,22190')).toBeInTheDocument();
     expect(screen.getByLabelText(/^Địa chỉ kho/)).toHaveValue('45 Lê Lợi, Hải Châu, Đà Nẵng');
-    await user.click(screen.getByRole('button', { name: 'Lưu' }));
+    await user.click(screen.getByRole('button', { name: 'Lưu thay đổi' }));
 
     expect(await screen.findByText(/Đã lưu thông tin cửa hàng/)).toBeInTheDocument();
     expect(body).toEqual({
@@ -85,11 +85,11 @@ describe('Cửa hàng', () => {
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Chưa có kho xuất phát nên chưa tạo được kế hoạch.');
     expect(screen.getByText('Chưa đặt')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Lưu' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Lưu thay đổi' })).toBeDisabled();
 
     await user.click(screen.getByRole('button', { name: 'Đặt ghim ở giữa bản đồ' }));
     expect(screen.queryByText(/Chưa có kho xuất phát/)).not.toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'Lưu' }));
+    await user.click(screen.getByRole('button', { name: 'Lưu thay đổi' }));
 
     await waitFor(() => expect(body).toBeDefined());
     expect(body?.depot?.lat).toBeCloseTo(16.0544, 4);
@@ -111,7 +111,7 @@ describe('Cửa hàng', () => {
     renderApp('/store');
     const user = userEvent.setup();
 
-    await user.click(await screen.findByRole('button', { name: 'Lưu' }));
+    await user.click(await screen.findByRole('button', { name: 'Lưu thay đổi' }));
     expect(await screen.findByText('Tên cửa hàng quá dài hoặc quá ngắn.')).toBeInTheDocument();
     expect(screen.getByText('Địa chỉ kho quá dài hoặc quá ngắn.')).toBeInTheDocument();
 
@@ -127,7 +127,7 @@ describe('Cửa hàng', () => {
     renderApp('/store');
     const user = userEvent.setup();
 
-    await user.click(await screen.findByRole('button', { name: 'Lưu' }));
+    await user.click(await screen.findByRole('button', { name: 'Lưu thay đổi' }));
 
     expect(await screen.findByText('Múi giờ không hợp lệ.')).toBeInTheDocument();
     expect(screen.getByLabelText(/^Múi giờ/)).toHaveAttribute('aria-invalid', 'true');
@@ -141,7 +141,7 @@ describe('Cửa hàng', () => {
     expect(await screen.findByLabelText(/^Tên cửa hàng/)).toBeDisabled();
     expect(screen.getByLabelText(/^Múi giờ/)).toBeDisabled();
     expect(screen.getByRole('alert')).toHaveTextContent('Nhờ chủ cửa hàng đặt kho.');
-    expect(screen.queryByRole('button', { name: 'Lưu' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Lưu thay đổi' })).not.toBeInTheDocument();
     expect(screen.queryByLabelText('Tìm địa chỉ kho')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Đặt ghim ở giữa bản đồ' })).not.toBeInTheDocument();
   });
