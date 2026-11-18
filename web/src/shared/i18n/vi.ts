@@ -696,6 +696,11 @@ export const vi = {
     lead: 'Tuyến hiện ngay trong app của từng tài xế. Sau khi giao việc, kế hoạch không sửa được nữa; bạn vẫn huỷ được cho tới khi tài xế bắt đầu giao.',
     done: (n: number) => `Đã giao việc cho ${n} tài xế.`,
     overlapTitle: 'Chưa giao việc được: trùng ca làm',
+    /** Sheet titles under 15 characters (HIG Toolbars; G5.13); the question is the sheet's first line. */
+    sheetTitle: 'Giao việc',
+    question: (n: number) => `Giao việc cho ${n} tài xế?`,
+    overlapSheetTitle: 'Trùng ca làm',
+    overlapQuestion: 'Chưa giao việc được: trùng ca làm.',
     overlapDriver: (driver: string, shift: string, date: string) =>
       `Ca làm của ${driver} (${shift}, ngày ${date}) trùng với một kế hoạch khác đã giao việc cho tài xế này.`,
     overlapVehicle: (vehicle: string, shift: string, date: string) =>

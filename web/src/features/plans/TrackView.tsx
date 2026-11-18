@@ -7,7 +7,7 @@ import { BackLink } from '@/shared/ui/BackLink';
 import { Button, buttonClass, StatusPill } from '@/shared/ui';
 import { useStoreReadOnly } from '@/data/meQuery';
 import { CopySheet } from './CopySheet';
-import { CancelDialog } from './PlanDialogs';
+import { CancelAlert } from './PlanDialogs';
 import { allStops, useDriverLocations, type DriverLocation, type PlanDetail, type PlanStop } from './planApi';
 import { describeSelection } from './ResultView';
 import {
@@ -264,7 +264,7 @@ export function TrackView({ plan, updatedAt }: { plan: PlanDetail; updatedAt: nu
         </section>
       </div>
 
-      <CancelDialog
+      <CancelAlert
         plan={plan}
         open={cancelling}
         onClose={() => setCancelling(false)}

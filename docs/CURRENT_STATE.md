@@ -344,3 +344,4 @@ Nhóm: (1) nghiệp vụ/hiểu sai yêu cầu · (2) implementation · (3) ki�
 | 2026-11-18 | branch `feat/owner-ui-g4` | — | Màn hẹp (< 440px): ba nút đầu trang chi tiết kế hoạch xếp dọc rộng hết, nút chính trên cùng (`OWNER_UI_REDESIGN.md` §9.12). |
 | 2026-11-18 | branch `feat/owner-ui-g5` | — | Thiết kế G5 (chi tiết kế hoạch): bản đồ phủ trang, panel ~460px / sheet ba nấc, menu … , thẻ điểm, giao việc là sheet (`OWNER_UI_REDESIGN.md` §10). |
 | 2026-11-18 | branch `feat/owner-ui-g5` | — | G5 bước 1–2: `MapStage` (bản đồ phủ trang, panel / sheet ba nấc) và màn kết quả tối ưu trên đó (`OWNER_UI_REDESIGN.md` §10.5). |
+| 2026-11-18 | branch `feat/owner-ui-g5` | — | G5 bước 3: giao việc là Sheet, huỷ kế hoạch / tối ưu lại / rời trang là Alert, bỏ chỉnh tay là action sheet (`OWNER_UI_REDESIGN.md` §10.5). |

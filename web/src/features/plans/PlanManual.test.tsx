@@ -135,7 +135,7 @@ describe('Chỉnh tay tuyến (W10)', () => {
     expect(within(screen.getByRole('region', { name: 'Tài xế B' })).getByText('Vi phạm')).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Giao việc cho 2 tài xế' }));
-    const dialog = screen.getByRole('dialog', { name: 'Giao việc cho 2 tài xế?' });
+    const dialog = screen.getByRole('dialog', { name: 'Giao việc' });
     expect(dialog).toHaveTextContent('Tài xế B · Xe 2: về muộn 25 phút so với ca');
     expect(within(dialog).getByRole('button', { name: 'Vẫn giao việc' })).toBeInTheDocument();
   });
@@ -151,7 +151,7 @@ describe('Chỉnh tay tuyến (W10)', () => {
 
     await fromMore(user, 'Tối ưu lại');
 
-    const dialog = screen.getByRole('dialog', { name: 'Tối ưu lại kế hoạch?' });
+    const dialog = screen.getByRole('alertdialog', { name: 'Tối ưu lại kế hoạch?' });
     expect(dialog).toHaveTextContent('Kết quả tối ưu mới sẽ thay các chỉnh tay.');
     expect(screen.getByText('Tài xế A · Xe 1: vượt 4,2 km quãng đường tối đa')).toBeInTheDocument();
   });

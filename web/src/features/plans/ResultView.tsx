@@ -7,7 +7,16 @@ import { jobMessageFor, messageFor } from '@/shared/errors';
 import { formatDateLong, formatDayTime, formatDistance, formatDuration, formatTime } from '@/shared/format';
 import { vi } from '@/shared/i18n/vi';
 import { BackLink } from '@/shared/ui/BackLink';
-import { Button, Dialog, ErrorBanner, MapStage, ProgressBar, StatusPill, type RowMenuItem } from '@/shared/ui';
+import {
+  Alert,
+  Button,
+  ErrorBanner,
+  MapStage,
+  PageActionSheet,
+  ProgressBar,
+  StatusPill,
+  type RowMenuItem,
+} from '@/shared/ui';
 import { ManualBoard } from './ManualBoard';
 import {
   draftChanged,
@@ -22,7 +31,7 @@ import {
 } from './manualEdit';
 import { CopySheet } from './CopySheet';
 import { MoreMenu, RouteGroup, StopCard } from './PlanStage';
-import { CancelDialog, PublishDialog, routesWithStops } from './PlanDialogs';
+import { CancelAlert, PublishSheet, routesWithStops } from './PlanDialogs';
 import { allStops, useJob, usePlanApi, type Job, type PlanDetail, type PlanStop } from './planApi';
 import { driverName, loadText, MAP_LABELS, mapData, spanText, stopPlace, stopTitle, windowText } from './planShared';
 
@@ -302,7 +311,7 @@ export function ResultView({
         </div>
       )}
 
-      <PublishDialog
+      <PublishSheet
         plan={plan}
         open={dialog === 'publish'}
         onClose={() => setDialog(null)}
@@ -311,49 +320,51 @@ export function ResultView({
           onPublished(n);
         }}
       />
-      <CancelDialog
+      <CancelAlert
         plan={plan}
         open={dialog === 'cancel'}
         onClose={() => setDialog(null)}
         onCancelled={() => setDialog(null)}
       />
-      <Dialog
+      {/* Cancelling an edit with changes: an action sheet (HIG Alerts: "Use an action sheet — not an alert — to offer
+          choices related to an intentional action"). */}
+      <PageActionSheet
         open={dialog === 'discard'}
         title={m.discardTitle}
-        confirmLabel={m.discardConfirm}
-        cancelLabel={m.keepEditing}
-        tone="danger"
-        onConfirm={() => {
-          setDialog(null);
-          setDraft(null);
-        }}
-        onClose={() => setDialog(null)}
-      >
-        <p>{m.discardLead}</p>
-      </Dialog>
-      <Dialog
+        message={m.discardLead}
+        choices={[
+          {
+            label: m.discardConfirm,
+            destructive: true,
+            onSelect: () => {
+              setDialog(null);
+              setDraft(null);
+            },
+          },
+          { label: m.keepEditing, cancel: true, onSelect: () => setDialog(null) },
+        ]}
+        onDismiss={() => setDialog(null)}
+      />
+      <Alert
         open={dialog === 'reoptimize'}
         title={m.reoptimizeTitle}
-        confirmLabel={m.reoptimizeConfirm}
-        onConfirm={() => {
+        message={m.reoptimizeLead}
+        actionLabel={m.reoptimizeConfirm}
+        onAction={() => {
           setDialog(null);
           void reoptimize();
         }}
-        onClose={() => setDialog(null)}
-      >
-        <p>{m.reoptimizeLead}</p>
-      </Dialog>
-      <Dialog
+        onCancel={() => setDialog(null)}
+      />
+      <Alert
         open={blocker.state === 'blocked'}
         title={m.leaveTitle}
-        confirmLabel={m.leaveConfirm}
-        cancelLabel={m.keepEditing}
-        tone="danger"
-        onConfirm={() => blocker.proceed?.()}
-        onClose={() => blocker.reset?.()}
-      >
-        <p>{m.leaveLead}</p>
-      </Dialog>
+        message={m.leaveLead}
+        actionLabel={m.leaveConfirm}
+        destructive
+        onAction={() => blocker.proceed?.()}
+        onCancel={() => blocker.reset?.()}
+      />
       {copying ? <CopySheet planId={plan.id} planName={plan.name} open onClose={() => setCopying(false)} /> : null}
     </MapStage>
   );

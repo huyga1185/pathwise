@@ -74,7 +74,9 @@ describe('Soạn plan — sau khi tối ưu', () => {
     const user = userEvent.setup();
 
     await user.click(await screen.findByRole('button', { name: 'Giao việc cho 2 tài xế' }));
-    const dialog = screen.getByRole('dialog', { name: 'Giao việc cho 2 tài xế?' });
+    // A sheet with a short title (G5.13); the question is its first line.
+    const dialog = screen.getByRole('dialog', { name: 'Giao việc' });
+    expect(dialog).toHaveTextContent('Giao việc cho 2 tài xế?');
     expect(dialog).toHaveTextContent('Tài xế A · Xe 1 · 11 điểm · 10:50–13:23');
     expect(dialog).toHaveTextContent('ĐH-1024 · Chị Thảo chưa có tài xế nên sẽ không được giao.');
     await user.click(within(dialog).getByRole('button', { name: 'Giao việc' }));
@@ -98,7 +100,8 @@ describe('Soạn plan — sau khi tối ưu', () => {
     await user.click(await screen.findByRole('button', { name: 'Giao việc cho 2 tài xế' }));
     await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Giao việc' }));
 
-    const overlap = await screen.findByRole('dialog', { name: 'Chưa giao việc được: trùng ca làm' });
+    const overlap = await screen.findByRole('dialog', { name: 'Trùng ca làm' });
+    expect(overlap).toHaveTextContent('Chưa giao việc được: trùng ca làm.');
     expect(overlap).toHaveTextContent('Ca làm của Tài xế B (08:00–17:00, ngày 01/12) trùng với một kế hoạch khác');
     expect(within(overlap).getByRole('link', { name: 'Mở kế hoạch #84' })).toHaveAttribute('href', '/plans/84');
     await user.click(within(overlap).getByRole('button', { name: 'Đóng' }));
