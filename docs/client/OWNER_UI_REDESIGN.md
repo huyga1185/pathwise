@@ -473,7 +473,8 @@ Chủ dự án: phần lớn luồng chưa có chuyển cảnh. Theo HIG Motion 
 | Màn của kế hoạch đổi tại chỗ (tìm toạ độ → kết quả tối ưu → theo dõi) | Màn mới mờ vào, nhô lên 12px, 0,28 s; không chạy ở màn đầu (trang đã có chuyển cảnh) | §6.2 CĐ2b |
 | Khối xuất hiện: thông báo lỗi/thông tin, thanh tiến độ, "Còn N điểm chưa có toạ độ", "Còn N ô cần sửa", "Đã thêm N điểm từ file", thông báo sao chép | Mờ vào, trồi 10px, 0,32 s | G2.10 |
 | Cùng thông báo lỗi nói lại sau một lần thử | Không chạy lại (`ErrorBanner repeat`) — chạy lại là nháy (§9.5 #2) | §9.5 |
-| Chọn điểm khác, thêm dòng | Không chuyển động | HIG Motion: thao tác lặp lại thường xuyên |
+| Chọn điểm khác (khung sửa điểm) | Nội dung khung mờ vào 0,2 s, không trượt. *Ban đầu không chuyển động (thao tác lặp lại); chủ dự án thấy khung "chưa mượt" và chọn mờ chéo nhẹ (2026-11-18)* | HIG Motion: *"brevity and precision"* |
+| Thêm / xoá phân công, điểm giao (form kế hoạch) | Dòng mới mờ vào 0,25 s, nền tô nhạt rồi tan (1,2 s) để thấy dòng vừa thêm; dòng xoá mờ ra 0,2 s rồi mới mất (`useRowMotion`). Trên điện thoại dòng thêm qua sheet chỉ "đến" khi sheet đóng (lúc mở nó bị sheet che), huỷ thì không đến. Dòng có sẵn khi mở form không chạy. *Ban đầu không chuyển động; chủ dự án chọn (2026-11-18)* | HIG Motion: *"The system already provides subtle animations for interactions with standard interface elements"* (bảng chuẩn chèn/xoá dòng có hoạt ảnh) |
 | Hộp "Phóng to bản đồ" (`Dialog` cũ) | Mở: nền mờ vào, hộp bật ra (0,24 s); đóng: thu về (0,2 s) — như Sheet trên màn rộng. Trước đó bật/tắt đột ngột (chủ dự án) | Sheet G2.10 |
 | Giảm chuyển động | Chỉ mờ | §6.2 CĐ6 |
 

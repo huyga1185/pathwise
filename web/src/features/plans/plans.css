@@ -1257,3 +1257,27 @@ html:has(.pw-form-bar) {
   border-radius: 0;
   background: transparent;
 }
+
+/* Rows arriving and leaving in the plan form (useRowMotion, §9.6): an added row fades in with a tint that dies away,
+   as a standard table inserts a row; a removed row fades out before it goes. The fix panel's content fades in when
+   another stop is chosen (no movement: a frequent action, HIG Motion). Reduced motion keeps the fades (CĐ6). */
+.pw-edit-table tr.is-new,
+.pw-form-rows .pw-list-row.is-new {
+  animation:
+    pw-fade-in 0.25s ease both,
+    pw-row-tint 1.2s ease-out both;
+}
+.pw-edit-table tr.is-leaving,
+.pw-form-rows .pw-list-row.is-leaving {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+@keyframes pw-row-tint {
+  from {
+    background-color: var(--surface-tint);
+  }
+}
+.pw-geocode-fix.is-switching > * {
+  animation: pw-fade-in 0.2s ease both;
+}

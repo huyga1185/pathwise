@@ -21,16 +21,19 @@ export function FormRows({
   label,
   rows,
   onOpen,
+  rowClass,
 }: {
   label: string;
   rows: Array<{ key: string; title: string; sub: string; invalid: boolean; name: string }>;
   onOpen: (index: number) => void;
+  /** Arriving / leaving (useRowMotion). */
+  rowClass?: (key: string) => string | undefined;
 }) {
   if (rows.length === 0) return null;
   return (
     <ul className="pw-list-group pw-list-rows pw-form-rows" aria-label={label}>
       {rows.map((row, index) => (
-        <li key={row.key} className={cx('pw-list-row', row.invalid && 'is-invalid')}>
+        <li key={row.key} className={cx('pw-list-row', row.invalid && 'is-invalid', rowClass?.(row.key))}>
           <button type="button" className="pw-list-row-main" aria-label={row.name} onClick={() => onOpen(index)}>
             <span className="pw-list-row-title">{row.title}</span>
             {row.sub ? <span className="pw-list-row-sub">{row.sub}</span> : null}

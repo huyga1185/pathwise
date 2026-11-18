@@ -156,6 +156,27 @@ describe('Tạo kế hoạch', () => {
   });
 });
 
+describe('Dòng thêm và xoá (§9.6)', () => {
+  beforeEach(() => wideWindow());
+
+  it('dòng vừa thêm mờ vào kèm nền (is-new), dòng có sẵn thì không; xoá thì mờ ra rồi mới mất', async () => {
+    server.use(...formHandlers());
+    renderApp('/plans/new');
+    const user = userEvent.setup();
+
+    const first = (await screen.findByLabelText('Mã đơn dòng 1')).closest('tr') as HTMLElement;
+    expect(first).not.toHaveClass('is-new');
+    await user.click(screen.getByRole('button', { name: '+ Thêm điểm giao' }));
+    const second = screen.getByLabelText('Mã đơn dòng 2').closest('tr') as HTMLElement;
+    expect(second).toHaveClass('is-new');
+
+    await user.click(within(second).getByRole('button', { name: /^Xoá/ }));
+    expect(second).toHaveClass('is-leaving');
+    expect(screen.getByLabelText('Mã đơn dòng 2')).toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByLabelText('Mã đơn dòng 2')).not.toBeInTheDocument());
+  });
+});
+
 describe('Sửa kế hoạch', () => {
   beforeEach(() => wideWindow());
   it('nạp plan, PUT gửi version và id điểm giao; PLAN_MODIFIED hỏi tải lại', async () => {

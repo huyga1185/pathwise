@@ -358,7 +358,8 @@ function FixStop({ plan, stop, busy }: { plan: PlanDetail; stop: PlanStop; busy:
   // ~0.15 s of a request made them flash (owner, 2026-11-18).
   const disabled = busy;
   return (
-    <section className="pw-card pw-geocode-fix" aria-labelledby="fix-title">
+    // A new stop chosen: the panel's content fades in (§9.6, owner's answer: a light crossfade, no movement).
+    <section className="pw-card pw-geocode-fix is-switching" aria-labelledby="fix-title">
       <div className="pw-geocode-fix-head">
         <h2 id="fix-title">{g.fixTitle(stopTitle(stop))}</h2>
         {stop.geocodeStatus === 'PENDING' ? (

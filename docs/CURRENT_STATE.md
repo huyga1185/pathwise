@@ -335,3 +335,4 @@ Nhóm: (1) nghiệp vụ/hiểu sai yêu cầu · (2) implementation · (3) ki�
 | 2026-11-18 | branch `feat/owner-ui-g4` | — | Ô tìm địa chỉ (hộp chọn vị trí, Cửa hàng): vòng xoay "Đang tìm địa chỉ…" thay chữ tĩnh (`OWNER_UI_REDESIGN.md` §9.5). |
 | 2026-11-18 | branch `feat/owner-ui-g4` | — | `Button busy` hiện vòng xoay trong nút (B-4, trước đó chỉ làm mờ — lệch ở mọi nút bận); vòng xoay không chữ ngoài nút; thanh tìm toạ độ kèm vòng xoay, đọc lại lần đầu sau 0,5 s (`OWNER_UI_REDESIGN.md` §9.5 #8). |
 | 2026-11-18 | branch `feat/owner-ui-g4` | — | Chuyển cảnh trong luồng kế hoạch: đổi màn tại chỗ như đổi trang, khối xuất hiện trồi vào, lỗi lặp lại không chạy lại (`OWNER_UI_REDESIGN.md` §9.6). |
+| 2026-11-18 | branch `feat/owner-ui-g4` | — | Hộp "Phóng to bản đồ" mở/đóng có hoạt ảnh; dòng thêm/xoá ở form kế hoạch mờ vào (tô nền) / mờ ra; khung sửa điểm mờ vào khi đổi điểm (`OWNER_UI_REDESIGN.md` §9.6). |

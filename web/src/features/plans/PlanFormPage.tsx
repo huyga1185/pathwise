@@ -1,5 +1,5 @@
 import { useStoreReadOnly } from '@/data/meQuery';
-import { useLayoutEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react';
 import { Controller, useFieldArray, useForm, useWatch, type FieldPath, type UseFormRegister } from 'react-hook-form';
 import { Link, useNavigate, useParams } from 'react-router';
 import { ApiError } from '@/data/apiError';
@@ -53,6 +53,7 @@ import {
 import { ImportSheet } from './ImportSheet';
 import { AssignmentSheet, assignmentRows, FormRows, StopSheet, stopRows, UNIT_TITLE } from './PlanFormLists';
 import './plans.css';
+import { useRowMotion } from './useRowMotion';
 
 const f = vi.planForm;
 const LABELS: Record<string, string> = {
@@ -134,6 +135,13 @@ function PlanForm({ plan }: { plan: PlanDetail | null }) {
   });
   const assignments = useFieldArray({ control, name: 'assignments' });
   const stops = useFieldArray({ control, name: 'stops' });
+  // The rows as last drawn, for a removal that lands after its fade (useRowMotion).
+  const assignmentsRef = useRef(assignments.fields);
+  const stopsRef = useRef(stops.fields);
+  useEffect(() => {
+    assignmentsRef.current = assignments.fields;
+    stopsRef.current = stops.fields;
+  });
   const watchedAssignments = useWatch({ control, name: 'assignments' });
   const watchedStops = useWatch({ control, name: 'stops' });
 
@@ -231,8 +239,38 @@ function PlanForm({ plan }: { plan: PlanDetail | null }) {
   };
   const removeRow = () => {
     if (!editing) return;
-    (editing.kind === 'assignment' ? assignments : stops).remove(editing.index);
+    const list = editing.kind === 'assignment' ? assignmentList : stopList;
+    const key = (editing.kind === 'assignment' ? assignments : stops).fields[editing.index]?.id;
     setEditing(null);
+    if (key) list.leave(key);
+  };
+  // Rows arriving and leaving (§9.6): an added row on a phone arrives when its sheet closes.
+  const heldKey = (kind: 'assignment' | 'stop') =>
+    editing?.isNew && editing.kind === kind
+      ? ((kind === 'assignment' ? assignments : stops).fields[editing.index]?.id ?? null)
+      : null;
+  const assignMotion = useRowMotion(
+    assignments.fields.map((field) => field.id),
+    heldKey('assignment'),
+  );
+  const stopMotion = useRowMotion(
+    stops.fields.map((field) => field.id),
+    heldKey('stop'),
+  );
+  // Taken out after fading, at its index then (another row may have gone meanwhile).
+  const assignmentList = {
+    leave: (key: string) =>
+      assignMotion.leave(key, () => {
+        const index = assignmentsRef.current.findIndex((field) => field.id === key);
+        if (index >= 0) assignments.remove(index);
+      }),
+  };
+  const stopList = {
+    leave: (key: string) =>
+      stopMotion.leave(key, () => {
+        const index = stopsRef.current.findIndex((field) => field.id === key);
+        if (index >= 0) stops.remove(index);
+      }),
   };
   const editingValue =
     editing === null
@@ -326,7 +364,11 @@ function PlanForm({ plan }: { plan: PlanDetail | null }) {
         {assignCompact ? (
           <FormRows
             label={f.assignmentsCaption}
-            rows={assignmentRows(watchedAssignments ?? [], errors.assignments, memberOptions, vehicleOptions)}
+            rows={withKeys(
+              assignmentRows(watchedAssignments ?? [], errors.assignments, memberOptions, vehicleOptions),
+              assignments.fields,
+            )}
+            rowClass={assignMotion.rowClass}
             onOpen={(index) => openRow('assignment', index)}
           />
         ) : assignments.fields.length > 0 ? (
@@ -339,7 +381,7 @@ function PlanForm({ plan }: { plan: PlanDetail | null }) {
                   const n = i + 1;
                   const at = errors.assignments?.[i];
                   return (
-                    <tr key={field.id}>
+                    <tr key={field.id} className={assignMotion.rowClass(field.id)}>
                       <Cell error={at?.driverId?.message}>
                         <MemberSelect
                           register={register}
@@ -402,7 +444,7 @@ function PlanForm({ plan }: { plan: PlanDetail | null }) {
                           type="button"
                           className="pw-icon-button pw-row-remove"
                           aria-label={f.removeAssignment(n)}
-                          onClick={() => assignments.remove(i)}
+                          onClick={() => assignmentList.leave(field.id)}
                         >
                           <TrashIcon />
                         </button>
@@ -438,7 +480,8 @@ function PlanForm({ plan }: { plan: PlanDetail | null }) {
         {stopsCompact ? (
           <FormRows
             label={f.stopsCaption}
-            rows={stopRows(watchedStops ?? [], errors.stops)}
+            rows={withKeys(stopRows(watchedStops ?? [], errors.stops), stops.fields)}
+            rowClass={stopMotion.rowClass}
             onOpen={(index) => openRow('stop', index)}
           />
         ) : stops.fields.length > 0 ? (
@@ -453,7 +496,7 @@ function PlanForm({ plan }: { plan: PlanDetail | null }) {
                   const windowError =
                     at?.timeWindow?.end?.message ?? at?.timeWindow?.start?.message ?? at?.timeWindow?.message;
                   return (
-                    <tr key={field.id}>
+                    <tr key={field.id} className={stopMotion.rowClass(field.id)}>
                       <Cell error={at?.label?.message}>
                         <input
                           className="pw-field-input"
@@ -545,7 +588,7 @@ function PlanForm({ plan }: { plan: PlanDetail | null }) {
                           type="button"
                           className="pw-icon-button pw-row-remove"
                           aria-label={f.removeStop(n)}
-                          onClick={() => stops.remove(i)}
+                          onClick={() => stopList.leave(field.id)}
                         >
                           <TrashIcon />
                         </button>
@@ -854,4 +897,9 @@ function useTableFits(probe: RefObject<HTMLDivElement | null>, enabled: boolean,
     };
   }, [probe, enabled, columns]);
   return fits;
+}
+
+/** The phone rows keyed by their field's id, so a row keeps its identity (and its arrival) when others go. */
+function withKeys<T extends { key: string }>(rows: T[], fields: Array<{ id: string }>): T[] {
+  return rows.map((row, i) => ({ ...row, key: fields[i]?.id ?? row.key }));
 }
