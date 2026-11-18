@@ -115,3 +115,12 @@
 .pw-members-sub > .pw-members-sub-email::after {
   content: none;
 }
+/* Invitation rows (phone): an email breaks only where <wbr> allows (after "@"), not mid-word. */
+.pw-list-row-title.pw-email-title {
+  overflow-wrap: normal;
+  word-break: normal;
+}
+.pw-members-row-status {
+  display: flex;
+  margin-top: 4px;
+}

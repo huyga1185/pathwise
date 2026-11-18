@@ -649,13 +649,20 @@ function InvitationsList({
               className={cx('pw-list-row', rowMenu.menu?.row.id === row.id && 'is-held')}
               {...(canRevoke(row) ? rowMenu.holdHandlers(row) : {})}
             >
+              {/* The status under the text, so the email has the room (HIG Typography: a stacked layout); an email
+                  wraps only after its "@", never mid-word. */}
               <span className="pw-list-row-main">
-                <span className="pw-list-row-title">{row.email}</span>
+                <span className="pw-list-row-title pw-email-title">
+                  {row.email.split('@')[0]}@<wbr />
+                  {row.email.split('@').slice(1).join('@')}
+                </span>
                 <span className="pw-list-row-sub">
                   {vi.roles[row.role] ?? row.role} · {m.expiresOn(formatDate(row.expiresAt, timeZone))}
                 </span>
+                <span className="pw-members-row-status">
+                  <StatusPill kind="invitation" status={row.status} />
+                </span>
               </span>
-              <StatusPill kind="invitation" status={row.status} />
               {revokeButton(row)}
             </li>
           ))}
