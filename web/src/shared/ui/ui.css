@@ -3851,3 +3851,10 @@ html {
 .pw-map-stage.is-wide .pw-map-actions {
   left: calc(2 * var(--shell-gap) + 460px + 10px);
 }
+/* Touch: the grabber's tap area is 44px tall (APPLE_CHECKLIST C1); the bar drawn stays small. */
+@media (pointer: coarse) {
+  .pw-map-sheet-grabber {
+    height: 44px;
+  }
+}
+

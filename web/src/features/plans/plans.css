@@ -1586,9 +1586,6 @@ html:has(.pw-form-bar) {
 .pw-stage-title-more {
   margin-left: auto;
 }
-.pw-stage-head .pw-plan-title {
-  flex-wrap: nowrap;
-}
 .pw-stage-head .pw-plan-title .pw-page-title {
   min-width: 0;
 }
