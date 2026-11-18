@@ -190,7 +190,7 @@ Nhãn trạng thái viết hoa trên nền màu trạng thái; truyền thẳng 
 - Menu và khung bật ra vẽ trên `body`, đặt theo nút mở. Ô chọn (`<select>`) mở menu của app (`useSelectMenu`), không dùng danh sách của trình duyệt.
 - Lưu/Xong dùng biểu tượng dấu tích (`CheckIcon`, HIG Icons: Save → `checkmark`).
 - Checkbox (chỉ trên máy tính, trong bảng): ô vuông bo 4, tắt không nền, bật nền màu nhấn với dấu tích trắng (HIG Toggles). Trên điện thoại dùng switch trong hàng.
-- Con trỏ: mũi tên cho mọi control (kể cả link trông như control); bàn tay chỉ cho link trong văn bản (HIG Pointing devices).
+- Con trỏ như web của Apple (apple.com, developer.apple.com): bàn tay cho mọi thứ bấm được; mũi tên cho control bị tắt và mục đang mở. HIG Pointing devices là của app macOS native, không áp cho web.
 
 ### ActivityIndicator (web, G2)
 

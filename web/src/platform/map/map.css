@@ -113,7 +113,7 @@
 }
 .pw-map-ctl:disabled {
   opacity: 0.4;
-  cursor: not-allowed;
+  cursor: default;
 }
 .pw-map-ctl:focus-visible {
   outline: 2px solid #0b6a5c;

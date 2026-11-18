@@ -147,10 +147,6 @@
 }
 .pw-btn:disabled {
   opacity: 0.5;
-  cursor: not-allowed;
-}
-.pw-btn[aria-busy='true'] {
-  cursor: progress;
 }
 
 /* ---------- TextField ---------- */
@@ -903,9 +899,8 @@ textarea.pw-field-input {
     transition: none;
   }
 }
-.pw-check input:disabled,
-.pw-check input:disabled + span {
-  cursor: not-allowed;
+.pw-check:has(input:disabled) {
+  cursor: default;
 }
 
 /* Card of a page section (prototype ".card"): form beside a list, invitation form. */
@@ -3150,4 +3145,18 @@ a.pw-segment {
   .pw-members-panel.is-prev {
     animation-name: pw-result-fade;
   }
+}
+
+/* ---------- Pointer (as Apple's own websites do) ----------
+   apple.com and developer.apple.com style "button { cursor: pointer }", "select { cursor: pointer }",
+   "button:disabled { cursor: default }" and the current menu link ".current { cursor: default }"; WCAG 2.2 has no
+   criterion on the pointer's shape. HIG Pointing devices is for native macOS apps, not web pages. So: the hand on
+   whatever can be clicked, the arrow on a disabled control (not "not-allowed") and on the item already open. */
+button:disabled,
+select:disabled,
+input:disabled,
+[aria-disabled='true'],
+a[aria-current='page'],
+[role='tab'][aria-selected='true'] {
+  cursor: default;
 }
