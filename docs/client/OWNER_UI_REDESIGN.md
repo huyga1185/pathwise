@@ -635,3 +635,7 @@ Chủ dự án (phác thảo `docs/ux/samples/fb_14.png`): khi thu nhỏ, sheet 
 
 Làm: nấc thấp = nút kính 96 × 44px, bo 22px, ở giữa ngay trên tab bar, chỉ có chevron ↑; bấm hoặc kéo lên → nấc giữa; nội dung sheet `inert` và ẩn khi thu nhỏ; tên trợ năng "Đổi chiều cao danh sách (đang thu nhỏ)". Đo 390px: tay cầm x 147–243, y 712–756 (tab bar từ 768); chú thích bản quyền đáy 694; bấm → nấc giữa.
 
+### 10.12 Chú thích bản đồ trên điện thoại ở góc trên trái (2026-11-19)
+
+Chủ dự án: chú thích "© MapTiler © OpenStreetMap contributors" trên điện thoại nằm lơ lửng giữa màn, nên ra góc. Nguyên nhân: §10.5 đặt nó trên nấc thấp nhất của sheet 10px (HIG Maps); khi nấc thấp chỉ còn tay cầm (§10.11), tab bar rộng hết màn vẫn che dải dưới nên chú thích bị đẩy lên giữa (đáy y 694 ở 390px) và chạy theo sheet. Kiểm tra: HIG Maps chỉ yêu cầu không che mãi, có đệm với control, *"Avoid causing the logo and link to move with your interface"* — không bắt góc dưới; P-45 không quy định góc. Làm (chỉ điện thoại; màn rộng giữ góc dưới phải): chú thích ở **góc trên trái** bản đồ, ngay dưới thanh trên, cách mép như cột nút (`--map-edge`), đứng yên ở mọi nấc (góc trên phải là +/− và ghim, góc dưới bị tab bar che); màn hẹp thì xuống dòng thay vì chạy dưới cột nút. Đo: 390px x 16–284, y 68–88 ở cả ba nấc; 320px x 16–250, hai dòng, không đè +/− (x 258).
+

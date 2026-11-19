@@ -4,7 +4,6 @@ import {
   useLayoutEffect,
   useRef,
   useState,
-  type CSSProperties,
   type KeyboardEvent,
   type PointerEvent,
   type ReactNode,
@@ -110,13 +109,7 @@ export function MapStage({
 
   return (
     <StageContext.Provider value={{ wide, setDetent }}>
-      <div
-        ref={stage}
-        className={cx('pw-map-stage', wide ? 'is-wide' : 'is-narrow')}
-        // The map's attribution stays clear of the sheet at its lowest resting height (HIG Maps: "place the… legal
-        // link 10 points above the lowest resting position of the card").
-        style={wide ? undefined : ({ '--map-floor': `${heights.low + floor + 10}px` } as CSSProperties)}
-      >
+      <div ref={stage} className={cx('pw-map-stage', wide ? 'is-wide' : 'is-narrow')}>
         <div className="pw-map-stage-map">{map(inset)}</div>
         {wide ? (
           <section className="pw-map-panel" aria-label={label}>
