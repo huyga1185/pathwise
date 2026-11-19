@@ -307,6 +307,32 @@ describe('Thẻ sửa điểm trên điện thoại (G5)', () => {
   });
 });
 
+describe('Thanh bên tự thu trên trang có bản đồ phủ (§10.7)', () => {
+  it('vào trang kế hoạch thì thu; nút vẫn mở được (không lưu); ra khỏi trang thì về như trước', async () => {
+    wideWindow();
+    window.localStorage.removeItem('pw-sidebar');
+    server.use(
+      http.get(`${API}/plans/83`, () => ok(geocoded())),
+      http.get(`${API}/plans`, () => ok([])),
+      ...signedInHandlers(),
+    );
+    const { router } = renderApp('/plans/83');
+    const user = userEvent.setup();
+
+    await screen.findByRole('heading', { name: 'Giao sáng 01/12', level: 1 });
+    const toggle = screen.getByRole('button', { name: 'Hiện thanh bên' });
+    expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    await user.click(toggle);
+    expect(screen.getByRole('button', { name: 'Ẩn thanh bên' })).toHaveAttribute('aria-expanded', 'true');
+    await user.click(screen.getByRole('button', { name: 'Ẩn thanh bên' }));
+    // Toggling on this page is not saved as the person's choice.
+    expect(window.localStorage.getItem('pw-sidebar')).toBeNull();
+
+    await router.navigate('/plans');
+    expect(await screen.findByRole('button', { name: 'Ẩn thanh bên' })).toHaveAttribute('aria-expanded', 'true');
+  });
+});
+
 describe('Tìm lại một địa chỉ (G4 §9.5)', () => {
   it('trong lúc chờ: "Đang tìm toạ độ…" cạnh nút; bản đồ và các nút giữ nguyên (không tắt, không mất)', async () => {
     let answer: () => void = () => {};

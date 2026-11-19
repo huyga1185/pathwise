@@ -77,17 +77,35 @@ export function PinMap({
         />
       ) : null}
       {editable ? (
-        <MapOverlay className="pw-map-actions">
+        // A pin button under + / − (owner's choice, §10.7): the symbol of dropping a pin (HIG Buttons: "associate
+        // familiar actions with familiar icons"); its full name for assistive technologies and as a tooltip.
+        <MapOverlay className="pw-map-pin-action">
           <button
             type="button"
-            className="pw-map-ctl pw-map-ctl-text"
+            className="pw-map-ctl"
+            aria-label={labels.placeAtCenter}
+            title={labels.placeAtCenter}
             onClick={() => {
               if (!map) return;
               const centre = map.getCenter();
               onChange({ lat: centre.lat, lon: centre.lng });
             }}
           >
-            {labels.placeAtCenter}
+            <svg
+              viewBox="0 0 24 24"
+              width="20"
+              height="20"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={1.7}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+              focusable="false"
+            >
+              <path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z" />
+              <circle cx="12" cy="9.5" r="2.5" />
+            </svg>
           </button>
         </MapOverlay>
       ) : null}

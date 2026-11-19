@@ -11,6 +11,7 @@ import {
 } from 'react';
 import { useMediaQuery, WIDE_QUERY } from '@/shared/hooks/useMediaQuery';
 import { vi } from '@/shared/i18n/vi';
+import { useFoldedSidebar } from './AppShell';
 import { cx } from './cx';
 
 /** The part of the map the panel or the sheet covers, in px: fitting the routes keeps them clear of it. */
@@ -52,6 +53,8 @@ export function MapStage({
   children: ReactNode;
 }) {
   const wide = useMediaQuery(WIDE_QUERY);
+  // Wide: the sidebar folds away while a plan is on the full map, back as it was when the page closes (§10.7).
+  useFoldedSidebar(wide);
   const stage = useRef<HTMLDivElement>(null);
   const [height, setHeight] = useState(0);
   const [peek, setPeek] = useState(0);

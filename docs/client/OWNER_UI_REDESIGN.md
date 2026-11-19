@@ -606,3 +606,12 @@ Chủ dự án hỏi mở rộng bản đồ ra toàn màn hình trên PC có kh
 
 Làm (chỉ màn rộng; điện thoại giữ như §10.5): `MapStage` cố định phủ cả cửa sổ (0–1440 × 0–900), dưới sidebar (kính) và thanh trên; thanh trên không còn dải nền, nút ẩn/hiện sidebar và avatar thành nút kính có viền mảnh và bóng (HIG Maps; giảm trong suốt / tăng tương phản: nền đặc); panel đặt cạnh sidebar dưới hàng nút (top 60), ẩn sidebar thì panel trượt sang trái (0,24 s; giảm chuyển động: không trượt); nút +/− và "Đặt ghim ở giữa bản đồ" dời xuống dưới hàng nút; canh khung tuyến đo vị trí thật của panel; trang có bản đồ phủ không giữ chỗ thanh cuộn (không cuộn). Đo: bản đồ 0–1440 × 0–900, trang không cuộn, không lỗi, sáng và tối.
 
+### 10.7 Nút bản đồ, thanh bên tự thu (2026-11-19)
+
+Chủ dự án: (1) "Đặt ghim ở giữa bản đồ" thành nút hình ghim; (2) +/− thẳng hàng avatar, nút ghim dưới +/−; (3) trên PC, vào trang chi tiết kế hoạch thì thanh bên tự thu (vẫn còn nút mở), ra khỏi trang thì về như trước khi vào. Kiểm tra trước khi làm:
+- (1) HIG Buttons *"associate familiar actions with familiar icons"* — ghim là biểu tượng thả ghim quen (Maps `mappin`); nhưng *"Consider using text when a short label communicates more clearly than an icon"*: hình ghim không nói "ở giữa bản đồ" → tên đầy đủ giữ làm tên trợ năng (WCAG 4.1.2) và chú thích khi rê chuột. `PinMap` dùng chung nên bản đồ đặt kho (Cửa hàng) cũng đổi.
+- (2) Chỉ là vị trí; vẫn viền mảnh + bóng (HIG Maps).
+- (3) HIG Sidebars: *"Consider automatically hiding and revealing a sidebar when its container window resizes… Mail… can automatically collapse its sidebar, making more room"*; WCAG 3.2.3: nút mở thanh bên luôn ở cùng chỗ. Không vi phạm; giữ: tự thu không ghi đè lựa chọn ẩn/hiện đã lưu của người dùng.
+
+Làm: nút ghim 38px (bằng cụm +/−; cảm ứng 46px tròn) ngay dưới +/−; cột nút bản đồ thẳng mép phải avatar (`--map-edge` theo đệm của thanh trên; màn rộng `--map-top` 64px dưới avatar). `AppShell` có `useFoldedSidebar`: `MapStage` (màn rộng) thu thanh bên khi mở, trong trang nút ẩn/hiện chỉ có tác dụng tạm (không lưu), rời trang thì về trạng thái đã lưu. Đo: 1440 — avatar và cột nút cùng mép phải 1416, ghim y 147 dưới +/− (64–138); 390 — cùng mép phải 374; thanh bên mở ở danh sách → thu ở trang kế hoạch → mở lại khi về danh sách.
+
