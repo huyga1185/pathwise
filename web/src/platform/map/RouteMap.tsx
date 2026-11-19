@@ -53,15 +53,22 @@ export function routeColour(index: number): number {
   return (index % 7) + 1;
 }
 
+/**
+ * A stop as a map pin (owner's choice, §10.15; HIG Maps: the system marker is a pin that can hold a short string):
+ * its route's or result's colour, its order inside when it has one, the tip on the place. The pin is a square with
+ * one sharp corner turned -45° (map.css): the tip sits 0.707 × its side below the centre.
+ */
 function stopIcon(stop: MapStop, colour: number | null, selected: boolean) {
   const tone = stop.tone ? `pw-marker-${stop.tone}` : colour ? `pw-marker-r${colour}` : 'pw-marker-muted';
   const size = selected ? 36 : 28;
   const text = typeof stop.sequence === 'number' ? String(stop.sequence) : '';
   return divIcon({
-    html: `<span data-theme="light" class="pw-marker ${tone}${selected ? ' pw-marker-selected' : ''}">${text}</span>`,
+    html:
+      `<span data-theme="light" class="pw-marker pw-marker-pin ${tone}${selected ? ' pw-marker-selected' : ''}">` +
+      `<span class="pw-marker-pin-label">${text}</span></span>`,
     className: 'pw-stop-marker',
     iconSize: [size, size],
-    iconAnchor: [size / 2, size / 2],
+    iconAnchor: [size / 2, size / 2 + Math.round(size * Math.SQRT1_2)],
   });
 }
 

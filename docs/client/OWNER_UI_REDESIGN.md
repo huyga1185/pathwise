@@ -649,3 +649,7 @@ Chủ dự án hỏi nấc cao áp sát mép là chủ đích (đúng: §10.10, 
 
 Làm: nấc cao chạm đáy màn (thấp và giữa vẫn trên tab bar); khung bản đồ điện thoại là lớp riêng (`isolation`) để tab bar (z 30) luôn trên sheet và các lớp Leaflet; thân sheet ở nấc cao đệm đáy = tab bar + khoảng cách. Đo 390px: sheet y 84–844, tại tab bar phần tử trên cùng là tab bar; cuộn hết thì hàng cuối dừng ở y 739 < 768 (đỉnh tab bar).
 
+### 10.15 Điểm giao trên bản đồ là ghim (2026-11-19)
+
+Chủ dự án: đổi các chấm tròn thành ghim; điểm đã xếp thứ tự thì có số trong ghim. Kiểm tra: HIG Maps *"Use annotations that match the visual style of your app"*; marker mặc định của Apple là ghim, *"You can change the icon to a string"* → ghim có số đúng kiểu; WCAG: viền trắng + bóng (1.4.11), số đi cùng màu (1.4.1), tên trợ năng giữ (4.1.2). Làm: marker điểm (`RouteMap`) là ghim giọt nước chân nhọn (hình vuông một góc nhọn xoay −45°, số dựng thẳng bên trong), màu tuyến / màu kết quả như cũ, điểm chưa xếp thì không số; neo ở chân ghim (0,707 × cạnh dưới tâm) nên chân chạm đúng đỉnh đường tuyến; ghim được chọn to hơn, viền theo hình ghim. Chú giải và số trong danh sách giữ hình tròn (`.pw-marker` dùng chung).
+
