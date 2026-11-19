@@ -355,3 +355,4 @@ Nhóm: (1) nghiệp vụ/hiểu sai yêu cầu · (2) implementation · (3) ki�
 | 2026-11-19 | branch `feat/owner-ui-g5` | — | Sửa bản đồ xé hình khi mở trang kế hoạch: trang có bản đồ chỉ mờ vào (không trượt), bản đồ tự vẽ lại khi khung đổi cỡ (`OWNER_UI_REDESIGN.md` §10.8). |
 | 2026-11-19 | branch `feat/owner-ui-g5` | — | Nhóm tuyến / điểm giao mở đóng có hoạt ảnh chiều cao; hàng nút đầu panel lấp hết bề ngang (`OWNER_UI_REDESIGN.md` §10.9). |
 | 2026-11-19 | branch `feat/owner-ui-g5` | — | Sheet trên điện thoại: nấc thấp/giữa cách mép 12px, bo 32px như tab bar; nấc cao áp sát mép, nền đặc (Apple, Adopting Liquid Glass) (`OWNER_UI_REDESIGN.md` §10.10). |
+| 2026-11-19 | branch `feat/owner-ui-g5` | — | Sheet trên điện thoại thu nhỏ chỉ còn tay cầm có chevron ↑ ở giữa (phác thảo fb_14) (`OWNER_UI_REDESIGN.md` §10.11). |

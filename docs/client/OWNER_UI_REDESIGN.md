@@ -542,7 +542,7 @@ Phạm vi (SCREENS.md, `/plans/:id` là một route, màn chọn theo trạng th
 | G5-Q1 | Bố cục | **Bản đồ phủ vùng nội dung** (D15, kiểu Apple Maps): rộng — panel nổi bên trái; điện thoại — sheet từ đáy có nấc. |
 | G5-Q2 | Màn nào dùng bố cục bản đồ | **Cả bốn:** kết quả tối ưu, theo dõi, chỉnh tay, tìm toạ độ. |
 | G5-Q3 | Panel (rộng) | **~460px, điểm giao là hàng hai dòng** (bảng 5 cột không vừa panel; thay cho "bảng khi rộng, hàng khi hẹp" đã chọn trước đó với bố cục cũ). |
-| G5-Q4 | Nấc sheet (điện thoại) | **Ba nấc như Maps:** thấp (tiêu đề, trạng thái, nút chính; thấy gần hết bản đồ), giữa (nửa màn), cao (gần đầy). HIG chỉ định nghĩa medium/large; nấc thấp là nấc tự định nghĩa (UIKit custom detent). |
+| G5-Q4 | Nấc sheet (điện thoại) | **Ba nấc:** thấp, giữa (nửa màn), cao (gần đầy). HIG chỉ định nghĩa medium/large; nấc thấp là nấc tự định nghĩa (UIKit custom detent). *Sửa 2026-11-19 (§10.11, phác thảo fb_14):* nấc thấp **chỉ còn tay cầm** có chevron ↑ (trước đó: tiêu đề, trạng thái, nút chính). |
 | G5-Q5 | 6 nút ở đầu màn kết quả | **Menu … + 2 nút:** (…) [Chỉnh tay] [Giao việc cho N tài xế]; menu: Sửa điểm giao, Tối ưu lại, Sao chép, Huỷ kế hoạch (đỏ, cuối). |
 | G5-Q6 | Chọn một điểm | **Thẻ điểm trong panel/sheet** (kiểu place card): panel/sheet chuyển sang thẻ của điểm, có nút quay lại danh sách; marker được làm nổi. |
 | G5-Q7 | Hộp xác nhận giao việc | **Sheet** "Giao việc" (Huỷ / Giao việc; thân liệt kê tài xế, xe, số điểm, giờ; điểm không xếp được; hậu quả; trùng ca hiện trong sheet). Huỷ kế hoạch: **Alert**. |
@@ -628,4 +628,10 @@ Chủ dự án: nhóm "Điểm giao" mở/đóng chưa có hoạt ảnh; ba nút
 Chủ dự án: sheet nên bo hơn và không bám sát mép màn hình — có nên không. HIG Sheets không nói; Apple, *Adopting Liquid Glass* (https://developer.apple.com/documentation/technologyoverviews/adopting-liquid-glass): *"Sheets feature an increased corner radius, and half sheets are inset from the edge of the display to allow content to peek through from beneath them. When a half sheet expands to full height, it transitions to a more opaque appearance to help maintain focus on the task."* và *"check for content and controls that might appear too close to rounder sheet corners"*. WCAG: không cấm; giữ 1.4.10 (320px không tràn). → Nên làm, như iOS 26.
 
 Làm: nấc thấp và giữa — cách mép trái/phải 12px và bo 32px, bằng tab bar ngay dưới (cách mép 12px, viên thuốc cao 64px) để hai khối cùng một họ hình (Apple không cho số cho web); nội dung đệm 20px cho xa góc bo. Nấc cao — áp sát hai mép, nền đặc (nền trang, để nhóm nền nổi lên như danh sách nhóm), bo trên `radius-lg`. Chuyển giữa các nấc có chuyển tiếp (giảm chuyển động: không). Đo: 390px sheet 12–378 = tab bar 12–378; 320px 8–312; nấc cao 0–390; không tràn. Ghi nhận: nấc giữa hẹp đi 24px nên ở 390px "Giao việc cho N tài xế" xuống hàng riêng (rộng hết).
+
+### 10.11 Sheet thu nhỏ chỉ còn tay cầm (2026-11-19)
+
+Chủ dự án (phác thảo `docs/ux/samples/fb_14.png`): khi thu nhỏ, sheet trên điện thoại chỉ còn một khối bo tròn có chevron ↑. Kiểm tra: docs — sửa G5-Q4 (nấc thấp trước đó hiện tiêu đề, trạng thái, nút chính), chủ dự án quyết; HIG Sheets — nấc tự định nghĩa được, cần grabber (*"Include a grabber in a resizable sheet"*, bấm grabber chuyển nấc): tay cầm có chevron là grabber; WCAG — tên trợ năng (4.1.2), vùng bấm 44px (C1; 2.5.8 cần 24), mở bằng bấm không cần kéo (2.5.7); HIG Maps — chú thích bản quyền trên nấc thấp nhất 10px. Không vi phạm. Chủ dự án chọn **khối nhỏ ở giữa** (không phải dải rộng bằng sheet).
+
+Làm: nấc thấp = nút kính 96 × 44px, bo 22px, ở giữa ngay trên tab bar, chỉ có chevron ↑; bấm hoặc kéo lên → nấc giữa; nội dung sheet `inert` và ẩn khi thu nhỏ; tên trợ năng "Đổi chiều cao danh sách (đang thu nhỏ)". Đo 390px: tay cầm x 147–243, y 712–756 (tab bar từ 768); chú thích bản quyền đáy 694; bấm → nấc giữa.
 

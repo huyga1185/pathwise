@@ -13,6 +13,7 @@ import { useMediaQuery, WIDE_QUERY } from '@/shared/hooks/useMediaQuery';
 import { vi } from '@/shared/i18n/vi';
 import { useFoldedSidebar } from './AppShell';
 import { cx } from './cx';
+import { ChevronUpIcon } from './icons';
 
 /** The part of the map the panel or the sheet covers, in px: fitting the routes keeps them clear of it. */
 export interface MapInset {
@@ -131,12 +132,14 @@ export function MapStage({
   );
 }
 
-/** The sheet's resting heights in `height` of room: its header (`peek`), half, all but a strip of map. */
-function detentHeights(height: number, peek: number): Record<Detent, number> {
+/** Height of the folded sheet: only its handle (owner's sketch fb_14, §10.11). */
+const HANDLE = 44;
+
+/** The sheet's resting heights in `height` of room: the handle alone, half, all but a strip of map. */
+function detentHeights(height: number, _peek: number): Record<Detent, number> {
   const high = Math.max(0, height - 24);
   const mid = Math.min(high, Math.round(height / 2));
-  const low = Math.min(mid, Math.max(96, Math.round(peek + 28)));
-  return { low, mid, high };
+  return { low: HANDLE, mid, high };
 }
 
 function DetentSheet({
@@ -209,9 +212,19 @@ function DetentSheet({
         onPointerCancel={onUp}
         onKeyDown={onKey}
       >
-        <span aria-hidden="true" />
+        {/* Folded: a chevron up says it opens (fb_14); otherwise the usual grabber bar. */}
+        {detent === 'low' && drag === null ? (
+          <span className="pw-map-sheet-chevron" aria-hidden="true">
+            <ChevronUpIcon />
+          </span>
+        ) : (
+          <span aria-hidden="true" />
+        )}
       </button>
-      <div className="pw-map-sheet-body">{children}</div>
+      {/* Folded, the content is inert and hidden: Tab and screen readers do not reach what cannot be seen. */}
+      <div className="pw-map-sheet-body" inert={detent === 'low' && drag === null}>
+        {children}
+      </div>
     </section>
   );
 }

@@ -50,6 +50,8 @@ describe('MapStage (G5.1–G5.3)', () => {
     expect(sheet).toHaveAttribute('data-detent', 'mid');
     await user.keyboard('{ArrowDown}{ArrowDown}');
     expect(sheet).toHaveAttribute('data-detent', 'low');
+    // Folded: only the handle (fb_14, §10.11) — the content is inert.
+    expect(screen.getByText('Danh sách tuyến').closest('.pw-map-sheet-body')).toHaveAttribute('inert');
     expect(screen.getByRole('button', { name: 'Đổi chiều cao danh sách (đang thu nhỏ)' })).toHaveFocus();
   });
 });

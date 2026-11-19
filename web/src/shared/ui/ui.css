@@ -3957,3 +3957,28 @@ html {
   }
 }
 
+/* Folded (low detent, §10.11; owner's sketch fb_14): only a glass handle, 96 × 44, centred above the tab bar, a
+   chevron up; tap or drag it up to open. The rest of the sheet is hidden (and inert). */
+.pw-map-sheet[data-detent='low']:not(.is-dragging) {
+  left: calc(50% - 48px);
+  right: calc(50% - 48px);
+  border-radius: 22px;
+}
+.pw-map-sheet[data-detent='low']:not(.is-dragging) .pw-map-sheet-grabber {
+  height: 44px;
+}
+.pw-map-sheet[data-detent='low']:not(.is-dragging) .pw-map-sheet-body {
+  visibility: hidden;
+}
+.pw-map-sheet-grabber > .pw-map-sheet-chevron {
+  display: inline-grid;
+  width: auto;
+  height: auto;
+  border-radius: 0;
+  background: none;
+  color: var(--ink);
+}
+.pw-map-sheet-chevron svg {
+  width: 22px;
+  height: 22px;
+}
