@@ -64,6 +64,17 @@ export function MapStage({
   const [covered, setCovered] = useState({ left: PANEL_WIDTH + 2 * GAP, top: 0 });
   const [detent, setDetent] = useState<Detent>('mid');
 
+  // The page coming in may slide (a transform on the page, AppShell pageMotion): a fixed map inside a transformed
+  // element is laid out in that element, not the window — it showed small, then jumped to the window and tore. While
+  // the map shows, the page's entrance only fades (same timing; a fade is the reduced-motion entrance too, CĐ6).
+  useLayoutEffect(() => {
+    const page = stage.current?.closest('main');
+    page?.getAnimations?.().forEach((animation) => {
+      const effect = animation.effect as KeyframeEffect | null;
+      effect?.setKeyframes?.([{ opacity: 0 }, { opacity: 1 }]);
+    });
+  }, []);
+
   useLayoutEffect(() => {
     const element = stage.current;
     if (!element) return undefined;

@@ -352,3 +352,4 @@ Nhóm: (1) nghiệp vụ/hiểu sai yêu cầu · (2) implementation · (3) ki�
 | 2026-11-19 | branch `feat/owner-ui-g5` | — | Ghim điểm giao riêng (không còn ngôi nhà của kho) ở màn tìm toạ độ; điện thoại gõ địa chỉ thì sheet lên nấc cao (`OWNER_UI_REDESIGN.md` §10.2 G5-Q16, Q17). |
 | 2026-11-19 | branch `feat/owner-ui-g5` | — | Màn rộng: bản đồ của trang kế hoạch phủ cả cửa sổ, dưới sidebar và các nút kính của thanh trên (`OWNER_UI_REDESIGN.md` §10.6). |
 | 2026-11-19 | branch `feat/owner-ui-g5` | — | Nút ghim biểu tượng dưới +/−, cột nút bản đồ thẳng hàng avatar; PC: thanh bên tự thu ở trang chi tiết kế hoạch, rời trang về như trước (`OWNER_UI_REDESIGN.md` §10.7). |
+| 2026-11-19 | branch `feat/owner-ui-g5` | — | Sửa bản đồ xé hình khi mở trang kế hoạch: trang có bản đồ chỉ mờ vào (không trượt), bản đồ tự vẽ lại khi khung đổi cỡ (`OWNER_UI_REDESIGN.md` §10.8). |

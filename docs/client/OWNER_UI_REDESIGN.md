@@ -615,3 +615,7 @@ Chủ dự án: (1) "Đặt ghim ở giữa bản đồ" thành nút hình ghim;
 
 Làm: nút ghim 38px (bằng cụm +/−; cảm ứng 46px tròn) ngay dưới +/−; cột nút bản đồ thẳng mép phải avatar (`--map-edge` theo đệm của thanh trên; màn rộng `--map-top` 64px dưới avatar). `AppShell` có `useFoldedSidebar`: `MapStage` (màn rộng) thu thanh bên khi mở, trong trang nút ẩn/hiện chỉ có tác dụng tạm (không lưu), rời trang thì về trạng thái đã lưu. Đo: 1440 — avatar và cột nút cùng mép phải 1416, ghim y 147 dưới +/− (64–138); 390 — cùng mép phải 374; thanh bên mở ở danh sách → thu ở trang kế hoạch → mở lại khi về danh sách.
 
+### 10.8 Bản đồ bị xé hình khi mở (2026-11-19)
+
+Chủ dự án: mở bản đồ bị xé hình. Đo từng khung hình khi bấm từ danh sách vào kế hoạch (1440px): trong ~0,35 s trang mới trượt vào bằng `transform` (CĐ3), bản đồ `position: fixed` bị bố cục trong trang đang trượt thay vì cửa sổ (cao 360px, y 60, lệch 24px) rồi nhảy thành 1440×900 khi hết hiệu ứng; Leaflet chỉ tự vẽ lại khi cửa sổ đổi cỡ nên phần mới lộ ra trống / vẽ dở. Sửa: khi `MapStage` xuất hiện, hiệu ứng vào trang đang chạy đổi thành chỉ mờ (cùng thời lượng; mờ cũng là hiệu ứng của giảm chuyển động, CĐ6); đổi màn tại chỗ trên bản đồ (`ViewSwitch`) chỉ mờ; `MapFrame` theo dõi kích thước khung bản đồ (`ResizeObserver` → `invalidateSize`) cho mọi lần khung đổi cỡ (thanh bên, sheet). Đo lại: từ khung hình đầu bản đồ đã 1440×900 ở (0, 0).
+

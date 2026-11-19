@@ -3917,3 +3917,8 @@ html {
 .pw-map-stage.is-narrow .pw-map {
   --map-edge: clamp(16px, 2vw, 24px);
 }
+/* A plan's screen changing in place on the full map fades only: a transform on it would lay the fixed map out in it
+   (see MapStage). */
+.pw-view-switch.is-new:has(.pw-map-stage) {
+  animation-name: pw-result-fade;
+}
