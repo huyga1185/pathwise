@@ -57,6 +57,8 @@ export function MapStage({
   const [peek, setPeek] = useState(0);
   // The sheet sits above the floating tab bar: the room it has is the stage less that.
   const [floor, setFloor] = useState(0);
+  // Wide: the map fills the window under the sidebar and the top bar; what the panel covers is measured.
+  const [covered, setCovered] = useState({ left: PANEL_WIDTH + 2 * GAP, top: 0 });
   const [detent, setDetent] = useState<Detent>('mid');
 
   useLayoutEffect(() => {
@@ -64,6 +66,12 @@ export function MapStage({
     if (!element) return undefined;
     const measure = () => {
       setHeight(element.clientHeight);
+      const panel = element.querySelector<HTMLElement>('.pw-map-panel');
+      if (panel) {
+        const box = panel.getBoundingClientRect();
+        const stageBox = element.getBoundingClientRect();
+        setCovered({ left: Math.round(box.right - stageBox.left + GAP), top: Math.round(box.top - stageBox.top) });
+      }
       const sheetBox = element.querySelector<HTMLElement>('.pw-map-sheet');
       setFloor(sheetBox ? parseFloat(getComputedStyle(sheetBox).bottom) || 0 : 0);
       const mark = element.querySelector<HTMLElement>('[data-peek]');
@@ -81,7 +89,7 @@ export function MapStage({
 
   const heights = detentHeights(height - floor, peek);
   const inset: MapInset = wide
-    ? { top: 0, right: 0, bottom: 0, left: PANEL_WIDTH + 2 * GAP }
+    ? { top: covered.top, right: 0, bottom: 0, left: covered.left }
     : { top: 0, right: 0, bottom: heights.mid + floor, left: 0 };
 
   return (

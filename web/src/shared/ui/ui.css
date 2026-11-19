@@ -3857,3 +3857,65 @@ html {
     height: 44px;
   }
 }
+
+/* Wide window: the map fills the whole window, beneath the floating sidebar and the top bar's buttons (owner's
+   choice, OWNER_UI_REDESIGN §10.6; HIG Sidebars: "Extend visually rich content beneath the sidebar… sidebars can
+   float above content in the Liquid Glass layer"; Toolbars: buttons over content "always remain visible"). The top
+   bar has no strip of its own there: its buttons are glass circles over the map, with a stroke and a shadow to stand
+   out from it (HIG Maps; WCAG 1.4.11). The panel sits beside the sidebar, below those buttons, and follows it when
+   the sidebar hides. */
+@media (min-width: 960px) {
+  .pw-map-stage.is-wide {
+    --panel-left: var(--shell-gap);
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    height: auto;
+  }
+  .pw-shell.has-sidebar .pw-map-stage.is-wide {
+    --panel-left: calc(var(--sidebar-width) + 2 * var(--shell-gap));
+  }
+  .pw-map-stage.is-wide .pw-map-panel {
+    top: 60px;
+    left: var(--panel-left);
+    transition: left 0.24s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  .pw-map-stage.is-wide .pw-map-zoom {
+    top: 64px;
+  }
+  .pw-map-stage.is-wide .pw-map-actions {
+    top: 64px;
+    left: calc(var(--panel-left) + 460px + 10px);
+  }
+  .pw-shell-main:has(.pw-map-stage.is-wide) .pw-topbar {
+    background: transparent;
+    pointer-events: none;
+  }
+  .pw-shell-main:has(.pw-map-stage.is-wide) .pw-topbar > * {
+    pointer-events: auto;
+  }
+  .pw-shell-main:has(.pw-map-stage.is-wide) .pw-sidebar-toggle,
+  .pw-shell-main:has(.pw-map-stage.is-wide) .pw-account-button {
+    border: 1px solid color-mix(in srgb, var(--line) 70%, transparent);
+    background: var(--shell-glass);
+    box-shadow: var(--shadow-raised);
+    -webkit-backdrop-filter: blur(20px) saturate(1.4);
+    backdrop-filter: blur(20px) saturate(1.4);
+  }
+  .pw-shell-main:has(.pw-map-stage.is-wide) .pw-sidebar-toggle {
+    color: var(--ink);
+  }
+}
+@media (min-width: 960px) and (prefers-reduced-motion: reduce) {
+  .pw-map-stage.is-wide .pw-map-panel {
+    transition: none;
+  }
+}
+@media (min-width: 960px) and ((prefers-reduced-transparency: reduce) or (prefers-contrast: more)) {
+  .pw-shell-main:has(.pw-map-stage.is-wide) .pw-sidebar-toggle,
+  .pw-shell-main:has(.pw-map-stage.is-wide) .pw-account-button {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    background: var(--surface-raised);
+  }
+}

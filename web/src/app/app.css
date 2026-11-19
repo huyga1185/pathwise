@@ -126,6 +126,11 @@
 html:has(.pw-shell) {
   scrollbar-gutter: stable;
 }
+/* A plan on the full map (G5, §10.6) never scrolls: no room kept for a scrollbar, so the map reaches the window's
+   right edge. */
+html:has(.pw-map-stage.is-wide) {
+  scrollbar-gutter: auto;
+}
 
 /* Signing in or out (features/auth/sceneTransition.ts): the old screen fades out, the new one fades in and rises a
    little once drawn. CSS on the app's root, nothing frozen. */
