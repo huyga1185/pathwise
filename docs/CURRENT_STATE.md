@@ -362,3 +362,4 @@ Nhóm: (1) nghiệp vụ/hiểu sai yêu cầu · (2) implementation · (3) ki�
 | 2026-11-19 | branch `feat/owner-ui-g5` | — | Điểm giao trên bản đồ là ghim (số thứ tự bên trong khi đã xếp) thay cho chấm tròn (`OWNER_UI_REDESIGN.md` §10.15). |
 | 2026-11-19 | branch `feat/owner-ui-g5` | — | Ghim điểm giao theo kiểu fb_17: vòng trắng giữa đầu, số thứ tự trong vòng trắng (`OWNER_UI_REDESIGN.md` §10.15). |
 | 2026-11-19 | branch `feat/owner-ui-g6` | — | Thiết kế G6 (Báo cáo): khoảng ngày segmented + tùy chọn, nhóm số, biểu đồ có chú giải, đường tách, chọn ngày bằng chuột / chạm / bàn phím (`OWNER_UI_REDESIGN.md` §11). |
+| 2026-11-19 | branch `feat/owner-ui-g6` | — | G6 bước 1: biểu đồ theo ngày có chú giải, đường tách, chọn ngày bằng chuột / chạm / bàn phím, nhãn trợ năng từng ngày (`OWNER_UI_REDESIGN.md` §11.6). |

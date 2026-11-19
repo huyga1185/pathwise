@@ -62,7 +62,7 @@ describe('Báo cáo', () => {
     expect(screen.getByText('Kế hoạch giao việc').parentElement).toHaveTextContent('Kế hoạch giao việc7');
     expect(screen.getByText('6 hoàn thành · 1 nháp · 1 đã huỷ')).toBeInTheDocument();
     expect(screen.getByText('92,7%')).toBeInTheDocument();
-    expect(screen.getByRole('img', { name: /Biểu đồ cột chồng/ })).toBeInTheDocument();
+    expect(screen.getByRole('slider', { name: /Biểu đồ cột chồng/ })).toBeInTheDocument();
     const drivers = screen.getByRole('table', { name: 'Theo tài xế' });
     expect(within(drivers).getByText('Tùng')).toBeInTheDocument();
     expect(within(drivers).getByText('201,0 km')).toBeInTheDocument();

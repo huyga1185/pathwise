@@ -701,3 +701,7 @@ Phạm vi: `/reports?from=&to=` (SCREENS §1; API `GET /reports/summary`, `/repo
 3. Tài xế, lý do: bảng / hàng + sheet.
 4. Đo theo APPLE_CHECKLIST; SCREENS, DESIGN_SYSTEM, CURRENT_STATE; e2e.
 
+### 11.6 Làm (2026-11-19, đang làm)
+
+- **Bước 1 xong:** `DailyBarChart` (dùng chung Báo cáo và Tổng quan quản trị, G6-Q4): chú giải có chữ dưới biểu đồ; đường tách giữa các phần cột chồng (viền màu nền); chọn ngày bằng rê / bấm / chạm cả vùng vẽ (HIG: *"expanding the hit target to include the entire plot area"*), cột được chọn đậm, cột khác nhạt; vùng vẽ là một điểm Tab vai trò `slider` (←/→/Home/End chọn ngày, Escape bỏ; giá trị đọc là ngày đầy đủ và số liệu); dòng tóm tắt (`summary`) đổi theo ngày chọn và được đọc khi đổi; danh sách ẩn mỗi ngày một dòng ("Thứ Hai, 1 tháng 12, 2026: 30 đã giao, …", `spokenDate`); hình vẽ và nhãn trục ẩn khỏi trình đọc màn hình; bỏ tooltip (chỉ hiện khi rê chuột).
+

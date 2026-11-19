@@ -108,3 +108,15 @@ export function shortDate(day: string): string {
   const [, month, date] = day.split('-');
   return `${date}/${month}`;
 }
+
+/**
+ * "Thứ Hai, 1 tháng 12, 2026" from "2026-12-01": a day spelled out for assistive technologies (HIG Charts: "June 6"
+ * is clearer than "6/6").
+ */
+export function spokenDate(localDate: string): string {
+  const [year, month, day] = localDate.split('-').map(Number);
+  const date = new Date(Date.UTC(year ?? 1970, (month ?? 1) - 1, day ?? 1));
+  const weekday = new Intl.DateTimeFormat('vi-VN', { weekday: 'long', timeZone: 'UTC' }).format(date);
+  const capital = weekday.charAt(0).toLocaleUpperCase('vi-VN') + weekday.slice(1);
+  return `${capital}, ${day} tháng ${month}, ${year}`;
+}

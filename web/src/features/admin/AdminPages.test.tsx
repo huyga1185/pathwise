@@ -189,7 +189,7 @@ describe('Khu quản trị (W11)', () => {
     expect(await screen.findByText('96,5%')).toBeInTheDocument();
     expect(screen.getByText('12 chủ · 9 điều phối · 40 tài xế · 1 quản trị')).toBeInTheDocument();
     expect(screen.getByText('Tỉ lệ lỗi —')).toBeInTheDocument();
-    expect(screen.getByRole('img', { name: /kế hoạch giao việc mỗi ngày, 30 ngày, tổng 200/ })).toBeInTheDocument();
+    expect(screen.getByRole('slider', { name: /kế hoạch giao việc mỗi ngày, 30 ngày, tổng 200/ })).toBeInTheDocument();
     expect(await screen.findByText(/tính từ 14\/11 08:00/)).toBeInTheDocument();
     expect(screen.getByText('2 lỗi trong 24 giờ')).toBeInTheDocument();
     expect(within(screen.getByRole('table', { name: /Thời gian phản hồi/ })).getByText('85 ms')).toBeInTheDocument();
