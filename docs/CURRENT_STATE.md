@@ -368,3 +368,4 @@ Nhóm: (1) nghiệp vụ/hiểu sai yêu cầu · (2) implementation · (3) ki�
 | 2026-11-19 | branch `feat/owner-ui-g6` | — | G6 bước 4: đo trang Báo cáo (4 cỡ, sáng/tối), SCREENS và DESIGN_SYSTEM cho Báo cáo và biểu đồ dùng chung (`OWNER_UI_REDESIGN.md` §11.6). |
 | 2026-11-19 | branch `feat/owner-ui-g6` | — | Biểu đồ theo ngày: nhãn ngày nhịp đều kiểu Health (tuần: thứ; dài hơn: mỗi 7 ngày), trục số bên phải (`OWNER_UI_REDESIGN.md` §11.7). |
 | 2026-11-19 | branch `feat/owner-ui-g6` | — | Báo cáo: tài xế 10 một trang, tên dài cắt 2 dòng có sheet đọc đủ, lý do không cắt, bảng không cuộn ngang (cột báo kết quả gập dưới tên), vòng xoay lúc tải, chuyển động; checklist §1b mới (`OWNER_UI_REDESIGN.md` §11.8). |
+| 2026-11-20 | branch `feat/owner-ui-g6` | — | Báo cáo: ô Từ ngày – Đến ngày trên PC xếp ngang, căn giữa dưới thanh khoảng ngày (`OWNER_UI_REDESIGN.md` §11.9). |

@@ -30,6 +30,18 @@
 .pw-reports-dates .pw-field {
   flex: 0 1 220px;
 }
+/* Wide window: the two dates side by side, centred under the period control (which is centred there too, HIG Tab views),
+   so the control and its fields read as one block. */
+@media (min-width: 960px) {
+  .pw-reports-dates {
+    align-self: center;
+    justify-content: center;
+    flex-wrap: nowrap;
+  }
+  .pw-reports-dates .pw-field {
+    flex: 0 0 220px;
+  }
+}
 .pw-reports-totals {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));

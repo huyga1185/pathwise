@@ -727,3 +727,7 @@ Chủ dự án: giữ biểu đồ cột đứng (đã xem phác hai cách cho 3
 | L5 chuyển động | ✅ (đã thêm) Báo cáo mới trồi lên (`pw-result-in`), đổi trang tài xế mờ vào; sheet có sẵn; giảm chuyển động chỉ mờ |
 | L6 nhóm, bo | ✅ Nhóm số, biểu đồ, bảng: nền bo 16 không viền |
 
+### 11.9 Ô ngày "Tùy chọn" trên máy tính (2026-11-20)
+
+Chủ dự án: "Từ ngày – Đến ngày" ở Tùy chọn trên PC xếp ngang, căn giữa. Trước đó hai ô xếp dọc sát trái (khung `flex-wrap` co theo nội dung nên tự xuống dòng) trong khi thanh chọn khoảng căn giữa (HIG Tab views, G3). Từ 960px: hai ô 220px cạnh nhau, khối căn giữa dưới thanh (tâm trùng tâm thanh: 1440 → 835/835, 960 → 595/595); lỗi hoặc gợi ý dưới một ô không đẩy ô kia (căn trên, fb_1). Điện thoại giữ xếp dọc. Không tràn ngang ở 1440 / 960 / 390px.
+
