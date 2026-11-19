@@ -6,7 +6,7 @@
 
 ## 0. Cách dùng
 
-1. Chọn các mục ở §1 (mọi thành phần) và mục của từng thành phần bị đụng ở §3.
+1. Chọn các mục ở §1 (mọi thành phần) và mục của từng thành phần bị đụng ở §3. **Mỗi trang / màn mới hoặc làm lại phải qua đủ §1b (trang và danh sách) trước khi báo xong** — không đợi chủ dự án nhắc (chủ dự án yêu cầu 2026-11-19, sau nhiều lần phải nhắc cắt chữ, phân trang, chuyển động).
 2. Kiểm bằng cách ghi ở cột "Cách kiểm": đo thật, chụp thật, có test; không kiểm bằng trí nhớ.
 3. Báo cáo cuối task (và mô tả PR) liệt kê từng mục: ✅ đạt, ❌ chưa đạt (kèm lý do, hoặc ghi lệch có chủ đích vào `LIQUID_GLASS.md`), — không áp dụng.
 4. Số đo mới (bo góc, thời lượng, độ đậm…) phải có nguồn hoặc ghi rõ [Web]/[Chủ dự án] kèm lý do; số tự chọn không nguồn thì sửa.
@@ -41,6 +41,17 @@
 | C13 | Cùng loại thành phần thì cùng hình, cỡ, trạng thái ở mọi màn | [Chủ dự án] "ưu tiên tính nhất quán" | So ảnh các màn |
 | C14 | Không có chữ/hint đè lên nhau ở mọi khổ (đặc biệt 320–390px) | [Web] | Đo giao cắt `getBoundingClientRect` |
 | C15 | Sáng/tối theo hệ điều hành, đổi ngay khi hệ điều hành đổi; không thêm nút hay lựa chọn giao diện riêng; đẹp và đủ tương phản ở cả hai, kể cả khi bật tăng tương phản/giảm trong suốt | [Apple] HIG Dark Mode: "Avoid offering an app-specific appearance setting", "Ensure that your app looks good in both appearance modes"; P-73 | Chụp hai theme; đổi `colorScheme` khi trang đang mở |
+
+## 1b. Trang và danh sách (mọi trang mới hoặc làm lại)
+
+| # | Yêu cầu | Nguồn | Cách kiểm |
+|---|---|---|---|
+| L1 | **Chữ dài:** tên/câu dài tối đa 2 dòng rồi "…" (bẻ cả chuỗi không dấu cách), `title` có đủ chữ; chữ bị cắt thì **phải có chỗ đọc đủ** (sheet chi tiết, trang con); chữ không mở được ở đâu khác thì **không cắt**, cho xuống dòng. Hàng điện thoại: dòng chính 1 dòng "…", dòng phụ xuống dòng; tiêu đề trang không tràn | `OWNER_UI_REDESIGN.md` G2.11, §8.10, §9.8; [Apple] HIG Typography: *"Avoid truncating text in scrollable regions unless people can open a separate view to read the rest"* | Thử dữ liệu dài tối đa (tên 100–150 ký tự, chuỗi không dấu cách) ở 1440 / 1024 / 960 / 390 / 320px; đo không phần tử nào tràn |
+| L2 | **Phân trang:** danh sách có thể dài (API phân trang, hoặc số dòng không giới hạn theo dữ liệu) có điểm kết thúc "‹ Trang x/y ›", trang trên URL, đổi lọc về trang 1, trang quá cuối về trang cuối; điện thoại thanh trang ở trên danh sách. Danh sách nhỏ theo bản chất (xe, thành viên, tối đa N theo API) thì không | G2.9, §8.17, §11 | Thử đủ dòng cho ≥ 2 trang; tải lại / Back giữ trang |
+| L3 | **Bảng không cuộn ngang:** bảng hẹp thì cột ít quan trọng thành dòng phụ dưới tên; điện thoại là danh sách hàng, bấm mở sheet đủ mọi trường | G2.11, G2.5, G3 | Đo `scrollWidth` của bảng ở 960–1440px; điện thoại không còn bảng |
+| L4 | **Trống / đang tải / lỗi:** trống kiểu `ContentUnavailableView` không thẻ; đang tải là vòng xoay hoặc hàng giữ chỗ sau 0,3 s; lỗi là `ErrorBanner` | G2.6, G2.7, G2.12 | Giả từng trạng thái bằng `page.route` |
+| L5 | **Chuyển động:** khối xuất hiện, đổi màn tại chỗ, mở/đóng (sheet, alert, nhóm thu gọn) có hoạt ảnh theo §6.2 / §9.6; thao tác lặp nhiều không thừa chuyển động; giảm chuyển động chỉ mờ | §6.2, §9.6, §10.9; [Apple] HIG Motion | Ghi `getAnimations()` khi thao tác; thử `prefers-reduced-motion` |
+| L6 | **Nhóm, bo, viền** theo khu đã redesign (nhóm nền bo 16 không viền; lồng trong panel bo đồng tâm hoặc dự phòng) | DESIGN_SYSTEM "Bo góc"; §9.9 | So ảnh với các trang đã redesign |
 
 ## 2. Hình dạng, vật liệu, bóng
 
