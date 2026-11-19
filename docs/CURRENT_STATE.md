@@ -349,3 +349,4 @@ Nhóm: (1) nghiệp vụ/hiểu sai yêu cầu · (2) implementation · (3) ki�
 | 2026-11-18 | branch `feat/owner-ui-g5` | — | G5 bước 5: chỉnh tay trong panel / sheet (tuyến xếp dọc, không bị cắt; điện thoại "Chuyển sang…" dưới tên điểm) (`OWNER_UI_REDESIGN.md` §10.5). |
 | 2026-11-18 | branch `feat/owner-ui-g5` | — | G5 bước 6: màn tìm toạ độ trên bản đồ phủ trang, thẻ sửa điểm, ghim trên bản đồ lớn, bỏ "Phóng to bản đồ" và `Dialog` cũ ở trang kế hoạch (`OWNER_UI_REDESIGN.md` §10.5). |
 | 2026-11-19 | branch `feat/owner-ui-g5` | — | G5 bước 7: đo các màn kế hoạch (4 cỡ, sáng/tối), grabber 44px khi cảm ứng, hàng tiêu đề panel xuống dòng; SCREENS và DESIGN_SYSTEM ghi bố cục bản đồ phủ trang (`OWNER_UI_REDESIGN.md` §10.5). |
+| 2026-11-19 | branch `feat/owner-ui-g5` | — | Ghim điểm giao riêng (không còn ngôi nhà của kho) ở màn tìm toạ độ; điện thoại gõ địa chỉ thì sheet lên nấc cao (`OWNER_UI_REDESIGN.md` §10.2 G5-Q16, Q17). |

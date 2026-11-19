@@ -12,6 +12,17 @@ export interface PinMapLabels extends MapFrameLabels {
 }
 
 const pinIcon = divIcon({ html: DEPOT_SVG, className: 'pw-depot-marker', iconSize: [30, 30], iconAnchor: [15, 27] });
+/** A delivery stop's pin: a map pin in the accent colour, its tip on the place — not the depot's house (G5). */
+const STOP_PIN_SVG =
+  '<svg viewBox="0 0 28 38" width="28" height="38" aria-hidden="true" class="pw-stop-pin-svg">' +
+  '<path d="M14 1.5C7.1 1.5 1.5 7 1.5 13.8c0 8.6 10.6 20.6 11.6 21.7a1.2 1.2 0 0 0 1.8 0c1-1.1 11.6-13.1 11.6-21.7C26.5 7 20.9 1.5 14 1.5Z" stroke="#ffffff" stroke-width="2"/>' +
+  '<circle cx="14" cy="13.8" r="4.6" fill="#ffffff"/></svg>';
+const stopPinIcon = divIcon({
+  html: STOP_PIN_SVG,
+  className: 'pw-stop-pin',
+  iconSize: [28, 38],
+  iconAnchor: [14, 37],
+});
 
 /**
  * A map with one pin (the depot of DESIGN_SYSTEM): click the map, drag the pin or use "place at centre" to move it.
@@ -24,10 +35,13 @@ export function PinMap({
   labels,
   className,
   start: startAt,
+  kind = 'depot',
 }: {
   value: LatLng | null;
   /** Where to open without a pin (the depot), instead of the city's default centre. */
   start?: LatLng;
+  /** What the pin marks: the depot (a house) or a delivery stop (a map pin). */
+  kind?: 'depot' | 'stop';
   onChange?: (value: LatLng) => void;
   readOnly?: boolean;
   labels: PinMapLabels;
@@ -53,7 +67,15 @@ export function PinMap({
       onReady={setMap}
     >
       {editable ? <ClickToPlace onPlace={onChange} /> : null}
-      {value ? <Pin value={value} label={labels.pin} draggable={editable} onMove={onChange} /> : null}
+      {value ? (
+        <Pin
+          value={value}
+          label={labels.pin}
+          draggable={editable}
+          onMove={onChange}
+          icon={kind === 'stop' ? stopPinIcon : pinIcon}
+        />
+      ) : null}
       {editable ? (
         <MapOverlay className="pw-map-actions">
           <button
@@ -83,11 +105,13 @@ function Pin({
   label,
   draggable,
   onMove,
+  icon,
 }: {
   value: LatLng;
   label: string;
   draggable: boolean;
   onMove?: (value: LatLng) => void;
+  icon: ReturnType<typeof divIcon>;
 }) {
   const ref = useRef<LeafletMarker>(null);
   const handlers = useMemo(
@@ -103,7 +127,7 @@ function Pin({
     <Marker
       ref={ref}
       position={[value.lat, value.lon]}
-      icon={pinIcon}
+      icon={icon}
       draggable={draggable}
       keyboard={false}
       title={label}

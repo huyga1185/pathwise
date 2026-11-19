@@ -190,6 +190,7 @@ function GeocodeView({ plan }: { plan: PlanDetail }) {
             key={`pin-${editing.id}`}
             value={pin ?? current}
             start={plan.depot}
+            kind="stop"
             onChange={setPin}
             labels={{
               zoomIn: vi.map.zoomIn,
@@ -435,6 +436,11 @@ function FixStop({
         disabled={disabled}
         error={address === (stop.address ?? '') ? geocodeMessage : undefined}
         onChange={(event) => setAddress(event.target.value)}
+        // Phone: typing raises the sheet so the keyboard does not cover the field and its button (WCAG 2.4.11);
+        // leaving the field keeps the detent (pull it down to place a pin).
+        onFocus={() => {
+          if (stage && !stage.wide) stage.setDetent('high');
+        }}
       />
       <div className="pw-inline-action">
         <Button

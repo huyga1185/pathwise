@@ -286,6 +286,27 @@ describe('Tìm toạ độ trên bản đồ (G5.15)', () => {
   });
 });
 
+describe('Thẻ sửa điểm trên điện thoại (G5)', () => {
+  it('gõ địa chỉ thì sheet lên nấc cao; ghim của điểm giao là ghim riêng, không phải ngôi nhà của kho', async () => {
+    server.use(
+      http.get(`${API}/plans/83`, () => ok(geocoded())),
+      ...signedInHandlers(),
+    );
+    const { container } = renderApp('/plans/83');
+    const user = userEvent.setup();
+
+    await screen.findByRole('heading', { name: 'Sửa ĐH-1008 · Chị Thảo', level: 2 });
+    const sheet = container.ownerDocument.querySelector('.pw-map-sheet') as HTMLElement;
+    expect(sheet).toHaveAttribute('data-detent', 'mid');
+    await user.click(screen.getByLabelText('Địa chỉ'));
+    expect(sheet).toHaveAttribute('data-detent', 'high');
+
+    await user.click(screen.getByRole('button', { name: 'Đặt ghim ở giữa bản đồ' }));
+    expect(container.ownerDocument.querySelector('.pw-stop-pin')).not.toBeNull();
+    expect(container.ownerDocument.querySelector('.pw-map-stage .pw-depot-marker')).toBeNull();
+  });
+});
+
 describe('Tìm lại một địa chỉ (G4 §9.5)', () => {
   it('trong lúc chờ: "Đang tìm toạ độ…" cạnh nút; bản đồ và các nút giữ nguyên (không tắt, không mất)', async () => {
     let answer: () => void = () => {};
