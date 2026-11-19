@@ -132,3 +132,53 @@
 .pw-reports-driver-sub {
   white-space: nowrap;
 }
+/* A reason is read here only: all of it, however long (G2.11, HIG Typography). */
+.pw-reports-reason-text {
+  display: block;
+  -webkit-line-clamp: unset;
+  line-clamp: unset;
+  overflow: visible;
+}
+/* The driver's full name in its sheet: any length, unspaced names break. */
+.pw-reports-detail dd {
+  overflow-wrap: anywhere;
+}
+.pw-reports-col-reason {
+  width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+/* The drivers table measures its own width: under 760px (it needs ~750 with every column) the "Báo kết quả" column
+   becomes a line under the name instead of making the table scroll sideways (G2.11; checklist L3). */
+.pw-reports-drivers {
+  container-type: inline-size;
+}
+.pw-reports-driver-reported {
+  display: none;
+  white-space: nowrap;
+}
+@container (max-width: 760px) {
+  .pw-reports-drivers .pw-reports-col-reported {
+    display: none;
+  }
+  .pw-reports-drivers .pw-reports-driver-reported {
+    display: block;
+  }
+}
+/* Motion (§9.6; checklist L5): a new period's report rises in; another page of drivers fades in. Reduced motion:
+   fades only. */
+.pw-reports-body {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  animation: pw-result-in 0.32s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.pw-reports-drivers .pw-table-wrap,
+.pw-reports-page {
+  animation: pw-result-fade 0.2s ease both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .pw-reports-body {
+    animation-name: pw-result-fade;
+  }
+}

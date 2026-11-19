@@ -140,6 +140,41 @@ describe('Báo cáo', () => {
     expect(within(drivers).getByRole('columnheader', { name: 'Báo kết quả' })).toBeInTheDocument();
   });
 
+  it('tài xế 10 người một trang: trang trên URL, đổi khoảng thì về trang 1, trang quá cuối thì về trang cuối', async () => {
+    const many = (from: string, to: string) => {
+      const base = report(from, to);
+      const one = base.drivers[0] as Record<string, unknown>;
+      return {
+        ...base,
+        drivers: Array.from({ length: 12 }, (_, i) => ({ ...one, driverId: 100 + i, fullName: `Tài xế ${i + 1}` })),
+      };
+    };
+    server.use(
+      http.get(`${API}/reports/summary`, ({ request }) => {
+        const url = new URL(request.url);
+        return ok(many(url.searchParams.get('from') ?? '', url.searchParams.get('to') ?? ''));
+      }),
+      storeHandler(),
+      ...signedInHandlers(),
+    );
+    const { router } = renderApp('/reports?from=2026-12-01&to=2026-12-07&page=9');
+    const user = userEvent.setup();
+
+    // Past the end: the last page.
+    const list = await screen.findByRole('list', { name: 'Theo tài xế' });
+    expect(within(list).getAllByRole('listitem')).toHaveLength(2);
+    expect(screen.getByRole('navigation', { name: 'Trang danh sách tài xế' })).toHaveTextContent('Trang 2/2');
+
+    await user.click(screen.getByRole('button', { name: /Trang trước/ }));
+    await waitFor(() => expect(router.state.location.search).not.toMatch(/page=/));
+    expect(within(screen.getByRole('list', { name: 'Theo tài xế' })).getAllByRole('listitem')).toHaveLength(10);
+
+    await user.click(screen.getByRole('button', { name: /Trang sau/ }));
+    await waitFor(() => expect(router.state.location.search).toMatch(/page=2/));
+    await user.click(screen.getByRole('tab', { name: '7 ngày' }));
+    await waitFor(() => expect(router.state.location.search).not.toMatch(/page=/));
+  });
+
   it('Xuất CSV tải file của API với tên trong Content-Disposition', async () => {
     let query = '';
     server.use(

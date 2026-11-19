@@ -17,7 +17,16 @@ import {
 } from '@/shared/format';
 import { useMediaQuery, WIDE_QUERY } from '@/shared/hooks/useMediaQuery';
 import { vi } from '@/shared/i18n/vi';
-import { Button, DataTable, DateField, ErrorBanner, SegmentedControl, Sheet } from '@/shared/ui';
+import {
+  ActivityIndicator,
+  Button,
+  DataTable,
+  DateField,
+  ErrorBanner,
+  Pager,
+  SegmentedControl,
+  Sheet,
+} from '@/shared/ui';
 import { ChartIcon, ChevronRightIcon, ShareIcon } from '@/shared/ui/icons';
 import {
   MAX_DAYS,
@@ -61,7 +70,15 @@ export function ReportsPage() {
   const [exporting, setExporting] = useState(false);
   const [exportFailure, setExportFailure] = useState<unknown>(null);
 
+  // A new period starts the drivers' list on its first page (G2.9).
   const setPeriod = (next: { from: string; to: string }) => setParams(next, { replace: true });
+  const page = Math.max(1, Math.floor(Number(params.get('page')) || 1));
+  const setPage = (next: number) => {
+    const all = new URLSearchParams(params);
+    if (next > 1) all.set('page', String(next));
+    else all.delete('page');
+    setParams(all);
+  };
   const exportCsv = async () => {
     setExporting(true);
     setExportFailure(null);
@@ -156,6 +173,8 @@ export function ReportsPage() {
       </form>
       {exportFailure ? <ErrorBanner title={messageFor(exportFailure)} /> : null}
       {report.isError ? <ErrorBanner title={messageFor(report.error)} /> : null}
+      {/* Loading: the spinner after a moment (G2.12; checklist L4). */}
+      {rangeError === null && report.isPending ? <ActivityIndicator label={vi.pages.loading} /> : null}
       {rangeError === null && report.data ? (
         report.data.plans.total === 0 ? (
           // Empty like ContentUnavailableView, no card (G2.7): a symbol, a title, a line.
@@ -167,17 +186,46 @@ export function ReportsPage() {
             <p>{t.emptyLead}</p>
           </section>
         ) : (
-          <ReportBody report={report.data} timeZone={timeZone} />
+          // A new period's report settles in as a new result (§9.6; checklist L5).
+          <div key={`${report.data.from}-${report.data.to}`} className="pw-reports-body">
+            <ReportBody report={report.data} timeZone={timeZone} page={page} onPage={setPage} />
+          </div>
         )
       ) : null}
     </section>
   );
 }
 
-function ReportBody({ report, timeZone }: { report: StoreReport; timeZone: string }) {
+/** Drivers per page (G2.9 with a fixed size: the table sits under the chart, "fits one screen" does not apply; §11.8). */
+const DRIVERS_PER_PAGE = 10;
+
+function ReportBody({
+  report,
+  timeZone,
+  page: asked,
+  onPage,
+}: {
+  report: StoreReport;
+  timeZone: string;
+  page: number;
+  onPage: (page: number) => void;
+}) {
   const { plans, stops } = report;
   const wide = useMediaQuery(WIDE_QUERY);
   const [opened, setOpened] = useState<ReportDriver | null>(null);
+  const totalPages = Math.max(1, Math.ceil(report.drivers.length / DRIVERS_PER_PAGE));
+  // A page past the end (an old link) shows the last one (G2.9).
+  const page = Math.min(asked, totalPages);
+  const drivers = report.drivers.slice((page - 1) * DRIVERS_PER_PAGE, page * DRIVERS_PER_PAGE);
+  const pager = (
+    <Pager
+      label={t.driversPager}
+      // The pager counts from 0; the URL and this page from 1.
+      page={page - 1}
+      totalPages={totalPages}
+      onPage={(index) => onPage(index + 1)}
+    />
+  );
   const oneDay = report.from === report.to;
   const when = (instant: string | null | undefined) =>
     !instant ? '—' : oneDay ? formatTime(instant, timeZone) : formatDayTime(instant, timeZone);
@@ -240,8 +288,11 @@ function ReportBody({ report, timeZone }: { report: StoreReport; timeZone: strin
               column, so it fits (G2.11). Phone: rows, each opening the driver's numbers in a sheet (G3). */}
           {wide ? (
             <DataTable<ReportDriver>
+              key={page}
               caption={t.drivers}
-              rows={report.drivers}
+              rows={drivers}
+              // A long name is cut to two lines: the whole row opens its sheet with all of it (HIG Typography).
+              onRowClick={setOpened}
               rowKey="driverId"
               empty={t.noDrivers}
               className="pw-list-group"
@@ -251,10 +302,18 @@ function ReportBody({ report, timeZone }: { report: StoreReport; timeZone: strin
                   header: t.driver,
                   render: (row) => (
                     <>
-                      <strong>{row.fullName || t.unnamed}</strong>
+                      <strong className="pw-cell-title" title={row.fullName || undefined}>
+                        {row.fullName || t.unnamed}
+                      </strong>
                       <div className="pw-muted pw-tabular pw-reports-driver-sub">
                         {t.driverSub(row.routes, formatDistance(row.plannedDistanceMeters))}
                       </div>
+                      {/* A narrow table: the first and last results fold under the name (G2.11), as another line. */}
+                      {row.firstResultAt ? (
+                        <div className="pw-muted pw-tabular pw-reports-driver-reported">
+                          {t.reportedLine(t.reportedRange(when(row.firstResultAt), when(row.lastResultAt)))}
+                        </div>
+                      ) : null}
                     </>
                   ),
                 },
@@ -266,7 +325,7 @@ function ReportBody({ report, timeZone }: { report: StoreReport; timeZone: strin
                   key: 'reported',
                   header: t.reported,
                   numeric: true,
-                  className: 'pw-nowrap',
+                  className: 'pw-nowrap pw-reports-col-reported',
                   render: (row) =>
                     row.firstResultAt ? t.reportedRange(when(row.firstResultAt), when(row.lastResultAt)) : '—',
                 },
@@ -275,27 +334,32 @@ function ReportBody({ report, timeZone }: { report: StoreReport; timeZone: strin
           ) : report.drivers.length === 0 ? (
             <p className="pw-muted">{t.noDrivers}</p>
           ) : (
-            <ul className="pw-list-group pw-list-rows" aria-label={t.drivers}>
-              {report.drivers.map((row) => (
-                <li key={row.driverId} className="pw-list-row">
-                  <button
-                    type="button"
-                    className="pw-list-row-main"
-                    aria-label={t.driverOpen(row.fullName || t.unnamed)}
-                    onClick={() => setOpened(row)}
-                  >
-                    <span className="pw-list-row-title">{row.fullName || t.unnamed}</span>
-                    <span className="pw-list-row-sub pw-tabular">
-                      {t.driverRow(row.routes, row.delivered, row.failed, row.skipped, row.pending)}
+            <>
+              {/* Phone: the pager above the list (§8.17), not pinned — the page has other parts under it (§11.8). */}
+              {pager}
+              <ul key={page} className="pw-list-group pw-list-rows pw-reports-page" aria-label={t.drivers}>
+                {drivers.map((row) => (
+                  <li key={row.driverId} className="pw-list-row">
+                    <button
+                      type="button"
+                      className="pw-list-row-main"
+                      aria-label={t.driverOpen(row.fullName || t.unnamed)}
+                      onClick={() => setOpened(row)}
+                    >
+                      <span className="pw-list-row-title">{row.fullName || t.unnamed}</span>
+                      <span className="pw-list-row-sub pw-tabular">
+                        {t.driverRow(row.routes, row.delivered, row.failed, row.skipped, row.pending)}
+                      </span>
+                    </button>
+                    <span className="pw-list-row-chevron" aria-hidden="true">
+                      <ChevronRightIcon />
                     </span>
-                  </button>
-                  <span className="pw-list-row-chevron" aria-hidden="true">
-                    <ChevronRightIcon />
-                  </span>
-                </li>
-              ))}
-            </ul>
+                  </li>
+                ))}
+              </ul>
+            </>
           )}
+          {wide ? pager : null}
         </section>
         <section aria-labelledby="reasons-title">
           <h2 id="reasons-title" className="pw-reports-h2">
@@ -309,7 +373,8 @@ function ReportBody({ report, timeZone }: { report: StoreReport; timeZone: strin
               empty={t.noReasons}
               className="pw-list-group"
               columns={[
-                { key: 'reason', header: t.reason, render: (row) => row.reason },
+                // All of the reason, wrapped (not cut: nothing else shows it; G2.11, HIG Typography).
+                { key: 'reason', header: t.reason, className: 'pw-reports-col-reason', render: (row) => row.reason },
                 { key: 'count', header: t.count, numeric: true, render: (row) => row.count },
               ]}
             />
@@ -320,7 +385,8 @@ function ReportBody({ report, timeZone }: { report: StoreReport; timeZone: strin
             <ul className="pw-list-group pw-list-rows" aria-label={t.reasons}>
               {report.failureReasons.map((row) => (
                 <li key={row.reason} className="pw-list-row pw-reports-reason">
-                  <span className="pw-list-row-title">{row.reason}</span>
+                  {/* Not cut: nothing else shows the whole reason (HIG Typography). */}
+                  <span className="pw-list-row-title pw-reports-reason-text">{row.reason}</span>
                   <span className="pw-tabular">{row.count}</span>
                 </li>
               ))}

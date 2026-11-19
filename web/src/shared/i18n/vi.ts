@@ -1100,7 +1100,9 @@ export const vi = {
         .join(' · '),
     reported: 'Báo kết quả',
     reportedRange: (first: string, last: string) => (first === last ? first : `${first} – ${last}`),
+    reportedLine: (range: string) => `báo ${range}`,
     driverOpen: (name: string) => `${name}: xem chi tiết`,
+    driversPager: 'Trang danh sách tài xế',
     close: 'Đóng',
   },
   pages: {

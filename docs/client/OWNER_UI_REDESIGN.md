@@ -714,3 +714,16 @@ Chủ dự án: biểu đồ trên PC không đều, trên điện thoại chỉ
 
 Làm (biểu đồ dùng chung, cả Tổng quan quản trị): ≤ 7 ngày — mọi ngày, nhãn là thứ viết tắt (T2 … CN, `weekdayShort`); dài hơn — một mốc mỗi 7 ngày tính từ ngày đầu (01/11, 08/11, 15/11, 22/11, 29/11), nhãn bắt đầu từ mép trái cột của mốc (căn giữa thì nhãn đầu bị mép biểu đồ cắt ở điện thoại); không để thư viện bỏ nhãn; trục số ở bên phải, vùng vẽ thẳng mép trái với tiêu đề; trang quản trị thêm ngày đầy đủ cho trình đọc màn hình. Đo 1440 / 1024 / 390 / 320px với 7, 14, 30 ngày: nhịp giống nhau ở mọi bề ngang, không chồng, không bị cắt.
 
+### 11.8 Cắt chữ, phân trang và rà checklist §1b (2026-11-19)
+
+Chủ dự án: giữ biểu đồ cột đứng (đã xem phác hai cách cho 30 ngày); cắt chữ xử lý như docs; phân trang ngang như tab Kế hoạch; và ghi các việc hay phải nhắc vào checklist → `APPLE_CHECKLIST.md` §1b (L1–L6), mọi trang mới phải qua trước khi báo xong. Trả lời: **10 tài xế một trang** (G2.9 "vừa một màn hình" không áp vì bảng nằm dưới biểu đồ); thanh trang **như Kế hoạch, không ghim** (PC dưới bảng, điện thoại trên danh sách; trang còn phần khác bên dưới).
+
+| Mục | Kết quả |
+|---|---|
+| L1 chữ dài | ✅ Tên tài xế (thử 100 ký tự, 60 ký tự không dấu cách): bảng 2 dòng "…" + `title`, **bấm hàng mở sheet đủ chữ** (HIG Typography: cắt thì phải có chỗ đọc đủ); hàng điện thoại 2 dòng, sheet đủ chữ. Lý do không giao được (thử 255 ký tự, 80 ký tự không dấu cách): **không cắt**, xuống dòng — không có chỗ nào khác hiện đủ. Đo 1920 / 1440 / 1024 / 960 / 390 / 320px: không tràn |
+| L2 phân trang | ✅ Tài xế 10 một trang, "‹ Trang x/y ›" (`Pager`), `?page=` trên URL, đổi khoảng ngày về trang 1, trang quá cuối về trang cuối (test). Lý do: tối đa 10 theo API → không |
+| L3 bảng không cuộn ngang | ✅ (đã sửa) Bảng lý do trước đó tràn (ô không xuống dòng) → xuống dòng; bảng tài xế cần ~750px: dưới 760px (container query) cột "Báo kết quả" thành dòng phụ "báo 01/12 08:12 – 07/12 16:40" (G2.11). Đo: 917/917 (1920, 6 cột), 745/745, 724/724, 663/663 |
+| L4 trống / tải / lỗi | ✅ (đã sửa) Trước đó tải lần đầu không hiện gì → `ActivityIndicator` (sau 0,3 s); đổi khoảng giữ số cũ tới khi có số mới; trống không thẻ; lỗi `ErrorBanner` |
+| L5 chuyển động | ✅ (đã thêm) Báo cáo mới trồi lên (`pw-result-in`), đổi trang tài xế mờ vào; sheet có sẵn; giảm chuyển động chỉ mờ |
+| L6 nhóm, bo | ✅ Nhóm số, biểu đồ, bảng: nền bo 16 không viền |
+
