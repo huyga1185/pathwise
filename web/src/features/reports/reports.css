@@ -106,6 +106,29 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
-.pw-reports-drivers .pw-table {
-  min-width: 860px;
+/* The driver's numbers in a sheet (phone, G3). */
+.pw-reports-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin: 0;
+}
+.pw-reports-detail dt {
+  font-size: 0.8125rem;
+  line-height: 1.125rem;
+  color: var(--ink-muted);
+}
+.pw-reports-detail dd {
+  margin: 2px 0 0;
+}
+/* A reason row on a phone: the reason, its count at the end. */
+.pw-reports-reason {
+  justify-content: space-between;
+  gap: 12px;
+  /* No chevron at the end: the same 16px as the leading side. */
+  padding-right: 16px;
+}
+/* Wide: the routes and kilometres under a driver's name stay on one line; the name column fits them. */
+.pw-reports-driver-sub {
+  white-space: nowrap;
 }

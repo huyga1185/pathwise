@@ -16,8 +16,8 @@ import {
 } from '@/shared/format';
 import { useMediaQuery, WIDE_QUERY } from '@/shared/hooks/useMediaQuery';
 import { vi } from '@/shared/i18n/vi';
-import { Button, DataTable, DateField, ErrorBanner, SegmentedControl } from '@/shared/ui';
-import { ChartIcon, ShareIcon } from '@/shared/ui/icons';
+import { Button, DataTable, DateField, ErrorBanner, SegmentedControl, Sheet } from '@/shared/ui';
+import { ChartIcon, ChevronRightIcon, ShareIcon } from '@/shared/ui/icons';
 import {
   MAX_DAYS,
   useReport,
@@ -175,6 +175,8 @@ export function ReportsPage() {
 
 function ReportBody({ report, timeZone }: { report: StoreReport; timeZone: string }) {
   const { plans, stops } = report;
+  const wide = useMediaQuery(WIDE_QUERY);
+  const [opened, setOpened] = useState<ReportDriver | null>(null);
   const oneDay = report.from === report.to;
   const when = (instant: string | null | undefined) =>
     !instant ? '—' : oneDay ? formatTime(instant, timeZone) : formatDayTime(instant, timeZone);
@@ -231,40 +233,123 @@ function ReportBody({ report, timeZone }: { report: StoreReport; timeZone: strin
           <h2 id="drivers-title" className="pw-reports-h2">
             {t.drivers}
           </h2>
-          <DataTable<ReportDriver>
-            caption={t.drivers}
-            rows={report.drivers}
-            rowKey="driverId"
-            empty={t.noDrivers}
-            columns={[
-              { key: 'name', header: t.driver, render: (row) => <strong>{row.fullName || t.unnamed}</strong> },
-              { key: 'routes', header: t.routes, numeric: true, render: (row) => row.routes },
-              { key: 'delivered', header: t.delivered, numeric: true, render: (row) => row.delivered },
-              { key: 'failed', header: t.failed, numeric: true, render: (row) => row.failed },
-              { key: 'skipped', header: t.skipped, numeric: true, render: (row) => row.skipped },
-              { key: 'pending', header: t.pending, numeric: true, render: (row) => row.pending },
-              { key: 'km', header: t.km, numeric: true, render: (row) => formatDistance(row.plannedDistanceMeters) },
-              { key: 'first', header: t.first, numeric: true, render: (row) => when(row.firstResultAt) },
-              { key: 'last', header: t.last, numeric: true, render: (row) => when(row.lastResultAt) },
-            ]}
-          />
+          {/* Wide: a table in its group; the routes and kilometres under the name, the first and last results in one
+              column, so it fits (G2.11). Phone: rows, each opening the driver's numbers in a sheet (G3). */}
+          {wide ? (
+            <DataTable<ReportDriver>
+              caption={t.drivers}
+              rows={report.drivers}
+              rowKey="driverId"
+              empty={t.noDrivers}
+              className="pw-list-group"
+              columns={[
+                {
+                  key: 'name',
+                  header: t.driver,
+                  render: (row) => (
+                    <>
+                      <strong>{row.fullName || t.unnamed}</strong>
+                      <div className="pw-muted pw-tabular pw-reports-driver-sub">
+                        {t.driverSub(row.routes, formatDistance(row.plannedDistanceMeters))}
+                      </div>
+                    </>
+                  ),
+                },
+                { key: 'delivered', header: t.delivered, numeric: true, render: (row) => row.delivered },
+                { key: 'failed', header: t.failed, numeric: true, render: (row) => row.failed },
+                { key: 'skipped', header: t.skipped, numeric: true, render: (row) => row.skipped },
+                { key: 'pending', header: t.pending, numeric: true, render: (row) => row.pending },
+                {
+                  key: 'reported',
+                  header: t.reported,
+                  numeric: true,
+                  className: 'pw-nowrap',
+                  render: (row) =>
+                    row.firstResultAt ? t.reportedRange(when(row.firstResultAt), when(row.lastResultAt)) : '—',
+                },
+              ]}
+            />
+          ) : report.drivers.length === 0 ? (
+            <p className="pw-muted">{t.noDrivers}</p>
+          ) : (
+            <ul className="pw-list-group pw-list-rows" aria-label={t.drivers}>
+              {report.drivers.map((row) => (
+                <li key={row.driverId} className="pw-list-row">
+                  <button
+                    type="button"
+                    className="pw-list-row-main"
+                    aria-label={t.driverOpen(row.fullName || t.unnamed)}
+                    onClick={() => setOpened(row)}
+                  >
+                    <span className="pw-list-row-title">{row.fullName || t.unnamed}</span>
+                    <span className="pw-list-row-sub pw-tabular">
+                      {t.driverRow(row.routes, row.delivered, row.failed, row.skipped, row.pending)}
+                    </span>
+                  </button>
+                  <span className="pw-list-row-chevron" aria-hidden="true">
+                    <ChevronRightIcon />
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
         </section>
         <section aria-labelledby="reasons-title">
           <h2 id="reasons-title" className="pw-reports-h2">
             {t.reasons}
           </h2>
-          <DataTable<ReportFailureReason>
-            caption={t.reasons}
-            rows={report.failureReasons}
-            rowKey="reason"
-            empty={t.noReasons}
-            columns={[
-              { key: 'reason', header: t.reason, render: (row) => row.reason },
-              { key: 'count', header: t.count, numeric: true, render: (row) => row.count },
-            ]}
-          />
+          {wide ? (
+            <DataTable<ReportFailureReason>
+              caption={t.reasons}
+              rows={report.failureReasons}
+              rowKey="reason"
+              empty={t.noReasons}
+              className="pw-list-group"
+              columns={[
+                { key: 'reason', header: t.reason, render: (row) => row.reason },
+                { key: 'count', header: t.count, numeric: true, render: (row) => row.count },
+              ]}
+            />
+          ) : report.failureReasons.length === 0 ? (
+            <p className="pw-muted">{t.noReasons}</p>
+          ) : (
+            // Read only: nothing more to open, so no chevron.
+            <ul className="pw-list-group pw-list-rows" aria-label={t.reasons}>
+              {report.failureReasons.map((row) => (
+                <li key={row.reason} className="pw-list-row pw-reports-reason">
+                  <span className="pw-list-row-title">{row.reason}</span>
+                  <span className="pw-tabular">{row.count}</span>
+                </li>
+              ))}
+            </ul>
+          )}
         </section>
       </div>
+      {/* A driver's numbers on a phone (G3: a sheet with all of a row). Close only: nothing to edit. */}
+      <Sheet open={opened !== null} title={t.driver} cancelLabel={t.close} onClose={() => setOpened(null)}>
+        {opened ? (
+          <dl className="pw-reports-detail">
+            {(
+              [
+                [t.driver, opened.fullName || t.unnamed],
+                [t.routes, opened.routes],
+                [t.delivered, opened.delivered],
+                [t.failed, opened.failed],
+                [t.skipped, opened.skipped],
+                [t.pending, opened.pending],
+                [t.km, formatDistance(opened.plannedDistanceMeters)],
+                [t.first, when(opened.firstResultAt)],
+                [t.last, when(opened.lastResultAt)],
+              ] as Array<[string, string | number]>
+            ).map(([term, value]) => (
+              <div key={term}>
+                <dt>{term}</dt>
+                <dd className="pw-tabular">{value}</dd>
+              </div>
+            ))}
+          </dl>
+        ) : null}
+      </Sheet>
     </>
   );
 }

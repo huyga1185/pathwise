@@ -1092,6 +1092,16 @@ export const vi = {
     count: 'Số lần',
     noReasons: 'Chưa có điểm nào không giao được.',
     unnamed: '(chưa có tên)',
+    /** G6 (OWNER_UI_REDESIGN §11). */
+    driverSub: (routes: number, km: string) => `${routes} tuyến · ${km}`,
+    driverRow: (routes: number, d: number, f: number, s: number, p: number) =>
+      [`${routes} tuyến`, `${d} đã giao`, f && `${f} không giao được`, s && `${s} bỏ qua`, p && `${p} chờ`]
+        .filter(Boolean)
+        .join(' · '),
+    reported: 'Báo kết quả',
+    reportedRange: (first: string, last: string) => (first === last ? first : `${first} – ${last}`),
+    driverOpen: (name: string) => `${name}: xem chi tiết`,
+    close: 'Đóng',
   },
   pages: {
     notFoundTitle: 'Không tìm thấy trang',
