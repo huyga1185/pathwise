@@ -679,7 +679,7 @@ Phạm vi: `/reports?from=&to=` (SCREENS §1; API `GET /reports/summary`, `/repo
 
 | # | Câu hỏi | Trả lời |
 |---|---|---|
-| G6-Q1 | Chọn khoảng ngày | **Segmented [Hôm nay \| 7 ngày \| 30 ngày \| Tùy chọn]**; Tùy chọn thì hiện hai `DateField` (G4, lịch của app). |
+| G6-Q1 | Chọn khoảng ngày | **Segmented [Hôm nay \| 7 ngày \| 30 ngày \| Tùy chọn]**; Tùy chọn thì hiện hai `DateField` (G4, lịch của app). *Đổi 2026-11-20 (§11.11):* hai nút lọc ngày như Kế hoạch, Nhật ký. |
 | G6-Q2 | Thẻ số | **Một nhóm 4 ô, không viền** (rộng một hàng, điện thoại 2×2). |
 | G6-Q3 | Số từng ngày | **Chọn cột + bàn phím** (kiểu Health): bấm / rê / mũi tên chọn một ngày, dòng tóm tắt trên biểu đồ đổi sang số của ngày đó; vùng bấm là cả vùng vẽ; mỗi cột có nhãn trợ năng đầy đủ. |
 | G6-Q4 | Biểu đồ dùng chung với quản trị | **Có, dùng chung** (bố cục trang quản trị vẫn để sau). |
@@ -734,4 +734,8 @@ Chủ dự án: "Từ ngày – Đến ngày" ở Tùy chọn trên PC xếp nga
 ### 11.10 Nút "Xuất CSV" cùng kiểu nút chính các trang khác (2026-11-20)
 
 "Xuất CSV" trước là nút nền xám, trong khi ở cùng vị trí (cuối hàng tiêu đề) các trang khác dùng nút chính nền màu nhấn ("+ Tạo kế hoạch"). Đây là hành động duy nhất của trang nên đổi sang nút chính: rộng là viên thuốc nền màu nhấn, hẹp là nút tròn 44px nền màu nhấn (`pw-list-add`), như G2.1 ([Apple] HIG Buttons: *"Use style — not size — to visually distinguish the preferred choice"*; checklist C13). Ô ngày "Tùy chọn" bắt buộc nên không có ⓧ; muốn về khoảng có sẵn thì bấm "Hôm nay / 7 ngày / 30 ngày". Đã thử thêm nút "Đặt lại" cạnh hai ô ngày, chủ dự án xem rồi bỏ.
+
+### 11.11 Ô ngày "Tùy chọn" dùng nút lọc ngày như Kế hoạch, Nhật ký (2026-11-20)
+
+Chủ dự án: "Từ ngày – Đến ngày" của Tùy chọn khác nút chọn ngày ở Kế hoạch và Nhật ký — nhãn nằm trên thay vì trong nút, nền xám hơn dù đã có ngày. Lý do: G6-Q1 dùng `DateField` (ô của biểu mẫu, G4.4), trong khi khoảng ngày ở đây là bộ lọc của một danh sách số liệu, cùng loại với "Ngày giao" (Kế hoạch) và "Từ ngày / Đến ngày" (Nhật ký). Đổi sang `DatePickerFilter` (G2.2): viên thuốc "📅 Từ ngày: 01/11/2026", có ngày thì nền màu nhấn nhạt và ngày màu nhấn (đo: cùng màu nền `accent / 0.16` với "Ngày giao: 10/11/2026" của Kế hoạch); lịch popover trên máy tính, inline trên điện thoại (§8.11). Hai ngày bắt buộc nên không có nút xoá ngày. Giới hạn "Tối đa 31 ngày." là một dòng dưới hai nút, quá 31 ngày thì dòng đó thành lỗi đỏ "Chọn tối đa 31 ngày." và được đọc lên (`aria-live`, WCAG 3.3.1, 4.1.3). Máy tính: hai nút và dòng giới hạn căn giữa dưới thanh khoảng (tâm 835 = tâm thanh ở 1440px, giữ §11.9); điện thoại: hai nút cao 44, xuống dòng khi không đủ chỗ (390, 320px), không tràn ngang. [Apple] HIG Date pickers (compact: *"a button that shows the current value in your app's accent color"*); checklist C13.
 

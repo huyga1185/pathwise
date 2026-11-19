@@ -15,13 +15,14 @@ import {
   todayIn,
   weekdayShort,
 } from '@/shared/format';
+import { cx } from '@/shared/ui/cx';
 import { useMediaQuery, WIDE_QUERY } from '@/shared/hooks/useMediaQuery';
 import { vi } from '@/shared/i18n/vi';
 import {
   ActivityIndicator,
   Button,
   DataTable,
-  DateField,
+  DatePickerFilter,
   ErrorBanner,
   Pager,
   SegmentedControl,
@@ -153,24 +154,34 @@ export function ReportsPage() {
           }}
         />
         {period === 'custom' ? (
-          <div className="pw-reports-dates">
-            <DateField
-              label={t.from}
-              value={from}
-              today={today}
-              required
-              error={rangeError ?? undefined}
-              onChange={(value) => value && setPeriod({ from: value, to })}
-            />
-            <DateField
-              label={t.to}
-              value={to}
-              today={today}
-              required
-              hint={t.maxHint}
-              onChange={(value) => value && setPeriod({ from, to: value })}
-            />
-          </div>
+          <>
+            {/* The same date filters as Kế hoạch and Nhật ký (G2.2, §11.11): capsules with the label inside and the
+                date, the calendar in a popover (wide) or inline (phone). Both required: no clear button. */}
+            <div className="pw-list-filters pw-reports-dates" role="group" aria-label={t.range}>
+              <DatePickerFilter
+                label={t.from}
+                value={from}
+                emptyText={t.from}
+                today={today}
+                previousMonthText={vi.plans.previousMonth}
+                nextMonthText={vi.plans.nextMonth}
+                onChange={(value) => value && setPeriod({ from: value, to })}
+              />
+              <DatePickerFilter
+                label={t.to}
+                value={to}
+                today={today}
+                emptyText={t.to}
+                previousMonthText={vi.plans.previousMonth}
+                nextMonthText={vi.plans.nextMonth}
+                onChange={(value) => value && setPeriod({ from, to: value })}
+              />
+            </div>
+            {/* The limit, or the error in its place, announced when it changes (WCAG 3.3.1, 4.1.3). */}
+            <p className={cx('pw-reports-range-msg', rangeError && 'is-error')} aria-live="polite">
+              {rangeError ?? t.maxHint}
+            </p>
+          </>
         ) : null}
       </form>
       {exportFailure ? <ErrorBanner title={messageFor(exportFailure)} /> : null}

@@ -21,25 +21,25 @@
   gap: var(--space-4);
 }
 .pw-reports-dates {
-  display: flex;
-  flex-wrap: wrap;
-  /* Top, not bottom: a hint or an error under one field must not push the other up (fb_1). */
-  align-items: flex-start;
-  gap: var(--space-4);
+  margin-top: 0;
 }
-.pw-reports-dates .pw-field {
-  flex: 0 1 220px;
+.pw-reports-range-msg {
+  margin: -8px 0 0;
+  font-size: 0.8125rem;
+  color: var(--ink-muted);
 }
-/* Wide window: the two dates side by side, centred under the period control (which is centred there too, HIG Tab views),
-   so the control and its fields read as one block. */
+.pw-reports-range-msg.is-error {
+  color: var(--danger);
+}
+/* Wide window: the two filters side by side, centred under the period control (which is centred there too, HIG Tab
+   views), the limit centred under them. */
 @media (min-width: 960px) {
   .pw-reports-dates {
     align-self: center;
     justify-content: center;
-    flex-wrap: nowrap;
   }
-  .pw-reports-dates .pw-field {
-    flex: 0 0 220px;
+  .pw-reports-range-msg {
+    align-self: center;
   }
 }
 .pw-reports-totals {
