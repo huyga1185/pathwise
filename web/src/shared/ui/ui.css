@@ -3922,3 +3922,38 @@ html {
 .pw-view-switch.is-new:has(.pw-map-stage) {
   animation-name: pw-result-fade;
 }
+
+/* Phone sheet (§10.10), as iOS 26 sheets — Apple, Adopting Liquid Glass: "Sheets feature an increased corner radius,
+   and half sheets are inset from the edge of the display to allow content to peek through from beneath them. When a
+   half sheet expands to full height, it transitions to a more opaque appearance". At the low and half detents: inset
+   12px from the screen's sides and radius 32px, the same as the tab bar under it (inset 12px, a 64px capsule) so the
+   two read as one family; at the high detent: against the sides, opaque (the page surface), top corners radius-lg. */
+.pw-map-sheet {
+  left: var(--shell-gap);
+  right: var(--shell-gap);
+  border-radius: 32px;
+  transition:
+    height 0.3s cubic-bezier(0.2, 0.8, 0.2, 1),
+    left 0.3s cubic-bezier(0.2, 0.8, 0.2, 1),
+    right 0.3s cubic-bezier(0.2, 0.8, 0.2, 1),
+    border-radius 0.3s cubic-bezier(0.2, 0.8, 0.2, 1),
+    background-color 0.3s ease;
+}
+.pw-map-sheet[data-detent='high'] {
+  left: 0;
+  right: 0;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  /* Opaque, and the page's own surface so the groups (raised surface) stand out from it, as grouped lists do. */
+  background: var(--surface);
+}
+/* Content clear of the rounder corners (Apple: "check for content and controls that might appear too close to rounder
+   sheet corners"). */
+.pw-map-sheet:not([data-detent='high']) .pw-map-sheet-body {
+  padding: 0 20px 20px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .pw-map-sheet {
+    transition: none;
+  }
+}
+
