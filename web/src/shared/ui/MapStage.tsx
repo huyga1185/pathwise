@@ -67,6 +67,11 @@ export function MapStage({
   // The page coming in may slide (a transform on the page, AppShell pageMotion): a fixed map inside a transformed
   // element is laid out in that element, not the window — it showed small, then jumped to the window and tore. While
   // the map shows, the page's entrance only fades (same timing; a fade is the reduced-motion entrance too, CĐ6).
+  // The page may still be scrolled from the one before (a long list): the full map starts at the top (§10.13).
+  useLayoutEffect(() => {
+    if (window.scrollY !== 0) window.scrollTo?.(0, 0);
+  }, []);
+
   useLayoutEffect(() => {
     const page = stage.current?.closest('main');
     page?.getAnimations?.().forEach((animation) => {
