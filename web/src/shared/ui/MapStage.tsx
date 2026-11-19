@@ -67,7 +67,8 @@ export function MapStage({
     const measure = () => {
       setHeight(element.clientHeight);
       const panel = element.querySelector<HTMLElement>('.pw-map-panel');
-      if (panel) {
+      // Measured once laid out (an unrendered panel has no size: keep the panel's own width then).
+      if (panel && panel.getBoundingClientRect().width > 0) {
         const box = panel.getBoundingClientRect();
         const stageBox = element.getBoundingClientRect();
         setCovered({ left: Math.round(box.right - stageBox.left + GAP), top: Math.round(box.top - stageBox.top) });
