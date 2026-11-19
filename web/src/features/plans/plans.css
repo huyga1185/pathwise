@@ -1622,3 +1622,32 @@ html:has(.pw-form-bar) {
 .pw-stage-rows.is-plain > li + li .pw-stage-row::before {
   left: 12px;
 }
+/* A group folding (§10.9): its rows' height eases to 0 and back. */
+.pw-stage-fold {
+  display: grid;
+  grid-template-rows: 1fr;
+  transition:
+    grid-template-rows 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    visibility 0s;
+}
+.pw-stage-fold.is-closed {
+  grid-template-rows: 0fr;
+  visibility: hidden;
+  transition:
+    grid-template-rows 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    visibility 0s 0.3s;
+}
+.pw-stage-fold-inner {
+  min-height: 0;
+  overflow: hidden;
+}
+@media (prefers-reduced-motion: reduce) {
+  .pw-stage-fold,
+  .pw-stage-fold.is-closed {
+    transition: none;
+  }
+}
+/* The header's actions fill the panel's width (§10.9): no empty run before them; the More button keeps its circle. */
+.pw-stage-actions > .pw-btn {
+  flex: 1 1 auto;
+}

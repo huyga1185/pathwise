@@ -619,3 +619,7 @@ Làm: nút ghim 38px (bằng cụm +/−; cảm ứng 46px tròn) ngay dưới +
 
 Chủ dự án: mở bản đồ bị xé hình. Đo từng khung hình khi bấm từ danh sách vào kế hoạch (1440px): trong ~0,35 s trang mới trượt vào bằng `transform` (CĐ3), bản đồ `position: fixed` bị bố cục trong trang đang trượt thay vì cửa sổ (cao 360px, y 60, lệch 24px) rồi nhảy thành 1440×900 khi hết hiệu ứng; Leaflet chỉ tự vẽ lại khi cửa sổ đổi cỡ nên phần mới lộ ra trống / vẽ dở. Sửa: khi `MapStage` xuất hiện, hiệu ứng vào trang đang chạy đổi thành chỉ mờ (cùng thời lượng; mờ cũng là hiệu ứng của giảm chuyển động, CĐ6); đổi màn tại chỗ trên bản đồ (`ViewSwitch`) chỉ mờ; `MapFrame` theo dõi kích thước khung bản đồ (`ResizeObserver` → `invalidateSize`) cho mọi lần khung đổi cỡ (thanh bên, sheet). Đo lại: từ khung hình đầu bản đồ đã 1440×900 ở (0, 0).
 
+### 10.9 Nhóm mở/đóng có hoạt ảnh, hàng nút lấp panel (2026-11-19)
+
+Chủ dự án: nhóm "Điểm giao" mở/đóng chưa có hoạt ảnh; ba nút Sửa điểm giao / Sao chép / Tối ưu lộ trình không lấp hết khung, dư một khoảng ở đầu. Làm: nhóm tuyến / "Điểm giao" / "Chưa xếp tuyến" co giãn chiều cao khi đóng mở (hàng lưới 0fr ↔ 1fr, 0,3 s, vào chậm ra chậm — đường "nhanh đầu" làm danh sách dài tụt gần hết trong một khung); đóng thì danh sách `inert` và ẩn (Tab, trình đọc màn hình không vào); giảm chuyển động: không co giãn. Hàng nút ở đầu panel / sheet: các nút giãn lấp bề ngang (nút … giữ hình tròn). Đo 1440px: ba nút 29–455 = đúng bề ngang nội dung panel; đóng 896 → 0 và mở 0 → 896 qua nhiều khung liền nhau.
+

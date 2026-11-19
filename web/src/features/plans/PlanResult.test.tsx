@@ -56,7 +56,9 @@ describe('Soạn plan — sau khi tối ưu', () => {
     const head = within(screen.getByRole('region', { name: 'Tài xế A' })).getByRole('button', { expanded: true });
     await user.click(head);
     expect(head).toHaveAttribute('aria-expanded', 'false');
-    expect(screen.queryByRole('button', { name: 'ĐH-1016 · Chị Thảo: xem chi tiết' })).not.toBeInTheDocument();
+    // Folded with its height (§10.9): the rows stay but are inert — no Tab, not read.
+    const row = screen.getByRole('button', { name: 'ĐH-1016 · Chị Thảo: xem chi tiết' });
+    expect(row.closest('.pw-stage-fold')).toHaveAttribute('inert');
   });
 
   it('giao việc: hộp xác nhận nêu từng tài xế và điểm bỏ lại; xong thì toast và sang theo dõi', async () => {

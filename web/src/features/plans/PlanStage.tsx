@@ -89,37 +89,41 @@ export function RouteGroup({
         </span>
       </button>
       {extra}
-      {open ? (
-        <ul className={cx('pw-stage-rows', !numbered && 'is-plain')} id={listId}>
-          {stops.map((stop) => (
-            <li key={stop.id}>
-              <button
-                type="button"
-                className="pw-stage-row"
-                data-stop={stop.id}
-                aria-label={r.stopOpen(stopTitle(stop))}
-                onClick={() => onOpen(stop)}
-              >
-                {numbered ? (
-                  <span className={cx('pw-stage-seq', index !== undefined && `pw-marker-r${(index % 7) + 1}`)}>
-                    {stop.sequence ?? '–'}
+      {/* Folds with its height (a grid row from 0 to its content); folded, it is inert and hidden, so Tab and
+          screen readers skip it (HIG Disclosure: the content shows and hides; reduced motion: no animation). */}
+      <div className={cx('pw-stage-fold', !open && 'is-closed')} inert={!open}>
+        <div className="pw-stage-fold-inner">
+          <ul className={cx('pw-stage-rows', !numbered && 'is-plain')} id={listId}>
+            {stops.map((stop) => (
+              <li key={stop.id}>
+                <button
+                  type="button"
+                  className="pw-stage-row"
+                  data-stop={stop.id}
+                  aria-label={r.stopOpen(stopTitle(stop))}
+                  onClick={() => onOpen(stop)}
+                >
+                  {numbered ? (
+                    <span className={cx('pw-stage-seq', index !== undefined && `pw-marker-r${(index % 7) + 1}`)}>
+                      {stop.sequence ?? '–'}
+                    </span>
+                  ) : null}
+                  <span className="pw-stage-row-main">
+                    <span className="pw-stage-row-title">{stopTitle(stop)}</span>
+                    <span className="pw-stage-row-sub">
+                      {[stop.address ?? stopPlace(stop), windowText(stop)].filter(Boolean).join(' · ')}
+                    </span>
                   </span>
-                ) : null}
-                <span className="pw-stage-row-main">
-                  <span className="pw-stage-row-title">{stopTitle(stop)}</span>
-                  <span className="pw-stage-row-sub">
-                    {[stop.address ?? stopPlace(stop), windowText(stop)].filter(Boolean).join(' · ')}
+                  <span className="pw-stage-row-end">{trailing(stop)}</span>
+                  <span className="pw-stage-row-chevron" aria-hidden="true">
+                    <ChevronRightIcon />
                   </span>
-                </span>
-                <span className="pw-stage-row-end">{trailing(stop)}</span>
-                <span className="pw-stage-row-chevron" aria-hidden="true">
-                  <ChevronRightIcon />
-                </span>
-              </button>
-            </li>
-          ))}
-        </ul>
-      ) : null}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
     </section>
   );
 }
