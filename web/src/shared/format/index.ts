@@ -120,3 +120,10 @@ export function spokenDate(localDate: string): string {
   const capital = weekday.charAt(0).toLocaleUpperCase('vi-VN') + weekday.slice(1);
   return `${capital}, ${day} tháng ${month}, ${year}`;
 }
+
+/** "T2" … "T7", "CN" for "2026-12-01": a day of the week, short, for a chart's axis (G6, as Health's week chart). */
+export function weekdayShort(localDate: string): string {
+  const [year, month, day] = localDate.split('-').map(Number);
+  const index = new Date(Date.UTC(year ?? 1970, (month ?? 1) - 1, day ?? 1)).getUTCDay();
+  return index === 0 ? 'CN' : `T${index + 1}`;
+}

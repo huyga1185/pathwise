@@ -13,6 +13,7 @@ import {
   shortDate,
   spokenDate,
   todayIn,
+  weekdayShort,
 } from '@/shared/format';
 import { useMediaQuery, WIDE_QUERY } from '@/shared/hooks/useMediaQuery';
 import { vi } from '@/shared/i18n/vi';
@@ -180,8 +181,10 @@ function ReportBody({ report, timeZone }: { report: StoreReport; timeZone: strin
   const oneDay = report.from === report.to;
   const when = (instant: string | null | undefined) =>
     !instant ? '—' : oneDay ? formatTime(instant, timeZone) : formatDayTime(instant, timeZone);
+  // Day labels as Health's: a week by day of the week, longer periods by date (G6, §11.7).
+  const byWeekday = report.days.length <= 7;
   const points = report.days.map((day) => ({
-    label: shortDate(day.date),
+    label: byWeekday ? weekdayShort(day.date) : shortDate(day.date),
     spoken: spokenDate(day.date),
     delivered: day.delivered,
     failed: day.failed,

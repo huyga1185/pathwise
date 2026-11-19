@@ -1,5 +1,6 @@
 import { useEffect, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, XAxis, YAxis } from 'recharts';
+import type { XAxisTickContentProps } from 'recharts/types/util/types';
 
 /** One bar series: a key of the data, its label, and the design token of its color (`route`, `success`…). */
 export interface ChartSeries {
@@ -34,6 +35,10 @@ export interface DailyBarChartProps {
  */
 export function DailyBarChart({ data, series, stacked = false, ariaLabel, height = 220, summary }: DailyBarChartProps) {
   const colors = useTokenColors([...series.map((item) => item.token), 'ink-muted', 'line', 'surface-raised']);
+  // A familiar, steady sequence of day labels (HIG Charts: "Prefer familiar sequences of values in the tick… labels"),
+  // never thinned by the library: a week shows every day; a longer period one mark every 7 days from its first day.
+  const ticks =
+    data.length <= 7 ? data.map((point) => point.label) : data.filter((_, i) => i % 7 === 0).map((p) => p.label);
   const [selected, setSelected] = useState<number | null>(null);
   const describe = (index: number) => {
     const point = data[index];
@@ -92,7 +97,7 @@ export function DailyBarChart({ data, series, stacked = false, ariaLabel, height
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
               data={data}
-              margin={{ top: 8, right: 8, bottom: 0, left: -16 }}
+              margin={{ top: 8, right: 0, bottom: 0, left: 0 }}
               accessibilityLayer={false}
               onMouseMove={(state) => {
                 const index = Number(state?.activeTooltipIndex);
@@ -107,17 +112,38 @@ export function DailyBarChart({ data, series, stacked = false, ariaLabel, height
               <CartesianGrid vertical={false} stroke={colors['line']} />
               <XAxis
                 dataKey="label"
-                tick={{ fill: colors['ink-muted'], fontSize: 12 }}
+                // A week: under each bar. Longer: from the leading edge of the mark's bar, as Health's month chart —
+                // centred, the first one ran off the chart's leading edge on a phone.
+                tick={
+                  data.length <= 7
+                    ? { fill: colors['ink-muted'], fontSize: 12 }
+                    : (props: XAxisTickContentProps) => (
+                        <text
+                          x={Number(props.x) - (props.payload.offset ?? 0)}
+                          y={Number(props.y)}
+                          dy={12}
+                          textAnchor="start"
+                          fill={colors['ink-muted']}
+                          fontSize={12}
+                        >
+                          {String(props.payload.value)}
+                        </text>
+                      )
+                }
                 tickLine={false}
                 axisLine={false}
-                minTickGap={16}
+                ticks={ticks}
+                interval={0}
               />
+              {/* Values on the trailing side: the plot's leading edge lines up with the title (HIG Charts: "display the
+                  label for each vertical grid line on its trailing side"). */}
               <YAxis
+                orientation="right"
                 allowDecimals={false}
                 tick={{ fill: colors['ink-muted'], fontSize: 12 }}
                 tickLine={false}
                 axisLine={false}
-                width={48}
+                width={36}
               />
               {series.map((item) => (
                 <Bar

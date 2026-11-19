@@ -366,3 +366,4 @@ Nhóm: (1) nghiệp vụ/hiểu sai yêu cầu · (2) implementation · (3) ki�
 | 2026-11-19 | branch `feat/owner-ui-g6` | — | G6 bước 2: Báo cáo — hàng tiêu đề có nút xuất, khoảng ngày segmented + tùy chọn (lịch của app), nhóm số tổng, nhóm biểu đồ có tóm tắt, trạng thái trống không thẻ (`OWNER_UI_REDESIGN.md` §11.6). |
 | 2026-11-19 | branch `feat/owner-ui-g6` | — | G6 bước 3: Báo cáo — bảng tài xế 6 cột vừa khung (gộp tuyến/km dưới tên, báo đầu – cuối một cột), điện thoại là hàng + sheet; lý do là bảng / hàng (`OWNER_UI_REDESIGN.md` §11.6). |
 | 2026-11-19 | branch `feat/owner-ui-g6` | — | G6 bước 4: đo trang Báo cáo (4 cỡ, sáng/tối), SCREENS và DESIGN_SYSTEM cho Báo cáo và biểu đồ dùng chung (`OWNER_UI_REDESIGN.md` §11.6). |
+| 2026-11-19 | branch `feat/owner-ui-g6` | — | Biểu đồ theo ngày: nhãn ngày nhịp đều kiểu Health (tuần: thứ; dài hơn: mỗi 7 ngày), trục số bên phải (`OWNER_UI_REDESIGN.md` §11.7). |
