@@ -358,3 +358,4 @@ Nhóm: (1) nghiệp vụ/hiểu sai yêu cầu · (2) implementation · (3) ki�
 | 2026-11-19 | branch `feat/owner-ui-g5` | — | Sheet trên điện thoại thu nhỏ chỉ còn tay cầm có chevron ↑ ở giữa (phác thảo fb_14) (`OWNER_UI_REDESIGN.md` §10.11). |
 | 2026-11-19 | branch `feat/owner-ui-g5` | — | Điện thoại: chú thích bản quyền bản đồ ở góc trên trái, đứng yên ở mọi nấc sheet (`OWNER_UI_REDESIGN.md` §10.12). |
 | 2026-11-19 | branch `feat/owner-ui-g5` | — | Sửa trang kế hoạch cuộn lệch trên Chrome Android (100vh lớn hơn phần nhìn thấy): khung `100dvh`, trang không cuộn, về đầu khi mở (`OWNER_UI_REDESIGN.md` §10.13). |
+| 2026-11-19 | branch `feat/owner-ui-g5` | — | Sheet điện thoại ở nấc cao chạm đáy màn, tab bar nổi trên; nội dung chừa đáy để không bị tab bar che (`OWNER_UI_REDESIGN.md` §10.14). |

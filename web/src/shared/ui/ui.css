@@ -3994,3 +3994,34 @@ html {
   width: 22px;
   height: 22px;
 }
+
+/* High detent (§10.14): the sheet goes down to the bottom of the screen and the tab bar floats over it (HIG Tab bars:
+   the tab bar stays visible — this sheet is not modal; LIQUID_GLASS M6: no glass on glass — the sheet is opaque
+   there). Its content keeps clear of the tab bar at the end and when focused (WCAG 2.4.11): bottom padding and
+   scroll padding as tall as the tab bar and its gaps. The phone stage is its own layer, so the tab bar (z 30) stays
+   above the map's and the sheet's own layers. */
+.pw-map-stage.is-narrow {
+  isolation: isolate;
+  z-index: 0;
+}
+.pw-map-sheet {
+  transition:
+    height 0.3s cubic-bezier(0.2, 0.8, 0.2, 1),
+    bottom 0.3s cubic-bezier(0.2, 0.8, 0.2, 1),
+    left 0.3s cubic-bezier(0.2, 0.8, 0.2, 1),
+    right 0.3s cubic-bezier(0.2, 0.8, 0.2, 1),
+    border-radius 0.3s cubic-bezier(0.2, 0.8, 0.2, 1),
+    background-color 0.3s ease;
+}
+.pw-map-sheet[data-detent='high'] {
+  bottom: 0;
+}
+.pw-map-sheet[data-detent='high'] .pw-map-sheet-body {
+  padding-bottom: calc(var(--tabbar-height) + 2 * var(--shell-gap) + env(safe-area-inset-bottom) + 16px);
+  scroll-padding-bottom: calc(var(--tabbar-height) + 2 * var(--shell-gap) + env(safe-area-inset-bottom) + 8px);
+}
+@media (prefers-reduced-motion: reduce) {
+  .pw-map-sheet {
+    transition: none;
+  }
+}

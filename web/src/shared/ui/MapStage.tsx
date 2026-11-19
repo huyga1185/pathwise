@@ -107,7 +107,8 @@ export function MapStage({
     return () => observer.disconnect();
   }, [wide]);
 
-  const heights = detentHeights(height - floor, peek);
+  // Low and half rest above the tab bar; high reaches the bottom of the screen, the tab bar floating over it (§10.14).
+  const heights = { ...detentHeights(height - floor, peek), high: Math.max(0, height - 24) };
   const inset: MapInset = wide
     ? { top: covered.top, right: 0, bottom: 0, left: covered.left }
     : { top: 0, right: 0, bottom: heights.mid + floor, left: 0 };
