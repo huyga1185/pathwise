@@ -71,12 +71,14 @@ describe('Báo cáo', () => {
     ).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Báo cáo' })).toHaveAttribute('aria-current', 'page');
 
-    await user.click(screen.getByRole('button', { name: '7 ngày' }));
+    // The period is a segmented control (G6-Q1): a range not matching a preset shows "Tùy chọn" with the two dates.
+    expect(screen.getByRole('tab', { name: 'Tùy chọn' })).toHaveAttribute('aria-selected', 'true');
+    await user.click(screen.getByRole('tab', { name: '7 ngày' }));
     await waitFor(() =>
       expect(router.state.location.search).toMatch(/^\?from=\d{4}-\d{2}-\d{2}&to=\d{4}-\d{2}-\d{2}$/),
     );
     await waitFor(() => expect(queries.length).toBe(2));
-    expect(screen.getByRole('button', { name: '7 ngày' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('tab', { name: '7 ngày' })).toHaveAttribute('aria-selected', 'true');
   });
 
   it('khoảng quá 31 ngày thì báo lỗi, không gọi API; một ngày thì không có biểu đồ', async () => {

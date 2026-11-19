@@ -1,11 +1,6 @@
 /* Store reports (W12, prototype "Báo cáo"). Tokens only. */
-.pw-reports-head {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: var(--space-4);
-}
+/* G6 (OWNER_UI_REDESIGN §11): title row with the export action, the period (segmented, dates for "Tùy chọn"), one group
+   of totals, the chart in a group — groups with a fill, radius 16, no outline, as the redesigned pages. */
 .pw-reports-intro {
   display: flex;
   flex-direction: column;
@@ -15,42 +10,81 @@
 .pw-reports-intro p {
   margin: 0;
 }
+/* Phone: export is a round icon button (G2.1's "+"; HIG Icons "square.and.arrow.up"). */
+.pw-reports-export {
+  flex: none;
+}
 .pw-reports-filters {
   display: flex;
-  flex-wrap: wrap;
-  /* Top, not bottom: a hint or an error under one field must not push the others up (fb_1). */
+  flex-direction: column;
   align-items: flex-start;
   gap: var(--space-4);
 }
-/* The quick choices have no label: they start one label line lower and are as tall as a date input (40px). */
-.pw-reports-filters > .pw-segmented {
-  margin-top: calc(20px + var(--space-1));
-}
-.pw-reports-filters .pw-segmented-btn {
-  min-height: 38px;
-}
-/* Touch screens: 42px + the 1px border on each side = 44px, as tall as the 44px date fields (ui.css). */
-@media (pointer: coarse) {
-  .pw-reports-filters .pw-segmented-btn {
-    min-height: 42px;
-  }
-}
-.pw-reports-filters .pw-field {
-  flex: 0 1 200px;
-}
-.pw-reports-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+.pw-reports-dates {
+  display: flex;
+  flex-wrap: wrap;
+  /* Top, not bottom: a hint or an error under one field must not push the other up (fb_1). */
+  align-items: flex-start;
   gap: var(--space-4);
 }
-.pw-reports-card {
+.pw-reports-dates .pw-field {
+  flex: 0 1 220px;
+}
+.pw-reports-totals {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  border-radius: 16px;
+  background: var(--surface-raised);
+  overflow: hidden;
+}
+.pw-reports-total {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  padding: 16px 20px;
+}
+.pw-reports-total + .pw-reports-total {
+  border-left: 1px solid var(--line);
+}
+.pw-reports-total-label {
+  font-size: 0.8125rem;
+  color: var(--ink-muted);
+}
+.pw-reports-total-value {
+  font-size: 1.75rem;
+  line-height: 2.25rem;
+  font-weight: 700;
+}
+.pw-reports-total-sub {
+  font-size: 0.8125rem;
+  line-height: 1.125rem;
+}
+/* Phone and narrow windows: 2 × 2, hairlines between. */
+@media (max-width: 759px) {
+  .pw-reports-totals {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .pw-reports-total + .pw-reports-total {
+    border-left: 0;
+  }
+  .pw-reports-total:nth-child(even) {
+    border-left: 1px solid var(--line);
+  }
+  .pw-reports-total:nth-child(n + 3) {
+    border-top: 1px solid var(--line);
+  }
+}
+.pw-reports-group {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
-  padding: var(--space-4);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-md);
+  padding: 16px 20px 20px;
+  border-radius: 16px;
   background: var(--surface-raised);
+}
+.pw-reports-group .pw-reports-h2 {
+  margin: 0;
 }
 .pw-reports-h2 {
   margin: 0 0 var(--space-2);

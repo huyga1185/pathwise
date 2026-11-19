@@ -293,3 +293,10 @@ export const EllipsisIcon = () => (
     <circle cx="18.5" cy="12" r="1.4" fill="currentColor" stroke="none" />
   </Icon>
 );
+/** Export / share (like "square.and.arrow.up", HIG Icons): a tray with an arrow out of it. */
+export const ShareIcon = () => (
+  <Icon>
+    <path d="M12 3.5v11M8 7.5l4-4 4 4" />
+    <path d="M7 11H5.5A1.5 1.5 0 0 0 4 12.5v7A1.5 1.5 0 0 0 5.5 21h13a1.5 1.5 0 0 0 1.5-1.5v-7a1.5 1.5 0 0 0-1.5-1.5H17" />
+  </Icon>
+);

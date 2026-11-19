@@ -1049,6 +1049,12 @@ export const vi = {
     range: 'Khoảng ngày',
     today: 'Hôm nay',
     week: '7 ngày',
+    month: '30 ngày',
+    custom: 'Tùy chọn',
+    totals: 'Tổng của khoảng',
+    chartSummary: (d: number, f: number, s: number) => `${d} đã giao · ${f} không giao được · ${s} bỏ qua`,
+    chartDay: (day: string, d: number, f: number, s: number) =>
+      `${day}: ${d} đã giao · ${f} không giao được · ${s} bỏ qua`,
     from: 'Từ ngày',
     to: 'Đến ngày',
     maxHint: 'Tối đa 31 ngày.',
