@@ -4,7 +4,7 @@ import { ApiError } from '@/data/apiError';
 import { routeColour } from '@/platform/map';
 import { messageFor } from '@/shared/errors';
 import { vi } from '@/shared/i18n/vi';
-import { Dialog, ErrorBanner } from '@/shared/ui';
+import { Alert, ErrorBanner, Sheet } from '@/shared/ui';
 import { violationText } from './manualEdit';
 import { usePlanApi, type PlanDetail } from './planApi';
 import { driverName, spanText, stopTitle } from './planShared';
@@ -44,10 +44,12 @@ function overlaps(error: ApiError): Overlap[] {
 }
 
 /**
- * Prototype "Xác nhận giao việc" (SCREENS §1.1): who gets which route, the stops left without a driver, what changes
- * after. SHIFT_OVERLAP opens a second dialog naming each clash with a link to the other plan; the plan is unchanged.
+ * "Giao việc" (SCREENS §1.1; G5.13, G5-Q7): a sheet — who gets which route, the stops left without a driver, the
+ * constraints still broken, what changes after (a list is too long for an alert: HIG Alerts, "Keep alert messages
+ * short"). "Huỷ" leads, the verb trails (HIG Sheets). SHIFT_OVERLAP turns the same sheet into the clashes, each with a
+ * link to the other plan, and "Sửa phân công"; the plan is unchanged.
  */
-export function PublishDialog({
+export function PublishSheet({
   plan,
   open,
   onClose,
@@ -65,6 +67,7 @@ export function PublishDialog({
   const [clashes, setClashes] = useState<Overlap[] | null>(null);
   const routes = routesWithStops(plan);
   const left = plan.unassignedStops;
+  const p = vi.publish;
 
   const publish = async () => {
     setBusy(true);
@@ -89,14 +92,18 @@ export function PublishDialog({
 
   if (clashes) {
     return (
-      <Dialog
+      <Sheet
         open={open}
-        title={vi.publish.overlapTitle}
-        confirmLabel={vi.publish.editAssignments}
-        cancelLabel={vi.publish.close}
-        onConfirm={() => navigate(`/plans/${plan.id}/edit`)}
+        title={p.overlapSheetTitle}
+        doneLabel={p.editAssignments}
+        cancelLabel={p.close}
+        onSubmit={(event) => {
+          event.preventDefault();
+          navigate(`/plans/${plan.id}/edit`);
+        }}
         onClose={close}
       >
+        <p className="pw-sheet-lead">{p.overlapQuestion}</p>
         {clashes.map((clash) => {
           const route = plan.routes[clash.index];
           const shift = route ? `${route.shiftStart}–${route.shiftEnd}` : '';
@@ -104,33 +111,36 @@ export function PublishDialog({
             <div key={`${clash.index}-${clash.kind}-${clash.conflictPlanId}`} className="pw-overlap">
               <p>
                 {clash.kind === 'driver'
-                  ? vi.publish.overlapDriver(route ? driverName(route) : '', shift, dayMonth(plan.planDate))
-                  : vi.publish.overlapVehicle(route?.vehicle.name ?? '', shift, dayMonth(plan.planDate))}
+                  ? p.overlapDriver(route ? driverName(route) : '', shift, dayMonth(plan.planDate))
+                  : p.overlapVehicle(route?.vehicle.name ?? '', shift, dayMonth(plan.planDate))}
               </p>
               <p className="pw-overlap-link">
-                <span>{vi.publish.conflictWith(clash.conflictPlanId)}</span>
+                <span>{p.conflictWith(clash.conflictPlanId)}</span>
                 <Link to={`/plans/${clash.conflictPlanId}`} onClick={close}>
-                  {vi.publish.openConflict(clash.conflictPlanId)}
+                  {p.openConflict(clash.conflictPlanId)}
                 </Link>
               </p>
             </div>
           );
         })}
-        <p>{vi.publish.overlapLead}</p>
-      </Dialog>
+        <p className="pw-muted">{p.overlapLead}</p>
+      </Sheet>
     );
   }
 
   return (
-    <Dialog
+    <Sheet
       open={open}
-      title={vi.publish.title(routes.length)}
-      confirmLabel={plan.violations.length > 0 ? vi.publish.confirmAnyway : vi.publish.confirm}
-      cancelLabel={vi.publish.back}
+      title={p.sheetTitle}
+      doneLabel={plan.violations.length > 0 ? p.confirmAnyway : p.confirm}
       busy={busy}
-      onConfirm={() => void publish()}
+      onSubmit={(event) => {
+        event.preventDefault();
+        void publish();
+      }}
       onClose={close}
     >
+      <p className="pw-sheet-lead">{p.question(routes.length)}</p>
       {failure ? <ErrorBanner title={messageFor(failure)} /> : null}
       <ul className="pw-publish-facts">
         {plan.routes.map((route, index) =>
@@ -139,7 +149,7 @@ export function PublishDialog({
               <span className={`pw-dot pw-swatch-r${routeColour(index)}`} aria-hidden="true" />
               <span>
                 <strong>{driverName(route)}</strong>
-                {` · ${vi.publish.routeLine(route.vehicle.name, route.stops.length, spanText(route, plan.timezone))}`}
+                {` · ${p.routeLine(route.vehicle.name, route.stops.length, spanText(route, plan.timezone))}`}
               </span>
             </li>
           ) : null,
@@ -147,7 +157,7 @@ export function PublishDialog({
         {left.length > 0 ? (
           <li>
             <span className="pw-dot pw-dot-signal" aria-hidden="true" />
-            <span>{vi.publish.unassigned(left.map(stopTitle).join(', '))}</span>
+            <span>{p.unassigned(left.map(stopTitle).join(', '))}</span>
           </li>
         ) : null}
       </ul>
@@ -163,16 +173,20 @@ export function PublishDialog({
               </li>
             ))}
           </ul>
-          <p>{vi.publish.violationsLead}</p>
+          <p>{p.violationsLead}</p>
         </div>
       ) : null}
-      <p>{vi.publish.lead}</p>
-    </Dialog>
+      <p className="pw-muted">{p.lead}</p>
+    </Sheet>
   );
 }
 
-/** Cancelling (DRAFT or PUBLISHED, API_SPEC §7): `danger`, the consequence in the body, the error inside. */
-export function CancelDialog({
+/**
+ * Cancelling the plan (DRAFT or PUBLISHED, API_SPEC §7; G5.14): an alert — the consequence as its message, "Huỷ"
+ * (HIG Alerts: "Always use the title "Cancel" for a button that cancels an alert's action") and the destructive
+ * "Huỷ kế hoạch". A failure is said in the message, the alert stays.
+ */
+export function CancelAlert({
   plan,
   open,
   onClose,
@@ -203,23 +217,20 @@ export function CancelDialog({
     }
   };
 
+  const consequence = `${plan.status === 'DRAFT' ? vi.cancelPlan.draft : vi.cancelPlan.published} ${vi.cancelPlan.after}`;
   return (
-    <Dialog
+    <Alert
       open={open}
-      tone="danger"
       title={vi.cancelPlan.title(plan.name)}
-      confirmLabel={vi.cancelPlan.confirm}
-      cancelLabel={vi.publish.back}
+      message={failure ? `${messageFor(failure)} ${consequence}` : consequence}
+      actionLabel={vi.cancelPlan.confirm}
+      destructive
       busy={busy}
-      onConfirm={() => void cancel()}
-      onClose={() => {
+      onAction={() => void cancel()}
+      onCancel={() => {
         setFailure(null);
         onClose();
       }}
-    >
-      {failure ? <ErrorBanner title={messageFor(failure)} /> : null}
-      <p>{plan.status === 'DRAFT' ? vi.cancelPlan.draft : vi.cancelPlan.published}</p>
-      <p>{vi.cancelPlan.after}</p>
-    </Dialog>
+    />
   );
 }

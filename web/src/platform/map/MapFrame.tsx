@@ -61,6 +61,7 @@ export function MapFrame({
           />
         ) : null}
         <Attribution text={basemap.attribution} />
+        <FollowSize />
         <ZoomButtons labels={labels} />
         {children}
       </MapContainer>
@@ -128,4 +129,20 @@ function ZoomButtons({ labels }: { labels: MapFrameLabels }) {
       </button>
     </MapOverlay>
   );
+}
+
+/**
+ * Leaflet redraws on a window resize only. The map's box also changes without one (a sidebar folding, a full-window
+ * map laid out after the page's entrance, a sheet's detent): tell it, so no part is left blank or half-drawn.
+ */
+function FollowSize() {
+  const map = useMap();
+  useEffect(() => {
+    const box = map.getContainer();
+    if (typeof ResizeObserver === 'undefined') return undefined;
+    const observer = new ResizeObserver(() => map.invalidateSize({ pan: false }));
+    observer.observe(box);
+    return () => observer.disconnect();
+  }, [map]);
+  return null;
 }

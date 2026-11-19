@@ -68,7 +68,7 @@ test('nhập file điểm giao vào kế hoạch mới rồi lưu', async ({ pag
     await page.getByLabel(/^Tên kế hoạch/).fill(`Từ file ${RUN}`);
     await page.getByRole('button', { name: 'Lưu và tìm toạ độ' }).first().click();
     await expect(page.getByRole('heading', { name: `Từ file ${RUN}` })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'ĐH-E2E-1 · Chị Lan' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'ĐH-E2E-2 · Anh Minh' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'ĐH-E2E-1 · Chị Lan: xem chi tiết' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'ĐH-E2E-2 · Anh Minh: xem chi tiết' })).toBeVisible();
   });
 });

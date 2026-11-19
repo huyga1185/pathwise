@@ -95,7 +95,7 @@ describe('Soạn plan — tìm toạ độ', () => {
     const user = userEvent.setup();
 
     const panel = await screen.findByRole('region', { name: 'Sửa ĐH-1008 · Chị Thảo' });
-    await user.click(within(panel).getByRole('button', { name: 'Đặt ghim ở giữa bản đồ' }));
+    await user.click(screen.getByRole('button', { name: 'Đặt ghim ở giữa bản đồ' }));
     expect(within(panel).getByRole('status')).toHaveTextContent(
       /^Ghim tại 16,\d{5} \/ 108,\d{5}\. Bấm chỗ khác để đổi\.$/,
     );
@@ -192,7 +192,7 @@ describe('Soạn plan — tìm toạ độ', () => {
     expect(reads).toBe(readsWhenIdle);
 
     const panel = screen.getByRole('region', { name: 'Sửa ĐH-1008 · Chị Thảo' });
-    await user.click(within(panel).getByRole('button', { name: 'Đặt ghim ở giữa bản đồ' }));
+    await user.click(screen.getByRole('button', { name: 'Đặt ghim ở giữa bản đồ' }));
     await user.click(within(panel).getByRole('button', { name: 'Lưu toạ độ' }));
     await waitFor(() => expect(patches).toHaveLength(1));
     expect(patches[0]).toMatchObject({ version: 1 });
@@ -226,7 +226,7 @@ describe('Nút quay lại (§9.11)', () => {
     // (The tab bar also has a "Kế hoạch" link: the back button is the one with the chevron, .pw-back-link.)
     const phone = renderApp('/plans/83');
     await screen.findByRole('heading', { name: 'Giao sáng 01/12', level: 1 });
-    const backs = document.querySelectorAll('.pw-back-link');
+    const backs = document.querySelectorAll('a.pw-back-link');
     expect(backs).toHaveLength(1);
     expect(backs[0]?.closest('.pw-topbar')).not.toBeNull();
     expect(backs[0]).toHaveAccessibleName('Kế hoạch');
@@ -235,7 +235,7 @@ describe('Nút quay lại (§9.11)', () => {
     wideWindow();
     renderApp('/plans/83');
     await screen.findByRole('heading', { name: 'Giao sáng 01/12', level: 1 });
-    expect(document.querySelector('.pw-back-link')?.closest('main')).not.toBeNull();
+    expect(document.querySelector('a.pw-back-link')?.closest('main')).not.toBeNull();
   });
 });
 
@@ -266,6 +266,73 @@ describe('Ba nút đầu trang trên màn hẹp (§9.12)', () => {
   });
 });
 
+describe('Tìm toạ độ trên bản đồ (G5.15)', () => {
+  it('mở sẵn thẻ điểm lỗi (focus không bị kéo vào); quay lại thì là danh sách, không tự mở lại; bấm hàng thì vào thẻ', async () => {
+    server.use(
+      http.get(`${API}/plans/83`, () => ok(geocoded())),
+      ...signedInHandlers(),
+    );
+    renderApp('/plans/83');
+    const user = userEvent.setup();
+
+    const title = await screen.findByRole('heading', { name: 'Sửa ĐH-1008 · Chị Thảo', level: 2 });
+    expect(title).not.toHaveFocus();
+    await user.click(screen.getByRole('button', { name: 'Điểm giao' }));
+    const row = await screen.findByRole('button', { name: 'ĐH-1008 · Chị Thảo: xem chi tiết' });
+    expect(screen.queryByRole('heading', { name: 'Sửa ĐH-1008 · Chị Thảo' })).not.toBeInTheDocument();
+
+    await user.click(row);
+    expect(await screen.findByRole('heading', { name: 'Sửa ĐH-1008 · Chị Thảo', level: 2 })).toHaveFocus();
+  });
+});
+
+describe('Thẻ sửa điểm trên điện thoại (G5)', () => {
+  it('gõ địa chỉ thì sheet lên nấc cao; ghim của điểm giao là ghim riêng, không phải ngôi nhà của kho', async () => {
+    server.use(
+      http.get(`${API}/plans/83`, () => ok(geocoded())),
+      ...signedInHandlers(),
+    );
+    const { container } = renderApp('/plans/83');
+    const user = userEvent.setup();
+
+    await screen.findByRole('heading', { name: 'Sửa ĐH-1008 · Chị Thảo', level: 2 });
+    const sheet = container.ownerDocument.querySelector('.pw-map-sheet') as HTMLElement;
+    expect(sheet).toHaveAttribute('data-detent', 'mid');
+    await user.click(screen.getByLabelText('Địa chỉ'));
+    expect(sheet).toHaveAttribute('data-detent', 'high');
+
+    await user.click(screen.getByRole('button', { name: 'Đặt ghim ở giữa bản đồ' }));
+    expect(container.ownerDocument.querySelector('.pw-stop-pin')).not.toBeNull();
+    expect(container.ownerDocument.querySelector('.pw-map-stage .pw-depot-marker')).toBeNull();
+  });
+});
+
+describe('Thanh bên tự thu trên trang có bản đồ phủ (§10.7)', () => {
+  it('vào trang kế hoạch thì thu; nút vẫn mở được (không lưu); ra khỏi trang thì về như trước', async () => {
+    wideWindow();
+    window.localStorage.removeItem('pw-sidebar');
+    server.use(
+      http.get(`${API}/plans/83`, () => ok(geocoded())),
+      http.get(`${API}/plans`, () => ok([])),
+      ...signedInHandlers(),
+    );
+    const { router } = renderApp('/plans/83');
+    const user = userEvent.setup();
+
+    await screen.findByRole('heading', { name: 'Giao sáng 01/12', level: 1 });
+    const toggle = screen.getByRole('button', { name: 'Hiện thanh bên' });
+    expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    await user.click(toggle);
+    expect(screen.getByRole('button', { name: 'Ẩn thanh bên' })).toHaveAttribute('aria-expanded', 'true');
+    await user.click(screen.getByRole('button', { name: 'Ẩn thanh bên' }));
+    // Toggling on this page is not saved as the person's choice.
+    expect(window.localStorage.getItem('pw-sidebar')).toBeNull();
+
+    await router.navigate('/plans');
+    expect(await screen.findByRole('button', { name: 'Ẩn thanh bên' })).toHaveAttribute('aria-expanded', 'true');
+  });
+});
+
 describe('Tìm lại một địa chỉ (G4 §9.5)', () => {
   it('trong lúc chờ: "Đang tìm toạ độ…" cạnh nút; bản đồ và các nút giữ nguyên (không tắt, không mất)', async () => {
     let answer: () => void = () => {};
@@ -283,7 +350,7 @@ describe('Tìm lại một địa chỉ (G4 §9.5)', () => {
     expect(within(panel).getByText('Đang tìm toạ độ…')).toBeInTheDocument();
     expect(retry).toBeEnabled();
     expect(retry).toHaveAttribute('aria-busy', 'true');
-    expect(within(panel).getByRole('button', { name: 'Đặt ghim ở giữa bản đồ' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Đặt ghim ở giữa bản đồ' })).toBeEnabled();
     answer();
     await waitFor(() => expect(within(panel).queryByText('Đang tìm toạ độ…')).not.toBeInTheDocument());
   });

@@ -58,6 +58,27 @@
   top: 10px;
   z-index: 1000;
 }
+/* Controls on the trailing side, in one column: + / − then the pin button under them (§10.7). The column's right
+   edge follows the top bar's padding so it lines up with the account button above (on a map under the top bar). */
+.pw-map {
+  --map-edge: 10px;
+  --map-top: 10px;
+}
+.pw-map-zoom {
+  top: var(--map-top);
+  right: var(--map-edge);
+}
+.pw-map-pin-action {
+  position: absolute;
+  top: calc(var(--map-top) + 2 * 36px + 1px + 2px + 8px);
+  right: var(--map-edge);
+  z-index: 1000;
+}
+@media (pointer: coarse) {
+  .pw-map-pin-action {
+    top: calc(var(--map-top) + 2 * 44px + 1px + 2px + 8px);
+  }
+}
 .pw-map-ctl {
   box-sizing: border-box;
   min-width: 36px;
@@ -249,4 +270,44 @@
     min-width: 44px;
     height: 44px;
   }
+}
+/* The pin button as wide as the + / − group above it (36px and its 1px edge each side); a circle for touch (S3). */
+.pw-map-pin-action .pw-map-ctl {
+  width: 38px;
+  height: 38px;
+}
+@media (pointer: coarse) {
+  .pw-map-pin-action .pw-map-ctl {
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+  }
+}
+/* A stop as a pin (§10.15, fb_17): the body in the pin's colour (`color`), a white edge, a shadow; the number in the
+   white circle, in the same colour. Selected: larger (36px) with a dark edge. */
+.pw-pin-svg {
+  display: block;
+  overflow: visible;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.35));
+}
+.pw-pin-body {
+  fill: currentColor;
+  stroke: #ffffff;
+  stroke-width: 1.5;
+}
+.pw-pin-svg.is-selected .pw-pin-body {
+  stroke: var(--ink);
+  stroke-width: 2.2;
+}
+.pw-pin-number {
+  fill: currentColor;
+  font-family: var(--font-sans);
+  font-size: 10px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.pw-stop-pin {
+  background: none;
+  border: 0;
 }

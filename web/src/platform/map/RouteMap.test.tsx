@@ -44,9 +44,9 @@ describe('RouteMap', () => {
         .getAllByRole('listitem')
         .map((item) => item.textContent),
     ).toEqual(['Kho xuất phát', 'Tài xế A', 'Tài xế B']);
-    expect(container.querySelector('[title="Điểm 1"] .pw-marker-r1.pw-marker-selected')).toHaveTextContent('1');
-    expect(container.querySelector('[title="Điểm 1 B"] .pw-marker-success')).toBeInTheDocument();
-    expect(container.querySelector('[title="Không xếp được"] .pw-marker-signal')).toHaveTextContent('');
+    expect(container.querySelector('[title="Điểm 1"] .pw-pin-r1.is-selected')).toHaveTextContent('1');
+    expect(container.querySelector('[title="Điểm 1 B"] .pw-pin-success')).toBeInTheDocument();
+    expect(container.querySelector('[title="Không xếp được"] .pw-pin-signal')).toHaveTextContent('');
     expect(container.querySelectorAll('path.pw-route-line')).toHaveLength(2);
     expect(screen.getByText('Bản đồ thử')).toBeInTheDocument();
 

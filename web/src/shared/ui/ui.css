@@ -3715,3 +3715,313 @@ html {
   clip-path: inset(50%);
   white-space: nowrap;
 }
+
+/* MapStage (OWNER_UI_REDESIGN §10, G5.1–G5.3): a plan's screens on a map filling the content area below the top bar —
+   the page has no padding and does not scroll. Wide: a panel floating on the leading side; phone: a sheet with three
+   detents above the tab bar. Both Regular glass (LIQUID_GLASS M4, M7), solid with reduced transparency or increased
+   contrast (as the sidebar). */
+.pw-shell-main:has(.pw-map-stage) > .pw-page {
+  padding: 0;
+}
+.pw-map-stage {
+  position: relative;
+  height: calc(100dvh - 60px);
+  min-height: 360px;
+  overflow: hidden;
+}
+.pw-map-stage-map {
+  position: absolute;
+  inset: 0;
+}
+.pw-map-stage-map .pw-map,
+.pw-map-stage-map .pw-route-map {
+  height: 100%;
+}
+.pw-map-stage-map .pw-map {
+  aspect-ratio: auto;
+  min-height: 0;
+  border: 0;
+  border-radius: 0;
+}
+.pw-map-panel,
+.pw-map-sheet {
+  position: absolute;
+  z-index: 1001;
+  box-sizing: border-box;
+  border: 1px solid color-mix(in srgb, var(--line) 70%, transparent);
+  background: var(--shell-glass);
+  box-shadow: var(--shadow-raised);
+  -webkit-backdrop-filter: blur(20px) saturate(1.4);
+  backdrop-filter: blur(20px) saturate(1.4);
+}
+.pw-map-panel {
+  top: var(--shell-gap);
+  bottom: var(--shell-gap);
+  left: var(--shell-gap);
+  width: min(460px, calc(100% - 2 * var(--shell-gap)));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 16px;
+  border-radius: var(--radius-lg);
+}
+.pw-map-sheet {
+  left: 0;
+  right: 0;
+  /* Above the floating tab bar. */
+  bottom: calc(var(--tabbar-height) + 2 * var(--shell-gap) + env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--radius-lg);
+  transition: height 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.pw-map-sheet.is-dragging {
+  transition: none;
+}
+.pw-map-sheet-grabber {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: grab;
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.pw-map-sheet-grabber > span {
+  width: 36px;
+  height: 5px;
+  border-radius: var(--radius-full);
+  background: color-mix(in srgb, var(--ink) 30%, transparent);
+}
+.pw-map-sheet-grabber:focus-visible {
+  outline: 2px solid var(--route);
+  outline-offset: -4px;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+}
+.pw-map-sheet-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0 16px 16px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .pw-map-sheet {
+    transition: none;
+  }
+}
+@media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
+  .pw-map-panel,
+  .pw-map-sheet {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    background: var(--surface-raised);
+  }
+}
+@media (prefers-contrast: more) {
+  .pw-map-panel,
+  .pw-map-sheet {
+    border: 2px solid var(--ink);
+  }
+}
+/* Phone: the map's attribution in the top leading corner, still at every detent (§10.12). At the bottom the tab bar
+   covers it and above the sheet it floated mid-screen, moving with the sheet (HIG Maps: "Avoid causing the logo and
+   link to move with your interface"); the top trailing corner holds + / − and the pin button. */
+.pw-map-stage.is-narrow .leaflet-bottom.leaflet-right {
+  top: 0;
+  bottom: auto;
+  left: 0;
+  right: auto;
+}
+.pw-map-stage.is-narrow .leaflet-control-attribution {
+  margin: 8px 0 0 var(--map-edge, 16px);
+  /* Clear of the + / − column on a narrow phone (320px): it wraps instead of running under it. */
+  max-width: calc(100vw - 2 * var(--map-edge, 16px) - 46px - 8px);
+  white-space: normal;
+}
+/* An action sheet's title and message over its choices (as iOS). */
+.pw-action-sheet-head {
+  display: grid;
+  gap: 2px;
+  padding: 14px 16px;
+  text-align: center;
+  border-bottom: 1px solid var(--line);
+}
+.pw-action-sheet-title {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--ink-muted);
+}
+.pw-action-sheet-message {
+  font-size: 0.8125rem;
+  color: var(--ink-muted);
+}
+/* Touch: the grabber's tap area is 44px tall (APPLE_CHECKLIST C1); the bar drawn stays small. */
+@media (pointer: coarse) {
+  .pw-map-sheet-grabber {
+    height: 44px;
+  }
+}
+
+/* Wide window: the map fills the whole window, beneath the floating sidebar and the top bar's buttons (owner's
+   choice, OWNER_UI_REDESIGN §10.6; HIG Sidebars: "Extend visually rich content beneath the sidebar… sidebars can
+   float above content in the Liquid Glass layer"; Toolbars: buttons over content "always remain visible"). The top
+   bar has no strip of its own there: its buttons are glass circles over the map, with a stroke and a shadow to stand
+   out from it (HIG Maps; WCAG 1.4.11). The panel sits beside the sidebar, below those buttons, and follows it when
+   the sidebar hides. */
+@media (min-width: 960px) {
+  .pw-map-stage.is-wide {
+    --panel-left: var(--shell-gap);
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    height: auto;
+  }
+  .pw-shell.has-sidebar .pw-map-stage.is-wide {
+    --panel-left: calc(var(--sidebar-width) + 2 * var(--shell-gap));
+  }
+  .pw-map-stage.is-wide .pw-map-panel {
+    top: 60px;
+    left: var(--panel-left);
+    transition: left 0.24s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  /* The map's controls in one column under the account button, lined up with it (§10.7). */
+  .pw-map-stage.is-wide .pw-map {
+    --map-top: 64px;
+    --map-edge: clamp(16px, 2vw, 24px);
+  }
+  .pw-shell-main:has(.pw-map-stage.is-wide) .pw-topbar {
+    background: transparent;
+    pointer-events: none;
+  }
+  .pw-shell-main:has(.pw-map-stage.is-wide) .pw-topbar > * {
+    pointer-events: auto;
+  }
+  .pw-shell-main:has(.pw-map-stage.is-wide) .pw-sidebar-toggle,
+  .pw-shell-main:has(.pw-map-stage.is-wide) .pw-account-button {
+    border: 1px solid color-mix(in srgb, var(--line) 70%, transparent);
+    background: var(--shell-glass);
+    box-shadow: var(--shadow-raised);
+    -webkit-backdrop-filter: blur(20px) saturate(1.4);
+    backdrop-filter: blur(20px) saturate(1.4);
+  }
+  .pw-shell-main:has(.pw-map-stage.is-wide) .pw-sidebar-toggle {
+    color: var(--ink);
+  }
+}
+@media (min-width: 960px) and (prefers-reduced-motion: reduce) {
+  .pw-map-stage.is-wide .pw-map-panel {
+    transition: none;
+  }
+}
+@media (min-width: 960px) and ((prefers-reduced-transparency: reduce) or (prefers-contrast: more)) {
+  .pw-shell-main:has(.pw-map-stage.is-wide) .pw-sidebar-toggle,
+  .pw-shell-main:has(.pw-map-stage.is-wide) .pw-account-button {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    background: var(--surface-raised);
+  }
+}
+/* Phone: the map starts under the top bar; its controls line up with the account button's right edge (§10.7). */
+.pw-map-stage.is-narrow .pw-map {
+  --map-edge: clamp(16px, 2vw, 24px);
+}
+/* A plan's screen changing in place on the full map fades only: a transform on it would lay the fixed map out in it
+   (see MapStage). */
+.pw-view-switch.is-new:has(.pw-map-stage) {
+  animation-name: pw-result-fade;
+}
+
+/* Phone sheet (§10.10), as iOS 26 sheets — Apple, Adopting Liquid Glass: "Sheets feature an increased corner radius,
+   and half sheets are inset from the edge of the display to allow content to peek through from beneath them. When a
+   half sheet expands to full height, it transitions to a more opaque appearance". At the low and half detents: inset
+   12px from the screen's sides and radius 32px, the same as the tab bar under it (inset 12px, a 64px capsule) so the
+   two read as one family; at the high detent: against the sides, opaque (the page surface), top corners radius-lg. */
+.pw-map-sheet {
+  left: var(--shell-gap);
+  right: var(--shell-gap);
+  border-radius: 32px;
+  transition:
+    height 0.3s cubic-bezier(0.2, 0.8, 0.2, 1),
+    left 0.3s cubic-bezier(0.2, 0.8, 0.2, 1),
+    right 0.3s cubic-bezier(0.2, 0.8, 0.2, 1),
+    border-radius 0.3s cubic-bezier(0.2, 0.8, 0.2, 1),
+    background-color 0.3s ease;
+}
+.pw-map-sheet[data-detent='high'] {
+  left: 0;
+  right: 0;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  /* Opaque, and the page's own surface so the groups (raised surface) stand out from it, as grouped lists do. */
+  background: var(--surface);
+}
+/* Content clear of the rounder corners (Apple: "check for content and controls that might appear too close to rounder
+   sheet corners"). */
+.pw-map-sheet:not([data-detent='high']) .pw-map-sheet-body {
+  padding: 0 20px 20px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .pw-map-sheet {
+    transition: none;
+  }
+}
+
+/* Folded (low detent, §10.11; owner's sketch fb_14): only a glass handle, 96 × 44, centred above the tab bar, a
+   chevron up; tap or drag it up to open. The rest of the sheet is hidden (and inert). */
+.pw-map-sheet[data-detent='low']:not(.is-dragging) {
+  left: calc(50% - 48px);
+  right: calc(50% - 48px);
+  border-radius: 22px;
+}
+.pw-map-sheet[data-detent='low']:not(.is-dragging) .pw-map-sheet-grabber {
+  height: 44px;
+}
+.pw-map-sheet[data-detent='low']:not(.is-dragging) .pw-map-sheet-body {
+  visibility: hidden;
+}
+.pw-map-sheet-grabber > .pw-map-sheet-chevron {
+  display: inline-grid;
+  width: auto;
+  height: auto;
+  border-radius: 0;
+  background: none;
+  color: var(--ink);
+}
+.pw-map-sheet-chevron svg {
+  width: 22px;
+  height: 22px;
+}
+
+/* High detent (§10.14): the sheet goes down to the bottom of the screen and the tab bar floats over it (HIG Tab bars:
+   the tab bar stays visible — this sheet is not modal; LIQUID_GLASS M6: no glass on glass — the sheet is opaque
+   there). Its content keeps clear of the tab bar at the end and when focused (WCAG 2.4.11): bottom padding and
+   scroll padding as tall as the tab bar and its gaps. The phone stage is its own layer, so the tab bar (z 30) stays
+   above the map's and the sheet's own layers. */
+.pw-map-stage.is-narrow {
+  isolation: isolate;
+  z-index: 0;
+}
+.pw-map-sheet {
+  transition:
+    height 0.3s cubic-bezier(0.2, 0.8, 0.2, 1),
+    bottom 0.3s cubic-bezier(0.2, 0.8, 0.2, 1),
+    left 0.3s cubic-bezier(0.2, 0.8, 0.2, 1),
+    right 0.3s cubic-bezier(0.2, 0.8, 0.2, 1),
+    border-radius 0.3s cubic-bezier(0.2, 0.8, 0.2, 1),
+    background-color 0.3s ease;
+}
+.pw-map-sheet[data-detent='high'] {
+  bottom: 0;
+}
+.pw-map-sheet[data-detent='high'] .pw-map-sheet-body {
+  padding-bottom: calc(var(--tabbar-height) + 2 * var(--shell-gap) + env(safe-area-inset-bottom) + 16px);
+  scroll-padding-bottom: calc(var(--tabbar-height) + 2 * var(--shell-gap) + env(safe-area-inset-bottom) + 8px);
+}
+@media (prefers-reduced-motion: reduce) {
+  .pw-map-sheet {
+    transition: none;
+  }
+}

@@ -342,3 +342,22 @@ Nhóm: (1) nghiệp vụ/hiểu sai yêu cầu · (2) implementation · (3) ki�
 | 2026-11-18 | branch `feat/owner-ui-g4` | — | `Button` thêm kiểu `tinted`; "Sao chép" ở màn tìm toạ độ thành tinted, đứng giữa "Sửa điểm giao" và nút chính (`OWNER_UI_REDESIGN.md` §9.10). |
 | 2026-11-18 | branch `feat/owner-ui-g4` | — | Điện thoại: nút quay lại lên đầu thanh trên, ngang hàng nút tài khoản, theo thiết kế G1 §6 (`OWNER_UI_REDESIGN.md` §9.11). |
 | 2026-11-18 | branch `feat/owner-ui-g4` | — | Màn hẹp (< 440px): ba nút đầu trang chi tiết kế hoạch xếp dọc rộng hết, nút chính trên cùng (`OWNER_UI_REDESIGN.md` §9.12). |
+| 2026-11-18 | branch `feat/owner-ui-g5` | — | Thiết kế G5 (chi tiết kế hoạch): bản đồ phủ trang, panel ~460px / sheet ba nấc, menu … , thẻ điểm, giao việc là sheet (`OWNER_UI_REDESIGN.md` §10). |
+| 2026-11-18 | branch `feat/owner-ui-g5` | — | G5 bước 1–2: `MapStage` (bản đồ phủ trang, panel / sheet ba nấc) và màn kết quả tối ưu trên đó (`OWNER_UI_REDESIGN.md` §10.5). |
+| 2026-11-18 | branch `feat/owner-ui-g5` | — | G5 bước 3: giao việc là Sheet, huỷ kế hoạch / tối ưu lại / rời trang là Alert, bỏ chỉnh tay là action sheet (`OWNER_UI_REDESIGN.md` §10.5). |
+| 2026-11-18 | branch `feat/owner-ui-g5` | — | G5 bước 4: màn theo dõi trên bản đồ phủ trang — thanh tiến độ chung, chú giải trong panel, nút …, thẻ tài xế (`OWNER_UI_REDESIGN.md` §10.5). |
+| 2026-11-18 | branch `feat/owner-ui-g5` | — | G5 bước 5: chỉnh tay trong panel / sheet (tuyến xếp dọc, không bị cắt; điện thoại "Chuyển sang…" dưới tên điểm) (`OWNER_UI_REDESIGN.md` §10.5). |
+| 2026-11-18 | branch `feat/owner-ui-g5` | — | G5 bước 6: màn tìm toạ độ trên bản đồ phủ trang, thẻ sửa điểm, ghim trên bản đồ lớn, bỏ "Phóng to bản đồ" và `Dialog` cũ ở trang kế hoạch (`OWNER_UI_REDESIGN.md` §10.5). |
+| 2026-11-19 | branch `feat/owner-ui-g5` | — | G5 bước 7: đo các màn kế hoạch (4 cỡ, sáng/tối), grabber 44px khi cảm ứng, hàng tiêu đề panel xuống dòng; SCREENS và DESIGN_SYSTEM ghi bố cục bản đồ phủ trang (`OWNER_UI_REDESIGN.md` §10.5). |
+| 2026-11-19 | branch `feat/owner-ui-g5` | — | Ghim điểm giao riêng (không còn ngôi nhà của kho) ở màn tìm toạ độ; điện thoại gõ địa chỉ thì sheet lên nấc cao (`OWNER_UI_REDESIGN.md` §10.2 G5-Q16, Q17). |
+| 2026-11-19 | branch `feat/owner-ui-g5` | — | Màn rộng: bản đồ của trang kế hoạch phủ cả cửa sổ, dưới sidebar và các nút kính của thanh trên (`OWNER_UI_REDESIGN.md` §10.6). |
+| 2026-11-19 | branch `feat/owner-ui-g5` | — | Nút ghim biểu tượng dưới +/−, cột nút bản đồ thẳng hàng avatar; PC: thanh bên tự thu ở trang chi tiết kế hoạch, rời trang về như trước (`OWNER_UI_REDESIGN.md` §10.7). |
+| 2026-11-19 | branch `feat/owner-ui-g5` | — | Sửa bản đồ xé hình khi mở trang kế hoạch: trang có bản đồ chỉ mờ vào (không trượt), bản đồ tự vẽ lại khi khung đổi cỡ (`OWNER_UI_REDESIGN.md` §10.8). |
+| 2026-11-19 | branch `feat/owner-ui-g5` | — | Nhóm tuyến / điểm giao mở đóng có hoạt ảnh chiều cao; hàng nút đầu panel lấp hết bề ngang (`OWNER_UI_REDESIGN.md` §10.9). |
+| 2026-11-19 | branch `feat/owner-ui-g5` | — | Sheet trên điện thoại: nấc thấp/giữa cách mép 12px, bo 32px như tab bar; nấc cao áp sát mép, nền đặc (Apple, Adopting Liquid Glass) (`OWNER_UI_REDESIGN.md` §10.10). |
+| 2026-11-19 | branch `feat/owner-ui-g5` | — | Sheet trên điện thoại thu nhỏ chỉ còn tay cầm có chevron ↑ ở giữa (phác thảo fb_14) (`OWNER_UI_REDESIGN.md` §10.11). |
+| 2026-11-19 | branch `feat/owner-ui-g5` | — | Điện thoại: chú thích bản quyền bản đồ ở góc trên trái, đứng yên ở mọi nấc sheet (`OWNER_UI_REDESIGN.md` §10.12). |
+| 2026-11-19 | branch `feat/owner-ui-g5` | — | Sửa trang kế hoạch cuộn lệch trên Chrome Android (100vh lớn hơn phần nhìn thấy): khung `100dvh`, trang không cuộn, về đầu khi mở (`OWNER_UI_REDESIGN.md` §10.13). |
+| 2026-11-19 | branch `feat/owner-ui-g5` | — | Sheet điện thoại ở nấc cao chạm đáy màn, tab bar nổi trên; nội dung chừa đáy để không bị tab bar che (`OWNER_UI_REDESIGN.md` §10.14). |
+| 2026-11-19 | branch `feat/owner-ui-g5` | — | Điểm giao trên bản đồ là ghim (số thứ tự bên trong khi đã xếp) thay cho chấm tròn (`OWNER_UI_REDESIGN.md` §10.15). |
+| 2026-11-19 | branch `feat/owner-ui-g5` | — | Ghim điểm giao theo kiểu fb_17: vòng trắng giữa đầu, số thứ tự trong vòng trắng (`OWNER_UI_REDESIGN.md` §10.15). |

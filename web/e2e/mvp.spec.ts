@@ -104,9 +104,8 @@ test('chủ cửa hàng đi hết luồng MVP tới khi kế hoạch hoàn thàn
 
   await test.step('tối ưu lộ trình rồi giao việc', async () => {
     await page.getByRole('button', { name: 'Tối ưu lộ trình' }).click();
-    await expect(page.getByRole('region', { name: 'Tổng quan' })).toContainText('3/3 đã xếp tuyến', {
-      timeout: 60_000,
-    });
+    // The summary line of the map panel (OWNER_UI_REDESIGN G5.5).
+    await expect(page.getByText(/^3\/3 điểm đã xếp · /)).toBeVisible({ timeout: 60_000 });
   });
 
   await test.step('chỉnh tay: kéo điểm đầu xuống cuối bằng bàn phím rồi lưu (W10)', async () => {
@@ -158,7 +157,9 @@ test('chủ cửa hàng đi hết luồng MVP tới khi kế hoạch hoàn thàn
   await test.step('theo dõi: kế hoạch hoàn thành, có lý do không giao được', async () => {
     await page.reload();
     await expect(page.getByText(/Kế hoạch đã kết thúc/)).toBeVisible();
-    await expect(page.getByRole('region', { name: 'Kết quả', exact: true })).toContainText('2 / 3 điểm');
+    // The whole plan's progress in words (G5-Q13).
+    // (One route: its own summary says the same; the first is the whole plan's.)
+    await expect(page.getByText(/^2\/3 đã giao · /).first()).toBeVisible();
     await expect(page.getByText('Lý do: Vắng nhà')).toBeVisible();
     await expect(page.getByText('HOÀN THÀNH').first()).toBeVisible();
   });

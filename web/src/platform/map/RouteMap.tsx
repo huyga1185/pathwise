@@ -53,15 +53,44 @@ export function routeColour(index: number): number {
   return (index % 7) + 1;
 }
 
+/**
+ * A stop as a map pin (owner's sketch fb_17, §10.15): a round head tapering to a point on the place, a white circle in
+ * the head with the stop's order in it (in the pin's colour: every route and result colour is ≥ 5.8:1 on white, WCAG
+ * 1.4.3), empty for a stop without a route. Its route's or result's colour; a white edge and a shadow on the map (HIG
+ * Maps); a selected pin is larger with a dark edge.
+ */
+export function pinSvg(colour: string, text: string, size: number, className: string): string {
+  const height = Math.round((size * 40) / 28);
+  const label = text
+    ? `<text x="14" y="14.4" text-anchor="middle" dominant-baseline="middle" class="pw-pin-number">${text}</text>`
+    : '';
+  return (
+    `<svg data-theme="light" class="pw-pin-svg ${className}" viewBox="0 0 28 40" width="${size}" height="${height}" ` +
+    `style="color: ${colour}" aria-hidden="true">` +
+    `<path class="pw-pin-body" d="M14 39C14 39 1.5 24.6 1.5 14a12.5 12.5 0 0 1 25 0C26.5 24.6 14 39 14 39Z"/>` +
+    `<circle cx="14" cy="14" r="7.8" fill="#ffffff"/>${label}</svg>`
+  );
+}
+
+const TONE_COLOUR: Record<MarkerTone, string> = {
+  route: 'var(--route)',
+  signal: 'var(--signal)',
+  success: 'var(--success)',
+  danger: 'var(--danger)',
+  muted: 'var(--ink-muted)',
+};
+
 function stopIcon(stop: MapStop, colour: number | null, selected: boolean) {
-  const tone = stop.tone ? `pw-marker-${stop.tone}` : colour ? `pw-marker-r${colour}` : 'pw-marker-muted';
+  const tone = stop.tone ? `pw-pin-${stop.tone}` : colour ? `pw-pin-r${colour}` : 'pw-pin-muted';
+  const fill = stop.tone ? TONE_COLOUR[stop.tone] : colour ? `var(--map-route-${colour})` : 'var(--ink-muted)';
   const size = selected ? 36 : 28;
+  const height = Math.round((size * 40) / 28);
   const text = typeof stop.sequence === 'number' ? String(stop.sequence) : '';
   return divIcon({
-    html: `<span data-theme="light" class="pw-marker ${tone}${selected ? ' pw-marker-selected' : ''}">${text}</span>`,
+    html: pinSvg(fill, text, size, `${tone}${selected ? ' is-selected' : ''}`),
     className: 'pw-stop-marker',
-    iconSize: [size, size],
-    iconAnchor: [size / 2, size / 2],
+    iconSize: [size, height],
+    iconAnchor: [size / 2, height - 1],
   });
 }
 
@@ -109,6 +138,8 @@ export function RouteMap({
   selectedId,
   onSelect,
   labels,
+  inset,
+  staged = false,
 }: {
   depot: LatLng | null;
   routes: MapRoute[];
@@ -117,6 +148,10 @@ export function RouteMap({
   selectedId?: string | number | null;
   onSelect?: (id: string | number) => void;
   labels: RouteMapLabels;
+  /** Part of the map covered by a panel or sheet (MapStage): fitting keeps the routes clear of it. */
+  inset?: { top: number; right: number; bottom: number; left: number };
+  /** On a MapStage: the map fills it; no "larger map" button, no legend (the panel shows each route's colour). */
+  staged?: boolean;
 }) {
   const [map, setMap] = useState<LeafletMap | null>(null);
   const [expanded, setExpanded] = useState(false);
@@ -128,7 +163,11 @@ export function RouteMap({
     const size = map.getSize();
     // A map without a size (hidden, or jsdom) cannot compute a zoom that fits: centre on the first place instead.
     if ((points.length === 1 || !size.x || !size.y) && points[0]) map.setView([points[0].lat, points[0].lon], 15);
-    else map.fitBounds(latLngBounds(points.map((point) => [point.lat, point.lon])), { padding: [32, 32] });
+    else
+      map.fitBounds(latLngBounds(points.map((point) => [point.lat, point.lon])), {
+        paddingTopLeft: [32 + (inset?.left ?? 0), 32 + (inset?.top ?? 0)],
+        paddingBottomRight: [32 + (inset?.right ?? 0), 32 + (inset?.bottom ?? 0)],
+      });
     // Fit again only when the set of places changes, not on every render.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [map, boundsKey]);
@@ -146,7 +185,7 @@ export function RouteMap({
   });
 
   return (
-    <div className={expanded ? 'pw-route-map is-expanded' : 'pw-route-map'}>
+    <div className={expanded ? 'pw-route-map is-expanded' : staged ? 'pw-route-map is-staged' : 'pw-route-map'}>
       <MapFrame center={depot ?? DEFAULT_CENTER} zoom={12} labels={labels} className="pw-map-routes" onReady={setMap}>
         {routes.map((route, index) => {
           const colour = routeColour(index);
@@ -197,29 +236,33 @@ export function RouteMap({
             eventHandlers={markerHandlers(driver.id)}
           />
         ))}
-        <MapOverlay className="pw-map-actions">
-          <button
-            type="button"
-            className="pw-map-ctl pw-map-ctl-text"
-            aria-pressed={expanded}
-            onClick={() => setExpanded((open) => !open)}
-          >
-            {expanded ? labels.collapse : labels.expand}
-          </button>
-        </MapOverlay>
+        {staged ? null : (
+          <MapOverlay className="pw-map-actions">
+            <button
+              type="button"
+              className="pw-map-ctl pw-map-ctl-text"
+              aria-pressed={expanded}
+              onClick={() => setExpanded((open) => !open)}
+            >
+              {expanded ? labels.collapse : labels.expand}
+            </button>
+          </MapOverlay>
+        )}
       </MapFrame>
-      <ul className="pw-map-legend" aria-label={labels.legend}>
-        <li>
-          <DepotIcon />
-          {labels.depot}
-        </li>
-        {routes.map((route, index) => (
-          <li key={`legend-${route.key}`}>
-            <span className={`pw-legend-swatch pw-marker-r${routeColour(index)}`} aria-hidden="true" />
-            {route.label}
+      {staged ? null : (
+        <ul className="pw-map-legend" aria-label={labels.legend}>
+          <li>
+            <DepotIcon />
+            {labels.depot}
           </li>
-        ))}
-      </ul>
+          {routes.map((route, index) => (
+            <li key={`legend-${route.key}`}>
+              <span className={`pw-legend-swatch pw-marker-r${routeColour(index)}`} aria-hidden="true" />
+              {route.label}
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }

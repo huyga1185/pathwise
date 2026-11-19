@@ -1,4 +1,14 @@
-import { createContext, useContext, useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
 import { Link, NavLink, useLocation } from 'react-router';
 import { vi } from '@/shared/i18n/vi';
 import { cx } from './cx';
@@ -44,6 +54,21 @@ export function useInAppShell(): boolean {
  * edge"). Null on a wide window (its leading end is the sidebar button) and outside the shell: the back button stays
  * in the page.
  */
+/**
+ * A page that wants the whole window (a plan on the full map, §10.7) folds the sidebar away while it is open: register
+ * with `useFoldedSidebar()`. Inside it the sidebar button shows and hides the sidebar for that page only; leaving the
+ * page brings back the state chosen before (HIG Sidebars: "Consider automatically hiding and revealing a sidebar…").
+ */
+const FoldSidebar = createContext<((folded: boolean) => void) | null>(null);
+export function useFoldedSidebar(active: boolean) {
+  const fold = useContext(FoldSidebar);
+  useEffect(() => {
+    if (!fold || !active) return undefined;
+    fold(true);
+    return () => fold(false);
+  }, [fold, active]);
+}
+
 const TopbarLeading = createContext<HTMLElement | 'pending' | null>(null);
 /** The top bar's leading element; 'pending' on a phone before it is mounted (draw nothing yet, not in the page). */
 export function useTopbarLeading(): HTMLElement | 'pending' | null {
@@ -299,9 +324,16 @@ function AccountMenu({ account, crossFade }: { account: ShellAccount; crossFade:
  */
 export function AppShell({ items, navLabel, sidebarTitle, account, children }: AppShellProps) {
   const [sidebarOpen, setSidebarOpen] = useState(readSidebarOpen);
+  // A page that folds the sidebar (useFoldedSidebar): while it is open, whether the sidebar shows on it — not saved.
+  const [folding, setFolding] = useState(false);
+  const [shownWhileFolding, setShownWhileFolding] = useState(false);
+  const fold = useCallback((folded: boolean) => {
+    setFolding(folded);
+    setShownWhileFolding(false);
+  }, []);
   // One navigation at a time, so assistive technologies meet a single "Điều hướng chính".
   const wide = useWide();
-  const sidebarShown = wide && sidebarOpen;
+  const sidebarShown = wide && (folding ? shownWhileFolding : sidebarOpen);
   const sidebar = useExit(sidebarShown, 200);
   const main = useRef<HTMLElement>(null);
   const { pathname } = useLocation();
@@ -320,6 +352,10 @@ export function AppShell({ items, navLabel, sidebarTitle, account, children }: A
     element.animate(frames, { duration: slides ? 280 : 160, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' });
   }, [pathname, items, account.profileTo]);
   const toggleSidebar = () => {
+    if (folding) {
+      setShownWhileFolding((shown) => !shown);
+      return;
+    }
     const next = !sidebarOpen;
     setSidebarOpen(next);
     try {
@@ -353,9 +389,9 @@ export function AppShell({ items, navLabel, sidebarTitle, account, children }: A
             <button
               type="button"
               className="pw-topbar-button pw-sidebar-toggle"
-              aria-label={sidebarOpen ? vi.shell.hideSidebar : vi.shell.showSidebar}
-              aria-expanded={sidebarOpen}
-              title={sidebarOpen ? vi.shell.hideSidebar : vi.shell.showSidebar}
+              aria-label={sidebarShown ? vi.shell.hideSidebar : vi.shell.showSidebar}
+              aria-expanded={sidebarShown}
+              title={sidebarShown ? vi.shell.hideSidebar : vi.shell.showSidebar}
               onClick={toggleSidebar}
             >
               <SidebarIcon />
@@ -370,9 +406,11 @@ export function AppShell({ items, navLabel, sidebarTitle, account, children }: A
           <AccountMenu account={account} crossFade={wide} />
         </div>
         <main ref={main} className="pw-page">
-          <InShell.Provider value={true}>
-            <TopbarLeading.Provider value={wide ? null : (leading ?? 'pending')}>{children}</TopbarLeading.Provider>
-          </InShell.Provider>
+          <FoldSidebar.Provider value={fold}>
+            <InShell.Provider value={true}>
+              <TopbarLeading.Provider value={wide ? null : (leading ?? 'pending')}>{children}</TopbarLeading.Provider>
+            </InShell.Provider>
+          </FoldSidebar.Provider>
         </main>
       </div>
       {wide ? null : (

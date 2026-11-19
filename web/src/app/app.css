@@ -126,6 +126,24 @@
 html:has(.pw-shell) {
   scrollbar-gutter: stable;
 }
+/* A plan on the full map (G5, §10.6) never scrolls: no room kept for a scrollbar, so the map reaches the window's
+   right edge. */
+html:has(.pw-map-stage.is-wide) {
+  scrollbar-gutter: auto;
+}
+/* A plan on the full map never scrolls (§10.13). On a phone 100vh is the height with the browser's address bar hidden,
+   taller than what shows while it is there (Chrome on Android): the page was that much taller and scrolled, moving the
+   map under the top bar and a drag in the sheet could move the whole page. There: the visible height (100dvh), and no
+   page scrolling or overscroll. */
+html:has(.pw-map-stage),
+html:has(.pw-map-stage) body {
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+.pw-app:has(.pw-map-stage),
+.pw-shell:has(.pw-map-stage) {
+  min-height: 100dvh;
+}
 
 /* Signing in or out (features/auth/sceneTransition.ts): the old screen fades out, the new one fades in and rises a
    little once drawn. CSS on the app's root, nothing frozen. */

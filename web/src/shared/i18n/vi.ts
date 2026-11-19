@@ -9,6 +9,10 @@ export const vi = {
     store: 'Cửa hàng',
     main: 'Điều hướng chính',
   },
+  mapStage: {
+    resize: (now: string) => `Đổi chiều cao danh sách (đang ${now})`,
+    detents: { low: 'thu nhỏ', mid: 'nửa màn hình', high: 'mở rộng' },
+  },
   shell: {
     account: (name: string) => `Tài khoản: ${name}`,
     accountMenu: 'Tài khoản',
@@ -538,6 +542,7 @@ export const vi = {
       `Toạ độ: ${resolved} tìm thấy · ${provided} nhập sẵn · ${failed} không tìm thấy${pending ? ` · ${pending} đang tìm` : ''} · tổng ${total}`,
     retryAll: 'Tìm lại toạ độ',
     tableLabel: 'Điểm giao',
+    listSummary: (n: number) => `${n} điểm`,
     caption: 'Điểm giao của kế hoạch',
     order: 'Đơn · người nhận',
     address: 'Địa chỉ',
@@ -608,6 +613,26 @@ export const vi = {
     cancelledTitle: 'Kế hoạch đã huỷ.',
     cancelledLead: 'Kế hoạch vẫn nằm trong danh sách để tra cứu nhưng không sửa hay giao việc được nữa.',
     backToList: 'Về danh sách kế hoạch',
+    /** G5 (OWNER_UI_REDESIGN §10). */
+    panel: 'Tuyến và điểm giao',
+    more: 'Thao tác khác',
+    summary: (routed: number, total: number, distance: string, duration: string, drivers: number) =>
+      `${routed}/${total} điểm đã xếp · ${distance} · ${duration} · ${drivers} tài xế`,
+    stopOpen: (title: string) => `${title}: xem chi tiết`,
+    unassignedGroup: 'Chưa xếp tuyến',
+    card: {
+      recipient: 'Người nhận',
+      phone: 'Điện thoại',
+      address: 'Địa chỉ',
+      window: 'Khung giờ',
+      eta: 'Dự kiến',
+      note: 'Ghi chú',
+      route: 'Tuyến',
+      routeValue: (driver: string, sequence: number | null) =>
+        sequence === null ? driver : `${driver} · điểm thứ ${sequence}`,
+      result: 'Kết quả',
+      reason: 'Lý do',
+    },
   },
   /** Manual route editing (W10, T28, P-58; UX_BRIEF §6.3). */
   manual: {
@@ -672,6 +697,11 @@ export const vi = {
     lead: 'Tuyến hiện ngay trong app của từng tài xế. Sau khi giao việc, kế hoạch không sửa được nữa; bạn vẫn huỷ được cho tới khi tài xế bắt đầu giao.',
     done: (n: number) => `Đã giao việc cho ${n} tài xế.`,
     overlapTitle: 'Chưa giao việc được: trùng ca làm',
+    /** Sheet titles under 15 characters (HIG Toolbars; G5.13); the question is the sheet's first line. */
+    sheetTitle: 'Giao việc',
+    question: (n: number) => `Giao việc cho ${n} tài xế?`,
+    overlapSheetTitle: 'Trùng ca làm',
+    overlapQuestion: 'Chưa giao việc được: trùng ca làm.',
     overlapDriver: (driver: string, shift: string, date: string) =>
       `Ca làm của ${driver} (${shift}, ngày ${date}) trùng với một kế hoạch khác đã giao việc cho tài xế này.`,
     overlapVehicle: (vehicle: string, shift: string, date: string) =>
@@ -710,6 +740,20 @@ export const vi = {
     reason: (text: string) => `Lý do: ${text}`,
     mapLabel: 'Bản đồ kết quả',
     pickHint: 'Chọn một điểm để xem kết quả.',
+    /** G5 (OWNER_UI_REDESIGN §10, G5-Q12–Q15). */
+    allRoutes: 'Tất cả tuyến',
+    planBar: (parts: string) => `Tiến độ cả kế hoạch: ${parts}`,
+    driverOpen: (driver: string) => `${driver}: xem tài xế`,
+    card: {
+      driver: 'Tài xế',
+      vehicle: 'Xe',
+      location: 'Vị trí',
+      accuracy: 'Sai số',
+      speed: 'Tốc độ',
+      progress: 'Tiến độ',
+      next: 'Điểm kế tiếp',
+      phone: 'Điện thoại',
+    },
   },
   location: {
     legend: 'Vị trí tài xế (mũi tên chỉ hướng đi)',

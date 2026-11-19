@@ -207,15 +207,20 @@ describe('accessibility', () => {
     );
     const { container } = renderApp(path);
     await screen.findByRole('heading', { name: heading, level: 1 });
-    // Tests run at phone width: the plan list and the plan form show lists of rows there (G2.5, G4.8), the other
-    // screens have tables.
-    await screen.findAllByRole(path === '/plans' || path.startsWith('/plans/new') ? 'listitem' : 'row');
+    // Tests run at phone width: the plan list, the plan form and a plan's stops show lists of rows there (G2.5,
+    // G4.8, G5.8), the other screens have tables.
+    if (path === '/plans/83') {
+      // Finding coordinates opens the first stop not found: its fix card (G5.15).
+      await screen.findByRole('heading', { name: /^Sửa /, level: 2 });
+    } else {
+      await screen.findAllByRole(path === '/plans' || path.startsWith('/plans/new') ? 'listitem' : 'row');
+    }
     expect(await violations(container)).toEqual([]);
   });
 
   it.each([
-    ['kết quả tối ưu', 'plan-detail-optimized', 'Tổng quan'],
-    ['theo dõi tiến độ', 'plan-detail-completed', 'Kết quả'],
+    ['kết quả tối ưu', 'plan-detail-optimized', 'Tuyến và điểm giao'],
+    ['theo dõi tiến độ', 'plan-detail-completed', 'Tuyến và điểm giao'],
   ])('màn %s không có lỗi axe', async (_name, file, region) => {
     server.use(
       http.get(`${API}/plans/83`, () => ok(sample(file).data)),

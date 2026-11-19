@@ -2,6 +2,7 @@ import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http } from 'msw';
 import { describe, expect, it } from 'vitest';
+import { fromMore } from '@/test/moreMenu';
 import { renderApp } from '@/test/renderApp';
 import { sample } from '@/test/samples';
 import { API, fail, ok, server, signedInHandlers } from '@/test/server';
@@ -127,14 +128,14 @@ describe('Chỉnh tay tuyến (W10)', () => {
     renderApp('/plans/83');
     const user = userEvent.setup();
 
-    expect(
-      await screen.findByRole('heading', { name: '1 điểm đã bỏ ra khỏi tuyến: ĐH-1024 · Chị Thảo' }),
-    ).toBeInTheDocument();
-    expect(screen.getByText('ĐÃ BỎ RA')).toBeInTheDocument();
+    // Taken off by hand: in the "Chưa xếp tuyến" group with its pill (G5.10).
+    const unplaced = await screen.findByRole('region', { name: 'Chưa xếp tuyến' });
+    expect(unplaced).toHaveTextContent('ĐH-1024 · Chị Thảo');
+    expect(within(unplaced).getByText('ĐÃ BỎ RA')).toBeInTheDocument();
     expect(within(screen.getByRole('region', { name: 'Tài xế B' })).getByText('Vi phạm')).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Giao việc cho 2 tài xế' }));
-    const dialog = screen.getByRole('dialog', { name: 'Giao việc cho 2 tài xế?' });
+    const dialog = screen.getByRole('dialog', { name: 'Giao việc' });
     expect(dialog).toHaveTextContent('Tài xế B · Xe 2: về muộn 25 phút so với ca');
     expect(within(dialog).getByRole('button', { name: 'Vẫn giao việc' })).toBeInTheDocument();
   });
@@ -148,9 +149,9 @@ describe('Chỉnh tay tuyến (W10)', () => {
     renderApp('/plans/83');
     const user = userEvent.setup();
 
-    await user.click(await screen.findByRole('button', { name: 'Tối ưu lại' }));
+    await fromMore(user, 'Tối ưu lại');
 
-    const dialog = screen.getByRole('dialog', { name: 'Tối ưu lại kế hoạch?' });
+    const dialog = screen.getByRole('alertdialog', { name: 'Tối ưu lại kế hoạch?' });
     expect(dialog).toHaveTextContent('Kết quả tối ưu mới sẽ thay các chỉnh tay.');
     expect(screen.getByText('Tài xế A · Xe 1: vượt 4,2 km quãng đường tối đa')).toBeInTheDocument();
   });

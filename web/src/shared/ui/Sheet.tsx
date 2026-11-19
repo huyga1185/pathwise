@@ -195,6 +195,43 @@ export function Sheet({
 }
 
 /**
+ * An action sheet on its own, over the page (not inside a sheet): HIG Alerts — "Use an action sheet — not an alert —
+ * to offer choices related to an intentional action", like discarding edits when cancelling them.
+ */
+export function PageActionSheet({
+  open,
+  choices,
+  onDismiss,
+  title,
+  message,
+}: {
+  open: boolean;
+  title: string;
+  message?: string;
+  choices: { label: ReactNode; destructive?: boolean; cancel?: boolean; onSelect: () => void }[];
+  onDismiss: () => void;
+}) {
+  useEffect(() => {
+    if (!open) return undefined;
+    const previous = document.activeElement as HTMLElement | null;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onDismiss();
+    };
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      previous?.focus?.({ preventScroll: true });
+    };
+  }, [open, onDismiss]);
+  return open
+    ? createPortal(
+        <ActionSheet choices={choices} onDismiss={onDismiss} title={title} message={message} />,
+        document.body,
+      )
+    : null;
+}
+
+/**
  * Choices about something people just did (HIG Action sheets: "Use an action sheet — not an alert — to offer choices
  * related to an intentional action"): a destructive choice at the top, in red ("Make destructive choices visually
  * prominent… place these buttons at the top"), the way back at the bottom.
@@ -202,11 +239,17 @@ export function Sheet({
 function ActionSheet({
   choices,
   onDismiss,
+  title,
+  message,
 }: {
   choices: { label: ReactNode; destructive?: boolean; cancel?: boolean; onSelect: () => void }[];
   onDismiss: () => void;
+  /** A short title over the choices (as iOS action sheets); also the dialog's accessible name (WCAG 4.1.2). */
+  title?: string;
+  message?: string;
 }) {
   const ref = useRef<HTMLDivElement>(null);
+  const titleId = useId();
   useEffect(() => {
     ref.current?.querySelector<HTMLElement>('button')?.focus();
   }, []);
@@ -215,8 +258,22 @@ function ActionSheet({
       className="pw-action-sheet-backdrop"
       onPointerDown={(event) => event.target === event.currentTarget && onDismiss()}
     >
-      <div ref={ref} className="pw-action-sheet" role="alertdialog" aria-modal="true">
+      <div
+        ref={ref}
+        className="pw-action-sheet"
+        role="alertdialog"
+        aria-modal="true"
+        aria-labelledby={title ? titleId : undefined}
+      >
         <div className="pw-action-sheet-group">
+          {title ? (
+            <div className="pw-action-sheet-head">
+              <span id={titleId} className="pw-action-sheet-title">
+                {title}
+              </span>
+              {message ? <span className="pw-action-sheet-message">{message}</span> : null}
+            </div>
+          ) : null}
           {choices
             .filter((choice) => !choice.cancel)
             .map((choice, index) => (

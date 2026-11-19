@@ -2,6 +2,7 @@ import { divIcon, type Map as LeafletMap, type Marker as LeafletMarker } from 'l
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Marker, useMapEvents } from 'react-leaflet';
 import { DEPOT_SVG } from './depotIcon';
+import { pinSvg } from './RouteMap';
 import { DEFAULT_CENTER, MapFrame, MapOverlay, type LatLng, type MapFrameLabels } from './MapFrame';
 
 export interface PinMapLabels extends MapFrameLabels {
@@ -12,6 +13,13 @@ export interface PinMapLabels extends MapFrameLabels {
 }
 
 const pinIcon = divIcon({ html: DEPOT_SVG, className: 'pw-depot-marker', iconSize: [30, 30], iconAnchor: [15, 27] });
+/** A delivery stop's pin: the stop pin of the route map (fb_17) in the accent colour, empty circle — not the house. */
+const stopPinIcon = divIcon({
+  html: pinSvg('var(--route)', '', 28, 'pw-pin-route'),
+  className: 'pw-stop-pin',
+  iconSize: [28, 40],
+  iconAnchor: [14, 39],
+});
 
 /**
  * A map with one pin (the depot of DESIGN_SYSTEM): click the map, drag the pin or use "place at centre" to move it.
@@ -23,8 +31,14 @@ export function PinMap({
   readOnly,
   labels,
   className,
+  start: startAt,
+  kind = 'depot',
 }: {
   value: LatLng | null;
+  /** Where to open without a pin (the depot), instead of the city's default centre. */
+  start?: LatLng;
+  /** What the pin marks: the depot (a house) or a delivery stop (a map pin). */
+  kind?: 'depot' | 'stop';
   onChange?: (value: LatLng) => void;
   readOnly?: boolean;
   labels: PinMapLabels;
@@ -40,7 +54,7 @@ export function PinMap({
     }
   }, [map, value]);
 
-  const start = value ?? DEFAULT_CENTER;
+  const start = value ?? startAt ?? DEFAULT_CENTER;
   return (
     <MapFrame
       center={start}
@@ -50,19 +64,45 @@ export function PinMap({
       onReady={setMap}
     >
       {editable ? <ClickToPlace onPlace={onChange} /> : null}
-      {value ? <Pin value={value} label={labels.pin} draggable={editable} onMove={onChange} /> : null}
+      {value ? (
+        <Pin
+          value={value}
+          label={labels.pin}
+          draggable={editable}
+          onMove={onChange}
+          icon={kind === 'stop' ? stopPinIcon : pinIcon}
+        />
+      ) : null}
       {editable ? (
-        <MapOverlay className="pw-map-actions">
+        // A pin button under + / − (owner's choice, §10.7): the symbol of dropping a pin (HIG Buttons: "associate
+        // familiar actions with familiar icons"); its full name for assistive technologies and as a tooltip.
+        <MapOverlay className="pw-map-pin-action">
           <button
             type="button"
-            className="pw-map-ctl pw-map-ctl-text"
+            className="pw-map-ctl"
+            aria-label={labels.placeAtCenter}
+            title={labels.placeAtCenter}
             onClick={() => {
               if (!map) return;
               const centre = map.getCenter();
               onChange({ lat: centre.lat, lon: centre.lng });
             }}
           >
-            {labels.placeAtCenter}
+            <svg
+              viewBox="0 0 24 24"
+              width="20"
+              height="20"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={1.7}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+              focusable="false"
+            >
+              <path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z" />
+              <circle cx="12" cy="9.5" r="2.5" />
+            </svg>
           </button>
         </MapOverlay>
       ) : null}
@@ -80,11 +120,13 @@ function Pin({
   label,
   draggable,
   onMove,
+  icon,
 }: {
   value: LatLng;
   label: string;
   draggable: boolean;
   onMove?: (value: LatLng) => void;
+  icon: ReturnType<typeof divIcon>;
 }) {
   const ref = useRef<LeafletMarker>(null);
   const handlers = useMemo(
@@ -100,7 +142,7 @@ function Pin({
     <Marker
       ref={ref}
       position={[value.lat, value.lon]}
-      icon={pinIcon}
+      icon={icon}
       draggable={draggable}
       keyboard={false}
       title={label}

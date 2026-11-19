@@ -1,10 +1,9 @@
 import { useStoreReadOnly } from '@/data/meQuery';
-import { useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router';
 import { ApiError } from '@/data/apiError';
-import { useGeocodingSearch } from '@/data/geocoding';
 import { formatCoordinates } from '@/features/store';
-import { PinMap, type LatLng } from '@/platform/map';
+import { PinMap, RouteMap, type LatLng } from '@/platform/map';
 import { messageFor } from '@/shared/errors';
 import { formatDateLong } from '@/shared/format';
 import { vi } from '@/shared/i18n/vi';
@@ -12,22 +11,24 @@ import { BackLink } from '@/shared/ui/BackLink';
 import { statusInfo } from '@/shared/status';
 import {
   Button,
-  DataTable,
   ErrorBanner,
   ActivityText,
+  MapStage,
   ProgressBar,
   StatusPill,
   TextField,
   Toast,
-  type DataTableColumn,
   ActivityIndicator,
+  useMapStage,
 } from '@/shared/ui';
-import { PinPickerDialog } from '@/shared/ui/PinPicker';
+import { ChevronLeftIcon } from '@/shared/ui/icons';
 import { useMediaQuery } from '@/shared/hooks/useMediaQuery';
 import { allStops, usePlan, usePlanApi, type PlanDetail, type PlanStop } from './planApi';
 import { ResultView } from './ResultView';
 import { TrackView } from './TrackView';
 import { CopySheet, type CopiedNotice } from './CopySheet';
+import { RouteGroup } from './PlanStage';
+import { MAP_LABELS } from './planShared';
 import './plans.css';
 
 /** Narrower than this, the three header buttons no longer fit one row (measured 2026-11-18): they stack. */
@@ -84,25 +85,6 @@ export function PlanDetailPage() {
   );
 }
 
-function PlanHeader({ plan, subtitle, actions }: { plan: PlanDetail; subtitle: string; actions?: ReactNode }) {
-  return (
-    <div className="pw-plans-head">
-      <div className="pw-plans-intro">
-        <BackLink to="/plans" label={vi.plans.title} />
-        <div className="pw-plan-title">
-          <h1 className="pw-page-title">{plan.name}</h1>
-          <StatusPill kind="plan" status={plan.status} />
-          {/* A running task turns, it is not a static label (HIG Progress indicators). Finding coordinates has its
-              progress bar under the title, so the title says nothing more; optimizing has none here. */}
-          {plan.processingStatus === 'OPTIMIZING' ? <ActivityText text={g.optimizing} /> : null}
-        </div>
-        <p className="pw-muted">{subtitle}</p>
-      </div>
-      {actions}
-    </div>
-  );
-}
-
 /** Prototype "Soạn plan — tìm toạ độ" (SCREENS §1.1). */
 function GeocodeView({ plan }: { plan: PlanDetail }) {
   const navigate = useNavigate();
@@ -112,14 +94,15 @@ function GeocodeView({ plan }: { plan: PlanDetail }) {
   const summary = plan.geocodingSummary;
   const missing = summary.pending + summary.failed;
   const busy = plan.processingStatus !== 'IDLE';
-  const [selectedId, setSelectedId] = useState<number | null>(null);
+  // The first stop not found opens when the page opens (SCREENS §1.1); back to the list does not open it again.
+  const [selectedId, setSelectedId] = useState<number | null>(
+    () => allStops(plan).find((stop) => stop.geocodeStatus === 'FAILED')?.id ?? null,
+  );
   const [failure, setFailure] = useState<unknown>(null);
   const [tries, setTries] = useState(0);
   const [repeat, setRepeat] = useState(false);
   const [working, setWorking] = useState(false);
   const [copying, setCopying] = useState(false);
-  const selected =
-    stops.find((stop) => stop.id === selectedId) ?? stops.find((stop) => stop.geocodeStatus === 'FAILED') ?? stops[0];
 
   const stacked = useMediaQuery(STACK_QUERY);
   const why = busy
@@ -156,56 +139,6 @@ function GeocodeView({ plan }: { plan: PlanDetail }) {
     }
   };
 
-  const columns: DataTableColumn<PlanStop>[] = [
-    {
-      key: 'order',
-      header: g.order,
-      render: (row) => (
-        <button
-          type="button"
-          className="pw-stop-pick"
-          aria-pressed={row.id === selected?.id}
-          onClick={(event) => {
-            event.stopPropagation();
-            setSelectedId(row.id);
-          }}
-        >
-          {stopTitle(row)}
-        </button>
-      ),
-    },
-    {
-      key: 'address',
-      header: g.address,
-      render: (row) => (
-        <>
-          {row.address ? <div>{row.address}</div> : <div className="pw-muted">{g.noAddress}</div>}
-          {row.geocodeStatus === 'RESOLVED' && row.geocodedDisplayName ? (
-            <div className="pw-plans-found">{g.found(row.geocodedDisplayName)}</div>
-          ) : null}
-        </>
-      ),
-    },
-    {
-      key: 'window',
-      header: g.window,
-      numeric: true,
-      render: (row) => (row.timeWindow ? `${row.timeWindow.start}–${row.timeWindow.end}` : '—'),
-    },
-    {
-      key: 'geo',
-      header: g.coordinates,
-      render: (row) =>
-        row.geocodeStatus === 'PENDING' ? (
-          <ActivityText text={g.finding} />
-        ) : statusInfo('geocode', row.geocodeStatus) ? (
-          <StatusPill kind="geocode" status={row.geocodeStatus} />
-        ) : (
-          <span className="pw-muted">{row.geocodeStatus === 'RESOLVED' ? g.resolved : g.provided}</span>
-        ),
-    },
-  ];
-
   const optimizeButton = (
     <Button
       variant="primary"
@@ -216,42 +149,101 @@ function GeocodeView({ plan }: { plan: PlanDetail }) {
       {g.optimize}
     </Button>
   );
+  const [pin, setPin] = useState<LatLng | null>(null);
+  const editing = stops.find((stop) => stop.id === selectedId) ?? null;
+  const current =
+    editing && editing.lat !== null && editing.lon !== null ? { lat: editing.lat, lon: editing.lon } : null;
+  const placed = stops.flatMap((stop) =>
+    stop.lat !== null && stop.lon !== null
+      ? [{ id: stop.id, lat: stop.lat, lon: stop.lon, label: stopTitle(stop), sequence: null }]
+      : [],
+  );
+  // Focus moves into a card people open; the one open when the page loads leaves focus where the page starts.
+  const [opened, setOpened] = useState(false);
+  const open = (id: number) => {
+    setPin(null);
+    setOpened(true);
+    setSelectedId(id);
+  };
+  const back = () => {
+    const id = selectedId;
+    setPin(null);
+    setSelectedId(null);
+    window.requestAnimationFrame(() => document.querySelector<HTMLElement>(`[data-stop="${id}"]`)?.focus());
+  };
+  const status = (row: PlanStop) =>
+    row.geocodeStatus === 'PENDING' ? (
+      <ActivityText text={g.finding} />
+    ) : statusInfo('geocode', row.geocodeStatus) ? (
+      <StatusPill kind="geocode" status={row.geocodeStatus} />
+    ) : (
+      <span className="pw-muted">{row.geocodeStatus === 'RESOLVED' ? g.resolved : g.provided}</span>
+    );
+
   return (
-    <section className="pw-page-section" aria-labelledby="plan-title">
-      <PlanHeader
-        plan={plan}
-        subtitle={g.subtitle(formatDateLong(plan.planDate), stops.length, plan.routes.length)}
-        actions={
-          <div className="pw-plan-header-actions">
-            {/* One row: edit, copy, the primary action last (HIG Toolbars). Too narrow for one row (< 440px, measured):
-                stacked full width, the primary action first (owner's choice, §9.12) — in that order in the page too,
-                so reading and Tab follow what is seen (WCAG 1.3.2, 2.4.3). */}
-            <div className={stacked ? 'pw-plan-actions is-stacked' : 'pw-plan-actions'}>
-              {stacked ? optimizeButton : null}
-              <Button
-                variant="secondary"
-                disabled={busy || readOnly}
-                onClick={() => navigate(`/plans/${plan.id}/edit`)}
-              >
-                {g.editStops}
-              </Button>
-              {/* Copy, in every state (API_SPEC: any status); the list's touch-and-hold menu offers it too. Tinted,
-                  between the grey edit and the primary action (HIG Toolbars; owner, 2026-11-18). */}
-              {!readOnly ? (
-                <Button variant="tinted" onClick={() => setCopying(true)}>
-                  {vi.planCopy.action}
-                </Button>
-              ) : null}
-              {stacked ? null : optimizeButton}
-            </div>
-            {/* Read with the button (aria-describedby); on screen each reason has its own place: the block below for
-                what to do, the progress and spinners for a running task (§9.7, owner's trial 2026-11-18). */}
-            <span id="optimize-why" className="pw-visually-hidden">
-              {why}
-            </span>
-          </div>
-        }
-      />
+    <MapStage
+      label={g.tableLabel}
+      map={(inset) =>
+        editing && !busy && !readOnly ? (
+          // Fixing a stop: the whole map places its pin (G5.15, G5-Q11): click, drag, or "Đặt ghim ở giữa bản đồ".
+          <PinMap
+            key={`pin-${editing.id}`}
+            value={pin ?? current}
+            start={plan.depot}
+            kind="stop"
+            onChange={setPin}
+            labels={{
+              zoomIn: vi.map.zoomIn,
+              zoomOut: vi.map.zoomOut,
+              pin: g.pinLabel,
+              placeAtCenter: vi.map.placeAtCenter,
+            }}
+          />
+        ) : (
+          <RouteMap
+            staged
+            inset={inset}
+            depot={{ lat: plan.depot.lat, lon: plan.depot.lon }}
+            routes={[]}
+            unassigned={placed}
+            selectedId={selectedId}
+            onSelect={(id) => open(Number(id))}
+            labels={MAP_LABELS}
+          />
+        )
+      }
+    >
+      <div className="pw-stage-head" data-peek>
+        <BackLink to="/plans" label={vi.plans.title} />
+        <div className="pw-plan-title">
+          <h1 id="plan-title" className="pw-page-title pw-stage-title">
+            {plan.name}
+          </h1>
+          <StatusPill kind="plan" status={plan.status} />
+        </div>
+        <p className="pw-muted">{g.subtitle(formatDateLong(plan.planDate), stops.length, plan.routes.length)}</p>
+        {/* One row: edit, copy, the primary action last (HIG Toolbars). Too narrow for one row (< 440px, measured):
+            stacked full width, the primary action first (§9.12) — in that order in the page too, so reading and Tab
+            follow what is seen (WCAG 1.3.2, 2.4.3). */}
+        <div className={stacked ? 'pw-plan-actions is-stacked' : 'pw-plan-actions pw-stage-actions'}>
+          {stacked ? optimizeButton : null}
+          <Button variant="secondary" disabled={busy || readOnly} onClick={() => navigate(`/plans/${plan.id}/edit`)}>
+            {g.editStops}
+          </Button>
+          {/* Copy, in every state (API_SPEC: any status). Tinted, between the grey edit and the primary action
+              (HIG Toolbars; §9.10). */}
+          {!readOnly ? (
+            <Button variant="tinted" onClick={() => setCopying(true)}>
+              {vi.planCopy.action}
+            </Button>
+          ) : null}
+          {stacked ? null : optimizeButton}
+        </div>
+        {/* Read with the button (aria-describedby); on screen each reason has its own place (§9.7). */}
+        <span id="optimize-why" className="pw-visually-hidden">
+          {why}
+        </span>
+      </div>
 
       {failure ? <ErrorBanner key={tries} repeat={repeat} title={messageFor(failure)} /> : null}
 
@@ -299,21 +291,31 @@ function GeocodeView({ plan }: { plan: PlanDetail }) {
         </section>
       ) : null}
 
-      <div className="pw-geocode-layout">
-        <section className="pw-geocode-list" aria-label={g.tableLabel}>
-          <DataTable
-            caption={g.caption}
-            columns={columns}
-            rows={stops}
-            selectedKey={selected?.id ?? null}
-            onRowClick={(row) => setSelectedId(row.id)}
-            className="pw-geocode-table"
+      {editing ? (
+        <FixStop
+          key={editing.id}
+          plan={plan}
+          stop={editing}
+          busy={busy}
+          pin={pin}
+          onPin={setPin}
+          onBack={back}
+          takeFocus={opened}
+        />
+      ) : (
+        <div className="pw-stage-list">
+          <RouteGroup
+            title={g.tableLabel}
+            summary={g.listSummary(stops.length)}
+            numbered={false}
+            stops={stops}
+            trailing={status}
+            onOpen={(stop) => open(stop.id)}
           />
-        </section>
-        {selected ? <FixStop key={selected.id} plan={plan} stop={selected} busy={busy} /> : null}
-      </div>
+        </div>
+      )}
       {copying ? <CopySheet planId={plan.id} planName={plan.name} open onClose={() => setCopying(false)} /> : null}
-    </section>
+    </MapStage>
   );
 }
 
@@ -321,20 +323,47 @@ function stopTitle(stop: PlanStop): string {
   return stop.recipientName ? `${stop.label} · ${stop.recipientName}` : stop.label;
 }
 
-/** The panel to fix one stop: a new address (geocoded by the server) or a pin (coordinates given). */
-function FixStop({ plan, stop, busy }: { plan: PlanDetail; stop: PlanStop; busy: boolean }) {
+/**
+ * Fixing one stop (G5.15): a card in the panel / sheet — a new address (geocoded by the server) or a pin placed on
+ * the full map (G5-Q11: no small map, no "enlarge"); back returns to the list.
+ */
+function FixStop({
+  plan,
+  stop,
+  busy,
+  pin,
+  onPin,
+  onBack,
+  takeFocus,
+}: {
+  plan: PlanDetail;
+  stop: PlanStop;
+  busy: boolean;
+  pin: LatLng | null;
+  onPin: (value: LatLng | null) => void;
+  onBack: () => void;
+  /** Opened by people (not the one open when the page loads): focus goes to its title (WCAG 2.4.3). */
+  takeFocus: boolean;
+}) {
   const planApi = usePlanApi();
-  const search = useGeocodingSearch();
+  const stage = useMapStage();
+  const heading = useRef<HTMLHeadingElement>(null);
   const [address, setAddress] = useState(stop.address ?? '');
-  const [pin, setPin] = useState<LatLng | null>(null);
-  const [enlarge, setEnlarge] = useState(false);
   const [saved, setSaved] = useState<string | null>(null);
   const [failure, setFailure] = useState<unknown>(null);
   const [tries, setTries] = useState(0);
   const [repeat, setRepeat] = useState(false);
   // Which request runs: its own button shows the wait; nothing else changes while it runs (below).
   const [working, setWorking] = useState<'retry' | 'pin' | null>(null);
-  const current = stop.lat !== null && stop.lon !== null ? { lat: stop.lat, lon: stop.lon } : null;
+  useEffect(() => {
+    if (takeFocus) heading.current?.focus({ preventScroll: true });
+    // The panel / sheet may be scrolled down the list: show the card from its top.
+    heading.current?.closest('section')?.scrollIntoView?.({ block: 'start' });
+    // On a phone the sheet leaves half the map in sight to place the pin.
+    if (stage && !stage.wide) stage.setDetent('mid');
+    // Once per stop opened.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stop.id]);
   const geocodeMessage =
     stop.geocodeStatus === 'FAILED'
       ? stop.geocodeError === 'PROVIDER_ERROR'
@@ -378,17 +407,21 @@ function FixStop({ plan, stop, busy }: { plan: PlanDetail; stop: PlanStop; busy:
       'pin',
       () => planApi.patchStop(plan.id, stop.id, { version: plan.version, lat: value.lat, lon: value.lon }),
       g.pinSaved(formatCoordinates(value), stop.label),
-    ).then(() => setPin(null));
+    ).then(() => onPin(null));
 
-  // Only the server's own processing locks the panel. A short request does not: the map, its controls and the
-  // buttons stay as they are (HIG Loading: "Let people do other things… while they wait"); disabling them for the
-  // ~0.15 s of a request made them flash (owner, 2026-11-18).
+  // Only the server's own processing locks the card; a short request leaves everything as it is (HIG Loading: "Let
+  // people do other things… while they wait"; §9.5).
   const disabled = busy;
   return (
-    // A new stop chosen: the panel's content fades in (§9.6, owner's answer: a light crossfade, no movement).
-    <section className="pw-card pw-geocode-fix is-switching" aria-labelledby="fix-title">
+    <section className="pw-stop-card is-switching" aria-labelledby="fix-title">
+      <button type="button" className="pw-back-link pw-stop-card-back" onClick={onBack}>
+        <ChevronLeftIcon />
+        <span>{g.tableLabel}</span>
+      </button>
       <div className="pw-geocode-fix-head">
-        <h2 id="fix-title">{g.fixTitle(stopTitle(stop))}</h2>
+        <h2 id="fix-title" ref={heading} tabIndex={-1} className="pw-stop-card-title">
+          {g.fixTitle(stopTitle(stop))}
+        </h2>
         {stop.geocodeStatus === 'PENDING' ? (
           <ActivityText text={g.finding} />
         ) : (
@@ -403,6 +436,11 @@ function FixStop({ plan, stop, busy }: { plan: PlanDetail; stop: PlanStop; busy:
         disabled={disabled}
         error={address === (stop.address ?? '') ? geocodeMessage : undefined}
         onChange={(event) => setAddress(event.target.value)}
+        // Phone: typing raises the sheet so the keyboard does not cover the field and its button (WCAG 2.4.11);
+        // leaving the field keeps the detent (pull it down to place a pin).
+        onFocus={() => {
+          if (stage && !stage.wide) stage.setDetent('high');
+        }}
       />
       <div className="pw-inline-action">
         <Button
@@ -420,28 +458,11 @@ function FixStop({ plan, stop, busy }: { plan: PlanDetail; stop: PlanStop; busy:
         {g.orPin}
         <span />
       </div>
-      <div className="pw-geocode-map">
-        <PinMap
-          value={pin ?? current}
-          onChange={disabled ? undefined : setPin}
-          readOnly={disabled}
-          className="pw-map-4x3"
-          labels={{
-            zoomIn: vi.map.zoomIn,
-            zoomOut: vi.map.zoomOut,
-            pin: g.pinLabel,
-            placeAtCenter: vi.map.placeAtCenter,
-          }}
-        />
-        <Button variant="secondary" disabled={disabled} onClick={() => setEnlarge(true)}>
-          {g.enlarge}
-        </Button>
-      </div>
       <p role="status" className="pw-muted pw-tabular">
         {saved ?? (pin ? g.pinAt(formatCoordinates(pin)) : g.pinHint)}
       </p>
       <div className="pw-plan-actions pw-geocode-fix-actions">
-        <Button variant="quiet" disabled={!pin} onClick={() => setPin(null)}>
+        <Button variant="quiet" disabled={!pin} onClick={() => onPin(null)}>
           {g.skip}
         </Button>
         <Button
@@ -454,18 +475,6 @@ function FixStop({ plan, stop, busy }: { plan: PlanDetail; stop: PlanStop; busy:
           {g.savePin}
         </Button>
       </div>
-      {/* Always there, so it closes with its animation (Dialog). */}
-      <PinPickerDialog
-        open={enlarge}
-        initial={pin ?? current ?? plan.depot}
-        search={search}
-        pinLabel={g.pinLabel}
-        onConfirm={(value) => {
-          setPin(value);
-          setEnlarge(false);
-        }}
-        onClose={() => setEnlarge(false)}
-      />
     </section>
   );
 }
