@@ -113,9 +113,11 @@ export function ReportsPage() {
           <h1 id="reports-title" className="pw-page-title">
             {t.title}
           </h1>
+          {/* The page's one action, filled like "+ Tạo kế hoạch" in the same place on the other pages (G2.1; HIG
+              Buttons: style marks the preferred action; C13 consistency). */}
           <Button
-            variant="secondary"
-            className={wide ? undefined : 'pw-icon-button pw-reports-export'}
+            variant="primary"
+            className={wide ? undefined : 'pw-icon-button pw-list-add pw-reports-export'}
             busy={exporting}
             busyLabel={wide ? t.exporting : undefined}
             disabled={rangeError !== null}

@@ -731,3 +731,7 @@ Chủ dự án: giữ biểu đồ cột đứng (đã xem phác hai cách cho 3
 
 Chủ dự án: "Từ ngày – Đến ngày" ở Tùy chọn trên PC xếp ngang, căn giữa. Trước đó hai ô xếp dọc sát trái (khung `flex-wrap` co theo nội dung nên tự xuống dòng) trong khi thanh chọn khoảng căn giữa (HIG Tab views, G3). Từ 960px: hai ô 220px cạnh nhau, khối căn giữa dưới thanh (tâm trùng tâm thanh: 1440 → 835/835, 960 → 595/595); lỗi hoặc gợi ý dưới một ô không đẩy ô kia (căn trên, fb_1). Điện thoại giữ xếp dọc. Không tràn ngang ở 1440 / 960 / 390px.
 
+### 11.10 Nút "Xuất CSV" cùng kiểu nút chính các trang khác (2026-11-20)
+
+"Xuất CSV" trước là nút nền xám, trong khi ở cùng vị trí (cuối hàng tiêu đề) các trang khác dùng nút chính nền màu nhấn ("+ Tạo kế hoạch"). Đây là hành động duy nhất của trang nên đổi sang nút chính: rộng là viên thuốc nền màu nhấn, hẹp là nút tròn 44px nền màu nhấn (`pw-list-add`), như G2.1 ([Apple] HIG Buttons: *"Use style — not size — to visually distinguish the preferred choice"*; checklist C13). Ô ngày "Tùy chọn" bắt buộc nên không có ⓧ; muốn về khoảng có sẵn thì bấm "Hôm nay / 7 ngày / 30 ngày". Đã thử thêm nút "Đặt lại" cạnh hai ô ngày, chủ dự án xem rồi bỏ.
+
