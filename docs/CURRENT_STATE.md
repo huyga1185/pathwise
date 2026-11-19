@@ -360,3 +360,4 @@ Nhóm: (1) nghiệp vụ/hiểu sai yêu cầu · (2) implementation · (3) ki�
 | 2026-11-19 | branch `feat/owner-ui-g5` | — | Sửa trang kế hoạch cuộn lệch trên Chrome Android (100vh lớn hơn phần nhìn thấy): khung `100dvh`, trang không cuộn, về đầu khi mở (`OWNER_UI_REDESIGN.md` §10.13). |
 | 2026-11-19 | branch `feat/owner-ui-g5` | — | Sheet điện thoại ở nấc cao chạm đáy màn, tab bar nổi trên; nội dung chừa đáy để không bị tab bar che (`OWNER_UI_REDESIGN.md` §10.14). |
 | 2026-11-19 | branch `feat/owner-ui-g5` | — | Điểm giao trên bản đồ là ghim (số thứ tự bên trong khi đã xếp) thay cho chấm tròn (`OWNER_UI_REDESIGN.md` §10.15). |
+| 2026-11-19 | branch `feat/owner-ui-g5` | — | Ghim điểm giao theo kiểu fb_17: vòng trắng giữa đầu, số thứ tự trong vòng trắng (`OWNER_UI_REDESIGN.md` §10.15). |

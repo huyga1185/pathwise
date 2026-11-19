@@ -271,16 +271,6 @@
     height: 44px;
   }
 }
-/* A delivery stop's pin (G5): accent colour, a light shadow to stand out from the map (HIG Maps). */
-.pw-stop-pin {
-  background: transparent;
-  border: 0;
-}
-.pw-stop-pin-svg {
-  display: block;
-  fill: var(--route);
-  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.35));
-}
 /* The pin button as wide as the + / − group above it (36px and its 1px edge each side); a circle for touch (S3). */
 .pw-map-pin-action .pw-map-ctl {
   width: 38px;
@@ -293,18 +283,31 @@
     border-radius: 50%;
   }
 }
-/* A stop as a pin (§10.15): a square with one sharp corner turned down (-45°), its number upright inside. The ring of
-   a selected pin follows its shape (a box shadow, not an outline). */
-.pw-marker.pw-marker-pin {
-  border-radius: 50% 50% 50% 0;
-  transform: rotate(-45deg);
+/* A stop as a pin (§10.15, fb_17): the body in the pin's colour (`color`), a white edge, a shadow; the number in the
+   white circle, in the same colour. Selected: larger (36px) with a dark edge. */
+.pw-pin-svg {
+  display: block;
+  overflow: visible;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.35));
 }
-.pw-marker-pin-label {
-  transform: rotate(45deg);
+.pw-pin-body {
+  fill: currentColor;
+  stroke: #ffffff;
+  stroke-width: 1.5;
 }
-.pw-marker.pw-marker-pin.pw-marker-selected {
-  outline: 0;
-  box-shadow:
-    0 0 0 3px var(--ink),
-    0 1px 2px rgba(0, 0, 0, 0.35);
+.pw-pin-svg.is-selected .pw-pin-body {
+  stroke: var(--ink);
+  stroke-width: 2.2;
+}
+.pw-pin-number {
+  fill: currentColor;
+  font-family: var(--font-sans);
+  font-size: 10px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.pw-stop-pin {
+  background: none;
+  border: 0;
 }

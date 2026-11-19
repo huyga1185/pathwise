@@ -54,21 +54,43 @@ export function routeColour(index: number): number {
 }
 
 /**
- * A stop as a map pin (owner's choice, §10.15; HIG Maps: the system marker is a pin that can hold a short string):
- * its route's or result's colour, its order inside when it has one, the tip on the place. The pin is a square with
- * one sharp corner turned -45° (map.css): the tip sits 0.707 × its side below the centre.
+ * A stop as a map pin (owner's sketch fb_17, §10.15): a round head tapering to a point on the place, a white circle in
+ * the head with the stop's order in it (in the pin's colour: every route and result colour is ≥ 5.8:1 on white, WCAG
+ * 1.4.3), empty for a stop without a route. Its route's or result's colour; a white edge and a shadow on the map (HIG
+ * Maps); a selected pin is larger with a dark edge.
  */
+export function pinSvg(colour: string, text: string, size: number, className: string): string {
+  const height = Math.round((size * 40) / 28);
+  const label = text
+    ? `<text x="14" y="14.4" text-anchor="middle" dominant-baseline="middle" class="pw-pin-number">${text}</text>`
+    : '';
+  return (
+    `<svg data-theme="light" class="pw-pin-svg ${className}" viewBox="0 0 28 40" width="${size}" height="${height}" ` +
+    `style="color: ${colour}" aria-hidden="true">` +
+    `<path class="pw-pin-body" d="M14 39C14 39 1.5 24.6 1.5 14a12.5 12.5 0 0 1 25 0C26.5 24.6 14 39 14 39Z"/>` +
+    `<circle cx="14" cy="14" r="7.8" fill="#ffffff"/>${label}</svg>`
+  );
+}
+
+const TONE_COLOUR: Record<MarkerTone, string> = {
+  route: 'var(--route)',
+  signal: 'var(--signal)',
+  success: 'var(--success)',
+  danger: 'var(--danger)',
+  muted: 'var(--ink-muted)',
+};
+
 function stopIcon(stop: MapStop, colour: number | null, selected: boolean) {
-  const tone = stop.tone ? `pw-marker-${stop.tone}` : colour ? `pw-marker-r${colour}` : 'pw-marker-muted';
+  const tone = stop.tone ? `pw-pin-${stop.tone}` : colour ? `pw-pin-r${colour}` : 'pw-pin-muted';
+  const fill = stop.tone ? TONE_COLOUR[stop.tone] : colour ? `var(--map-route-${colour})` : 'var(--ink-muted)';
   const size = selected ? 36 : 28;
+  const height = Math.round((size * 40) / 28);
   const text = typeof stop.sequence === 'number' ? String(stop.sequence) : '';
   return divIcon({
-    html:
-      `<span data-theme="light" class="pw-marker pw-marker-pin ${tone}${selected ? ' pw-marker-selected' : ''}">` +
-      `<span class="pw-marker-pin-label">${text}</span></span>`,
+    html: pinSvg(fill, text, size, `${tone}${selected ? ' is-selected' : ''}`),
     className: 'pw-stop-marker',
-    iconSize: [size, size],
-    iconAnchor: [size / 2, size / 2 + Math.round(size * Math.SQRT1_2)],
+    iconSize: [size, height],
+    iconAnchor: [size / 2, height - 1],
   });
 }
 

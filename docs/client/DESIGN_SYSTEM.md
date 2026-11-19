@@ -264,7 +264,7 @@ Hộp xác nhận cho hành động không hoàn tác được: giao việc, hu�
 
 ### Bản đồ (web, W04)
 
-- Điểm giao trên bản đồ (G5, `OWNER_UI_REDESIGN.md` §10.15): ghim chân nhọn màu tuyến / kết quả, số thứ tự bên trong khi đã xếp; kho là ngôi nhà; ghim đặt toạ độ cho điểm giao là ghim màu nhấn tâm trắng.
+- Điểm giao trên bản đồ (G5, `OWNER_UI_REDESIGN.md` §10.15): ghim bản đồ (đầu tròn, mũi nhọn, vòng trắng giữa đầu — fb_17) màu tuyến / kết quả, số thứ tự trong vòng trắng khi đã xếp; kho là ngôi nhà; ghim đặt toạ độ cho điểm giao cùng hình, màu nhấn, vòng trắng rỗng.
 - Khung bản đồ luôn theme sáng, tỉ lệ 16:9 (tối thiểu 240px), viền `line`, bo `radius-sm`; nút + / − ở góc trên phải (trắng, viền `#56635e`, 36px, như prototype), nút chữ ("Đặt ghim ở giữa bản đồ", "Mở rộng bản đồ") ở góc trên trái; attribution góc dưới phải trên nền trắng 85%.
 - Đường tuyến là đường thẳng màu `map-route-n` dày 4px qua kho → các điểm → kho. Marker điểm giao dùng class của `MapMarker`; marker tập trung được bằng Tab, Enter/Space chọn điểm.
 - Chú giải dưới bản đồ: icon kho "Kho xuất phát" rồi chấm màu + tên tài xế từng tuyến.

@@ -2,6 +2,7 @@ import { divIcon, type Map as LeafletMap, type Marker as LeafletMarker } from 'l
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Marker, useMapEvents } from 'react-leaflet';
 import { DEPOT_SVG } from './depotIcon';
+import { pinSvg } from './RouteMap';
 import { DEFAULT_CENTER, MapFrame, MapOverlay, type LatLng, type MapFrameLabels } from './MapFrame';
 
 export interface PinMapLabels extends MapFrameLabels {
@@ -12,16 +13,12 @@ export interface PinMapLabels extends MapFrameLabels {
 }
 
 const pinIcon = divIcon({ html: DEPOT_SVG, className: 'pw-depot-marker', iconSize: [30, 30], iconAnchor: [15, 27] });
-/** A delivery stop's pin: a map pin in the accent colour, its tip on the place — not the depot's house (G5). */
-const STOP_PIN_SVG =
-  '<svg viewBox="0 0 28 38" width="28" height="38" aria-hidden="true" class="pw-stop-pin-svg">' +
-  '<path d="M14 1.5C7.1 1.5 1.5 7 1.5 13.8c0 8.6 10.6 20.6 11.6 21.7a1.2 1.2 0 0 0 1.8 0c1-1.1 11.6-13.1 11.6-21.7C26.5 7 20.9 1.5 14 1.5Z" stroke="#ffffff" stroke-width="2"/>' +
-  '<circle cx="14" cy="13.8" r="4.6" fill="#ffffff"/></svg>';
+/** A delivery stop's pin: the stop pin of the route map (fb_17) in the accent colour, empty circle — not the house. */
 const stopPinIcon = divIcon({
-  html: STOP_PIN_SVG,
+  html: pinSvg('var(--route)', '', 28, 'pw-pin-route'),
   className: 'pw-stop-pin',
-  iconSize: [28, 38],
-  iconAnchor: [14, 37],
+  iconSize: [28, 40],
+  iconAnchor: [14, 39],
 });
 
 /**

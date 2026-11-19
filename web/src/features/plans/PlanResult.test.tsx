@@ -49,7 +49,7 @@ describe('Soạn plan — sau khi tối ưu', () => {
     expect(within(card).getByRole('heading', { name: 'ĐH-1016 · Chị Thảo', level: 2 })).toHaveFocus();
     expect(card).toHaveTextContent('Tài xế A · điểm thứ 1');
     expect(card).toHaveTextContent('10:51');
-    expect(container.querySelector('.pw-stop-marker .pw-marker-selected')).toHaveTextContent('1');
+    expect(container.querySelector('.pw-stop-marker .is-selected')).toHaveTextContent('1');
     await user.click(within(card).getByRole('button', { name: 'Tài xế A' }));
     await waitFor(() => expect(screen.getByRole('button', { name: 'ĐH-1016 · Chị Thảo: xem chi tiết' })).toHaveFocus());
 
