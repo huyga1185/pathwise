@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useForm } from 'react-hook-form';
 import { Link, useSearchParams } from 'react-router';
 import type { Schemas } from '@/data/types';
-import { errorMessages, fieldMessage, messageFor } from '@/shared/errors';
+import { fieldMessage, messageFor } from '@/shared/errors';
 import { applyServerErrors, errorCode } from '@/shared/forms/serverErrors';
 import { formatDate } from '@/shared/format';
 import { vi } from '@/shared/i18n/vi';
@@ -13,7 +13,6 @@ import {
   ErrorBanner,
   KeyIcon,
   LockIcon,
-  PhoneIcon,
   TextField,
   UserIcon,
   UserPlusIcon,
@@ -28,12 +27,12 @@ type Step = 'code' | 'form' | 'done';
 
 interface AcceptForm {
   fullName: string;
-  phoneNumber: string;
   password: string;
 }
 
-const FIELDS = ['fullName', 'phoneNumber', 'password'] as const;
-const LABELS = { fullName: vi.form.fullName, phoneNumber: vi.form.phone, password: vi.auth.password };
+// No phone number here (M06, D7): the driver adds it in the app ("Thông tin của tôi"), anyone else on the web profile.
+const FIELDS = ['fullName', 'password'] as const;
+const LABELS = { fullName: vi.form.fullName, password: vi.auth.password };
 const STEP_ICONS = [KeyIcon, UserPlusIcon, CheckCircleIcon];
 
 /**
@@ -62,7 +61,7 @@ export function AcceptInvitePage() {
     // HIG Text fields: "when creating a user name or password, validation needs to happen before people switch to
     // another field" (the password checks itself while typed, below); the other fields when people leave them.
     mode: 'onTouched',
-    defaultValues: { fullName: '', phoneNumber: '', password: '' },
+    defaultValues: { fullName: '', password: '' },
   });
 
   // The card changes its content in place (code → form → done): move focus to the new title, so VoiceOver and other
@@ -119,7 +118,6 @@ export function AcceptInvitePage() {
         code: cleanCode,
         fullName: form.fullName.trim(),
         password: form.password,
-        phoneNumber: form.phoneNumber.trim() || undefined,
       });
       changeCard(() => setStep('done'));
     } catch (error) {
@@ -129,8 +127,6 @@ export function AcceptInvitePage() {
           setCodeError(vi.invite.invalid);
           setStep('code');
         });
-      } else if (codeOfError === 'INVALID_PHONE_NUMBER') {
-        setError('phoneNumber', { type: 'server', message: errorMessages.INVALID_PHONE_NUMBER }, { shouldFocus: true });
       } else if (!applyServerErrors(error, setError, FIELDS, LABELS)) {
         setFailure(error);
       }
@@ -235,19 +231,6 @@ export function AcceptInvitePage() {
               autoComplete="name"
               error={errors.fullName?.message}
               {...register('fullName', requiredRule('FULL_NAME_REQUIRED', vi.form.fullName))}
-            />
-            <TextField
-              label={vi.form.phone}
-              clearable
-              type="tel"
-              size="lg"
-              autoComplete="tel"
-              maxLength={20}
-              placeholder="0905 123 456"
-              startIcon={<PhoneIcon />}
-              hint={vi.form.phoneHint}
-              error={errors.phoneNumber?.message}
-              {...register('phoneNumber')}
             />
             <TextField
               label={vi.auth.password}
