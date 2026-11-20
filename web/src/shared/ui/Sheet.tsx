@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState, type FormEvent, type PointerEvent, type ReactNode } from 'react';
+import { useEffect, useId, useLayoutEffect, useRef, useState, type FormEvent, type PointerEvent, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { useExit } from '@/shared/hooks/useExit';
 import { useMediaQuery, WIDE_QUERY } from '@/shared/hooks/useMediaQuery';
@@ -335,9 +335,42 @@ export function Alert({
   const messageId = useId();
   const presence = useExit(open, 160);
   const panel = useRef<HTMLDivElement>(null);
+  const actions = useRef<HTMLDivElement>(null);
+  // Touch: two capsules in a row; a title too long for its capsule stacks them, the action on top and Cancel at the
+  // bottom (HIG Alerts: "Always place the default button on the trailing side of a row or at the top of a stack.
+  // Cancel buttons are typically on the leading side of a row or at the bottom of a stack."). Measured before paint;
+  // the order in the DOM follows, so the focus order matches what people see.
+  const [stacked, setStacked] = useState(false);
+  const [wasOpen, setWasOpen] = useState(open);
+  if (open !== wasOpen) {
+    setWasOpen(open);
+    if (!open) setStacked(false);
+  }
+  useLayoutEffect(() => {
+    if (!open || stacked || !window.matchMedia?.('(pointer: coarse)').matches) return;
+    const buttons = actions.current ? [...actions.current.querySelectorAll('button')] : [];
+    if (buttons.some((button) => button.scrollWidth > button.clientWidth)) setStacked(true);
+  }, [open, stacked, actionLabel, cancelLabel]);
   useModalFocus(open, panel, onCancel);
   if (presence === 'closed') return null;
   const closing = presence === 'closing';
+  const cancelButton = (
+    <button key="cancel" type="button" className="pw-alert-button" data-autofocus onClick={onCancel}>
+      {cancelLabel}
+    </button>
+  );
+  const actionButton = (
+    <button
+      key="action"
+      type="button"
+      className={cx('pw-alert-button is-action', destructive && 'is-destructive')}
+      disabled={busy}
+      aria-busy={busy || undefined}
+      onClick={onAction}
+    >
+      {actionLabel}
+    </button>
+  );
   return createPortal(
     <div className={cx('pw-alert-backdrop', closing && 'is-closing')}>
       <div
@@ -359,19 +392,8 @@ export function Alert({
             </p>
           ) : null}
         </div>
-        <div className="pw-alert-actions">
-          <button type="button" className="pw-alert-button" data-autofocus onClick={onCancel}>
-            {cancelLabel}
-          </button>
-          <button
-            type="button"
-            className={cx('pw-alert-button is-action', destructive && 'is-destructive')}
-            disabled={busy}
-            aria-busy={busy || undefined}
-            onClick={onAction}
-          >
-            {actionLabel}
-          </button>
+        <div ref={actions} className={cx('pw-alert-actions', stacked && 'is-stacked')}>
+          {stacked ? [actionButton, cancelButton] : [cancelButton, actionButton]}
         </div>
       </div>
     </div>,

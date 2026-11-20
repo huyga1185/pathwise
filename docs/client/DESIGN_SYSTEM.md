@@ -182,7 +182,7 @@ Nhãn trạng thái viết hoa trên nền màu trạng thái; truyền thẳng 
 ### Sheet, Alert, SwitchRow, SegmentedControl (web, G3)
 
 - `Sheet`: việc có nhập liệu; "Huỷ" đầu thanh trên, nút xong (động từ) cuối; điện thoại trồi từ đáy, grabber, vuốt xuống để đóng (còn thay đổi chưa lưu thì hỏi bằng action sheet "Bỏ thay đổi" / "Tiếp tục sửa"); máy tính là thẻ giữa màn hình. Không `doneLabel` = sheet áp dụng ngay, chỉ có "Đóng".
-- `Alert`: chỉ xác nhận việc khó đảo ngược; "Huỷ" bên trái (được focus), hành động bên phải; `destructive` (đỏ) chỉ khi người dùng không chủ động chọn việc phá huỷ.
+- `Alert`: chỉ xác nhận việc khó đảo ngược; "Huỷ" bên trái (được focus), hành động bên phải; `destructive` (đỏ) chỉ khi người dùng không chủ động chọn việc phá huỷ. **Cảm ứng** (2026-11-20, theo hình anatomy iOS của HIG Alerts): hai nút viên thuốc 44 cạnh nhau cách 8, "Huỷ" nền xám, hành động nền màu nhấn (đỏ khi `destructive`); nhãn không vừa một hàng thì xếp chồng, hành động trên, "Huỷ" dưới (HIG: *"at the top of a stack… Cancel… at the bottom of a stack"*; thứ tự DOM đổi theo cho focus khớp); khung bo 36 đồng tâm (22 + lề 14, WWDC25 356); chữ canh trái, tiêu đề 700 (LIQUID_GLASS T1). **Có chuột:** chưa đổi (canh giữa, hai nút phẳng ngăn bằng đường kẻ, bo 16; hình macOS của HIG là hai viên thuốc xếp chồng, chờ chủ dự án quyết).
 - Vật liệu (2026-11-20, LIQUID_GLASS §2): sheet, alert và action sheet là kính như popover (nền `surface-raised` 96%, nhoè 24px) trên lớp làm tối 45%; giảm trong suốt hoặc tăng tương phản thì nền đặc.
 - `SwitchRow`: switch trong một hàng danh sách (nhãn trái, switch phải), `role="switch"`.
 - `SegmentedControl`: chuyển giữa các phần liên quan trên điện thoại; ô bằng nhau, ô đang chọn nổi lên.

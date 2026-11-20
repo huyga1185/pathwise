@@ -2892,6 +2892,65 @@ textarea.pw-field-input {
   outline: 2px solid var(--route);
   outline-offset: -2px;
 }
+/* Touch: the alert of HIG Alerts' iOS anatomy. Two capsules of 44 (S3) side by side, Cancel filled grey on the leading
+   side, the action filled with the accent (red when destructive) on the trailing side; stacked when a title does not
+   fit (Sheet.tsx). The panel's corner is concentric with the capsules: 22 + the 14 around them (WWDC25 356: "concentric
+   shapes calculate their radius by subtracting padding from the parent's"). Text bolder and leading-aligned (LIQUID_GLASS
+   T1, WWDC25 356: "bolder and left-aligned to improve readability in key moments like alerts"). The selectors outrank
+   the hover and pressed rules above, which would otherwise clear the fills. */
+@media (pointer: coarse) {
+  .pw-alert {
+    border-radius: 36px;
+    text-align: start;
+  }
+  .pw-alert-text {
+    padding: 22px 22px 16px;
+  }
+  .pw-alert-title {
+    font-weight: 700;
+  }
+  .pw-alert-actions {
+    display: flex;
+    gap: 8px;
+    padding: 0 14px 14px;
+    border-top: 0;
+  }
+  .pw-alert-actions.is-stacked {
+    flex-direction: column;
+  }
+  .pw-alert .pw-alert-actions .pw-alert-button {
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: 44px;
+    padding: 0 16px;
+    border-radius: var(--radius-full);
+    background-color: color-mix(in srgb, var(--ink) 7%, transparent);
+    color: var(--ink);
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .pw-alert .pw-alert-actions.is-stacked .pw-alert-button {
+    flex: none;
+    padding: 11px 16px;
+    white-space: normal;
+  }
+  .pw-alert .pw-alert-actions .pw-alert-button + .pw-alert-button {
+    border-left: 0;
+  }
+  .pw-alert .pw-alert-actions .pw-alert-button.is-action {
+    background-color: var(--route);
+    color: var(--on-accent);
+  }
+  .pw-alert .pw-alert-actions .pw-alert-button.is-destructive {
+    background-color: var(--danger);
+  }
+  .pw-alert .pw-alert-actions .pw-alert-button:active:not(:disabled) {
+    background-image: linear-gradient(color-mix(in srgb, var(--ink) 12%, transparent), color-mix(in srgb, var(--ink) 12%, transparent));
+  }
+  .pw-alert .pw-alert-actions .pw-alert-button:focus-visible {
+    outline-offset: 2px;
+  }
+}
 /* Action sheet: choices at the bottom, the way back separate below them. */
 .pw-action-sheet-backdrop {
   align-items: end;
