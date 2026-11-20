@@ -270,11 +270,15 @@ describe('Khu quản trị (W11)', () => {
 
     await waitFor(() => expect(router.state.location.search).toBe('?page=1'));
     expect(screen.getByRole('navigation', { name: 'Trang danh sách cửa hàng' })).toHaveTextContent('Trang 2/2');
+    // Until the last page's data arrives the old one stays, dimmed and busy; the result is then built anew. A click on the
+    // old table as it is replaced was lost (F-77, CI): wait for the last page first.
+    await waitFor(() => {
+      expect(queries.at(-1)?.get('page')).toBe('1');
+      expect(document.querySelector('.pw-list-result[aria-busy]')).toBeNull();
+    });
     const table = await screen.findByRole('table', { name: 'Cửa hàng của nền tảng' });
     await user.click(within(table).getByRole('button', { name: /Cửa hàng/ }));
-    // A request for the previous ascending page may arrive after the descending request. Verify that descending was
-    // requested instead of treating the last network event (which can be stale) as the sort result (F-77).
-    await waitFor(() => expect(queries.some((query) => query.get('sort') === 'name,desc')).toBe(true));
+    await waitFor(() => expect(queries.at(-1)?.get('sort')).toBe('name,desc'));
     expect(router.state.location.search).toBe('?sort=name%2Cdesc');
 
     await user.click(

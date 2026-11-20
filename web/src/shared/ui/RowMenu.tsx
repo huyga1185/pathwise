@@ -117,10 +117,14 @@ export function RowMenu({
     const key = (event: KeyboardEvent) => {
       if (event.key === 'Escape') onClose();
     };
-    // The finger that opened it is still lifting: listen for taps outside from the next frame.
-    const frame = window.requestAnimationFrame(() => document.addEventListener('pointerdown', outside));
+    // From the next frame: the finger that opened it is still lifting, and a scroll made before it opened (a smooth
+    // scroll still running, a control scrolled into view as it was pressed) is reported at the next frame — it closed
+    // the menu as it appeared.
+    const frame = window.requestAnimationFrame(() => {
+      document.addEventListener('pointerdown', outside);
+      window.addEventListener('scroll', onClose, { passive: true });
+    });
     document.addEventListener('keydown', key);
-    window.addEventListener('scroll', onClose, { passive: true });
     return () => {
       window.cancelAnimationFrame(frame);
       document.removeEventListener('pointerdown', outside);
