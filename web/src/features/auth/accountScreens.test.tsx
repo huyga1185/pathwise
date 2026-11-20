@@ -529,22 +529,15 @@ describe('Nhận lời mời', () => {
     expect(screen.getByLabelText(/^Mã mời/)).toHaveAttribute('aria-invalid', 'true');
   });
 
-  it('số điện thoại sai thì báo dưới ô số điện thoại', async () => {
+  it('form tạo tài khoản chỉ có họ tên và mật khẩu, không có số điện thoại (M06)', async () => {
     server.use(
       http.get(`${API}/invitations/:code`, () => ok(preview)),
-      http.post(`${API}/invitations/accept`, () => fail(400, 'INVALID_PHONE_NUMBER')),
       ...anonymousHandlers(),
     );
-    renderApp('/invite');
-    const user = userEvent.setup();
-    await user.type(await screen.findByLabelText(/^Mã mời/), CODE);
-    await user.click(screen.getByRole('button', { name: 'Kiểm tra mã' }));
-    await user.type(await screen.findByLabelText(/^Họ tên/), 'Tài xế B');
-    await user.type(screen.getByLabelText(/^Số điện thoại/), '12345');
-    await user.type(screen.getByLabelText(/^Mật khẩu/), 'matkhau123');
-    await user.click(screen.getByRole('button', { name: 'Tham gia cửa hàng' }));
+    renderApp(`/invite?code=${CODE}`);
 
-    expect(await screen.findByText('Số điện thoại không hợp lệ.')).toBeInTheDocument();
-    expect(screen.getByLabelText(/^Số điện thoại/)).toHaveAttribute('aria-invalid', 'true');
+    expect(await screen.findByLabelText(/^Họ tên/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/^Mật khẩu/)).toBeInTheDocument();
+    expect(screen.queryByLabelText(/^Số điện thoại/)).not.toBeInTheDocument();
   });
 });

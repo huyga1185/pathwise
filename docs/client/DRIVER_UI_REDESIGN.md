@@ -1,6 +1,6 @@
 # DRIVER_UI_REDESIGN — Thiết kế lại app tài xế theo Material 3 (gồm M06)
 
-> **Trạng thái (2026-11-20):** kế hoạch đã chốt (chủ dự án trả lời Q1–Q6 ở §6); **D1 đã làm** (§7, PR #139); **D2 đã làm** (§8, PR #140); **D3 đã làm** (§9, PR #141); **D4 đã làm** (§10, PR #142); **D5 đã làm** (§11, PR #143); **D6 đã làm** (§12, branch `feat/driver-ui-d6`); **D7 là giai đoạn tiếp theo**. Nền tảng thiết kế theo P-77.
+> **Trạng thái (2026-11-20):** kế hoạch đã chốt (chủ dự án trả lời Q1–Q6 ở §6); **D1 đã làm** (§7, PR #139); **D2 đã làm** (§8, PR #140); **D3 đã làm** (§9, PR #141); **D4 đã làm** (§10, PR #142); **D5 đã làm** (§11, PR #143); **D6 đã làm** (§12, PR #144); **D7 đã làm** (§13, branch `feat/driver-ui-d7`): **mọi giai đoạn D1–D7 đã xong**. Nền tảng thiết kế theo P-77.
 > Phiên sau làm tiếp từ đây: đọc §0, §4 (giai đoạn đang mở) và §5 (cách kiểm), rồi cập nhật trạng thái ở đầu file và
 > mục kết quả của giai đoạn vừa làm.
 >
@@ -278,4 +278,13 @@ Phạm vi: Dẫn đường (đo lại trên máy ảo có vị trí giả) và g
 - **Góc thẻ (Q11):** `PwShapes.cornerMedium` = 12 (M3 `md.sys.shape.corner.medium`; nguồn: token M3 trong SDK Flutter 3.47.9 `dev/tools/gen_defaults/data/card_{elevated,filled,outlined}.json` bản 6_1_0 ghi `container.shape: md.sys.shape.corner.medium`, `shape.json` ghi medium = 12; `Card` M3 của Flutter mặc định bo 12 — [Verified-code]) cho thẻ tuyến, thẻ điểm tiếp theo, nhóm hàng điểm, ô chia sẻ vị trí, ô lỗi, khối "đã xong tuyến". Web giữ `radius-md` 8.
 - **Kiểm:** `flutter analyze` sạch; `flutter test` 153/153 (thêm 6: mức nhấn nút khi đang đi/đã tới, màn lỗi, tên dài hai dòng, ghi công trong thanh dưới, biểu tượng thanh trạng thái tối, manifest có `WAKE_LOCK`). Máy ảo: đang dẫn đường sáng, kéo bản đồ → "Về vị trí của tôi", tối, tối + chữ 200%; danh sách tuyến và chi tiết tuyến bo 12; màn "Chưa lấy được vị trí" (trước khi sửa F-81).
 - `UI_GUIDELINES.md` §1b: chữ dài ✅ (tên điểm hai dòng, câu chỉ dẫn xuống dòng ở chữ 200%); phân trang — ; bảng — ; trống/tải/lỗi ✅ (màn lỗi, có test); chuyển động — (không đổi); accessibility ✅ (nút xếp dọc khi chữ lớn, biểu tượng thao tác to theo chữ, tương phản thanh trạng thái).
+
+## 13. D7 — kết quả (2026-11-20)
+
+Phạm vi: M06 phía web.
+
+- `AcceptInvitePage`: bỏ ô "Số điện thoại" (và lỗi `INVALID_PHONE_NUMBER` dưới ô) khỏi bước "Tạo tài khoản"; form chỉ còn họ tên và mật khẩu; không gửi `phoneNumber` (API vẫn nhận, tuỳ chọn; backend không đổi). Tài xế thêm số ở "Thông tin của tôi" trong app (D3); điều phối viên/chủ cửa hàng ở trang hồ sơ web.
+- `SCREENS.md` §1.1 và `PLAN.md` M06 (đóng) cập nhật.
+- **Kiểm:** web `vitest` 291/291 (48 file); lint, typecheck sạch. Test "số điện thoại sai thì báo dưới ô số điện thoại" thay bằng "form tạo tài khoản chỉ có họ tên và mật khẩu"; test nhận lời mời vẫn kiểm body gửi đi không có `phoneNumber`.
+- `UI_GUIDELINES.md` §1b: chỉ bỏ một ô của form; chữ dài, phân trang, bảng, trống/tải/lỗi, chuyển động — (không đổi); accessibility ✅ (axe của `/invite` trong `a11y.test.tsx` vẫn xanh).
 
