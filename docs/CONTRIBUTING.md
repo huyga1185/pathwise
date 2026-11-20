@@ -2,7 +2,7 @@
 
 ## 1. Quy trình branch (D-34)
 
-- Mỗi task một branch `task/Txx-...` tạo từ `develop`, mở PR vào `develop`.
+- Mỗi việc một branch tạo từ `develop`, đặt tên theo loại việc: `task/Txx-...` hoặc `task/Wxx-...` cho task trong plan, `feat/...` (tính năng, vd `feat/owner-ui-g7`), `fix/...`, `docs/...`, `chore/release-x.y.z`; mở PR vào `develop`.
 - `develop` → PR vào `main` kèm tag `v*` khi phát hành.
 - `develop` và `main` đã bật Ruleset: chỉ merge qua PR, check `ci` phải xanh, cấm force push. Không push thẳng lên hai branch này.
 - Commit theo dạng `feat(module): ...`, `fix(module): ...`, `docs: ...`. Không thêm attribution của AI.

@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { describe, expect, it } from 'vitest';
 import type { Schemas } from '@/data/types';
+import { wideWindow } from '@/test/media';
 import { renderApp } from '@/test/renderApp';
 import { API, fail, ok, server, signedInHandlers } from '@/test/server';
 
@@ -194,7 +195,7 @@ describe('Khu quản trị (W11)', () => {
     expect(screen.getByText('2 lỗi trong 24 giờ')).toBeInTheDocument();
     expect(within(screen.getByRole('table', { name: /Thời gian phản hồi/ })).getByText('85 ms')).toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole('button', { name: '7 ngày' }));
+    await userEvent.click(screen.getByRole('tab', { name: '7 ngày' }));
     await waitFor(() => expect(asked).toHaveLength(2));
     expect(new Date(asked[1]!).getTime() - new Date(asked[0]!).getTime()).toBe(23 * 86_400_000);
   });
@@ -218,7 +219,7 @@ describe('Khu quản trị (W11)', () => {
     expect(screen.getByRole('link', { name: 'Về trang chính' })).toHaveAttribute('href', '/admin');
   });
 
-  it('danh sách cửa hàng: tìm bằng Enter gửi q, sắp xếp, link sang chi tiết', async () => {
+  it('danh sách cửa hàng (điện thoại): hàng mở chi tiết; tìm khi gõ và bằng Enter; lọc trạng thái; xoá bộ lọc', async () => {
     const queries: URLSearchParams[] = [];
     server.use(
       http.get(`${API}/admin/stores`, ({ request }) => {
@@ -227,15 +228,66 @@ describe('Khu quản trị (W11)', () => {
       }),
       ...adminHandlers(),
     );
-    renderApp('/admin/stores');
+    const { router } = renderApp('/admin/stores');
     const user = userEvent.setup();
 
-    expect(await screen.findByRole('link', { name: 'Tiệm Hoa Hồng' })).toHaveAttribute('href', '/admin/stores/3');
-    expect(screen.getByText('TẠM KHOÁ')).toBeInTheDocument();
-    await user.type(screen.getByLabelText('Tìm theo tên cửa hàng hoặc email chủ'), 'hoa{Enter}');
+    const rows = await screen.findByRole('list', { name: 'Cửa hàng của nền tảng' });
+    expect(within(rows).getByRole('link', { name: /Tiệm Hoa Hồng/ })).toHaveAttribute('href', '/admin/stores/3');
+    expect(within(rows).getByText('TẠM KHOÁ')).toBeInTheDocument();
+    // No "Xoá bộ lọc" until something filters (G2.2).
+    expect(screen.queryByRole('button', { name: 'Xoá bộ lọc' })).not.toBeInTheDocument();
+
+    await user.type(screen.getByRole('searchbox', { name: 'Tìm cửa hàng' }), 'hoa{Enter}');
     await waitFor(() => expect(queries.at(-1)?.get('q')).toBe('hoa'));
-    await user.click(screen.getByRole('button', { name: /Sắp xếp theo tên/ }));
+    expect(router.state.location.search).toContain('q=hoa');
+    // As people type: sent 0.3 s after the last key.
+    await user.type(screen.getByRole('searchbox', { name: 'Tìm cửa hàng' }), ' hồng');
+    await waitFor(() => expect(queries.at(-1)?.get('q')).toBe('hoa hồng'));
+
+    await user.click(screen.getByRole('button', { name: /Trạng thái: Tất cả/ }));
+    await user.click(screen.getByRole('menuitemradio', { name: 'Tạm khoá (chỉ đọc)' }));
+    await waitFor(() => expect(queries.at(-1)?.get('status')).toBe('READ_ONLY'));
+
+    await user.click(screen.getByRole('button', { name: 'Xoá bộ lọc' }));
+    await waitFor(() => expect(router.state.location.search).toBe(''));
+    expect(screen.getByRole('searchbox', { name: 'Tìm cửa hàng' })).toHaveValue('');
+  });
+
+  it('danh sách cửa hàng (màn rộng): sắp xếp bằng tiêu đề cột, bấm hàng mở chi tiết, trang quá cuối về trang cuối', async () => {
+    wideWindow();
+    const queries: URLSearchParams[] = [];
+    server.use(
+      http.get(`${API}/admin/stores/3`, () => ok(detail())),
+      http.get(`${API}/admin/stores`, ({ request }) => {
+        const params = new URL(request.url).searchParams;
+        queries.push(params);
+        return ok({ ...page([summary]), page: Number(params.get('page')), totalPages: 2, totalElements: 21 });
+      }),
+      ...adminHandlers(),
+    );
+    const { router } = renderApp('/admin/stores?page=7');
+    const user = userEvent.setup();
+
+    await waitFor(() => expect(router.state.location.search).toBe('?page=1'));
+    expect(screen.getByRole('navigation', { name: 'Trang danh sách cửa hàng' })).toHaveTextContent('Trang 2/2');
+    // Until the last page's data arrives the old one stays, dimmed and busy; the result is then built anew. A click on the
+    // old table as it is replaced was lost (F-77, CI): wait for the last page first.
+    await waitFor(() => {
+      expect(queries.at(-1)?.get('page')).toBe('1');
+      expect(document.querySelector('.pw-list-result[aria-busy]')).toBeNull();
+    });
+    const table = await screen.findByRole('table', { name: 'Cửa hàng của nền tảng' });
+    await user.click(within(table).getByRole('button', { name: /Cửa hàng/ }));
     await waitFor(() => expect(queries.at(-1)?.get('sort')).toBe('name,desc'));
+    expect(router.state.location.search).toBe('?sort=name%2Cdesc');
+
+    await user.click(
+      within(screen.getByRole('table', { name: 'Cửa hàng của nền tảng' })).getByText('chu@tiemhoahong.vn'),
+    );
+    await waitFor(() => expect(router.state.location.pathname).toBe('/admin/stores/3'));
+    // Wait for the detail page: a request still on its way when the test ends is answered by the next test's handlers
+    // and counted there as a second view (F-78).
+    expect(await screen.findByRole('heading', { name: 'Tiệm Hoa Hồng' })).toBeInTheDocument();
   });
 
   it('chi tiết cửa hàng: khoá gửi lý do, hiện băng và mở khoá; chuyển chủ gửi userId', async () => {
@@ -270,26 +322,33 @@ describe('Khu quản trị (W11)', () => {
     const user = userEvent.setup();
 
     expect(await screen.findByRole('heading', { name: 'Tiệm Hoa Hồng' })).toBeInTheDocument();
-    expect(await screen.findByText('admin@pathwise.vn: Tạm khoá cửa hàng: Chưa thanh toán')).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'Khoá (chỉ đọc)' }));
-    const lockDialog = screen.getByRole('alertdialog', { name: 'Khoá cửa hàng Tiệm Hoa Hồng?' });
-    expect(within(lockDialog).getByRole('button', { name: 'Khoá cửa hàng' })).toBeDisabled();
-    await user.type(within(lockDialog).getByLabelText(/Lý do/), '  Chưa thanh toán ');
-    await user.click(within(lockDialog).getByRole('button', { name: 'Khoá cửa hàng' }));
+    // The latest log entries: the whole sentence, who and when under it.
+    expect(await screen.findByText('Tạm khoá cửa hàng: Chưa thanh toán')).toBeInTheDocument();
+    // The store's actions are in the More menu (G7-Q3), locking last and destructive.
+    await user.click(screen.getByRole('button', { name: 'Thao tác với cửa hàng' }));
+    const items = screen.getAllByRole('menuitem');
+    expect(items.map((item) => item.textContent)).toEqual(['Chuyển chủ cửa hàng…', 'Tạm khoá (chỉ đọc)…']);
+    await user.click(items[1]!);
+    const lockSheet = screen.getByRole('dialog', { name: 'Tạm khoá' });
+    expect(within(lockSheet).getByRole('button', { name: 'Khoá' })).toBeDisabled();
+    await user.type(within(lockSheet).getByLabelText(/Lý do/), '  Chưa thanh toán ');
+    await user.click(within(lockSheet).getByRole('button', { name: 'Khoá' }));
 
     expect(await screen.findByText('Đã khoá cửa hàng.')).toBeInTheDocument();
     expect(bodies[0]).toEqual({ reason: 'Chưa thanh toán' });
     expect(screen.getByText('Đang tạm khoá (chỉ đọc)')).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'Mở khoá' }));
+    await user.click(screen.getByRole('button', { name: 'Thao tác với cửa hàng' }));
+    await user.click(screen.getByRole('menuitem', { name: 'Mở khoá' }));
     await user.click(
-      within(screen.getByRole('dialog', { name: /Mở khoá cửa hàng/ })).getByRole('button', { name: 'Mở khoá' }),
+      within(screen.getByRole('alertdialog', { name: /Mở khoá cửa hàng/ })).getByRole('button', { name: 'Mở khoá' }),
     );
     expect(await screen.findByText('Đã mở khoá cửa hàng.')).toBeInTheDocument();
     // Lock and unlock update the page from their response: the store is not read again (no extra STORE_VIEWED).
     expect(views).toBe(1);
 
-    await user.click(screen.getByRole('button', { name: 'Chuyển chủ cửa hàng' }));
-    const transfer = screen.getByRole('alertdialog', { name: 'Chuyển chủ cửa hàng Tiệm Hoa Hồng?' });
+    await user.click(screen.getByRole('button', { name: 'Thao tác với cửa hàng' }));
+    await user.click(screen.getByRole('menuitem', { name: 'Chuyển chủ cửa hàng…' }));
+    const transfer = screen.getByRole('dialog', { name: 'Chuyển chủ' });
     // Only ACTIVE members other than the OWNER can be chosen.
     expect(within(transfer).getAllByRole('option')).toHaveLength(1);
     await user.click(within(transfer).getByRole('button', { name: 'Chuyển chủ' }));
@@ -306,7 +365,8 @@ describe('Khu quản trị (W11)', () => {
     expect(await screen.findByText('Không tìm thấy cửa hàng này.')).toBeInTheDocument();
   });
 
-  it('người dùng: mỗi trạng thái có đúng hành động; gửi link hỏi trước rồi gọi đúng API; không tự khoá mình', async () => {
+  it('người dùng: menu "…" của hàng có đúng hành động theo trạng thái; gửi link hỏi trước rồi gọi đúng API; không tự khoá mình', async () => {
+    wideWindow();
     const posted: string[] = [];
     server.use(
       http.get(`${API}/admin/users`, () => ok(page(users))),
@@ -318,37 +378,108 @@ describe('Khu quản trị (W11)', () => {
     );
     renderApp('/admin/users');
     const user = userEvent.setup();
+    const menuOf = async (email: string) => {
+      await user.click(await screen.findByRole('button', { name: `Thao tác với ${email}` }));
+      const labels = screen.getAllByRole('menuitem').map((item) => item.textContent);
+      return labels;
+    };
 
-    const table = await screen.findByRole('table', { name: 'Người dùng của nền tảng' });
-    const ownerRow = (await within(table).findByText('chu@tiemhoahong.vn')).closest('tr')!;
-    const adminRow = within(table).getByText('admin@pathwise.vn').closest('tr')!;
-    const pendingRow = within(table).getByText('moi@gas.vn').closest('tr')!;
-    expect(within(adminRow).queryByRole('button', { name: /^Khoá/ })).not.toBeInTheDocument();
-    expect(within(pendingRow).getByRole('button', { name: 'Gửi lại email xác thực' })).toBeInTheDocument();
-    expect(within(pendingRow).queryByRole('button', { name: 'Gửi link đặt lại mật khẩu' })).not.toBeInTheDocument();
-
-    await user.click(within(ownerRow).getByRole('button', { name: 'Gửi link đặt lại mật khẩu' }));
-    const dialog = screen.getByRole('dialog', { name: 'Gửi link đặt lại mật khẩu?' });
-    expect(dialog).toHaveTextContent('mở được trong 24 giờ');
-    await user.click(within(dialog).getByRole('button', { name: 'Gửi link' }));
+    await screen.findByRole('table', { name: 'Người dùng của nền tảng' });
+    // Oneself: no "Khoá".
+    expect(await menuOf('admin@pathwise.vn')).not.toContain('Khoá');
+    await user.keyboard('{Escape}');
+    // Waiting for email: resend the verification, no reset link.
+    const pendingItems = await menuOf('moi@gas.vn');
+    expect(pendingItems).toContain('Gửi lại email xác thực');
+    expect(pendingItems).not.toContain('Gửi link đặt lại mật khẩu');
+    await user.keyboard('{Escape}');
+    // Active: the reset link, the log, logging out, "Khoá" last (destructive).
+    expect(await menuOf('chu@tiemhoahong.vn')).toEqual([
+      'Gửi link đặt lại mật khẩu',
+      'Xem nhật ký của người này',
+      'Buộc đăng xuất',
+      'Khoá',
+    ]);
+    await user.click(screen.getByRole('menuitem', { name: 'Gửi link đặt lại mật khẩu' }));
+    const alert = screen.getByRole('alertdialog', { name: 'Gửi link đặt lại mật khẩu?' });
+    expect(alert).toHaveTextContent('mở được trong 24 giờ');
+    await user.click(within(alert).getByRole('button', { name: 'Gửi link' }));
     expect(await screen.findByText('Đã gửi link đặt lại mật khẩu cho chu@tiemhoahong.vn.')).toBeInTheDocument();
     expect(posted).toEqual(['449/password-reset-email']);
   });
 
-  it('nhật ký: câu theo hành động, lọc hành động gửi action', async () => {
-    const actions: (string | null)[] = [];
+  it('người dùng: cửa hàng chỉ đặt sẵn từ trang cửa hàng, hiện tên và bỏ được; F-76 không còn đếm "cửa hàng"', async () => {
+    const queries: URLSearchParams[] = [];
+    server.use(
+      http.get(`${API}/admin/users`, ({ request }) => {
+        queries.push(new URL(request.url).searchParams);
+        return ok(page(users));
+      }),
+      ...adminHandlers(),
+    );
+    const { router } = renderApp('/admin/users?storeId=3&storeName=Ti%E1%BB%87m%20Hoa%20H%E1%BB%93ng');
+    const user = userEvent.setup();
+
+    await screen.findByRole('list', { name: 'Người dùng của nền tảng' });
+    expect(queries[0]?.get('storeId')).toBe('3');
+    expect(screen.getByText('Tiệm Hoa Hồng')).toBeInTheDocument();
+    expect(screen.queryByText(/cửa hàng · trang/)).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Bỏ lọc cửa hàng' }));
+    await waitFor(() => expect(router.state.location.search).toBe(''));
+    await waitFor(() => expect(queries.at(-1)?.get('storeId')).toBeNull());
+  });
+
+  it('nhật ký: cửa hàng và người làm chỉ đặt sẵn từ trang khác (viên thuốc bỏ được), lọc hành động bằng pop-up', async () => {
+    const queries: URLSearchParams[] = [];
     server.use(
       http.get(`${API}/admin/audit`, ({ request }) => {
-        actions.push(new URL(request.url).searchParams.get('action'));
+        queries.push(new URL(request.url).searchParams);
         return ok(page([auditEvent]));
       }),
       ...adminHandlers(),
     );
-    renderApp('/admin/audit?storeId=3');
+    const { router } = renderApp(
+      '/admin/audit?storeId=3&storeName=Ti%E1%BB%87m%20Hoa%20H%E1%BB%93ng&actorId=1&actor=admin%40pathwise.vn',
+    );
+    const user = userEvent.setup();
+
     expect(await screen.findByText('Tạm khoá cửa hàng: Chưa thanh toán')).toBeInTheDocument();
-    expect(screen.getByText('203.0.113.7')).toBeInTheDocument();
-    expect(screen.getByLabelText('Mã cửa hàng')).toHaveValue(3);
-    await userEvent.selectOptions(screen.getByLabelText('Hành động'), 'Khoá cửa hàng');
-    await waitFor(() => expect(actions.at(-1)).toBe('STORE_LOCKED'));
+    expect(queries[0]?.get('storeId')).toBe('3');
+    expect(queries[0]?.get('actorId')).toBe('1');
+    // No field to type an id into (G7-Q2): the presets show names.
+    expect(screen.queryByRole('spinbutton')).not.toBeInTheDocument();
+    expect(screen.getByText('Tiệm Hoa Hồng')).toBeInTheDocument();
+    const filters = screen.getByRole('group', { name: 'Lọc nhật ký' });
+    expect(within(filters).getByText('admin@pathwise.vn')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /Hành động: Tất cả/ }));
+    await user.click(screen.getByRole('menuitemradio', { name: 'Khoá cửa hàng' }));
+    await waitFor(() => expect(queries.at(-1)?.get('action')).toBe('STORE_LOCKED'));
+
+    await user.click(screen.getByRole('button', { name: 'Bỏ lọc người làm' }));
+    await waitFor(() => expect(queries.at(-1)?.get('actorId')).toBeNull());
+    expect(queries.at(-1)?.get('storeId')).toBe('3');
+    await user.click(screen.getByRole('button', { name: 'Bỏ lọc cửa hàng' }));
+    await waitFor(() => expect(router.state.location.search).toBe('?action=STORE_LOCKED'));
+  });
+
+  it('nhật ký: không có tên trên link thì hiện mã; bấm một dòng mở sheet "Chi tiết" đủ chữ, có link sang cửa hàng', async () => {
+    server.use(
+      http.get(`${API}/admin/audit`, () => ok(page([auditEvent]))),
+      ...adminHandlers(),
+    );
+    renderApp('/admin/audit?storeId=3&actorId=1');
+    const user = userEvent.setup();
+
+    await user.click(await screen.findByRole('button', { name: /Tạm khoá cửa hàng: Chưa thanh toán/ }));
+    const filters = screen.getByRole('group', { name: 'Lọc nhật ký' });
+    expect(within(filters).getByText('Cửa hàng #3')).toBeInTheDocument();
+    expect(within(filters).getByText('Người dùng #1')).toBeInTheDocument();
+    const sheet = await screen.findByRole('dialog', { name: 'Chi tiết' });
+    expect(within(sheet).getByText('Tạm khoá cửa hàng: Chưa thanh toán')).toBeInTheDocument();
+    expect(within(sheet).getByText('14/11/2026 09:30')).toBeInTheDocument();
+    expect(within(sheet).getByText('admin@pathwise.vn')).toBeInTheDocument();
+    expect(within(sheet).getByText('203.0.113.7')).toBeInTheDocument();
+    expect(within(sheet).getByRole('link', { name: 'Cửa hàng #3' })).toHaveAttribute('href', '/admin/stores/3');
   });
 });

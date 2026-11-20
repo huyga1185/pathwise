@@ -66,6 +66,28 @@ docker compose --profile app up -d --build    # chạy toàn bộ stack trong co
 - Index có thể đang chứa thay đổi do người khác stage sẵn. Commit bằng `git commit -- <danh sách file>` hoặc kiểm tra `git diff --cached --name-only` trước khi commit. Không commit file không thuộc task.
 - Không push khi chủ dự án chưa yêu cầu.
 
+## Chia việc cho sub-agent
+
+Áp dụng cho cả backend và client.
+
+- Sub-agent chỉ tìm, đo, soạn nháp; **không quyết, không commit, không push**. Quy tắc "không tự suy, tự quyết" áp cho cả sub-agent: chỗ chưa rõ ghi thành câu hỏi trong báo cáo; chỉ phiên chính hỏi chủ dự án.
+- Báo cáo phải có bằng chứng (`file:dòng`, trích nguyên văn, lệnh đã chạy và kết quả) và mức `[Verified-code]` / `[Verified-run]` / `[Risk]`. Phiên chính đối chiếu lại trước khi dùng, nhất là báo cáo của model nhỏ.
+- Chỉ giao khi có lợi: phải đọc nhiều file (khoảng hơn 10) hoặc chạy song song được. Thứ phiên chính đã có trong ngữ cảnh thì tự làm.
+- Sub-agent sửa code thì chạy trong worktree riêng; phiên chính xem diff rồi mới đưa vào branch.
+
+| Việc | Ai |
+|---|---|
+| Dò câu chữ trong docs dài hoặc code (vd rà docs lỗi thời) | Explore / Haiku: trả danh sách chỗ kèm trích dẫn, phiên chính kết luận |
+| So docs với code (endpoint, DTO, migration, `ErrorCode` với `API_SPEC.md`/`DATA_MODEL.md`) | Haiku (so khớp máy móc, checklist mục 2–3) |
+| Tra hướng dẫn Apple HIG, WCAG, tài liệu thư viện | web-fetch / Sonnet: trích nguyên văn kèm URL, không tự diễn giải thành quy tắc |
+| Kiểm mục "Nâng cấp" khi phát hành (diff `db/migration`, `.env*.example`, `compose*` từ tag trước) | Haiku |
+| Soạn nháp ghi chú phát hành từ các PR đã merge | Sonnet, theo khung release trước; chủ dự án duyệt |
+| Điều tra test chập chờn | Sonnet trong worktree: nguyên nhân kèm bằng chứng và bản vá đề xuất |
+| Rà diff trước khi mở PR | skill `/code-review` |
+| Thiết kế UI, áp HIG, đo và đọc ảnh chụp, mọi quyết định có chủ đích | Phiên chính |
+| Sửa file nóng (danh sách ở "Quy tắc cứng") | Phiên chính |
+| Commit, mô tả PR, push, tag, GitHub Release | Phiên chính, chỉ khi chủ dự án yêu cầu |
+
 ## Quy ước code
 
 - Code theo phong cách code xung quanh: Lombok (`@RequiredArgsConstructor`), record cho DTO, MapStruct cho mapping, Bean Validation với message là mã UPPER_SNAKE.
@@ -73,4 +95,4 @@ docker compose --profile app up -d --build    # chạy toàn bộ stack trong co
 - `Optional` chỉ cho tra cứu có thể không có dữ liệu; verify/rotate/authenticate trả kiểu kết quả `sealed interface`; `AppException` chỉ ném từ service; chỉ thêm `ErrorCode` khi client phải xử lý khác đi (P-24, bảng ở `ARCHITECTURE.md` §3).
 - Null trong API (P-48): component của record `*Response` luôn có mặt và không `null`, trừ khi đánh `org.jspecify.annotations.Nullable` (record `@JsonInclude(NON_NULL)` thì field `@Nullable` bị bỏ khỏi JSON); field xoá được của class merge patch cũng đánh `@Nullable`. Thêm field response có thể `null` mà quên đánh dấu thì OpenAPI sai và `OpenApiNullabilityIntegrationTest` báo lỗi. Endpoint trả 201/202/204 đánh `@ResponseStatus` để OpenAPI ghi đúng mã.
 - Đơn vị: mét, giây, capacity là số nguyên. Timestamp dùng `Instant` UTC. Time window dùng `LocalTime` theo timezone của store.
-- Git: mỗi task một branch `task/Txx-...` từ `develop`. Commit theo dạng `feat(module): ...`, `fix(module): ...`.
+- Git: mỗi việc một branch tạo từ `develop`, đặt tên theo loại việc: `task/Txx-...` hoặc `task/Wxx-...` cho task trong plan, `feat/...` (tính năng, vd `feat/owner-ui-g7`), `fix/...`, `docs/...`, `chore/release-x.y.z` (`docs/CONTRIBUTING.md` §1). Commit theo dạng `feat(module): ...`, `fix(module): ...`.

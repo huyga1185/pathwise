@@ -1,5 +1,5 @@
 import { useStoreReadOnly } from '@/data/meQuery';
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router';
 import { useStoreQuery } from '@/data/storeQuery';
 import { messageFor } from '@/shared/errors';
@@ -10,9 +10,9 @@ import { useFitRows } from '@/shared/hooks/useFitRows';
 import { useMediaQuery, WIDE_QUERY } from '@/shared/hooks/useMediaQuery';
 import { vi } from '@/shared/i18n/vi';
 import {
-  Button,
   buttonClass,
   ChevronRightIcon,
+  ClearFilters,
   CopyIcon,
   DataTable,
   DatePickerFilter,
@@ -278,6 +278,7 @@ export function PlanListPage() {
         />
         {clearPresence !== 'closed' ? (
           <ClearFilters
+            text={vi.plans.clearFilters}
             closing={clearPresence === 'closing'}
             onClear={() => update({ date: undefined, status: undefined })}
           />
@@ -441,53 +442,5 @@ function HiddenColumns({ row, timeZone }: { row: PlanSummary; timeZone: string }
         </span>
       ))}
     </span>
-  );
-}
-
-/**
- * "Xoá bộ lọc": pops in beside the filters and back out where it was. While it leaves, the filters re-flow (the date
- * button gets shorter), so it is lifted out of the row at its last place instead of being carried along; it is inert,
- * not disabled, so it does not dim before fading (the disabled style). When a filter changes and the row re-flows
- * while it stays, it glides to its new place (another row too) instead of jumping.
- */
-function ClearFilters({ closing, onClear }: { closing: boolean; onClear: () => void }) {
-  const button = useRef<HTMLButtonElement>(null);
-  const place = useRef<{ left: number; top: number } | null>(null);
-  // Every render: remember where it sits while shown; once it leaves, pin it there.
-  useLayoutEffect(() => {
-    const element = button.current;
-    if (!element) return;
-    if (!closing) {
-      const was = place.current;
-      place.current = { left: element.offsetLeft, top: element.offsetTop };
-      // The filters re-flowed and it moved (another row, another place): glide there instead of jumping.
-      const dx = was ? was.left - place.current.left : 0;
-      const dy = was ? was.top - place.current.top : 0;
-      if ((dx || dy) && !reducedMotion()) {
-        element.animate([{ transform: `translate(${dx}px, ${dy}px)` }, { transform: 'none' }], {
-          duration: 280,
-          easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)',
-        });
-      }
-      element.style.removeProperty('position');
-      element.style.removeProperty('left');
-      element.style.removeProperty('top');
-    } else if (place.current) {
-      element.style.position = 'absolute';
-      element.style.left = `${place.current.left}px`;
-      element.style.top = `${place.current.top}px`;
-    }
-  });
-  return (
-    <Button
-      ref={button}
-      variant="quiet"
-      className={cx('pw-list-clear', closing && 'is-closing')}
-      inert={closing}
-      aria-hidden={closing || undefined}
-      onClick={onClear}
-    >
-      {vi.plans.clearFilters}
-    </Button>
   );
 }

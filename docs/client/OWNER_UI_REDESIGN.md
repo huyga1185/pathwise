@@ -1,6 +1,6 @@
 # OWNER_UI_REDESIGN — Nghiên cứu thiết kế lại giao diện chính của chủ cửa hàng theo Apple
 
-> **Trạng thái:** nghiên cứu xong; chủ dự án đã trả lời Q1–Q5 (§5, 2026-11-17), quyết định ở P-74. **G1 (khung app) đã làm** (§6, branch `docs/owner-ui-redesign`). **G2 (danh sách kế hoạch) đã làm** (§7, PR #129). **G3 (Xe, Thành viên, Cửa hàng, Nhật ký, Tài khoản) đã làm** (§8, PR #130). **G4 (tạo/sửa kế hoạch, nhập file, sao chép) đã làm** (§9, PR #131). **G5 (chi tiết kế hoạch) đã làm** (§10, PR #132). **G6 (Báo cáo) đang làm** (§11, branch `feat/owner-ui-g6`).
+> **Trạng thái:** nghiên cứu xong; chủ dự án đã trả lời Q1–Q5 (§5, 2026-11-17), quyết định ở P-74. **G1 (khung app) đã làm** (§6, branch `docs/owner-ui-redesign`). **G2 (danh sách kế hoạch) đã làm** (§7, PR #129). **G3 (Xe, Thành viên, Cửa hàng, Nhật ký, Tài khoản) đã làm** (§8, PR #130). **G4 (tạo/sửa kế hoạch, nhập file, sao chép) đã làm** (§9, PR #131). **G5 (chi tiết kế hoạch) đã làm** (§10, PR #132). **G6 (Báo cáo) đã làm** (§11, PR #136). **G7 (khu quản trị ADMIN) đã làm** (§12, branch `feat/owner-ui-g7`, chưa mở PR).
 >
 > Theo P-71 (hướng dẫn Apple đứng trước), quy tắc ở `docs/client/LIQUID_GLASS.md`, kiểm từng thành phần theo `docs/client/APPLE_CHECKLIST.md`. Nhãn: **[Apple]** trích nguyên văn HIG (bản tải 2026-11-17), **[Web]** điều web buộc phải có, chọn bằng đo, **[Chủ dự án]** chờ hoặc đã có quyết định. Phần "Đề xuất" là ý của agent, mỗi dòng ghi nguồn; chỗ nào Apple không nói thì ghi rõ.
 
@@ -8,7 +8,7 @@
 
 Khu đã đăng nhập của OWNER (và DISPATCHER, cùng màn): khung app (header, điều hướng, tài khoản) và các màn `/plans`, `/plans/new` + `/plans/:id/edit`, `/plans/:id` (tìm toạ độ, kết quả tối ưu, chỉnh tay, theo dõi), `/reports`, `/vehicles`, `/members`, `/store` + `/store/audit`, `/profile`.
 
-Ngoài phạm vi: màn tài khoản (đã làm, P-72), khu quản trị ADMIN (làm sau, dùng lại kết quả), app tài xế.
+Ngoài phạm vi: màn tài khoản (đã làm, P-72), khu quản trị ADMIN (lúc nghiên cứu để làm sau, dùng lại kết quả; đã làm ở G7, §12), app tài xế.
 
 **Nền tảng tham chiếu.** Web PathWise chạy trên máy tính (chuột, cửa sổ rộng) và điện thoại (chạm, màn hẹp). Apple chia theo kích thước, không theo thiết bị: [Apple] HIG Layout: "Determine layout based on size classes, not device type or orientation." Đề xuất: **rộng** (≥ 960px, như bước của màn tài khoản) theo iPadOS/macOS; **hẹp** theo iOS. Chức năng giữ nguyên ở mọi khổ: [Apple] "Don't change your app's functionality based on the space it occupies."
 
@@ -112,6 +112,7 @@ Mỗi giai đoạn một branch, một PR, kiểm theo `APPLE_CHECKLIST.md`, c�
 5. **G5 Chi tiết kế hoạch:** tìm toạ độ, kết quả tối ưu, chỉnh tay, theo dõi (D15) — cần dữ liệu mẫu.
    - *Đã chốt cho G5 (chủ dự án, 2026-11-18):* các ô trắng của trang (khối "Còn N điểm…", "Chưa có tài xế…", thanh tiến độ, nhóm bảng, khung sửa điểm, thẻ ở màn kết quả / theo dõi) đổi sang nhóm **bo 16, không viền** như các trang đã redesign; bản đồ trong nhóm bo đồng tâm (S1/S2). Khối **lỗi** (vd "Còn N điểm giao chưa có toạ độ") bỏ viền đỏ, báo bằng **nền đỏ nhạt**. Hiện vẫn kiểu cũ (bo 8, bảng bo 4, có viền) — chủ dự án chọn để G5 cả, không đổi lẻ (§9.9).
 6. **G6 Báo cáo** (D17).
+7. **G7 Khu quản trị ADMIN** (thêm sau, §12): Tổng quan, Cửa hàng, Chi tiết cửa hàng, Người dùng, Nhật ký theo các mẫu G2–G6.
 
 Prototype (artboard) cập nhật theo từng giai đoạn hoặc sau cùng — §5 Q5.
 
@@ -523,7 +524,7 @@ Chủ dự án: "Sửa điểm giao", "Sao chép", "Tối ưu lộ trình" trên
 
 Làm: dưới 440px (`(max-width: 439px)`) ba nút xếp dọc rộng hết, **nút chính trên cùng**, rồi "Sửa điểm giao", "Sao chép"; thứ tự trong DOM đổi theo (không đảo bằng CSS) để trình đọc màn hình và Tab đi đúng thứ tự nhìn thấy (WCAG 1.3.2, 2.4.3). Từ 440px: một hàng, nút chính cuối (§9.10). Đo 390 / 320px: ba nút 343 / 273px, cao 44px, không tràn. Màn kết quả và theo dõi: G5.
 
-## 10. Thiết kế G5: chi tiết kế hoạch (2026-11-18, đang làm)
+## 10. Thiết kế G5: chi tiết kế hoạch (2026-11-18, đã làm, PR #132)
 
 Phạm vi (SCREENS.md, `/plans/:id` là một route, màn chọn theo trạng thái): **tìm toạ độ** (DRAFT chưa tối ưu), **kết quả tối ưu** (DRAFT đã tối ưu), **chỉnh tay tuyến**, **giao việc / huỷ**, **theo dõi** (PUBLISHED → COMPLETED / CANCELLED). Hành vi (API, polling, lỗi, câu chữ) giữ như SCREENS §1.1 và UX_BRIEF; G5 đổi bố cục, control và hộp thoại.
 
@@ -590,7 +591,7 @@ Phạm vi (SCREENS.md, `/plans/:id` là một route, màn chọn theo trạng th
 6. Tìm toạ độ (thẻ sửa điểm, ghim trên bản đồ lớn); bỏ `Dialog` cũ ở trang kế hoạch.
 7. Đo theo APPLE_CHECKLIST (1440/1024/390/320, sáng/tối, giảm chuyển động, tăng tương phản), cập nhật SCREENS, DESIGN_SYSTEM, CURRENT_STATE.
 
-### 10.5 Làm (2026-11-18, đang làm)
+### 10.5 Làm (2026-11-18)
 
 - **Bước 1–2 xong:** `MapStage` (`shared/ui/MapStage.tsx`): bản đồ phủ vùng nội dung (trang không đệm, không cuộn), panel kính 460px (rộng), sheet kính ba nấc trên tab bar (điện thoại; grabber bấm chuyển nấc, mũi tên lên/xuống, kéo; nấc thấp đo theo phần đầu đánh dấu `data-peek`); bản đồ canh khung chừa phần panel/sheet che (`RouteMap inset`, `staged` bỏ nút mở rộng và chú giải); chú thích bản quyền bản đồ trên nấc thấp của sheet 10px (HIG Maps). Màn kết quả trong `MapStage`: đầu panel (quay lại, tên, dòng phụ, dòng tóm tắt, nút … / Chỉnh tay / Giao việc), nhóm tuyến (màu tuyến, thu gọn), hàng điểm hai dòng, thẻ điểm (focus vào tiêu đề, quay lại trả focus về hàng), nhóm "Chưa xếp tuyến". Nhóm trong panel bo 8: panel bo 16 đệm 16 nên bán kính đồng tâm là 0 → bán kính dự phòng (S1/S2), khác nhóm bo 16 ở cấp trang. Chỉnh tay và hộp thoại tạm giữ như cũ trong panel (bước 3, 5).
 - **Bước 3 xong:** giao việc là **Sheet** "Giao việc" (Huỷ / Giao việc hoặc "Vẫn giao việc" khi còn vi phạm; câu hỏi "Giao việc cho N tài xế?" là dòng đầu thân sheet — tiêu đề < 15 ký tự như G4; trùng ca biến sheet thành "Trùng ca làm" với link kế hoạch kia và "Sửa phân công"); huỷ kế hoạch là **Alert** với nút "Huỷ" và "Huỷ kế hoạch" đỏ (HIG Alerts: *"Always use the title "Cancel" for a button that cancels an alert's action"*; lỗi nói trong lời nhắn); "Huỷ" khi đang chỉnh tay có thay đổi là **action sheet** "Bỏ thay đổi" / "Tiếp tục chỉnh" (HIG Alerts: *"Use an action sheet — not an alert — to offer choices related to an intentional action"*), có dòng tiêu đề + lời nhắn như iOS (cũng là tên trợ năng); "Tối ưu lại?" và "Rời trang khi chưa lưu?" là Alert. Màn kết quả và theo dõi không còn dùng `Dialog` cũ.
@@ -654,7 +655,7 @@ Làm: nấc cao chạm đáy màn (thấp và giữa vẫn trên tab bar); khung
 Chủ dự án: đổi các chấm tròn thành ghim; điểm đã xếp thứ tự thì có số trong ghim. Kiểm tra: HIG Maps *"Use annotations that match the visual style of your app"*; marker mặc định của Apple là ghim, *"You can change the icon to a string"* → ghim có số đúng kiểu; WCAG: viền trắng + bóng (1.4.11), số đi cùng màu (1.4.1), tên trợ năng giữ (4.1.2). Làm: marker điểm (`RouteMap`) là ghim giọt nước chân nhọn (hình vuông một góc nhọn xoay −45°, số dựng thẳng bên trong), màu tuyến / màu kết quả như cũ, điểm chưa xếp thì không số; neo ở chân ghim (0,707 × cạnh dưới tâm) nên chân chạm đúng đỉnh đường tuyến; ghim được chọn to hơn, viền theo hình ghim. Chú giải và số trong danh sách giữ hình tròn (`.pw-marker` dùng chung).
 - *Sửa cùng ngày (phác thảo `docs/ux/samples/fb_17.png`):* ghim kiểu ghim bản đồ cổ điển — đầu tròn, thân thon xuống mũi nhọn, **vòng trắng ở giữa đầu**; có số thì số nằm trong vòng trắng, cùng màu ghim (đo tương phản trên nền trắng: mọi màu tuyến và màu kết quả 5,86–10,10:1 ≥ 4,5:1, WCAG 1.4.3); không số thì vòng trắng rỗng. Vẽ bằng SVG (`pinSvg`, viền trắng 1,5, bóng; chọn: 36px, viền đậm); ghim đặt toạ độ cho điểm giao (`PinMap kind="stop"`) dùng cùng hình, màu nhấn.
 
-## 11. Thiết kế G6: Báo cáo (2026-11-19, đang làm)
+## 11. Thiết kế G6: Báo cáo (2026-11-19, đã làm, PR #136)
 
 Phạm vi: `/reports?from=&to=` (SCREENS §1; API `GET /reports/summary`, `/reports/stops.csv`, T63). Hành vi và câu chữ giữ như SCREENS, UX_BRIEF (khoảng ≤ 31 ngày, `INVALID_DATE_RANGE`, `DATE_RANGE_TOO_LONG`); G6 đổi bố cục, control và biểu đồ. Biểu đồ dùng chung với Tổng quan của khu quản trị (P-59).
 
@@ -701,7 +702,7 @@ Phạm vi: `/reports?from=&to=` (SCREENS §1; API `GET /reports/summary`, `/repo
 3. Tài xế, lý do: bảng / hàng + sheet.
 4. Đo theo APPLE_CHECKLIST; SCREENS, DESIGN_SYSTEM, CURRENT_STATE; e2e.
 
-### 11.6 Làm (2026-11-19, đang làm)
+### 11.6 Làm (2026-11-19)
 
 - **Bước 1 xong:** `DailyBarChart` (dùng chung Báo cáo và Tổng quan quản trị, G6-Q4): chú giải có chữ dưới biểu đồ; đường tách giữa các phần cột chồng (viền màu nền); chọn ngày bằng rê / bấm / chạm cả vùng vẽ (HIG: *"expanding the hit target to include the entire plot area"*), cột được chọn đậm, cột khác nhạt; vùng vẽ là một điểm Tab vai trò `slider` (←/→/Home/End chọn ngày, Escape bỏ; giá trị đọc là ngày đầy đủ và số liệu); dòng tóm tắt (`summary`) đổi theo ngày chọn và được đọc khi đổi; danh sách ẩn mỗi ngày một dòng ("Thứ Hai, 1 tháng 12, 2026: 30 đã giao, …", `spokenDate`); hình vẽ và nhãn trục ẩn khỏi trình đọc màn hình; bỏ tooltip (chỉ hiện khi rê chuột).
 - **Bước 2 xong:** hàng tiêu đề "Báo cáo" + "Xuất CSV" có biểu tượng xuất (`ShareIcon`, kiểu `square.and.arrow.up`; điện thoại: nút tròn chỉ biểu tượng, tên trợ năng "Xuất CSV"); khoảng ngày là `SegmentedControl` [Hôm nay | 7 ngày | 30 ngày | Tùy chọn] (khoảng trên URL không khớp ba mục → Tùy chọn), Tùy chọn hiện hai `DateField` (lịch của app, "T3, 01/12/2026"); bốn số tổng trong một nhóm bo 16 không viền (rộng một hàng, < 760px 2×2, đường kẻ mảnh giữa ô); biểu đồ trong nhóm bo 16, dòng tóm tắt "190 đã giao · 12 không giao được · 3 bỏ qua" đổi thành số của ngày đang chọn ("Thứ Tư, 02/12/2026: 28 đã giao · …"); trạng thái trống theo G2.7 (không thẻ, biểu tượng biểu đồ). Đo 1440 / 390px: không tràn ngang, không lỗi; bốn ô khoảng ngày 85×44px ở 390px.
@@ -739,3 +740,94 @@ Chủ dự án: "Từ ngày – Đến ngày" ở Tùy chọn trên PC xếp nga
 
 Chủ dự án: "Từ ngày – Đến ngày" của Tùy chọn khác nút chọn ngày ở Kế hoạch và Nhật ký — nhãn nằm trên thay vì trong nút, nền xám hơn dù đã có ngày. Lý do: G6-Q1 dùng `DateField` (ô của biểu mẫu, G4.4), trong khi khoảng ngày ở đây là bộ lọc của một danh sách số liệu, cùng loại với "Ngày giao" (Kế hoạch) và "Từ ngày / Đến ngày" (Nhật ký). Đổi sang `DatePickerFilter` (G2.2): viên thuốc "📅 Từ ngày: 01/11/2026", có ngày thì nền màu nhấn nhạt và ngày màu nhấn (đo: cùng màu nền `accent / 0.16` với "Ngày giao: 10/11/2026" của Kế hoạch); lịch popover trên máy tính, inline trên điện thoại (§8.11). Hai ngày bắt buộc nên không có nút xoá ngày. Giới hạn "Tối đa 31 ngày." là một dòng dưới hai nút, quá 31 ngày thì dòng đó thành lỗi đỏ "Chọn tối đa 31 ngày." và được đọc lên (`aria-live`, WCAG 3.3.1, 4.1.3). Máy tính: hai nút và dòng giới hạn căn giữa dưới thanh khoảng (tâm 835 = tâm thanh ở 1440px, giữ §11.9); điện thoại: hai nút cao 44, xuống dòng khi không đủ chỗ (390, 320px), không tràn ngang. [Apple] HIG Date pickers (compact: *"a button that shows the current value in your app's accent color"*); checklist C13.
 
+## 12. Kế hoạch G7: khu quản trị ADMIN (2026-11-20, đã chốt các câu hỏi)
+
+§0 để khu quản trị "làm sau, dùng lại kết quả". G1 đã áp khung app (sidebar, tab bar, menu tài khoản) cho cả quản trị; **các trang bên trong chưa redesign**. `/admin/profile` dùng chung màn `/profile` (đã làm ở G3), chỉ kiểm lại.
+
+### 12.1 Hiện trạng (chụp 2026-11-20, stack e2e, 1440 và 390px, tài khoản ADMIN)
+
+| Trang | Lệch so với các khu đã redesign | Mục áp dụng |
+|---|---|---|
+| Tổng quan `/admin` | Chọn khoảng là segmented kiểu cũ, 3 nút bị gãy thành 2 hàng (7 ngày, 30 ngày / 90 ngày); mỗi số một thẻ có viền, nhãn VIẾT HOA; biểu đồ, khối kỹ thuật, hai bảng kỹ thuật trong thẻ có viền; điện thoại mỗi số một thẻ, trang cao 3607px | G6.2 segmented (căn giữa); G6 nhóm số một khối bo 16 không viền, 2×2 khi hẹp; L6 |
+| Cửa hàng `/admin/stores` | Bộ lọc là ô biểu mẫu có nhãn trên (ô tìm, select trạng thái); bảng có viền; tên là link gạch chân; nhãn trạng thái VIẾT HOA; thanh trang "Trang trước / Trang sau" + "3 cửa hàng · trang 1/1"; **điện thoại bảng cuộn ngang 925/341px** | G2.2 bộ lọc viên thuốc + ô tìm; G2.9 "‹ Trang x/y ›" vừa màn, `?page=`; G2.11; L3 điện thoại thành hàng |
+| Chi tiết cửa hàng | Nút quay lại là link chữ "← Cửa hàng"; hai hành động "Khoá (chỉ đọc)", "Chuyển chủ cửa hàng" là nút xám dưới tiêu đề; thẻ số có viền; bảng thành viên và nhật ký có viền; hộp thoại kiểu cũ; **điện thoại bảng cuộn ngang 573/341** | G4 `BackLink` (điện thoại lên thanh trên, §9.11); G5.6 menu "…" hoặc G2.1; D12 sheet/alert; L3 |
+| Người dùng `/admin/users` | Bộ lọc ô biểu mẫu, "Mã cửa hàng" gõ số; mỗi hàng 2–3 nút chữ (đặt lại mật khẩu, buộc đăng xuất, khoá), hàng cao và xuống dòng; **thanh trang ghi "5 cửa hàng" (F-76)**; **điện thoại cuộn ngang 903/341** | G3 Thành viên (hàng mở sheet có hành động) hoặc G2.13 menu hàng; D12 alert xác nhận |
+| Nhật ký `/admin/audit` | Bộ lọc 5 ô biểu mẫu, ô ngày **`<input type="date">` của trình duyệt** (mm/dd/yyyy, không theo định dạng Việt Nam, không phải lịch của app); "Mới hơn / Cũ hơn"; hàng không mở chi tiết; **điện thoại cuộn ngang 612/341** | G3 Nhật ký cửa hàng (§8.10): `DatePickerFilter`, hàng mở sheet "Chi tiết", G2.9 |
+
+Hộp thoại: 4 chỗ dùng `Dialog` kiểu cũ (khoá/mở khoá, chuyển chủ, hành động người dùng).
+
+### 12.2 Đề xuất chia việc
+
+Một branch `feat/owner-ui-g7`, commit nhỏ theo trang, một PR; mỗi trang qua `APPLE_CHECKLIST.md` §1 và §1b trước khi báo xong.
+
+1. **Tổng quan:** segmented 7 / 30 / 90 ngày như G6; nhóm số không viền (các nhóm "Hiện tại", "N ngày gần nhất", "Kỹ thuật"); biểu đồ dùng chung (`DailyBarChart`, đã làm ở G6) trong nhóm; khối và bảng kỹ thuật thành nhóm bo 16.
+2. **Cửa hàng:** ô tìm + bộ lọc trạng thái viên thuốc; bảng trong nhóm, tên 2 dòng "…", email dòng phụ; điện thoại danh sách hàng; G2.9.
+3. **Chi tiết cửa hàng:** `BackLink`; hành động; nhóm số; thành viên, nhật ký dạng nhóm; sheet/alert cho khoá, chuyển chủ.
+4. **Người dùng:** bộ lọc; hàng/sheet; alert xác nhận; sửa F-76.
+5. **Nhật ký:** như Nhật ký cửa hàng (§8.10).
+6. Docs: SCREENS, DESIGN_SYSTEM, CURRENT_STATE, §12.x kết quả đo.
+
+### 12.3 Câu hỏi cho chủ dự án
+
+| # | Câu hỏi | Trả lời (chủ dự án, 2026-11-20) |
+|---|---|---|
+| G7-Q1 | Hành động của hàng ở Người dùng (2–3 nút chữ mỗi hàng) | **Menu "…" cuối hàng** (như menu hàng G2.13); hành động nguy hiểm (Khoá) màu đỏ ở cuối menu, xác nhận bằng alert |
+| G7-Q2 | Lọc theo mã (Mã cửa hàng ở Người dùng; Mã cửa hàng, Mã người làm ở Nhật ký) — API chỉ nhận mã số | **Chỉ đặt sẵn từ trang khác**: bỏ ô gõ mã khỏi thanh lọc; mở từ trang cửa hàng / người dùng thì hiện viên thuốc đã lọc (vd "Cửa hàng: Tiệm A") có nút ⓧ để bỏ |
+| G7-Q3 | Hai hành động ở Chi tiết cửa hàng ("Khoá (chỉ đọc)", "Chuyển chủ cửa hàng") | **Menu "…" ở hàng tiêu đề** (như G5.6, HIG Toolbars "More menu"); "Khoá" màu đỏ ở cuối; chọn thì mở sheet / alert |
+
+### 12.4 Làm: Tổng quan (2026-11-20)
+
+- Chọn khoảng: `SegmentedControl` [7 ngày | 30 ngày | 90 ngày] như G6.2 (căn giữa khi rộng). Segmented cũ hỏng vì CSS W11 `.pw-segmented` trùng tên với segmented mới — đã bỏ CSS cũ.
+- Số: `StatGroup` dùng chung (Báo cáo cũng chuyển sang, bỏ bản riêng `pw-reports-totals`): một khối bo 16 không viền, nhãn chữ thường (trước VIẾT HOA, mỗi số một thẻ có viền). Tên class `pw-statgroup*` vì `pw-stat*` đã dùng ở thẻ số trang kế hoạch.
+- Hai biểu đồ trong `pw-group`, có dòng tóm tắt và số của ngày đang chọn (G6.4). Khối kỹ thuật: hai danh sách giá trị trong `pw-group`, mỗi cặp một hàng, thiếu chỗ thì giá trị xuống dưới nhãn; hai bảng kỹ thuật trong `pw-list-group` có tiêu đề hiện ra (trước chỉ có caption ẩn). Khung bảng < 380px: cột "Dung lượng" thành dòng phụ dưới tên bảng (trước tên bị bẻ "route_pl an_stop s"); cột "Số dòng (ước tính)" rút thành "Số dòng", "ước tính" lên tiêu đề.
+- Vòng xoay lúc tải; số của khoảng mới trồi lên (`pw-result-in`), giảm chuyển động thì chỉ mờ.
+- Đo (stack e2e): 1440 / 390 / 320px không tràn ngang, bảng 559/559, 358/358, 288/288 (trước ở 390px bảng cuộn 424/341; trang 3607 → 3048px).
+
+### 12.5 Làm: Cửa hàng (2026-11-20)
+
+Theo mẫu trang Kế hoạch (G2):
+- **Bộ lọc** một hàng, không còn ô biểu mẫu có nhãn trên: ô tìm `SearchField` mới (dùng chung; viên thuốc nền xám như nút lọc, kính lúp đầu ô, ⓧ cuối ô khi có chữ, tìm khi gõ sau 0,3 s hoặc ngay khi Enter, Esc xoá — [Apple] HIG Search fields *"Consider showing results immediately as people type"*; tên trợ năng "Tìm cửa hàng", placeholder nói tìm gì) + `PopUpFilter` trạng thái + "Xoá bộ lọc" khi đang lọc (`ClearFilters` chuyển từ trang Kế hoạch sang `shared/ui`).
+- **Rộng:** bảng trong nhóm, sắp theo tiêu đề cột "Cửa hàng" (`sort` trên URL), cả hàng mở chi tiết; tên 2 dòng "…" + `title`, email chủ một dòng cắt ở ký tự cuối vừa (trước cắt ở dấu gạch "owner-admin-…"); bảng hẹp hơn 62rem thì "Chủ / Điều phối / Tài xế", "Hoạt động gần nhất", "Tạo lúc" thành dòng phụ "1 chủ · 0 điều phối · 1 tài xế · hoạt động 20/11 07:24 · tạo 20/11/2026" (thử để tiêu đề cột thành viên xuống dòng thì bị bẻ 4 dòng). G2.9: số hàng vừa màn (`useFitRows`, hàng mẫu tên 2 dòng + email), "‹ Trang x/y ›" dưới bảng; API `size` theo số hàng đo được.
+- **Điện thoại:** hàng (tên, email, nhãn trạng thái, chevron) mở chi tiết; 20 một trang, thanh trang ghim ở trên.
+- Hàng giữ chỗ khi tải; trống kiểu ContentUnavailableView ("Không có cửa hàng nào khớp" + gợi ý khi đang lọc); chuyển động kết quả như G2.10.
+- Nhãn trạng thái chữ HOA là kiểu chung của `pw-pill` toàn app (Kế hoạch cũng vậy) — giữ.
+- Đo (24 cửa hàng thêm, tên 150 ký tự và 100 ký tự không dấu cách): 1440 / 1024 / 960 / 390 / 320px không tràn ngang, bảng 1133/1133, 724/724, 663/663.
+
+### 12.6 Làm: Chi tiết cửa hàng (2026-11-20)
+
+- Quay lại bằng `BackLink` "‹ Cửa hàng" (G4.1; điện thoại lên thanh trên, §9.11) thay link chữ "← Cửa hàng".
+- Hành động trong **menu "…" cuối hàng tiêu đề** (G7-Q3): "Chuyển chủ cửa hàng…", rồi "Tạm khoá (chỉ đọc)…" màu đỏ ở cuối (HIG Menus: lệnh phá huỷ ở cuối, màu đỏ; "…" vì mở thêm bước). Cửa hàng đang khoá thì mục cuối là "Mở khoá" (không đỏ). `MoreMenu` chuyển từ `features/plans` sang `shared/ui` (thêm prop nhãn). Tên dài bao nhiêu dòng cũng được (§9.8), nút "…" ngang dòng đầu.
+- Khoá: **sheet "Tạm khoá"** (tiêu đề ngắn, HIG Toolbars; tên cửa hàng đầy đủ trong sheet), ô lý do nhiều dòng `TextField multiline`, "Khoá" ở cuối thanh sheet, sửa dở mà vuốt đóng thì hỏi. Chuyển chủ: **sheet "Chuyển chủ"**. Mở khoá: **alert** xác nhận. Kết quả: `Toast` như trang Thành viên (trước là dòng viền xanh).
+- Số: hai `StatGroup`. Thành viên: rộng là bảng trong nhóm (email 2 dòng "…" + `title`); điện thoại là hàng chỉ đọc (email, "vai trò · tham gia …", nhãn trạng thái) — không có màn chi tiết nên không cắt chữ. Nhật ký của cửa hàng (10 dòng mới nhất): hàng trong nhóm, câu đầy đủ, "giờ · người làm" dưới; "Xem tất cả trong Nhật ký" cuối tiêu đề mục.
+- Sửa chung: `RowMenu` đo độ rộng thật để không tràn mép phải (trước giả định 216px; menu "…" ở cuối hàng tiêu đề tràn khỏi màn 1440px); đo bằng `offsetWidth` vì hiệu ứng mở thu nhỏ menu.
+- Đo: 1440 / 1024 / 390 / 320px không tràn ngang; tên 150 ký tự ở 320px xuống nhiều dòng, nút "…" ngang dòng đầu.
+
+### 12.7 Làm: Người dùng (2026-11-20)
+
+- Bộ lọc: `PopUpFilter` vai trò, trạng thái + "Xoá bộ lọc". **Cửa hàng chỉ đặt sẵn** (G7-Q2): bỏ ô gõ mã; từ trang chi tiết cửa hàng có link "Xem trong Người dùng" → `?storeId=3&storeName=…`, trang hiện viên thuốc đã lọc `PresetFilter` "Cửa hàng: Tiệm A ⓧ" (một dòng "…" nếu dài). API người dùng/nhật ký không trả tên cửa hàng và `GET /admin/stores/{id}` mỗi lần gọi ghi `STORE_VIEWED` mà chủ cửa hàng thấy (T58), nên tên đi theo link thay vì gọi thêm API; link không có tên (gõ tay) thì hiện "Cửa hàng #3".
+- **Hành động trong menu "…" cuối mỗi hàng** (G7-Q1; cũng mở bằng chuột phải / chạm giữ như G2.13): theo trạng thái — "Gửi lại email xác thực" (chờ xác thực), "Gửi link đặt lại mật khẩu" (đang hoạt động), "Xem nhật ký của người này" (mới: mở Nhật ký đặt sẵn người làm), "Buộc đăng xuất", "Mở khoá" (đã khoá), "Khoá" đỏ ở cuối (không có cho chính mình). Mỗi hành động hỏi bằng **alert**, kết quả bằng `Toast`.
+- Rộng: bảng, email 2 dòng "…" + `title`, mã cửa hàng là link sang trang cửa hàng; bảng hẹp hơn 54rem (cần ~830px) thì vai trò, cửa hàng, ngày tạo thành dòng phụ dưới email. G2.9 như trang Cửa hàng. Điện thoại: hàng chỉ đọc (email không cắt, dòng phụ, nhãn trạng thái **dưới chữ** để email có đủ chỗ — trước bị bẻ 3 dòng), nút "…" cuối hàng.
+- F-76 hết: thanh trang mới không có dòng đếm "N cửa hàng".
+- Đo: 1440 / 960 / 390 / 320px không tràn ngang (960 trước sửa: 822/663).
+
+
+### 12.8 Làm: Nhật ký (2026-11-20)
+
+Như Nhật ký cửa hàng (§8.3, §8.10):
+- Bộ lọc: `PopUpFilter` "Hành động" + hai `DatePickerFilter` "Từ ngày" / "Đến ngày" (lịch của app thay `<input type="date">`) + "Xoá bộ lọc" khi đang lọc. **Cửa hàng và người làm chỉ đặt sẵn** (G7-Q2): bỏ hai ô gõ mã; "Xem tất cả trong Nhật ký" ở chi tiết cửa hàng và "Xem nhật ký của người này" ở Người dùng mở trang với `PresetFilter` "Cửa hàng: Tiệm A ⓧ" / "Người làm: email ⓧ"; link gõ tay không có tên thì "Cửa hàng #3" / "Người dùng #7".
+- **Rộng:** bảng (Thời điểm, Người làm, Hành động, Cửa hàng, IP) trong nhóm, kéo đổi độ rộng cột (S5); email một dòng "…" trên vai trò, câu 2 dòng "…" + `title`. Đủ cột cần 986px (đo với email 100 ký tự, IPv6 đủ 39 ký tự, mã cửa hàng 7 chữ số), nên khung bảng < 62rem thì Cửa hàng · IP thành **dòng phụ một dòng** dưới câu (G2.11, L3); phần bị cắt đọc đủ trong sheet. G2.9: số dòng vừa cửa sổ (`useFitRows`, dòng mẫu cao nhất: câu 2 dòng + dòng phụ), "‹ Trang x/y ›" đứng yên.
+- **Điện thoại:** hàng (câu tối đa 2 dòng; thời điểm · email) mở sheet; 20 dòng một trang, thanh trang ghim ở trên (§8.17).
+- Sheet "Chi tiết": hành động, thời điểm có năm, người làm · vai trò, cửa hàng (link sang trang cửa hàng), IP — đủ chữ, bẻ cả chuỗi không dấu cách.
+- Hàng giữ chỗ khi tải; trống kiểu ContentUnavailableView ("Chưa có dòng nhật ký nào khớp." + gợi ý khi đang lọc); chuyển động kết quả như G2.10.
+- Đo (stack e2e, 60 dòng giả qua `page.route`, dữ liệu dài tối đa như trên): 1920 / 1440 / 1300 / 1280 / 1024 / 960 / 390 / 320px không tràn ngang; bảng 1392/1392, 1133/1133, 993/993 (đủ cột), 973/973, 724/724, 663/663 (gập); 1440×900 → 9 dòng, 960×900 → 7; sáng và tối. Trước: ô ngày của trình duyệt (mm/dd/yyyy), ô gõ mã, "Mới hơn / Cũ hơn", điện thoại cuộn ngang 612/341.
+
+### 12.9 Tiêu đề Nhật ký, kéo đổi độ rộng cột (2026-11-20)
+
+| # | Câu hỏi | Trả lời (chủ dự án) | Làm |
+|---|---|---|---|
+| G7-Q4 | Tiêu đề "Nhật ký thao tác" 16 ký tự; [Apple] HIG Toolbars: *"keep the title under 15 characters long"* | **"Nhật ký"** (như Q7) | h1 "Nhật ký" (trùng nhãn sidebar/tab bar); caption của bảng và tên danh sách cho trình đọc màn hình giữ "Nhật ký thao tác" (như G2.1) |
+| G7-Q5 | Bảng Cửa hàng, Người dùng, thành viên ở Chi tiết cửa hàng chưa kéo đổi độ rộng cột như các bảng khác (S5; [Apple] Lists and tables macOS *"Let people resize columns"*) | **Bật cho cả ba** | `DataTable resizable`; đo lại 1440 / 1024 / 960px (stack e2e): không tràn ngang, bảng 1133/1133, 724/724, 663/663 ở cả bốn trang |
+
+### 12.10 Kiểm `/admin/profile` (2026-11-20)
+
+`/admin/profile` dùng chung `ProfilePage` đã làm ở G3 (§8.3), không có gì riêng cho ADMIN ngoài vai trò "Quản trị" và không có cửa hàng. Đo trên stack e2e (Playwright, tài khoản ADMIN), sáng và tối, 1440 / 960 / 390 / 320px: tiêu đề "Tài khoản" (Q7), không tràn ngang ở cả 8 cấu hình; chỉ gọi `POST /auth/refresh`, `GET /users/me`, `GET /auth/sessions`, không gọi `/store` (SCREENS); danh sách thiết bị theo Q8 (thiết bị này + 9 phiên mới nhất, cuộn tới cuối hiện thêm; tài khoản thử có 9 phiên nên hiện đủ). Không cần sửa.

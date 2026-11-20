@@ -1,39 +1,13 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { formatPhone, formatTime } from '@/shared/format';
 import { vi } from '@/shared/i18n/vi';
-import { RowMenu, StatusPill, type RowMenuItem } from '@/shared/ui';
-import { ChevronDownIcon, ChevronLeftIcon, ChevronRightIcon, EllipsisIcon } from '@/shared/ui/icons';
+import { StatusPill } from '@/shared/ui';
+import { ChevronDownIcon, ChevronLeftIcon, ChevronRightIcon } from '@/shared/ui/icons';
 import { cx } from '@/shared/ui/cx';
 import type { PlanDetail, PlanStop } from './planApi';
 import { driverName, RouteBadge, stopPlace, stopTitle, vehicleText, windowText, type PlanRoute } from './planShared';
 
 const r = vi.result;
-
-/**
- * The More menu of a plan's screen (OWNER_UI_REDESIGN G5.6, G5-Q5; HIG Toolbars: "Add a More menu to contain
- * additional actions"): a round button with an ellipsis opening the app's menu under it; a destructive item last, in
- * red. Unavailable items are left out ("Hide unavailable menu items"); with none, no button.
- */
-export function MoreMenu({ items }: { items: RowMenuItem[] }) {
-  const [rect, setRect] = useState<DOMRect | null>(null);
-  if (items.length === 0) return null;
-  return (
-    <>
-      <button
-        type="button"
-        className="pw-icon-button pw-more-button"
-        aria-label={r.more}
-        title={r.more}
-        aria-haspopup="menu"
-        aria-expanded={rect !== null}
-        onClick={(event) => setRect(event.currentTarget.getBoundingClientRect())}
-      >
-        <EllipsisIcon />
-      </button>
-      {rect ? <RowMenu rect={rect} label={r.more} items={items} onClose={() => setRect(null)} /> : null}
-    </>
-  );
-}
 
 /**
  * One route in the panel (G5.7): a group with the route's colour, driver · vehicle and its summary as a header that

@@ -1015,63 +1015,67 @@ textarea.pw-field-input {
   color: var(--signal);
 }
 
-/* Number card and segmented choice (W11 ADMIN overview, W12 reports). */
-.pw-numcard {
+/* Numbers in one group (Stat.tsx; G6.3, §12): a filled block, radius 16, no outline; the cells sit on the hairline
+   colour 1px apart, so the lines between them follow any layout. */
+.pw-statgroup {
+  container-type: inline-size;
+}
+.pw-statgroup-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--stat-cols, 4), minmax(0, 1fr));
+  gap: 1px;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  background: var(--line);
+}
+.pw-statgroup-item {
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
+  gap: 2px;
   min-width: 0;
-  padding: var(--space-4);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-md);
+  padding: 16px 20px;
   background: var(--surface-raised);
 }
-.pw-numcard-label {
-  font-size: 12px;
-  line-height: 16px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+.pw-statgroup-item-label {
+  font-size: 0.8125rem;
+  line-height: 1.125rem;
   color: var(--ink-muted);
 }
-
-.pw-numcard-value {
-  font-size: 28px;
-  line-height: 34px;
+.pw-statgroup-item-value {
+  font-size: 1.75rem;
+  line-height: 2.25rem;
   font-weight: 700;
-  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.pw-statgroup-item-sub {
+  font-size: 0.8125rem;
+  line-height: 1.125rem;
+}
+@container (max-width: 640px) {
+  .pw-statgroup-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .pw-statgroup-item:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+  }
 }
 
-.pw-segmented {
-  display: inline-flex;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-md);
-  overflow: hidden;
-}
-
-.pw-segmented-btn {
-  min-height: 40px;
-  padding: 0 var(--space-4);
-  border: 0;
-  font: inherit;
-  font-weight: 600;
-  color: var(--ink-muted);
+/* A content group (a chart, a list of values; G6, §12): filled, radius 16, no outline, its title inside. */
+.pw-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+  padding: 16px 20px 20px;
+  border-radius: var(--radius-lg);
   background: var(--surface-raised);
-  cursor: pointer;
 }
-
-.pw-segmented-btn[aria-pressed='true'] {
-  color: var(--on-accent);
-  background: var(--route);
-}
-.pw-numcard-sub {
-  font-size: 12px;
-  line-height: 16px;
-  color: var(--ink-muted);
-}
-.pw-segmented-btn:focus-visible {
-  outline: 2px solid var(--route);
-  outline-offset: 2px;
+.pw-group-title,
+.pw-section-title {
+  margin: 0;
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 600;
 }
 
 /* ---------- Wordmark (chủ dự án, 2026-11-16) ---------- */
@@ -1779,6 +1783,105 @@ textarea.pw-field-input {
   gap: 8px;
   margin-top: -8px;
 }
+/* A search field on the filter row (Filters.tsx SearchField; HIG Search fields): the filter buttons' capsule and grey
+   fill, a magnifying glass leading, a clear button trailing while there is text. As wide as a few words, it grows
+   to fill a row of its own on a phone. */
+.pw-search {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  flex: 0 1 300px;
+  min-width: 200px;
+  min-height: 36px;
+  padding: 0 4px 0 12px;
+  border-radius: var(--radius-full);
+  background: color-mix(in srgb, var(--ink) 7%, transparent);
+}
+.pw-search > svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  color: var(--ink-muted);
+}
+.pw-search input {
+  flex: 1;
+  min-width: 0;
+  height: 36px;
+  padding: 0 8px;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.875rem;
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+}
+.pw-search input::placeholder {
+  color: var(--ink-muted);
+}
+/* The browser's own clear mark: the field has its own. */
+.pw-search input::-webkit-search-cancel-button {
+  display: none;
+}
+.pw-search:focus-within {
+  box-shadow: 0 0 0 2px var(--route);
+}
+.pw-search-clear {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: var(--ink-muted);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.pw-search-clear svg {
+  width: 16px;
+  height: 16px;
+}
+.pw-search-clear:active {
+  background: color-mix(in srgb, var(--ink) 10%, transparent);
+}
+@media (pointer: coarse) {
+  .pw-search,
+  .pw-search input {
+    min-height: 44px;
+    height: 44px;
+  }
+  .pw-search-clear {
+    width: 44px;
+    height: 44px;
+  }
+}
+@media (max-width: 959px) {
+  .pw-search {
+    flex: 1 1 100%;
+  }
+}
+@media (forced-colors: active) {
+  .pw-search {
+    border: 1px solid CanvasText;
+  }
+}
+/* A preset filter (PresetFilter): the tinted filter capsule, not a button itself; its clear button at the end. A long
+   value (a store's name) keeps one line. */
+.pw-filter-preset {
+  max-width: 100%;
+  padding-right: 4px;
+  cursor: default;
+}
+.pw-filter-preset .pw-filter-value {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 /* A filter is a capsule button showing its value, filled grey, no outline (HIG Buttons: system styles are filled —
    prominent, grey, plain or glass; shape by input, S3). While it filters, it is
    tinted with the accent colour. */
@@ -2723,11 +2826,9 @@ textarea.pw-field-input {
   box-sizing: border-box;
   width: min(300px, 100%);
   overflow: hidden;
-  border-radius: var(--radius-lg);
   background: var(--surface-raised);
   color: var(--ink);
   box-shadow: var(--shadow-overlay);
-  text-align: center;
   animation: pw-sheet-pop 0.2s cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 .pw-alert.is-closing {
@@ -2789,6 +2890,77 @@ textarea.pw-field-input {
   outline: 2px solid var(--route);
   outline-offset: -2px;
 }
+/* The alert of HIG Alerts' anatomy (iOS and macOS): bolder leading text (LIQUID_GLASS T1, WWDC25 356: "bolder and
+   left-aligned to improve readability in key moments like alerts"), two filled buttons side by side, Cancel grey on
+   the leading side and the action in the accent (red when destructive) on the trailing side; stacked when a title does
+   not fit (Sheet.tsx). The shape follows the input like every button (S3): with a mouse rounded rectangles of 36 with
+   radius-md 8, with touch capsules of 44. The panel's corner is concentric with the buttons: their radius + the 14
+   around them (WWDC25 356: "concentric shapes calculate their radius by subtracting padding from the parent's").
+   The selectors outrank the hover and pressed rules above, which would otherwise clear the fills. */
+.pw-alert {
+  --alert-button-height: 36px;
+  --alert-button-radius: var(--radius-md);
+  border-radius: calc(var(--alert-button-radius) + 14px);
+  text-align: start;
+}
+@media (pointer: coarse) {
+  .pw-alert {
+    --alert-button-height: 44px;
+    --alert-button-radius: 22px;
+  }
+}
+.pw-alert-text {
+  padding: 22px 22px 16px;
+}
+.pw-alert-title {
+  font-weight: 700;
+}
+.pw-alert-actions {
+  display: flex;
+  gap: 8px;
+  padding: 0 14px 14px;
+  border-top: 0;
+}
+.pw-alert-actions.is-stacked {
+  flex-direction: column;
+}
+.pw-alert .pw-alert-actions .pw-alert-button {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: var(--alert-button-height);
+  padding: 0 16px;
+  border-radius: var(--alert-button-radius);
+  background-color: color-mix(in srgb, var(--ink) 7%, transparent);
+  color: var(--ink);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.pw-alert .pw-alert-actions.is-stacked .pw-alert-button {
+  flex: none;
+  padding: 8px 16px;
+  white-space: normal;
+}
+.pw-alert .pw-alert-actions .pw-alert-button + .pw-alert-button {
+  border-left: 0;
+}
+.pw-alert .pw-alert-actions .pw-alert-button.is-action {
+  background-color: var(--route);
+  color: var(--on-accent);
+}
+.pw-alert .pw-alert-actions .pw-alert-button.is-destructive {
+  background-color: var(--danger);
+}
+@media (hover: hover) {
+  .pw-alert .pw-alert-actions .pw-alert-button:hover:not(:disabled) {
+    background-image: linear-gradient(color-mix(in srgb, var(--ink) 6%, transparent), color-mix(in srgb, var(--ink) 6%, transparent));
+  }
+}
+.pw-alert .pw-alert-actions .pw-alert-button:active:not(:disabled) {
+  background-image: linear-gradient(color-mix(in srgb, var(--ink) 12%, transparent), color-mix(in srgb, var(--ink) 12%, transparent));
+}
+.pw-alert .pw-alert-actions .pw-alert-button:focus-visible {
+  outline-offset: 2px;
+}
 /* Action sheet: choices at the bottom, the way back separate below them. */
 .pw-action-sheet-backdrop {
   align-items: end;
@@ -2833,6 +3005,35 @@ textarea.pw-field-input {
 .pw-action-sheet-button:focus-visible {
   outline: 2px solid var(--route);
   outline-offset: -2px;
+}
+
+/* Sheets, alerts and action sheets are glass like the popover (LIQUID_GLASS §2: modal surfaces are Liquid Glass
+   Regular, paired with the dimming layer; HIG Materials: a thicker material for text-heavy elements, so the popover's
+   96%). The buttons of an action sheet sit on the group's glass. */
+.pw-sheet,
+.pw-alert,
+.pw-action-sheet-group,
+.pw-action-sheet-button.is-cancel {
+  background: color-mix(in srgb, var(--surface-raised) 96%, transparent);
+  -webkit-backdrop-filter: blur(24px) saturate(1.4);
+  backdrop-filter: blur(24px) saturate(1.4);
+}
+.pw-action-sheet-group .pw-action-sheet-button {
+  background: transparent;
+}
+/* Pressed: a layer over whatever is under the button, so the Cancel button keeps its glass. */
+.pw-action-sheet-button:active {
+  background-image: linear-gradient(color-mix(in srgb, var(--ink) 8%, transparent), color-mix(in srgb, var(--ink) 8%, transparent));
+}
+@media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
+  .pw-sheet,
+  .pw-alert,
+  .pw-action-sheet-group,
+  .pw-action-sheet-button.is-cancel {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    background: var(--surface-raised);
+  }
 }
 @media (prefers-reduced-motion: reduce) {
   .pw-sheet,
@@ -4067,4 +4268,8 @@ html {
   width: 10px;
   height: 10px;
   border-radius: 3px;
+}
+/* The More button of a page's top row (MoreMenu): keeps its circle in a row of buttons. */
+.pw-more-button {
+  flex: none;
 }

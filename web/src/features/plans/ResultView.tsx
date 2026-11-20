@@ -12,10 +12,11 @@ import {
   Button,
   ErrorBanner,
   MapStage,
+  MoreMenu,
   PageActionSheet,
   ProgressBar,
-  StatusPill,
   type RowMenuItem,
+  StatusPill,
 } from '@/shared/ui';
 import { ManualBoard } from './ManualBoard';
 import {
@@ -30,7 +31,7 @@ import {
   type Draft,
 } from './manualEdit';
 import { CopySheet } from './CopySheet';
-import { MoreMenu, RouteGroup, StopCard } from './PlanStage';
+import { RouteGroup, StopCard } from './PlanStage';
 import { CancelAlert, PublishSheet, routesWithStops } from './PlanDialogs';
 import { allStops, useJob, usePlanApi, type Job, type PlanDetail, type PlanStop } from './planApi';
 import { loadText, MAP_LABELS, mapData, spanText } from './planShared';
@@ -221,7 +222,7 @@ export function ResultView({
         ) : (
           // More, then the edit, then the primary action last (G5-Q5; HIG Toolbars).
           <div className="pw-stage-actions">
-            <MoreMenu items={moreItems} />
+            <MoreMenu label={vi.result.more} items={moreItems} />
             <Button variant="secondary" disabled={busy || readOnly} onClick={() => setDraft(draftOf(plan))}>
               {m.start}
             </Button>

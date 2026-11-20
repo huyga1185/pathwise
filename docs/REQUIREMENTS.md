@@ -8,13 +8,13 @@
 
 PathWise giúp **cửa hàng có đội tài xế riêng** lập kế hoạch giao hàng trong ngày: dispatcher nhập danh sách điểm giao, hệ thống chia điểm cho các tài xế/xe và sắp thứ tự tối ưu có xét khung giờ nhận hàng, tải trọng xe và ca làm; tài xế xem tuyến trên điện thoại, dẫn đường tới từng điểm và báo trạng thái giao; cửa hàng theo dõi tiến độ và vị trí tài xế. (D-01, D-04, D-05, D-06)
 
-Phạm vi repo này: **backend** (REST API) phục vụ web dashboard và app Flutter (D-09).
+Phạm vi repo này: backend (REST API, D-09) cùng web dispatcher (`web/`) và app tài xế (`mobile/`) trong cùng repo (P-40).
 
 ## 2. Actor
 
 | Actor | Mô tả | Cách có tài khoản |
 |---|---|---|
-| ADMIN | Quản trị nền tảng PathWise. | Tạo thủ công (seed/SQL), không tự đăng ký. |
+| ADMIN | Quản trị nền tảng PathWise. | ADMIN đầu tiên tạo lúc khởi động từ biến `BOOTSTRAP_ADMIN_EMAIL` (FR-A15, T59), không tự đăng ký. |
 | OWNER | Chủ cửa hàng; toàn quyền trong store. | Tự đăng ký, store tạo cùng lúc (D-15). |
 | DISPATCHER | Nhân viên điều phối của cửa hàng. | Được OWNER mời qua email (D-16). |
 | DRIVER | Tài xế của cửa hàng. | Được OWNER mời qua email (D-16). |
@@ -73,10 +73,10 @@ Mỗi user thuộc tối đa 1 store và có đúng 1 role (D-02). OWNER hoặc 
 | FR-P05 | Publish plan đã tối ưu → tài xế thấy route của mình; sau publish không sửa stop/phân công được. Từ chối publish nếu ca của một tài xế hoặc xe chồng giờ với plan đã publish khác cùng ngày (D-23). | Must | ✅ (T26): route không có stop không tính (P-34) |
 | FR-P06 | Huỷ plan (DRAFT hoặc PUBLISHED). | Must | ✅ (T26) |
 | FR-P07 | Xem danh sách plan theo ngày/trạng thái và chi tiết plan với tiến độ từng stop. | Must | ✅ (T24): `GET /plans`, `GET /plans/{id}`; trạng thái stop đổi từ T26/T31 |
-| FR-P08 | Chỉnh tay sau tối ưu: chuyển stop giữa route, đổi thứ tự; hệ thống tính lại ETA/quãng đường và cảnh báo vi phạm ràng buộc. Endpoint có sẵn trong API contract (D-24). | Should | ❌ |
-| FR-P10 | Nhập điểm giao cho một plan từ file Excel (`.xlsx`) hoặc CSV theo file mẫu: server đọc file, trả từng dòng kèm lỗi theo cột, không lưu; dispatcher xem trước rồi thêm dòng hợp lệ vào plan. Không phải danh mục đơn hàng (D-04). | Should (M5 C, P-67) | ❌ T61, W12 |
-| FR-P11 | Sao chép plan sang ngày khác: tất cả điểm giao hoặc chỉ điểm chưa giao được, giữ toạ độ, chép phân công còn hợp lệ; plan mới là DRAFT. | Should (M5 C, P-67) | ❌ T62, W12 |
-| FR-P12 | Báo cáo của cửa hàng theo ngày hoặc khoảng ≤ 31 ngày (kế hoạch, kết quả điểm giao, theo tài xế, lý do thất bại) và xuất CSV từng điểm giao. | Should (M5 C, P-67) | ❌ T63, W12 |
+| FR-P08 | Chỉnh tay sau tối ưu: chuyển stop giữa route, đổi thứ tự; hệ thống tính lại ETA/quãng đường và cảnh báo vi phạm ràng buộc. Endpoint có sẵn trong API contract (D-24). | Should | ✅ (T28, W10, P-58): `PUT /plans/{id}/routes`, `PlanDetail.violations` |
+| FR-P10 | Nhập điểm giao cho một plan từ file Excel (`.xlsx`) hoặc CSV theo file mẫu: server đọc file, trả từng dòng kèm lỗi theo cột, không lưu; dispatcher xem trước rồi thêm dòng hợp lệ vào plan. Không phải danh mục đơn hàng (D-04). | Should (M5 C, P-67) | ✅ (T61, W12): `POST /plans/import` |
+| FR-P11 | Sao chép plan sang ngày khác: tất cả điểm giao hoặc chỉ điểm chưa giao được, giữ toạ độ, chép phân công còn hợp lệ; plan mới là DRAFT. | Should (M5 C, P-67) | ✅ (T62, W12): `POST /plans/{id}/copy` |
+| FR-P12 | Báo cáo của cửa hàng theo ngày hoặc khoảng ≤ 31 ngày (kế hoạch, kết quả điểm giao, theo tài xế, lý do thất bại) và xuất CSV từng điểm giao. | Should (M5 C, P-67) | ✅ (T63, W12): `GET /reports/summary`, `GET /reports/stops.csv` |
 
 ### 3.5 Tài xế (D-06, D-07, D-08)
 
@@ -86,7 +86,7 @@ Mỗi user thuộc tối đa 1 store và có đúng 1 role (D-02). OWNER hoặc 
 | FR-D02 | Dữ liệu đủ để app mở Google/Apple Maps dẫn đường tới stop kế tiếp (deep link). | Must | ✅ (T30): stop có `lat`/`lon`, app tự dựng deep link (P-32) |
 | FR-D03 | Cập nhật trạng thái stop: DELIVERED / FAILED (bắt buộc lý do) / SKIPPED; dispatcher thấy ngay khi tải lại. | Must | ✅ (T31): `PATCH /driver/routes/{routeId}/stops/{stopId}/status`; plan tự chuyển IN_PROGRESS/COMPLETED (BR-11) |
 | FR-D04 | Gửi vị trí định kỳ (15–30 s) theo **lô điểm** (gom được các điểm bị mất mạng); dispatcher xem vị trí cuối của các tài xế đang chạy plan. Thiết kế mở rộng được sang lưu lịch sử (D-26). | Should¹ | ✅ (T32, W09, M04): `POST /driver/location`, `GET /plans/{id}/driver-locations`, thêm trạng thái chia sẻ `PUT /driver/location/sharing` (P-53); app gửi cả khi chạy nền (P-54) |
-| FR-D05 | Turn-by-turn trong app: backend trả geometry + chỉ dẫn từng bước cho route. | Should (fallback FR-D02) | ❌ |
+| FR-D05 | Turn-by-turn trong app: backend trả geometry + chỉ dẫn từng bước cho route. | Should (fallback FR-D02) | ✅ (T33, M05, P-57): `GET /driver/routes/{routeId}/directions` tính từ vị trí hiện tại |
 
 ¹ Chủ dự án muốn làm polling ngay sau core (D-08); xếp Should vì phụ thuộc toàn bộ phần plan/driver.
 
@@ -128,7 +128,7 @@ Mỗi user thuộc tối đa 1 store và có đúng 1 role (D-02). OWNER hoặc 
 | NFR-05 Vận hành | Chạy toàn bộ stack bằng `docker compose --profile app up` (image multi-stage); dev chạy hạ tầng bằng compose và app từ IDE; cấu hình qua biến môi trường; CI build, test, quét chất lượng và push image lên GHCR; deploy thủ công theo runbook (D-30 → D-34). | Bắt buộc |
 | NFR-08 Vận hành tối thiểu (M5, P-59) | Log Docker có giới hạn dung lượng; backup DB tự động hằng đêm, giữ 7 ngày + 4 tuần, có bản ngoài VPS (S3 tương thích) và đã tập khôi phục; dữ liệu hết hạn được dọn theo lịch; cảnh báo qua email khi app không phản hồi, đĩa > 85 %, RAM thấp, container lỗi, backup thất bại. Đã làm: T51 (log), T52 (backup), T53 (dọn dữ liệu), T54 (giám sát). | Should (M5) |
 | NFR-06 Quan sát | Log có cấu trúc tối thiểu (userId, storeId, requestId); không log secret/OTP/token. | Should |
-| NFR-07 Ngôn ngữ | Email gửi người dùng bằng tiếng Việt. | Should (đề xuất, chưa phê duyệt) |
+| NFR-07 Ngôn ngữ | Email gửi người dùng bằng tiếng Việt. | Should (D-28, đã duyệt) |
 
 ## 6. Tiêu chí MVP hoàn thành
 

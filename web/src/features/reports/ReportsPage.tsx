@@ -27,6 +27,8 @@ import {
   Pager,
   SegmentedControl,
   Sheet,
+  Stat,
+  StatGroup,
 } from '@/shared/ui';
 import { ChartIcon, ChevronRightIcon, ShareIcon } from '@/shared/ui/icons';
 import {
@@ -254,23 +256,23 @@ function ReportBody({
   return (
     <>
       {/* One group of four totals, no outline (G6-Q2; G2/G3 groups). */}
-      <section className="pw-reports-totals" aria-label={t.totals}>
-        <Total
+      <StatGroup label={t.totals}>
+        <Stat
           label={t.plans}
           value={String(plans.published + plans.inProgress + plans.completed)}
           sub={t.plansSub(plans.completed, plans.draft, plans.cancelled)}
         />
-        <Total
+        <Stat
           label={t.stops}
           value={String(stops.total)}
           sub={t.stopsSub(stops.delivered, stops.failed, stops.skipped, stops.pending)}
         />
-        <Total label={t.rate} value={formatRate(stops.deliveredRate)} sub={t.rateSub} />
-        <Total label={t.distance} value={formatDistance(report.plannedDistanceMeters)} sub={t.distanceSub} />
-      </section>
+        <Stat label={t.rate} value={formatRate(stops.deliveredRate)} sub={t.rateSub} />
+        <Stat label={t.distance} value={formatDistance(report.plannedDistanceMeters)} sub={t.distanceSub} />
+      </StatGroup>
       {!oneDay ? (
-        <section className="pw-reports-group" aria-labelledby="chart-title">
-          <h2 id="chart-title" className="pw-reports-h2">
+        <section className="pw-group" aria-labelledby="chart-title">
+          <h2 id="chart-title" className="pw-group-title">
             {t.chart}
           </h2>
           {/* The main message over the chart, a chosen day's numbers when one is chosen (HIG Charts). */}
@@ -439,12 +441,3 @@ function ReportBody({
 type Period = 'today' | 'week' | 'month' | 'custom';
 
 /** One of the four totals: a label, the number, a line under it. */
-function Total({ label, value, sub }: { label: string; value: string; sub: string }) {
-  return (
-    <div className="pw-reports-total">
-      <span className="pw-reports-total-label">{label}</span>
-      <span className="pw-reports-total-value pw-tabular">{value}</span>
-      <span className="pw-muted pw-reports-total-sub">{sub}</span>
-    </div>
-  );
-}

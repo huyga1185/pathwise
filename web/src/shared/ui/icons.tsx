@@ -125,6 +125,12 @@ export function LogoMark({
     </svg>
   );
 }
+export const SearchIcon = () => (
+  <Icon>
+    <circle cx="11" cy="11" r="6.5" />
+    <path d="m16 16 4.5 4.5" />
+  </Icon>
+);
 export const StoreIcon = () => (
   <Icon>
     <path d="M4 10h16l-1.5-5h-13z" />

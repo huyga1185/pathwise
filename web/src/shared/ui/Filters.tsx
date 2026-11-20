@@ -21,7 +21,10 @@ import {
   ChevronsLeftIcon,
   ChevronsRightIcon,
   ChevronUpDownIcon,
+  ClearIcon,
+  SearchIcon,
 } from './icons';
+import { Button } from './Button';
 import { cx } from './cx';
 import { Wheel } from './Wheel';
 
@@ -735,3 +738,157 @@ export function PlaceholderRows({ rows = 6, label }: { rows?: number; label: str
     </div>
   );
 }
+
+/**
+ * "Xoá bộ lọc": pops in beside the filters and back out where it was. While it leaves, the filters re-flow (the date
+ * button gets shorter), so it is lifted out of the row at its last place instead of being carried along; it is inert,
+ * not disabled, so it does not dim before fading (the disabled style). When a filter changes and the row re-flows
+ * while it stays, it glides to its new place (another row too) instead of jumping.
+ */
+export function ClearFilters({ text, closing, onClear }: { text: string; closing: boolean; onClear: () => void }) {
+  const button = useRef<HTMLButtonElement>(null);
+  const place = useRef<{ left: number; top: number } | null>(null);
+  // Every render: remember where it sits while shown; once it leaves, pin it there.
+  useLayoutEffect(() => {
+    const element = button.current;
+    if (!element) return;
+    if (!closing) {
+      const was = place.current;
+      place.current = { left: element.offsetLeft, top: element.offsetTop };
+      // The filters re-flowed and it moved (another row, another place): glide there instead of jumping.
+      const dx = was ? was.left - place.current.left : 0;
+      const dy = was ? was.top - place.current.top : 0;
+      if ((dx || dy) && !reducedMotion()) {
+        element.animate([{ transform: `translate(${dx}px, ${dy}px)` }, { transform: 'none' }], {
+          duration: 280,
+          easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)',
+        });
+      }
+      element.style.removeProperty('position');
+      element.style.removeProperty('left');
+      element.style.removeProperty('top');
+    } else if (place.current) {
+      element.style.position = 'absolute';
+      element.style.left = `${place.current.left}px`;
+      element.style.top = `${place.current.top}px`;
+    }
+  });
+  return (
+    <Button
+      ref={button}
+      variant="quiet"
+      className={cx('pw-list-clear', closing && 'is-closing')}
+      inert={closing}
+      aria-hidden={closing || undefined}
+      onClick={onClear}
+    >
+      {text}
+    </Button>
+  );
+}
+
+/**
+ * A search field on a list's filter row (HIG Search fields): a capsule like the filter buttons, a magnifying glass at
+ * its leading end, a clear button at its trailing end while it has text, results as people type ("Consider showing
+ * results immediately as people type") — 0.3 s after the last key, or at once with Enter. The placeholder says what
+ * it searches; the field's name is `label` (an accessible name, as Apple's search fields have no label above).
+ */
+export function SearchField({
+  label,
+  placeholder,
+  value,
+  clearText,
+  onSearch,
+}: {
+  label: string;
+  placeholder: string;
+  value: string;
+  clearText: string;
+  onSearch: (value: string) => void;
+}) {
+  const [text, setText] = useState(value);
+  const [last, setLast] = useState(value);
+  // Another value from outside (Back, cleared filters): show it.
+  if (value !== last) {
+    setLast(value);
+    setText(value);
+  }
+  const input = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (text.trim() === value) return undefined;
+    const timer = window.setTimeout(() => onSearch(text.trim()), 300);
+    return () => window.clearTimeout(timer);
+  }, [text, value, onSearch]);
+  return (
+    <form
+      role="search"
+      className={cx('pw-search', text && 'has-text')}
+      onSubmit={(event) => {
+        event.preventDefault();
+        onSearch(text.trim());
+      }}
+    >
+      <SearchIcon />
+      <input
+        ref={input}
+        type="search"
+        aria-label={label}
+        placeholder={placeholder}
+        value={text}
+        enterKeyHint="search"
+        onChange={(event) => setText(event.target.value)}
+        onKeyDown={(event) => {
+          if (event.key === 'Escape' && text) {
+            event.preventDefault();
+            setText('');
+            onSearch('');
+          }
+        }}
+      />
+      {text ? (
+        <button
+          type="button"
+          className="pw-search-clear"
+          aria-label={clearText}
+          title={clearText}
+          onClick={() => {
+            setText('');
+            onSearch('');
+            input.current?.focus();
+          }}
+        >
+          <ClearIcon />
+        </button>
+      ) : null}
+    </form>
+  );
+}
+
+/**
+ * A filter set by the page that opened this one (G7-Q2: "Cửa hàng: Tiệm A" from a store's page), not chosen here: the
+ * filter button's tinted capsule with its value and a clear button (HIG Buttons; T-9) that removes it.
+ */
+export function PresetFilter({
+  label,
+  value,
+  clearText,
+  onClear,
+}: {
+  label: string;
+  value: string;
+  clearText: string;
+  onClear: () => void;
+}) {
+  return (
+    <span className="pw-filter is-set pw-filter-preset">
+      <span className="pw-filter-label">{label}:</span>
+      <span className="pw-filter-value" title={value}>
+        {value}
+      </span>
+      <button type="button" className="pw-search-clear" aria-label={clearText} title={clearText} onClick={onClear}>
+        <ClearIcon />
+      </button>
+    </span>
+  );
+}
+

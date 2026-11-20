@@ -10,7 +10,7 @@ export { MapMarker, type MapMarkerProps } from './MapMarker';
 export { Dialog, type DialogProps } from './Dialog';
 export { Toast, ToastDock, type ToastProps } from './Toast';
 export { ErrorBanner, FieldError, EmptyState } from './Feedback';
-export { Stat } from './Stat';
+export { Stat, StatGroup } from './Stat';
 export {
   AppShell,
   initials,
@@ -27,7 +27,16 @@ export { ActivityText } from './ActivityText';
 export { BackLink } from './BackLink';
 export { DateField, type DateFieldProps } from './DateField';
 export { TimeField, normalizeTime, isTime, type TimeFieldProps } from './TimeField';
-export { DatePickerFilter, PageJump, PlaceholderRows, PopUpButton, PopUpFilter } from './Filters';
+export {
+  ClearFilters,
+  DatePickerFilter,
+  PageJump,
+  PlaceholderRows,
+  PopUpButton,
+  PopUpFilter,
+  PresetFilter,
+  SearchField,
+} from './Filters';
 export { ActivityIndicator } from './ActivityIndicator';
 export { Alert, PageActionSheet, Sheet, type AlertProps, type SheetProps } from './Sheet';
 export { RowMenu, useRowMenu, type RowMenuItem } from './RowMenu';
@@ -35,3 +44,4 @@ export { SwitchRow } from './Switch';
 export { SegmentedControl } from './SegmentedControl';
 export { Pager } from './Pager';
 export { MapStage, useMapStage, type Detent, type MapInset } from './MapStage';
+export { MoreMenu } from './MoreMenu';

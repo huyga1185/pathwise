@@ -5,3 +5,7 @@ __pycache__/
 # Database backups written by compose.backup.yaml (T52)
 /backups/
 /.monitor/
+
+# Feedback screenshots and captures of external map services stay local (docs/client/README.md §5)
+docs/ux/samples/*.png
+docs/ux/samples/*.jpg
