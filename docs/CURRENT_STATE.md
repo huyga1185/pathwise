@@ -75,4 +75,4 @@ Mỗi PR một dòng: ngày, PR hoặc branch, task, một câu tóm tắt. Chi 
 
 | Ngày | PR / branch | Task | Tóm tắt |
 |---|---|---|---|
-| 2026-11-20 | branch `docs/restructure` | — (docs) | Gọn docs: phần lịch sử (F-xx đã đóng, khảo sát ban đầu, lịch sử chi tiết, thiết kế lại G1–G7, đặc tả task đã xong) chuyển sang `docs/archive/`; UX_BRIEF §4 thay bằng trỏ SCREENS; REQUIREMENTS cột Task thay cột trạng thái; §5 mỗi PR một dòng. |
+| 2026-11-20 | branch `docs/restructure` | — (docs) | Gọn docs: phần lịch sử (F-xx đã đóng, khảo sát ban đầu, lịch sử chi tiết, thiết kế lại G1–G7, đặc tả task đã xong) chuyển sang `docs/archive/`; UX_BRIEF §4 thay bằng trỏ SCREENS; REQUIREMENTS cột Task thay cột trạng thái; §5 mỗi PR một dòng; `LIQUID_GLASS.md` + `APPLE_CHECKLIST.md` gộp thành `docs/client/UI_GUIDELINES.md` (học từ Apple, không chép), đặc tả màn tài khoản sang `SCREENS.md` §1.2. |

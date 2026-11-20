@@ -96,7 +96,7 @@
   background: var(--signal);
   color: var(--on-accent);
 }
-/* States (APPLE_CHECKLIST C3–C5): hover only with a real pointer (on a touch screen it stayed after the tap), a press
+/* States (UI_GUIDELINES C3–C5): hover only with a real pointer (on a touch screen it stayed after the tap), a press
    state for every button (HIG Buttons: "Always include a press state for a custom button"), no square tap highlight,
    colours easing instead of flashing. */
 .pw-btn {
@@ -144,7 +144,7 @@
     color: color-mix(in srgb, var(--route) 85%, var(--ink));
   }
 }
-/* Increased contrast: the light fill alone is faint; an edge in the text colour (APPLE_CHECKLIST C12). */
+/* Increased contrast: the light fill alone is faint; an edge in the text colour (UI_GUIDELINES C12). */
 @media (prefers-contrast: more) {
   .pw-btn-tinted {
     border: 2px solid currentColor;
@@ -197,7 +197,7 @@
   font-size: 0.875rem;
   line-height: 1.25rem;
   color: var(--ink);
-  /* As the sign-in fields (APPLE_CHECKLIST §3.2): a light fill, the 1px border that marks the control (≥ 3:1, C7). */
+  /* As the sign-in fields (UI_GUIDELINES §3.2): a light fill, the 1px border that marks the control (≥ 3:1, C7). */
   background: color-mix(in srgb, var(--ink) 6%, transparent);
   border: 1px solid var(--ink-muted);
   /* A medium control on a computer: a rounded rectangle (S3, WWDC25 356); a capsule for touch (below). */
@@ -1105,7 +1105,7 @@ textarea.pw-field-input {
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   color: var(--ink);
-  /* As a field (LIQUID_GLASS §9: "nền fill nhạt và viền như ô nhập"); radius-md is the fallback outside the account
+  /* As a field (SCREENS §1.2: "nền fill nhạt và viền như ô nhập"); radius-md is the fallback outside the account
      card. */
   background: color-mix(in srgb, var(--ink) 6%, transparent);
   border: 1px solid var(--ink-muted);
@@ -2890,7 +2890,7 @@ textarea.pw-field-input {
   outline: 2px solid var(--route);
   outline-offset: -2px;
 }
-/* The alert of HIG Alerts' anatomy (iOS and macOS): bolder leading text (LIQUID_GLASS T1, WWDC25 356: "bolder and
+/* The alert of HIG Alerts' anatomy (iOS and macOS): bolder leading text (UI_GUIDELINES T1, WWDC25 356: "bolder and
    left-aligned to improve readability in key moments like alerts"), two filled buttons side by side, Cancel grey on
    the leading side and the action in the accent (red when destructive) on the trailing side; stacked when a title does
    not fit (Sheet.tsx). The shape follows the input like every button (S3): with a mouse rounded rectangles of 36 with
@@ -3007,7 +3007,7 @@ textarea.pw-field-input {
   outline-offset: -2px;
 }
 
-/* Sheets, alerts and action sheets are glass like the popover (LIQUID_GLASS §2: modal surfaces are Liquid Glass
+/* Sheets, alerts and action sheets are glass like the popover (UI_GUIDELINES §A2: modal surfaces are Liquid Glass
    Regular, paired with the dimming layer; HIG Materials: a thicker material for text-heavy elements, so the popover's
    96%). The buttons of an action sheet sit on the group's glass. */
 .pw-sheet,
@@ -3339,7 +3339,7 @@ a.pw-segment {
   textarea.pw-field-input {
     border-radius: 22px;
   }
-  /* Code boxes take the capsule fields' 22 (as in the account card, LIQUID_GLASS §9). */
+  /* Code boxes take the capsule fields' 22 (as in the account card, SCREENS §1.2). */
   .pw-code-cell {
     border-radius: 22px;
   }
@@ -3601,9 +3601,9 @@ a[aria-current='page'],
   }
 }
 
-/* The button at the end of a field in a sheet (show password; APPLE_CHECKLIST T-8, I-3): inside the field, 2px from its
+/* The button at the end of a field in a sheet (show password; UI_GUIDELINES T-8, I-3): inside the field, 2px from its
    edge, concentric with it (S1) — with a mouse a 36px field rounded 8 holds a 32px button rounded 8 − 2 = 6; for touch
-   a 44px capsule (22) holds a 40px circle (22 − 2 = 20), as in the account card (LIQUID_GLASS §9). */
+   a 44px capsule (22) holds a 40px circle (22 − 2 = 20), as in the account card (SCREENS §1.2). */
 .pw-sheet .pw-field-end {
   right: 2px;
 }
@@ -3792,7 +3792,7 @@ html {
   height: 12px;
 }
 
-/* A busy button (Button busy; HIG Buttons, APPLE_CHECKLIST B-4): an activity indicator within it. For the first
+/* A busy button (Button busy; HIG Buttons, UI_GUIDELINES B-4): an activity indicator within it. For the first
    0.3 s nothing changes (a quick request shows nothing), then the label gives way to the turning spokes and the busy
    label; both share one cell so the width stays. */
 .pw-btn.is-busy {
@@ -3919,7 +3919,7 @@ html {
 
 /* MapStage (OWNER_UI_REDESIGN §10, G5.1–G5.3): a plan's screens on a map filling the content area below the top bar —
    the page has no padding and does not scroll. Wide: a panel floating on the leading side; phone: a sheet with three
-   detents above the tab bar. Both Regular glass (LIQUID_GLASS M4, M7), solid with reduced transparency or increased
+   detents above the tab bar. Both Regular glass (UI_GUIDELINES M4, M7), solid with reduced transparency or increased
    contrast (as the sidebar). */
 .pw-shell-main:has(.pw-map-stage) > .pw-page {
   padding: 0;
@@ -4060,7 +4060,7 @@ html {
   font-size: 0.8125rem;
   color: var(--ink-muted);
 }
-/* Touch: the grabber's tap area is 44px tall (APPLE_CHECKLIST C1); the bar drawn stays small. */
+/* Touch: the grabber's tap area is 44px tall (UI_GUIDELINES C1); the bar drawn stays small. */
 @media (pointer: coarse) {
   .pw-map-sheet-grabber {
     height: 44px;
@@ -4197,7 +4197,7 @@ html {
 }
 
 /* High detent (§10.14): the sheet goes down to the bottom of the screen and the tab bar floats over it (HIG Tab bars:
-   the tab bar stays visible — this sheet is not modal; LIQUID_GLASS M6: no glass on glass — the sheet is opaque
+   the tab bar stays visible — this sheet is not modal; UI_GUIDELINES M6: no glass on glass — the sheet is opaque
    there). Its content keeps clear of the tab bar at the end and when focused (WCAG 2.4.11): bottom padding and
    scroll padding as tall as the tab bar and its gaps. The phone stage is its own layer, so the tab bar (z 30) stays
    above the map's and the sheet's own layers. */

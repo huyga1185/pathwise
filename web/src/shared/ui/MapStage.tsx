@@ -40,7 +40,7 @@ export function useMapStage() {
  * interactive"). Wide window: the content in a panel floating on the leading side (~460px, G5-Q3). Phone: in a
  * nonmodal sheet from the bottom, above the tab bar, with three detents — low (its header, mark it `data-peek`), half,
  * nearly full (G5-Q4; HIG Sheets: detents, "Include a grabber"; a tap on the grabber cycles through them, arrow keys
- * move them, so no dragging is needed — WCAG 2.5.7). Both are Regular glass (owner's choice, LIQUID_GLASS M4/M7).
+ * move them, so no dragging is needed — WCAG 2.5.7). Both are Regular glass (owner's choice, UI_GUIDELINES M4/M7).
  * `map` gets the covered inset so the routes are fitted where they can be seen.
  */
 export function MapStage({

@@ -159,7 +159,7 @@ export function VerifyEmailPage() {
                 onChange={(event) => setEmailInput(event.target.value)}
               />
             ) : null}
-            {/* One field drawn as six boxes, as on every code screen (LIQUID_GLASS §9, owner's choice). */}
+            {/* One field drawn as six boxes, as on every code screen (SCREENS §1.2, owner's choice). */}
             <CodeField
               label={vi.form.otp}
               value={code}

@@ -40,7 +40,7 @@ button:focus-visible {
   white-space: nowrap;
 }
 
-/* Touch and pointer, for every control (docs/client/APPLE_CHECKLIST.md C1, C3, C5). */
+/* Touch and pointer, for every control (docs/client/UI_GUIDELINES.md C1, C3, C5). */
 /* No square tap highlight of the browser: each control shows its own pressed state; no double-tap zoom on controls. */
 a,
 button,
