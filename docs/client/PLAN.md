@@ -44,6 +44,28 @@
 - **Phụ thuộc:** M03 (bảng tài khoản trong app). Backend không cần đổi.
 - **Acceptance:** tài xế đổi được họ tên và số trong app, màn theo dõi trên web thấy số mới sau khi tải lại; form Nhận lời mời chỉ còn họ tên và mật khẩu; test mobile và web cho cả hai.
 
+### W14. Landing tĩnh ở `/` và SEO (P-47; thêm 2026-11-21)
+
+- **Lý do:** P-47 (Approved) đặt "trang landing tĩnh ở `/` (làm sau)". Bản thiết kế landing đã xong và **đã ở `landing/`** (2026-11-21, chủ dự án chọn thư mục; xem `landing/README.md`). Kiểm SEO theo tài liệu Google Search Central (2026-11-20) thấy các việc cấu hình còn thiếu dưới đây.
+- **Phạm vi:**
+  1. **Caddy phục vụ `/` từ `landing/`.** Bỏ `redir / /app/ 302` (`deploy/caddy/Caddyfile`, đoạn "The landing page comes later"). Landing gồm `index.html` và ảnh (`web/`, `mweb/`, `phone/`, `img/`, khoảng 1,4 MB webp). Thêm `robots.txt` (cho phép `/`, trỏ `Sitemap:`) và `sitemap.xml` (chỉ `https://huy-vu.uk/`). Hiện mọi đường dẫn lạ đều bị chuyển sang `/app{uri}`, nên `robots.txt` cũng bị chuyển hướng.
+  2. **`/app/` không được index.** Thêm `X-Robots-Tag: noindex` cho `/app/*` ở Caddy, hoặc `<meta name="robots" content="noindex">` trong `web/index.html`. Không chặn `/app/` trong `robots.txt`: Google cần thu thập được trang thì mới đọc được `noindex`.
+  3. **Favicon cho trang chủ.** ✅ `<link rel="icon">` đã có trong `<head>` landing, trỏ icon của web ở `/app/` (Google: "Add a `<link>` tag to the header of your home page"). Còn lại: `/favicon.ico` ở gốc đang bị chuyển hướng sang `/app/favicon.ico`; xem có cần phục vụ thẳng không.
+  4. **Ảnh chia sẻ `og.png`.** Landing khai báo `og:image` là `https://huy-vu.uk/og.png`, file này chưa có. Ảnh 1200×630.
+  5. ✅ (2026-11-21) **Khung HTML đầy đủ cho bản prod:** `<!doctype html>`, `<html lang="vi">`, charset, viewport, `<title>Phần mềm quản lý giao hàng cho đội xe tại Đà Nẵng | PathWise</title>`. Meta description, canonical, Open Graph và JSON-LD (`WebSite`, `Organization`) đã có trong prototype và giữ nguyên.
+  6. **Nút "Tải app tài xế cho Android"** (`id="apk-link"`, đang `href="#"`): thay bằng link file APK.
+- **Câu hỏi cần chủ dự án chốt khi làm:**
+  - Cách đưa `landing/` vào image (thêm vào `web/Dockerfile` hay image riêng).
+  - Đường dẫn lạ ngoài `/app/` và `/api/`: giữ chuyển sang `/app{uri}` hay trả 404.
+  - Link APK đặt ở đâu (vd GitHub Release hay file do Caddy phục vụ). Không lên Play Store.
+- **Ngoài phạm vi:** đổi nội dung hoặc thiết kế landing (đã duyệt ở prototype); trang khác ngoài `/`.
+- **File nóng:** `deploy/caddy/Caddyfile`, có thể cả `web/Dockerfile` và `compose*.yaml`. Giữ cả hai cách chạy (compose và CI) hoạt động.
+- **Acceptance:**
+  - `curl -I https://<domain>/` trả 200 kèm landing; `/robots.txt` và `/sitemap.xml` trả 200; `/app/` vẫn chạy và trả `X-Robots-Tag: noindex` (hoặc HTML có meta robots noindex); `/api/` không đổi.
+  - Rich Results Test của Google nhận `WebSite` và `Organization`, không lỗi.
+  - Lighthouse (mobile) mục SEO không có audit trượt; ghi điểm Performance và LCP/CLS vào mô tả PR.
+  - Cập nhật `docs/DEPLOYMENT.md` (dòng "`/` chuyển sang `/app/`") và mô tả Caddy trong `P-56` nếu đổi.
+
 ## 3. Sau MVP (chưa lên lịch)
 
 Thông báo đẩy · trang theo dõi đơn cho khách (client thứ ba) · đa ngôn ngữ.
