@@ -13,7 +13,7 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   /**
    * A request runs: the button shows an activity indicator within it (HIG Buttons: "Configure a button to display an
    * activity indicator when you need to provide feedback about an action that doesn't instantly complete";
-   * APPLE_CHECKLIST B-4), takes no press, and says so (aria-busy, aria-disabled). The indicator and `busyLabel`
+   * UI_GUIDELINES B-4), takes no press, and says so (aria-busy, aria-disabled). The indicator and `busyLabel`
    * replace the label only after a moment (0.3 s, CSS), so a quick answer changes nothing on screen.
    */
   busy?: boolean;

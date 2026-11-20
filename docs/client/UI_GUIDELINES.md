@@ -1,14 +1,139 @@
-# APPLE_CHECKLIST — Kiểm từng thành phần giao diện theo hướng dẫn Apple
+# UI_GUIDELINES — Quy tắc giao diện PathWise
 
-> Dùng cho mọi thay đổi giao diện web (và app tài xế khi áp dụng được), theo P-71: hướng dẫn chính thức của Apple đứng trước, quy tắc cũ của dự án chỉ áp ở chỗ Apple không nói. Quy tắc chi tiết và mã quy tắc (M, S, T, A) ở `docs/client/LIQUID_GLASS.md`; tài liệu này là **danh sách để kiểm**, không thêm quy tắc mới.
+> Quy tắc giao diện của web dispatcher (`web/`) và, khi áp dụng được, app tài xế. PathWise **học từ** hướng dẫn chính thức của Apple (HIG, *Adopting Liquid Glass*, WWDC25 219/356) chứ không chép: theo P-71, chỗ Apple có nói thì theo trước; chỗ web không làm được (vd kính trên web chỉ là nhoè + chỉnh độ sáng, không có khúc xạ, §A7.3) hoặc dự án chọn khác thì ghi **lệch** kèm lý do ngay tại quy tắc đó. Bổ sung cho `DESIGN_SYSTEM.md` (token, component), không thay nó; hành vi từng màn ở `SCREENS.md`.
 >
-> Nhãn: **[Apple]** trích nguyên văn tài liệu Apple; **[Web]** điều web buộc phải có (WCAG, trình duyệt), chọn bằng đo; **[Chủ dự án]** yêu cầu riêng. Mục nào không có nguồn thì không được ghi là "theo Apple".
+> Gồm hai phần: **Phần A — Quy tắc** (mã quy tắc không gạch nối: M vật liệu, S hình dạng, T chữ/màu, A accessibility) và **Phần B — Danh sách kiểm** (§0–§3; mã mục kiểm theo nhóm: H, L, C, K…, và có gạch nối theo component: T-8, M-3…). Tài liệu này gộp `LIQUID_GLASS.md` (phần A, cùng số mục với tiền tố A) và `APPLE_CHECKLIST.md` (phần B, giữ số mục) ngày 2026-11-20; đặc tả màn tài khoản (`LIQUID_GLASS.md` §9 cũ) ở `SCREENS.md` §1.2.
+>
+> Nhãn nguồn: **[Apple]** trích nguyên văn tài liệu Apple; **[Web]** điều web buộc phải có (WCAG, trình duyệt), chọn bằng đo; **[Chủ dự án]** yêu cầu riêng. Mục nào không có nguồn thì không được ghi là "theo Apple".
+>
+> Đã áp: màn tài khoản (P-72), khu đã đăng nhập G1–G7 (P-74; sidebar, tab bar, menu tài khoản, popover, điều khiển và panel/sheet trên bản đồ, sheet, alert, action sheet theo §A2).
+
+# Phần A — Quy tắc
+
+## A0. Quy ước
+
+Mỗi quy tắc mang **một** nhãn:
+
+- **[Apple]**: có câu trong nguồn chính thức, trích nguyên văn (tiếng Anh) kèm mã nguồn.
+- **[Web]**: Apple không quy định vì trên nền tảng của Apple hệ thống tự làm (API native), nhưng web buộc phải có một giá trị hoặc kỹ thuật. Ghi cách chọn; giá trị nào chọn được bằng đo thì đo, không chọn theo cảm giác.
+- **[Chủ dự án]**: chủ dự án yêu cầu, không phải từ Apple.
+
+Không có nhãn "agent tự suy": thứ gì không thuộc ba nhãn trên thì không đưa vào đặc tả (xem §A8).
+
+**Thứ tự ưu tiên (chủ dự án chốt 2026-11-16):** hướng dẫn chính thức của Apple đứng trên các quyết định giao diện cũ của dự án (DESIGN_SYSTEM, các P-xx về giao diện). Quy tắc cũ chỉ áp ở chỗ Apple không nói gì; khi hai bên lệch nhau thì theo Apple và ghi rõ quy tắc cũ nào bị thay. Yêu cầu cụ thể của chủ dự án ghi nhãn **[Chủ dự án]**.
+
+| Mã | Nguồn |
+|---|---|
+| [HIG] | Human Interface Guidelines, *Materials* — https://developer.apple.com/design/human-interface-guidelines/materials |
+| [ADOPT] | *Adopting Liquid Glass* — https://developer.apple.com/documentation/technologyoverviews/adopting-liquid-glass |
+| [RES] | *Apple Design Resources* — https://developer.apple.com/design/resources/ |
+| [219] | WWDC25 *Meet Liquid Glass* — https://developer.apple.com/videos/play/wwdc2025/219/ (transcript chính thức) |
+| [356] | WWDC25 *Get to know the new design system* — https://developer.apple.com/videos/play/wwdc2025/356/ (transcript chính thức) |
+| HIG Text fields | https://developer.apple.com/design/human-interface-guidelines/text-fields |
+| HIG Branding | https://developer.apple.com/design/human-interface-guidelines/branding |
+| HIG Buttons | https://developer.apple.com/design/human-interface-guidelines/buttons |
+| HIG Accessibility | https://developer.apple.com/design/human-interface-guidelines/accessibility |
+
+[RES] chỉ có UI kit, Icon Composer, SF Symbols và font SF cho nền tảng Apple, không ghi điều khoản dùng ngoài nền tảng Apple: không dùng tài sản nào từ đó; giữ font Be Vietnam Pro của DESIGN_SYSTEM.
+
+## A1. Vật liệu: Liquid Glass và vật liệu tiêu chuẩn
+
+| # | Quy tắc | Nguồn |
+|---|---|---|
+| M1 | Liquid Glass là lớp chức năng cho điều khiển và điều hướng, nổi trên lớp nội dung. | [Apple] "Liquid Glass forms a distinct functional layer for controls and navigation elements — like tab bars and sidebars — that floats above the content layer" [HIG] |
+| M2 | Không dùng Liquid Glass trong lớp nội dung; lớp nội dung dùng vật liệu tiêu chuẩn. | [Apple] "Don’t use Liquid Glass in the content layer." … "Instead, use Standard materials for elements in the content layer, such as app backgrounds." [HIG] |
+| M3 | Ngoại lệ: control trong lớp nội dung có phần tử tương tác tạm thời (slider, toggle) mang dáng Liquid Glass **khi đang được kích hoạt**. | [Apple] [HIG] |
+| M4 | Thành phần chuẩn tự nhận Liquid Glass: thanh (bar), sheet, popover, control; menu, toolbar; sheet và action sheet dạng modal. | [Apple] "standard components like bars, sheets, popovers, and controls automatically adopt this material" [ADOPT §Visual refresh]; "Menus … adopt Liquid Glass"; "Toolbars take on a Liquid Glass appearance" [ADOPT §Menus and toolbars]; "Modal views like sheets and action sheets adopt Liquid Glass." [ADOPT §Windows and modals] |
+| M5 | Dùng ít, chỉ cho phần tử chức năng quan trọng nhất. | [Apple] "Use Liquid Glass effects sparingly." … "Limit these effects to the most important functional elements in your app." [HIG] |
+| M6 | Không chồng kính lên kính; thứ đặt trên kính dùng fill, độ trong, màu vibrant. | [Apple] "always avoid glass on glass" … "use fills, transparency, and vibrancy for the top elements" [219] |
+| M7 | Hai biến thể Regular và Clear, không trộn. Regular cho phần tử có nhiều chữ (alert, sidebar, popover). Clear chỉ khi: trên nội dung giàu hình ảnh, lớp nội dung chịu được lớp làm tối, nội dung đặt lên kính đậm và sáng. | [Apple] [HIG]; "They should never be mixed" và ba điều kiện [219] |
+| M8 | Regular làm nhoè và chỉnh độ sáng nền; tint và dải sáng tự đổi để chữ đọc được mà nội dung lộ ra nhiều nhất có thể. | [Apple] "The regular variant blurs and adjusts the luminosity of background content" [HIG]; "The amount of tint and the dynamic range shift to always ensure buttons remain legible, while letting as much of the content through as possible." [219] |
+| M9 | Clear trên nền sáng: cân nhắc lớp làm tối 35%. | [Apple] [HIG] |
+| M10 | Bốn mức ultra-thin / thin / regular / thick là **vật liệu tiêu chuẩn** cho lớp nội dung, không phải độ dày của Liquid Glass. Vật liệu dày hơn cho chữ nét nhỏ, mỏng hơn để giữ ngữ cảnh. | [Apple] [HIG §Platform considerations, §Standard materials] |
+| M11 | Chữ trên vật liệu dùng màu vibrant. | [Apple] "Help ensure legibility by using vibrant colors on top of materials." [HIG] |
+| M12 | Lensing (bẻ ánh sáng) là cách chính Liquid Glass tự định hình. | [Apple] "The primary way Liquid Glass visually defines itself is through something called Lensing." [219] |
+| M13 | Có lớp highlights: nguồn sáng chiếu lên vật liệu tạo vệt sáng theo hình khối. | [Apple] "Light sources inside of this environment shine on the material producing highlights that respond to geometry" [219] |
+| M14 | Bóng đậm hơn khi nằm trên chữ, nhạt hơn trên nền sáng trơn; phần tử lớn hơn có bóng sâu hơn. | [Apple] [219] |
+| M15 | Ở trạng thái nghỉ, tránh giao cắt giữa nội dung và Liquid Glass; dời hoặc thu nhỏ nội dung. | [Apple] "In steady states … avoid intersections between content and Liquid Glass. Instead, reposition or scale the content to maintain separation." [219] |
+| M16 | Màu nhấn (tint) chỉ cho phần tử và hành động chính; muốn có màu thì đặt ở lớp nội dung. | [Apple] [219] |
+
+## A2. Phân loại bề mặt của PathWise (áp M1–M4 nguyên văn)
+
+| Bề mặt | Thuộc loại nào theo Apple | Vật liệu |
+|---|---|---|
+| Sidebar (màn rộng), tab bar (màn hẹp) — thay header có logo (P-74) | Thanh điều hướng (bar) — M1, M4 | Liquid Glass Regular (đã làm, G1). Thanh trên của vùng nội dung là dải đặc, lệch có chủ đích: phần tử nhoè thành nền của phần tử con nên menu tài khoản bên trong sẽ mất nhoè (`OWNER_UI_REDESIGN.md` §6.1 H5; G1 đo ở 94%, sau đổi thành đặc hẳn vì chữ cuộn dưới lộ mờ sau nút tài khoản, ghi chú ở `.pw-topbar`) |
+| Điều khiển nổi trên bản đồ (phóng to, chọn tuyến, chú giải); panel và sheet ba nấc của trang chi tiết kế hoạch | Control nổi trên nội dung — M1 | Liquid Glass Regular (đã làm, G5) |
+| Menu, dropdown, popover | M4 | Liquid Glass Regular (đã làm: menu tài khoản, `pw-popover` cho menu lọc, lịch, chọn trang) |
+| Sheet, alert (thay hộp thoại cũ từ G3) | Sheet/alert modal — M4; có nhiều chữ — M7 | Theo Apple: Liquid Glass Regular + lớp làm tối khi chen ngang tác vụ ([Apple] "When a task interrupts the main flow, pair Liquid Glass with a dimming layer" [356]). Đã làm (2026-11-20): sheet, alert, action sheet dùng kính như popover (nền 96%, nhoè 24px) + lớp làm tối 45%. Đo so với nền đặc: theme sáng chỉ thấy bóng rất mờ của trang phía sau (chênh tối đa 18/255), theme tối không khác (0%); chủ dự án chọn giữ kính cho nhất quán với các bề mặt kính khác và theo M4 |
+| Bảng, panel, thẻ dữ liệu, biểu đồ, form trong trang, danh sách quản trị | Lớp nội dung — M2 | Không Liquid Glass; giữ bề mặt đặc như hiện tại |
+| Toast | Nguồn không nói tới | Giữ như hiện tại (không áp dụng) |
+| **Thẻ đăng nhập / đăng ký trên ảnh giới thiệu** | **Không phải thanh, control, menu hay modal: là nội dung chính của trang — M2** | **Theo Apple: vật liệu tiêu chuẩn, không Liquid Glass** (xem §A7, cần chủ dự án quyết) |
+| Ảnh giới thiệu, nền trang | Lớp nội dung (app background) — M2 | Ảnh / nền |
+
+## A3. Hình dạng
+
+| # | Quy tắc | Nguồn |
+|---|---|---|
+| S1 | Ba loại hình: cố định (bán kính không đổi), capsule (bán kính = nửa chiều cao), đồng tâm (bán kính = bán kính cha − padding). | [Apple] [356] |
+| S2 | Hình đồng tâm có bán kính dự phòng khi đứng riêng hoặc khi phép trừ không còn dương. | [Apple] "use a concentric shape with a fallback radius" [356] |
+| S3 | Giao diện desktop dày đặc: capsule cho hành động nổi bật; control nhỏ, vừa dùng hình chữ nhật bo góc. | [Apple] [356] |
+| S4 | Giá trị bán kính: token DESIGN_SYSTEM (`radius-sm` 4, `radius-md` 8, `radius-lg` 16, `radius-full`) cho phần tử đứng riêng (bán kính dự phòng, S2). Thẻ màn tài khoản (P-72) tính ngược từ control: capsule 44px bo 22 + padding 24 = thẻ 46; mọi phần tử lồng trong thẻ bo 22 (`SCREENS.md` §1.2). | [Web] token có sẵn; [Apple] S1, S2 |
+
+## A4. Chữ, màu, khoảng cách
+
+| # | Quy tắc | Nhãn |
+|---|---|---|
+| T1 | Ở khoảnh khắc quan trọng (alert, giới thiệu), chữ đậm hơn và canh trái. | [Apple] [356] |
+| T2 | Thang chữ, màu, khoảng cách: giữ DESIGN_SYSTEM. | [Web] không thêm token khi Apple không yêu cầu |
+| T3 | Tiêu đề giới thiệu to hơn `display`, logo to hơn trên màn đăng nhập desktop. | [Chủ dự án] |
+| T4 | Chữ trên kính: Apple dùng màu vibrant của hệ thống (M11), web không có. Thay bằng màu chữ đạt 4,5:1 (chữ thường) trên nền **xấu nhất** đo được ở chỗ đặt; chỉ đổi màu chữ khi token hiện có không đạt. | [Web] |
+| T5 | Tint của kính: giá trị **nhỏ nhất** đạt T4 ở chỗ đặt (theo M8 "letting as much of the content through as possible"). | [Web] đo, không chọn tay |
+
+## A5. Chuyển động và tương tác
+
+| # | Quy tắc | Nhãn |
+|---|---|---|
+| A1 | Trạng thái nghỉ yên tĩnh; phần tử sáng lên và co giãn khi tương tác. | [Apple] [219] |
+| A2 | Menu "bật mở" từ nút gọi; action sheet xuất phát từ phần tử gọi. | [Apple] [219], [ADOPT §Windows and modals] |
+| A3 | Không đặt thời lượng, easing hay hiệu ứng tự chế cho đến khi có thành phần cụ thể cần; khi cần thì ghi vào đây cùng lý do. | [Web] Apple không cho số |
+
+## A6. Accessibility
+
+| Cài đặt (Apple) | Apple mô tả | Web |
+|---|---|---|
+| Reduced Transparency | "makes Liquid Glass frostier and obscures more of the content behind it" [219] | `prefers-reduced-transparency: reduce` → tăng tint và độ nhoè (vẫn là kính, mờ hơn) |
+| Increased Contrast | "makes elements predominantly black or white and highlights them with a contrasting border" [219] | `prefers-contrast: more` → nền đặc trắng/đen theo theme, viền 2px `ink` |
+| Reduced Motion | "decreases the intensity of some effects and disables any elastic properties" [219] | `prefers-reduced-motion: reduce` → tắt hoạt ảnh (ảnh nền dùng bản tĩnh) |
+| Kiểm thử với các cài đặt | "Test your interface with a variety of display and accessibility settings." [ADOPT §Visual refresh] | Chụp và kiểm từng chế độ |
+| — | — | [Web] `forced-colors: active` (Windows) → bỏ kính, viền `CanvasText`; trình duyệt không có `backdrop-filter` → nền đặc |
+
+Tương phản đo theo T4: chụp ảnh thật, ẩn chữ, lấy nền sau chữ, theme sáng và tối, 1280×800, 1366×768, 1920×1080.
+
+## A7. Câu hỏi đã được chủ dự án quyết (2026-11-16)
+
+1. **Thẻ đăng nhập/đăng ký:** theo M1, M2, M4 thẻ là nội dung chính của trang (không phải thanh, control, menu hay modal) → **bề mặt đặc của lớp nội dung**, không Liquid Glass, không lensing hay lớp highlights. Chủ dự án đã thử Clear, Regular với nhiều độ phủ rồi chọn bề mặt đặc.
+2. **Ảnh `map-route.svg`:** dùng làm nền màn đăng nhập/đăng ký (lớp nội dung), giữ tông xanh lá của ảnh; đường tuyến trong ảnh uốn theo nét vẽ của chủ dự án (`docs/ux/samples/fb_4.png`).
+3. **Lensing:** không dùng (H9 của `APPLE_CHECKLIST.md`: chỉ Chromium, thử ở nút 44px không thấy khác). Kính trên web chỉ là nhoè + chỉnh độ sáng (M8).
+4. **Thứ tự triển khai các bề mặt ở §A2:** theo các giai đoạn G1–G7 của `OWNER_UI_REDESIGN.md` (P-74).
+
+## A8. Đã bỏ khỏi bản trước vì là tự suy (không có nguồn, không bắt buộc cho web)
+
+- Token "glass-thick" và mọi khái niệm "Liquid Glass dày": Apple không có (M10).
+- Bán kính mới `radius-xl` 24, padding 20 của thẻ, thang chữ `hero`/`lead` với số cụ thể, khoảng cách `space-8`/`space-12`: không có nguồn; thay bằng token có sẵn hoặc chuyển thành yêu cầu của chủ dự án (T3).
+- Bóng mới `glass-shadow-md`/`lg`: dùng `shadow-raised` có sẵn.
+- Toast dùng kính: nguồn không nói tới.
+- Số thời lượng, easing, `scale(0.98)`, "sáng lên 6%" cho tương tác.
+- Giới hạn "≤ 4 phần tử kính", "≤ 2 phần tử lensing": không có trong nguồn (nguồn chỉ nói dùng ít, M5).
+- `saturate(140%)`: Apple chỉ nói làm nhoè và chỉnh độ sáng (M8).
+- Chế độ giảm trong suốt chuyển sang nền đặc: Apple nói "frostier", không nói đặc (§A6).
+
+# Phần B — Danh sách kiểm
 
 ## 0. Cách dùng
 
 1. Chọn các mục ở §1 (mọi thành phần) và mục của từng thành phần bị đụng ở §3. **Mỗi trang / màn mới hoặc làm lại phải qua đủ §1b (trang và danh sách) trước khi báo xong** — không đợi chủ dự án nhắc (chủ dự án yêu cầu 2026-11-19, sau nhiều lần phải nhắc cắt chữ, phân trang, chuyển động).
 2. Kiểm bằng cách ghi ở cột "Cách kiểm": đo thật, chụp thật, có test; không kiểm bằng trí nhớ.
-3. Báo cáo cuối task (và mô tả PR) liệt kê từng mục: ✅ đạt, ❌ chưa đạt (kèm lý do, hoặc ghi lệch có chủ đích vào `LIQUID_GLASS.md`), — không áp dụng.
+3. Báo cáo cuối task (và mô tả PR) liệt kê từng mục: ✅ đạt, ❌ chưa đạt (kèm lý do, hoặc ghi lệch có chủ đích ở phần A), — không áp dụng.
 4. Số đo mới (bo góc, thời lượng, độ đậm…) phải có nguồn hoặc ghi rõ [Web]/[Chủ dự án] kèm lý do; số tự chọn không nguồn thì sửa.
 
 **Bộ kiểm chuẩn**
@@ -61,11 +186,11 @@
 | H2 | Hình lồng trong khối khác (ô trong thẻ, khối trong thẻ, nút trong ô) dùng **đồng tâm**; đứng riêng thì có bán kính dự phòng | [Apple] WWDC25 356: "nested containers—like artwork in a card"; "a concentric shape with a fallback radius" (S2) | Tính lại: thẻ màn tài khoản 46 = 22 + padding 24 → phần tử lồng 22; nút 40px trong ô 44px → 22 − 2 = 20 |
 | H3 | Không có góc "too pinched— or flared" | [Apple] WWDC25 356 | Nhìn ảnh phóng to |
 | H4 | Control lớn, cảm ứng: capsule; giao diện desktop dày đặc: capsule chỉ cho hành động nổi bật | [Apple] WWDC25 356 (S3) | Kiểm theo màn |
-| H5 | Liquid Glass chỉ ở lớp chức năng (thanh, control nổi, menu, popover, hộp thoại); lớp nội dung (thẻ, danh sách, ảnh) dùng bề mặt thường | [Apple] HIG Materials (M1, M2) | Phân loại bề mặt theo `LIQUID_GLASS.md` §2 |
+| H5 | Liquid Glass chỉ ở lớp chức năng (thanh, control nổi, menu, popover, hộp thoại); lớp nội dung (thẻ, danh sách, ảnh) dùng bề mặt thường | [Apple] HIG Materials (M1, M2) | Phân loại bề mặt theo §A2 |
 | H6 | Không kính chồng kính; thứ đặt trên kính dùng fill | [Apple] WWDC25 219 (M6) | Kiểm cây phần tử |
 | H7 | Dùng kính ít | [Apple] HIG Materials: "Use Liquid Glass effects sparingly" (M5) | Đếm bề mặt kính trên màn |
 | H8 | Bóng: chỉ cho lớp nổi (thẻ trên ảnh, control kính); ô nhập, khối lồng không có bóng đổ | [Apple] WWDC25 219 (M14 nói bóng của kính); [Web] token `shadow-raised` | Kiểm CSS |
-| H9 | Khúc xạ (lensing) không dùng trên web | [Chủ dự án] §7.3 `LIQUID_GLASS.md` (chỉ Chromium, thử ở nút 44px không thấy khác) | — |
+| H9 | Khúc xạ (lensing) không dùng trên web | [Chủ dự án] §A7.3 (chỉ Chromium, thử ở nút 44px không thấy khác) | — |
 
 ## 3. Từng thành phần
 
@@ -150,7 +275,7 @@
 | P-3 | Cùng vị trí ở mọi bước; ẩn khi xong | [Apple] "Display a progress indicator in a consistent location"; "transient… disappearing after it completes" |
 | P-4 | Không có chuyển động lặp khi không có gì đang chạy (lặp = "đang xử lý") | [Apple] HIG Progress indicators ("Keep progress indicators moving" là cho tác vụ đang chạy); [Web] WCAG 2.2.2 |
 | P-5 | `role="progressbar"` có nhãn, `aria-valuenow/min/max/valuetext` | [Web]; C8 |
-| P-6 | Ghi rõ lệch: Apple không có component "bước X trên Y" cho form | `LIQUID_GLASS.md` §9 |
+| P-6 | Ghi rõ lệch: Apple không có component "bước X trên Y" cho form | `SCREENS.md` §1.2 |
 
 ### 3.9 Chuyển động, hoạt ảnh, ảnh nền
 

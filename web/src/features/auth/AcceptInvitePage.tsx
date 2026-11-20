@@ -40,7 +40,7 @@ const STEP_ICONS = [KeyIcon, UserPlusIcon, CheckCircleIcon];
  * Prototype "Nhận lời mời" (SCREENS §1.1): the invitation email links here with the code (`?code=`), filled in and
  * checked at once; the code can also be pasted. The invitation is shown, then the invited person sets a name and
  * password. Afterwards a DRIVER is told to open the app. Same picture, card and controls as "Đăng nhập" (AuthStage,
- * LIQUID_GLASS.md §9).
+ * SCREENS.md §1.2).
  */
 export function AcceptInvitePage() {
   const accountApi = useAccountApi();

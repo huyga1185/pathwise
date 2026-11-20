@@ -34,7 +34,7 @@ const check = (rule: { validate: (value: string) => true | string }, value: stri
 /**
  * Prototype "Quên mật khẩu" (SCREENS §1.1): email → code → new password. Step 1 always says the code was sent if the
  * email has an account; step 3 must be done within the 10 minutes of the reset token; afterwards every device is
- * signed out. Same picture, card and controls as "Đăng nhập" (AuthStage, LIQUID_GLASS.md §9).
+ * signed out. Same picture, card and controls as "Đăng nhập" (AuthStage, SCREENS.md §1.2).
  */
 export function ForgotPasswordPage() {
   const accountApi = useAccountApi();

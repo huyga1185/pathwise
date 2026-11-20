@@ -360,7 +360,7 @@ a.pw-auth-logo:focus-visible {
 }
 
 /* Two columns ("Đăng nhập", "Đăng ký cửa hàng"): the picture covers the whole screen and the card stands on it
-   (docs/client/LIQUID_GLASS.md §9). */
+   (docs/client/SCREENS.md §1.2). */
 .pw-auth-hero {
   position: relative;
   display: flex;

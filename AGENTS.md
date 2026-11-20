@@ -46,10 +46,10 @@ docker compose --profile app up -d --build    # chạy toàn bộ stack trong co
 Áp dụng cho **mọi** thay đổi code (kể cả fix nhỏ hoặc việc được yêu cầu ngoài plan). Docs phải được cập nhật **trong cùng commit/PR** với code. Đối chiếu bằng cách **đọc code thật** (grep mapping, xem DTO và migration), không dựa vào trí nhớ hay mô tả task.
 
 1. **`docs/CURRENT_STATE.md`**
-   - Đổi cột Trạng thái của mọi F-xx đã sửa hoặc thay đổi, kèm task ID. Không xoá dòng.
+   - F-xx đã sửa: ghi Trạng thái (task/PR, cách sửa), rồi chuyển nguyên dòng sang `docs/archive/CURRENT_STATE.md` §2; §2 ở file đang dùng chỉ giữ F-xx đang mở hoặc đã chấp nhận. Không xoá dòng nào. Số F mới = số lớn nhất ở cả hai file + 1.
    - Thêm lỗi mới phát hiện thành F-xx mới, ghi mức bằng chứng (`[Verified-run]`, `[Verified-code]`, `[Risk]`).
    - Nếu build hoặc kết quả test thay đổi thì sửa §1 (dòng Build, Test, mô tả module bị ảnh hưởng).
-   - Thêm một dòng vào §5 "Lịch sử cập nhật" (ngày, commit, task, thay đổi).
+   - Mỗi PR thêm **một** dòng vào §5 "Lịch sử cập nhật" (ngày, PR/branch, task, một câu tóm tắt). Chi tiết (vì sao, đo đạc, kết quả test) ghi trong commit và mô tả PR, không chép vào §5.
 2. **`docs/API_SPEC.md`**: nếu đụng controller, DTO, `SecurityConfig`, `ErrorCode` hoặc handler lỗi.
    - Chạy `grep -rnE "@(Request|Get|Post|Put|Patch|Delete)Mapping" be/src/main/java` và so với spec.
    - Cập nhật cột Hiện trạng (✅ chỉ khi khớp spec **và** có test; còn lệch thì 🟡 kèm mô tả khác biệt cụ thể).
@@ -57,7 +57,7 @@ docker compose --profile app up -d --build    # chạy toàn bộ stack trong co
    - Khác spec có chủ đích thì sửa spec trong cùng PR và ghi lý do.
 3. **`docs/DATA_MODEL.md`**: nếu có migration hoặc đổi entity/Redis key. Bảng hoặc cột phải khớp file migration; cập nhật bảng version ở §4.
 4. **`docs/DECISIONS.md`**: nếu phát sinh quyết định mới. Ghi Proposed và hỏi chủ dự án; không tự đánh Approved.
-5. **`docs/IMPLEMENTATION_PLAN.md`**: nếu phạm vi, dependency hoặc ước lượng của task thay đổi.
+5. **`docs/IMPLEMENTATION_PLAN.md`**: nếu phạm vi, dependency hoặc ước lượng của task thay đổi. Task xong: chuyển nguyên mục sang `docs/archive/IMPLEMENTATION_PLAN.md`, thêm một dòng vào §1.
 6. **Báo cáo cuối task** phải liệt kê từng file ở mục 1–5: đã cập nhật gì, hoặc "không cần vì …". Không được bỏ qua im lặng.
 
 ## Commit

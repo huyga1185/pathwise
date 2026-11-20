@@ -1307,7 +1307,7 @@ html:has(.pw-form-bar) {
 
 /* ---------- G5: a plan on the map stage (OWNER_UI_REDESIGN §10) ----------
    The panel / sheet holds a header (G5.4), then the route groups (G5.7) of two-line stop rows (G5.8), or a stop's
-   card (G5.9). Groups are solid surfaces inside the glass (content layer, LIQUID_GLASS M2), no outline; inside a
+   card (G5.9). Groups are solid surfaces inside the glass (content layer, UI_GUIDELINES M2), no outline; inside a
    panel of radius 16 with 16px padding a concentric radius would be 0, so the fallback radius 8 (S1/S2, WWDC25 356). */
 .pw-map-panel,
 .pw-map-sheet-body {

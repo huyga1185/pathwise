@@ -3,7 +3,7 @@ import { Link, Outlet } from 'react-router';
 import { vi } from '@/shared/i18n/vi';
 import { LogoMark, PauseIcon, PlayIcon, Wordmark } from '@/shared/ui';
 import './login.css';
-// The picture of "Đăng nhập" / "Đăng ký cửa hàng" (map, route, pins, city; docs/client/LIQUID_GLASS.md §9), and the
+// The picture of "Đăng nhập" / "Đăng ký cửa hàng" (map, route, pins, city; docs/client/SCREENS.md §1.2), and the
 // same picture without its animations for reduced motion.
 import mapRoute from './map-route.svg';
 import mapRouteStill from './map-route-static.svg';
