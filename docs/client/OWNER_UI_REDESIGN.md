@@ -809,3 +809,13 @@ Theo mẫu trang Kế hoạch (G2):
 - F-76 hết: thanh trang mới không có dòng đếm "N cửa hàng".
 - Đo: 1440 / 960 / 390 / 320px không tràn ngang (960 trước sửa: 822/663).
 
+
+### 12.8 Làm: Nhật ký (2026-11-20)
+
+Như Nhật ký cửa hàng (§8.3, §8.10):
+- Bộ lọc: `PopUpFilter` "Hành động" + hai `DatePickerFilter` "Từ ngày" / "Đến ngày" (lịch của app thay `<input type="date">`) + "Xoá bộ lọc" khi đang lọc. **Cửa hàng và người làm chỉ đặt sẵn** (G7-Q2): bỏ hai ô gõ mã; "Xem tất cả trong Nhật ký" ở chi tiết cửa hàng và "Xem nhật ký của người này" ở Người dùng mở trang với `PresetFilter` "Cửa hàng: Tiệm A ⓧ" / "Người làm: email ⓧ"; link gõ tay không có tên thì "Cửa hàng #3" / "Người dùng #7".
+- **Rộng:** bảng (Thời điểm, Người làm, Hành động, Cửa hàng, IP) trong nhóm, kéo đổi độ rộng cột (S5); email một dòng "…" trên vai trò, câu 2 dòng "…" + `title`. Đủ cột cần 986px (đo với email 100 ký tự, IPv6 đủ 39 ký tự, mã cửa hàng 7 chữ số), nên khung bảng < 62rem thì Cửa hàng · IP thành **dòng phụ một dòng** dưới câu (G2.11, L3); phần bị cắt đọc đủ trong sheet. G2.9: số dòng vừa cửa sổ (`useFitRows`, dòng mẫu cao nhất: câu 2 dòng + dòng phụ), "‹ Trang x/y ›" đứng yên.
+- **Điện thoại:** hàng (câu tối đa 2 dòng; thời điểm · email) mở sheet; 20 dòng một trang, thanh trang ghim ở trên (§8.17).
+- Sheet "Chi tiết": hành động, thời điểm có năm, người làm · vai trò, cửa hàng (link sang trang cửa hàng), IP — đủ chữ, bẻ cả chuỗi không dấu cách.
+- Hàng giữ chỗ khi tải; trống kiểu ContentUnavailableView ("Chưa có dòng nhật ký nào khớp." + gợi ý khi đang lọc); chuyển động kết quả như G2.10.
+- Đo (stack e2e, 60 dòng giả qua `page.route`, dữ liệu dài tối đa như trên): 1920 / 1440 / 1300 / 1280 / 1024 / 960 / 390 / 320px không tràn ngang; bảng 1392/1392, 1133/1133, 993/993 (đủ cột), 973/973, 724/724, 663/663 (gập); 1440×900 → 9 dòng, 960×900 → 7; sáng và tối. Trước: ô ngày của trình duyệt (mm/dd/yyyy), ô gõ mã, "Mới hơn / Cũ hơn", điện thoại cuộn ngang 612/341.

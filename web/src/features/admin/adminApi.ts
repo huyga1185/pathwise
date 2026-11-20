@@ -103,10 +103,11 @@ export function useAdminUsers(filter: UserFilter, size = PAGE_SIZE, enabled = tr
 }
 
 /** The audit log of the platform (`GET /admin/audit`, T58), newest first. */
-export function useAdminAudit(filter: AuditFilter, size = PAGE_SIZE) {
+export function useAdminAudit(filter: AuditFilter, size = PAGE_SIZE, enabled = true) {
   const api = useApi();
   return useQuery({
     queryKey: queryKeys.adminAudit({ ...filter, size }),
+    enabled,
     queryFn: () =>
       unwrap(
         api.GET('/api/v1/admin/audit', {

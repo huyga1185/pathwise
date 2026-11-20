@@ -419,20 +419,57 @@ describe('Khu quản trị (W11)', () => {
     await waitFor(() => expect(queries.at(-1)?.get('storeId')).toBeNull());
   });
 
-  it('nhật ký: câu theo hành động, lọc hành động gửi action', async () => {
-    const actions: (string | null)[] = [];
+  it('nhật ký: cửa hàng và người làm chỉ đặt sẵn từ trang khác (viên thuốc bỏ được), lọc hành động bằng pop-up', async () => {
+    const queries: URLSearchParams[] = [];
     server.use(
       http.get(`${API}/admin/audit`, ({ request }) => {
-        actions.push(new URL(request.url).searchParams.get('action'));
+        queries.push(new URL(request.url).searchParams);
         return ok(page([auditEvent]));
       }),
       ...adminHandlers(),
     );
-    renderApp('/admin/audit?storeId=3');
+    const { router } = renderApp(
+      '/admin/audit?storeId=3&storeName=Ti%E1%BB%87m%20Hoa%20H%E1%BB%93ng&actorId=1&actor=admin%40pathwise.vn',
+    );
+    const user = userEvent.setup();
+
     expect(await screen.findByText('Tạm khoá cửa hàng: Chưa thanh toán')).toBeInTheDocument();
-    expect(screen.getByText('203.0.113.7')).toBeInTheDocument();
-    expect(screen.getByLabelText('Mã cửa hàng')).toHaveValue(3);
-    await userEvent.selectOptions(screen.getByLabelText('Hành động'), 'Khoá cửa hàng');
-    await waitFor(() => expect(actions.at(-1)).toBe('STORE_LOCKED'));
+    expect(queries[0]?.get('storeId')).toBe('3');
+    expect(queries[0]?.get('actorId')).toBe('1');
+    // No field to type an id into (G7-Q2): the presets show names.
+    expect(screen.queryByRole('spinbutton')).not.toBeInTheDocument();
+    expect(screen.getByText('Tiệm Hoa Hồng')).toBeInTheDocument();
+    const filters = screen.getByRole('group', { name: 'Lọc nhật ký' });
+    expect(within(filters).getByText('admin@pathwise.vn')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /Hành động: Tất cả/ }));
+    await user.click(screen.getByRole('menuitemradio', { name: 'Khoá cửa hàng' }));
+    await waitFor(() => expect(queries.at(-1)?.get('action')).toBe('STORE_LOCKED'));
+
+    await user.click(screen.getByRole('button', { name: 'Bỏ lọc người làm' }));
+    await waitFor(() => expect(queries.at(-1)?.get('actorId')).toBeNull());
+    expect(queries.at(-1)?.get('storeId')).toBe('3');
+    await user.click(screen.getByRole('button', { name: 'Bỏ lọc cửa hàng' }));
+    await waitFor(() => expect(router.state.location.search).toBe('?action=STORE_LOCKED'));
+  });
+
+  it('nhật ký: không có tên trên link thì hiện mã; bấm một dòng mở sheet "Chi tiết" đủ chữ, có link sang cửa hàng', async () => {
+    server.use(
+      http.get(`${API}/admin/audit`, () => ok(page([auditEvent]))),
+      ...adminHandlers(),
+    );
+    renderApp('/admin/audit?storeId=3&actorId=1');
+    const user = userEvent.setup();
+
+    await user.click(await screen.findByRole('button', { name: /Tạm khoá cửa hàng: Chưa thanh toán/ }));
+    const filters = screen.getByRole('group', { name: 'Lọc nhật ký' });
+    expect(within(filters).getByText('Cửa hàng #3')).toBeInTheDocument();
+    expect(within(filters).getByText('Người dùng #1')).toBeInTheDocument();
+    const sheet = await screen.findByRole('dialog', { name: 'Chi tiết' });
+    expect(within(sheet).getByText('Tạm khoá cửa hàng: Chưa thanh toán')).toBeInTheDocument();
+    expect(within(sheet).getByText('14/11/2026 09:30')).toBeInTheDocument();
+    expect(within(sheet).getByText('admin@pathwise.vn')).toBeInTheDocument();
+    expect(within(sheet).getByText('203.0.113.7')).toBeInTheDocument();
+    expect(within(sheet).getByRole('link', { name: 'Cửa hàng #3' })).toHaveAttribute('href', '/admin/stores/3');
   });
 });

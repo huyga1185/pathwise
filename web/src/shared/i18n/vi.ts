@@ -1055,8 +1055,9 @@ export const vi = {
       title: 'Nhật ký thao tác',
       lead: 'Hành động của quản trị viên và hành động nhạy cảm trong cửa hàng. Giữ 1 năm. Giờ Việt Nam.',
       filterLabel: 'Lọc nhật ký',
-      storeId: 'Mã cửa hàng',
-      actorId: 'Mã người làm',
+      /** A person preset from the users page without an email on the link (typed by hand): G7-Q2. */
+      actorNumber: (id: number) => `Người dùng #${id}`,
+      clearActor: 'Bỏ lọc người làm',
     },
   },
   reports: {

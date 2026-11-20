@@ -269,3 +269,48 @@
 .pw-admin-row .pw-more-button {
   margin-right: -8px;
 }
+
+/* Log (§12, as the store's log §8.10): the actor's email bold on one line over the role; each row opens a sheet with
+   all of it. Narrow (every column needs 986px, measured with a 100-character email and a full IPv6), the store and the IP become
+   a line under the sentence (G2.11; checklist L3). */
+.pw-admin-audit-actor {
+  font-weight: 600;
+  color: var(--ink);
+}
+.pw-admin-audit-col-actor {
+  min-width: 10rem;
+  max-width: 18rem;
+}
+.pw-admin-audit-sentence {
+  font-weight: 500;
+}
+.pw-admin-audit-table {
+  container-type: inline-size;
+}
+.pw-admin-audit-table .pw-cell-sub.pw-admin-audit-fold {
+  display: none;
+}
+@container (max-width: 62rem) {
+  .pw-admin-audit-table .pw-admin-audit-col-fold {
+    display: none;
+  }
+  .pw-admin-audit-table .pw-cell-sub.pw-admin-audit-fold {
+    display: -webkit-box;
+  }
+}
+/* A row's sheet: label over value, everything in full. */
+.pw-admin-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin: 0;
+}
+.pw-admin-detail dt {
+  font-size: 0.8125rem;
+  line-height: 1.125rem;
+  color: var(--ink-muted);
+}
+.pw-admin-detail dd {
+  margin: 2px 0 0;
+  overflow-wrap: anywhere;
+}
