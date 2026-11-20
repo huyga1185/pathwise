@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
-# Web app image (W08, P-56): the dispatcher web app served by Caddy, which also proxies /api/ to the app and gets
-# HTTPS certificates. Build context: the repository root (Vite copies brand/logo).
+# Web app image (W08, W14, P-56): the dispatcher web app and the landing page served by Caddy, which also proxies /api/
+# to the app and gets HTTPS certificates. Build context: the repository root (Vite copies brand/logo).
 #   docker build -f web/Dockerfile -t pathwise-web .
 
 FROM node:24.11.1-alpine AS build
@@ -25,6 +25,8 @@ RUN PATHWISE_DOMAIN=localhost XDG_DATA_HOME=/tmp/caddy-validate XDG_CONFIG_HOME=
     && rm -r /tmp/caddy-validate
 COPY deploy/caddy/write-config.sh /usr/local/bin/pathwise-write-config
 COPY --from=build /src/web/dist/ /srv/app/
+# The landing page at / (W14): static files, no build. README.md stays out (Dockerfile.dockerignore).
+COPY landing/ /srv/
 ENV PATHWISE_UPSTREAM=app:8080 \
     PATHWISE_WEB_ROOT=/srv
 # Writes /srv/app/config.js from PATHWISE_* variables, then starts Caddy.

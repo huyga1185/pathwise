@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://huy-vu.uk/sitemap.xml
