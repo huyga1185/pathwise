@@ -792,3 +792,12 @@ Theo mẫu trang Kế hoạch (G2):
 - Nhãn trạng thái chữ HOA là kiểu chung của `pw-pill` toàn app (Kế hoạch cũng vậy) — giữ.
 - Đo (24 cửa hàng thêm, tên 150 ký tự và 100 ký tự không dấu cách): 1440 / 1024 / 960 / 390 / 320px không tràn ngang, bảng 1133/1133, 724/724, 663/663.
 
+### 12.6 Làm: Chi tiết cửa hàng (2026-11-20)
+
+- Quay lại bằng `BackLink` "‹ Cửa hàng" (G4.1; điện thoại lên thanh trên, §9.11) thay link chữ "← Cửa hàng".
+- Hành động trong **menu "…" cuối hàng tiêu đề** (G7-Q3): "Chuyển chủ cửa hàng…", rồi "Tạm khoá (chỉ đọc)…" màu đỏ ở cuối (HIG Menus: lệnh phá huỷ ở cuối, màu đỏ; "…" vì mở thêm bước). Cửa hàng đang khoá thì mục cuối là "Mở khoá" (không đỏ). `MoreMenu` chuyển từ `features/plans` sang `shared/ui` (thêm prop nhãn). Tên dài bao nhiêu dòng cũng được (§9.8), nút "…" ngang dòng đầu.
+- Khoá: **sheet "Tạm khoá"** (tiêu đề ngắn, HIG Toolbars; tên cửa hàng đầy đủ trong sheet), ô lý do nhiều dòng `TextField multiline`, "Khoá" ở cuối thanh sheet, sửa dở mà vuốt đóng thì hỏi. Chuyển chủ: **sheet "Chuyển chủ"**. Mở khoá: **alert** xác nhận. Kết quả: `Toast` như trang Thành viên (trước là dòng viền xanh).
+- Số: hai `StatGroup`. Thành viên: rộng là bảng trong nhóm (email 2 dòng "…" + `title`); điện thoại là hàng chỉ đọc (email, "vai trò · tham gia …", nhãn trạng thái) — không có màn chi tiết nên không cắt chữ. Nhật ký của cửa hàng (10 dòng mới nhất): hàng trong nhóm, câu đầy đủ, "giờ · người làm" dưới; "Xem tất cả trong Nhật ký" cuối tiêu đề mục.
+- Sửa chung: `RowMenu` đo độ rộng thật để không tràn mép phải (trước giả định 216px; menu "…" ở cuối hàng tiêu đề tràn khỏi màn 1440px); đo bằng `offsetWidth` vì hiệu ứng mở thu nhỏ menu.
+- Đo: 1440 / 1024 / 390 / 320px không tràn ngang; tên 150 ký tự ở 320px xuống nhiều dòng, nút "…" ngang dòng đầu.
+

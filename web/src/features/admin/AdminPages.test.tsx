@@ -312,26 +312,33 @@ describe('Khu quản trị (W11)', () => {
     const user = userEvent.setup();
 
     expect(await screen.findByRole('heading', { name: 'Tiệm Hoa Hồng' })).toBeInTheDocument();
-    expect(await screen.findByText('admin@pathwise.vn: Tạm khoá cửa hàng: Chưa thanh toán')).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'Khoá (chỉ đọc)' }));
-    const lockDialog = screen.getByRole('alertdialog', { name: 'Khoá cửa hàng Tiệm Hoa Hồng?' });
-    expect(within(lockDialog).getByRole('button', { name: 'Khoá cửa hàng' })).toBeDisabled();
-    await user.type(within(lockDialog).getByLabelText(/Lý do/), '  Chưa thanh toán ');
-    await user.click(within(lockDialog).getByRole('button', { name: 'Khoá cửa hàng' }));
+    // The latest log entries: the whole sentence, who and when under it.
+    expect(await screen.findByText('Tạm khoá cửa hàng: Chưa thanh toán')).toBeInTheDocument();
+    // The store's actions are in the More menu (G7-Q3), locking last and destructive.
+    await user.click(screen.getByRole('button', { name: 'Thao tác với cửa hàng' }));
+    const items = screen.getAllByRole('menuitem');
+    expect(items.map((item) => item.textContent)).toEqual(['Chuyển chủ cửa hàng…', 'Tạm khoá (chỉ đọc)…']);
+    await user.click(items[1]!);
+    const lockSheet = screen.getByRole('dialog', { name: 'Tạm khoá' });
+    expect(within(lockSheet).getByRole('button', { name: 'Khoá' })).toBeDisabled();
+    await user.type(within(lockSheet).getByLabelText(/Lý do/), '  Chưa thanh toán ');
+    await user.click(within(lockSheet).getByRole('button', { name: 'Khoá' }));
 
     expect(await screen.findByText('Đã khoá cửa hàng.')).toBeInTheDocument();
     expect(bodies[0]).toEqual({ reason: 'Chưa thanh toán' });
     expect(screen.getByText('Đang tạm khoá (chỉ đọc)')).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'Mở khoá' }));
+    await user.click(screen.getByRole('button', { name: 'Thao tác với cửa hàng' }));
+    await user.click(screen.getByRole('menuitem', { name: 'Mở khoá' }));
     await user.click(
-      within(screen.getByRole('dialog', { name: /Mở khoá cửa hàng/ })).getByRole('button', { name: 'Mở khoá' }),
+      within(screen.getByRole('alertdialog', { name: /Mở khoá cửa hàng/ })).getByRole('button', { name: 'Mở khoá' }),
     );
     expect(await screen.findByText('Đã mở khoá cửa hàng.')).toBeInTheDocument();
     // Lock and unlock update the page from their response: the store is not read again (no extra STORE_VIEWED).
     expect(views).toBe(1);
 
-    await user.click(screen.getByRole('button', { name: 'Chuyển chủ cửa hàng' }));
-    const transfer = screen.getByRole('alertdialog', { name: 'Chuyển chủ cửa hàng Tiệm Hoa Hồng?' });
+    await user.click(screen.getByRole('button', { name: 'Thao tác với cửa hàng' }));
+    await user.click(screen.getByRole('menuitem', { name: 'Chuyển chủ cửa hàng…' }));
+    const transfer = screen.getByRole('dialog', { name: 'Chuyển chủ' });
     // Only ACTIVE members other than the OWNER can be chosen.
     expect(within(transfer).getAllByRole('option')).toHaveLength(1);
     await user.click(within(transfer).getByRole('button', { name: 'Chuyển chủ' }));

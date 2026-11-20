@@ -1,5 +1,6 @@
 import {
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
   type KeyboardEvent as ReactKeyboardEvent,
@@ -139,6 +140,17 @@ export function RowMenu({
       close.current();
     }
   };
+  // Kept inside the window by its real width (a long item makes it wider than the 216 assumed below), before it is
+  // drawn: at a page's trailing edge (the More button) it ran off the screen.
+  useLayoutEffect(() => {
+    const element = menu.current;
+    if (!element) return;
+    // offsetLeft/offsetWidth: the layout box, not scaled by the opening animation.
+    const room = document.documentElement.clientWidth - 8;
+    if (element.offsetLeft + element.offsetWidth > room) {
+      element.style.left = `${Math.max(8, room - element.offsetWidth)}px`;
+    }
+  }, [rect]);
   const below = rect.bottom + 8 + 48 * items.length < window.innerHeight - 96;
   const left = Math.min(rect.left + 8, document.documentElement.clientWidth - 216);
   return createPortal(

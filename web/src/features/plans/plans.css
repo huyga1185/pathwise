@@ -1350,9 +1350,6 @@ html:has(.pw-form-bar) {
 .pw-map-sheet .pw-stage-actions > .pw-btn {
   flex: 1 1 auto;
 }
-.pw-more-button {
-  flex: none;
-}
 .pw-stage-list {
   display: flex;
   flex-direction: column;

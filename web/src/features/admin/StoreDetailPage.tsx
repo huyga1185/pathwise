@@ -4,24 +4,36 @@ import { ApiError } from '@/data/apiError';
 import { auditSentence } from '@/shared/audit';
 import { messageFor } from '@/shared/errors';
 import { formatDate, formatDayTime, formatRate } from '@/shared/format';
+import { useMediaQuery, WIDE_QUERY } from '@/shared/hooks/useMediaQuery';
 import { vi } from '@/shared/i18n/vi';
 import {
-  Button,
-  DataTable,
-  Dialog,
-  EmptyState,
-  ErrorBanner,
-  SelectField,
-  Stat,
-  StatusPill,
   ActivityIndicator,
+  Alert,
+  DataTable,
+  ErrorBanner,
+  MoreMenu,
+  SelectField,
+  Sheet,
+  Stat,
+  StatGroup,
+  StatusPill,
+  StoreIcon,
+  TextField,
+  Toast,
+  ToastDock,
+  type RowMenuItem,
 } from '@/shared/ui';
+import { BackLink } from '@/shared/ui/BackLink';
 import { useAdminApi, useAdminAudit, useAdminStore, type AdminStoreDetail } from './adminApi';
 
 const ZONE = 'Asia/Ho_Chi_Minh';
-type DialogKind = 'lock' | 'unlock' | 'transfer' | null;
+type Task = 'lock' | 'unlock' | 'transfer' | null;
 
-/** Prototype "Quản trị — chi tiết cửa hàng" (W11, T55–T58): totals, members, lock, change of owner, its log. */
+/**
+ * "Quản trị — chi tiết cửa hàng" (W11, T55–T58; redesigned in G7, OWNER_UI_REDESIGN §12): the standard back button,
+ * the store's actions in a More menu on the title row (G7-Q3), numbers in groups, its members and latest log entries
+ * in groups; locking and changing the owner in sheets, unlocking confirmed by an alert, the result in a toast.
+ */
 export function StoreDetailPage() {
   const id = Number(useParams().id);
   const store = useAdminStore(id);
@@ -30,8 +42,17 @@ export function StoreDetailPage() {
     const notFound = store.error instanceof ApiError && store.error.status === 404;
     return (
       <section className="pw-page-section">
-        <Link to="/admin/stores">{t.back}</Link>
-        {notFound ? <EmptyState title={t.notFound} /> : <ErrorBanner title={messageFor(store.error)} />}
+        <BackLink to="/admin/stores" label={vi.admin.stores.title} />
+        {notFound ? (
+          <section className="pw-list-empty" aria-labelledby="store-missing-title">
+            <span className="pw-list-empty-symbol" aria-hidden="true">
+              <StoreIcon />
+            </span>
+            <h1 id="store-missing-title">{t.notFound}</h1>
+          </section>
+        ) : (
+          <ErrorBanner title={messageFor(store.error)} />
+        )}
       </section>
     );
   }
@@ -41,30 +62,32 @@ export function StoreDetailPage() {
 
 function StoreDetail({ store }: { store: AdminStoreDetail }) {
   const t = vi.admin.store;
+  const wide = useMediaQuery(WIDE_QUERY);
   const adminApi = useAdminApi();
   const audit = useAdminAudit({ storeId: store.id, page: 0 }, 10);
-  const [dialog, setDialog] = useState<DialogKind>(null);
+  const [task, setTask] = useState<Task>(null);
   const [reason, setReason] = useState(store.lockReason ?? '');
   const candidates = store.members.filter((member) => member.status === 'ACTIVE' && member.role !== 'OWNER');
   const [newOwner, setNewOwner] = useState('');
   const [busy, setBusy] = useState(false);
   const [failure, setFailure] = useState<unknown>(null);
-  const [notice, setNotice] = useState('');
+  const [toast, setToast] = useState('');
   const locked = store.status === 'READ_ONLY';
   const owner = store.ownerEmail ?? t.noOwner;
 
-  const open = (kind: DialogKind) => {
+  const open = (next: Task) => {
     setFailure(null);
-    setNotice('');
-    if (kind === 'transfer') setNewOwner(String(candidates[0]?.id ?? ''));
-    setDialog(kind);
+    if (next === 'transfer') setNewOwner(String(candidates[0]?.id ?? ''));
+    if (next === 'lock') setReason(store.lockReason ?? '');
+    setTask(next);
   };
   const run = async (action: () => Promise<string>) => {
     setBusy(true);
     setFailure(null);
     try {
-      setNotice(await action());
-      setDialog(null);
+      const done = await action();
+      setTask(null);
+      setToast(done);
     } catch (error) {
       setFailure(error);
     } finally {
@@ -73,20 +96,27 @@ function StoreDetail({ store }: { store: AdminStoreDetail }) {
   };
   const reasonError = failure instanceof ApiError && failure.code === 'VALIDATION_ERROR' ? t.reasonRequired : null;
 
+  // The store's actions (G7-Q3; HIG Toolbars "More menu"): the destructive one last, in red (HIG Menus).
+  const actions: RowMenuItem[] = [
+    { label: t.transfer, onSelect: () => open('transfer') },
+    locked
+      ? { label: t.unlock, onSelect: () => open('unlock') }
+      : { label: t.lock, destructive: true, onSelect: () => open('lock') },
+  ];
+
   return (
     <section className="pw-page-section" aria-labelledby="store-title">
-      <Link to="/admin/stores" className="pw-admin-strong-link">
-        {t.back}
-      </Link>
-      <div className="pw-admin-head">
-        <div className="pw-admin-intro">
-          <div className="pw-admin-title-row">
-            <h1 id="store-title" className="pw-page-title">
-              {store.name}
-            </h1>
-            <StatusPill kind="store" status={store.status} />
-          </div>
-          <p className="pw-muted">
+      <BackLink to="/admin/stores" label={vi.admin.stores.title} />
+      <div className="pw-admin-intro">
+        <div className="pw-list-head pw-admin-title-head">
+          <h1 id="store-title" className="pw-page-title">
+            {store.name}
+          </h1>
+          <MoreMenu label={t.actions} items={actions} />
+        </div>
+        <div className="pw-admin-title-row">
+          <StatusPill kind="store" status={store.status} />
+          <p className="pw-muted pw-admin-meta">
             {t.meta(
               owner,
               formatDate(store.createdAt, ZONE),
@@ -94,20 +124,6 @@ function StoreDetail({ store }: { store: AdminStoreDetail }) {
               store.lastActivityAt ? formatDayTime(store.lastActivityAt, ZONE) : t.never,
             )}
           </p>
-        </div>
-        <div className="pw-admin-actions">
-          {locked ? (
-            <Button variant="secondary" onClick={() => open('unlock')}>
-              {t.unlock}
-            </Button>
-          ) : (
-            <Button variant="secondary" onClick={() => open('lock')}>
-              {t.lock}
-            </Button>
-          )}
-          <Button variant="secondary" onClick={() => open('transfer')}>
-            {t.transfer}
-          </Button>
         </div>
       </div>
       {locked ? (
@@ -117,13 +133,8 @@ function StoreDetail({ store }: { store: AdminStoreDetail }) {
           <span className="pw-muted">{t.lockedText(store.lockedAt ? formatDayTime(store.lockedAt, ZONE) : '')}</span>
         </div>
       ) : null}
-      {notice ? (
-        <p role="status" className="pw-admin-notice">
-          {notice}
-        </p>
-      ) : null}
 
-      <div className="pw-admin-grid">
+      <StatGroup label={t.totals}>
         <Stat
           label={t.members}
           value={store.memberCounts.owners + store.memberCounts.dispatchers + store.memberCounts.drivers}
@@ -131,12 +142,12 @@ function StoreDetail({ store }: { store: AdminStoreDetail }) {
         />
         <Stat label={t.vehicles} value={store.vehicles} />
         <Stat label={t.plans} value={store.plans} sub={t.plansSub} />
-      </div>
+      </StatGroup>
       <section className="pw-admin-block" aria-labelledby="last30">
-        <h2 id="last30" className="pw-admin-h2">
+        <h2 id="last30" className="pw-section-title">
           {t.last30}
         </h2>
-        <div className="pw-admin-grid">
+        <StatGroup label={t.last30}>
           <Stat
             label={t.plans}
             value={store.last30Days.plansPublished}
@@ -151,109 +162,129 @@ function StoreDetail({ store }: { store: AdminStoreDetail }) {
               store.last30Days.stopsSkipped,
             )}
           />
-        </div>
+        </StatGroup>
       </section>
+
       <section className="pw-admin-block" aria-labelledby="members-title">
-        <h2 id="members-title" className="pw-admin-h2">
+        <h2 id="members-title" className="pw-section-title">
           {t.members}
         </h2>
-        <DataTable
-          caption={t.members}
-          rows={store.members}
-          columns={[
-            { key: 'email', header: t.email, render: (row) => row.email },
-            { key: 'role', header: t.role, render: (row) => vi.roles[row.role] ?? row.role },
-            { key: 'status', header: t.status, render: (row) => <StatusPill kind="member" status={row.status} /> },
-            { key: 'joined', header: t.joined, render: (row) => formatDate(row.createdAt, ZONE) },
-          ]}
-        />
+        {wide ? (
+          <DataTable
+            caption={t.members}
+            className="pw-list-group"
+            rows={store.members}
+            columns={[
+              {
+                key: 'email',
+                header: t.email,
+                className: 'pw-admin-col-name',
+                render: (row) => (
+                  <span className="pw-cell-title" title={row.email}>
+                    {row.email}
+                  </span>
+                ),
+              },
+              {
+                key: 'role',
+                header: t.role,
+                className: 'pw-nowrap',
+                render: (row) => vi.roles[row.role] ?? row.role,
+              },
+              { key: 'status', header: t.status, render: (row) => <StatusPill kind="member" status={row.status} /> },
+              {
+                key: 'joined',
+                header: t.joined,
+                numeric: true,
+                className: 'pw-nowrap',
+                render: (row) => formatDate(row.createdAt, ZONE),
+              },
+            ]}
+          />
+        ) : (
+          // A phone: read-only rows, everything shown (no sheet to open, so nothing cut — HIG Typography).
+          <ul className="pw-list-group pw-list-rows" aria-label={t.members}>
+            {store.members.map((row) => (
+              <li key={row.id} className="pw-list-row pw-admin-row">
+                <span className="pw-list-row-main">
+                  <span className="pw-admin-row-title">{row.email}</span>
+                  <span className="pw-list-row-sub">
+                    {t.memberLine(vi.roles[row.role] ?? row.role, formatDate(row.createdAt, ZONE))}
+                  </span>
+                </span>
+                <StatusPill kind="member" status={row.status} />
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
+
       <section className="pw-admin-block" aria-labelledby="audit-title">
-        <div className="pw-admin-head">
-          <h2 id="audit-title" className="pw-admin-h2">
+        <div className="pw-admin-section-head">
+          <h2 id="audit-title" className="pw-section-title">
             {t.audit}
           </h2>
           <Link to={`/admin/audit?storeId=${store.id}`}>{t.auditAll}</Link>
         </div>
         {audit.isError ? <ErrorBanner title={messageFor(audit.error)} /> : null}
-        <ol className="pw-admin-log">
-          {(audit.data?.items ?? []).map((event) => (
-            <li key={event.id}>
-              <span className="pw-muted">{formatDayTime(event.occurredAt, ZONE)}</span>
-              <span>
-                {event.actorEmail ? `${event.actorEmail}: ` : ''}
-                {auditSentence(event)}
-              </span>
-            </li>
-          ))}
-        </ol>
         {audit.data && audit.data.items.length === 0 ? <p className="pw-muted">{vi.audit.empty}</p> : null}
+        {audit.data && audit.data.items.length > 0 ? (
+          // The latest ten, whole sentences (not cut: no sheet here; the full log opens each, §8.10).
+          <ol className="pw-list-group pw-list-rows" aria-label={t.audit}>
+            {audit.data.items.map((event) => (
+              <li key={event.id} className="pw-list-row pw-admin-row">
+                <span className="pw-list-row-main">
+                  <span className="pw-admin-row-title">{auditSentence(event)}</span>
+                  <span className="pw-list-row-sub pw-tabular">
+                    {[formatDayTime(event.occurredAt, ZONE), event.actorEmail].filter(Boolean).join(' · ')}
+                  </span>
+                </span>
+              </li>
+            ))}
+          </ol>
+        ) : null}
       </section>
 
-      <Dialog
-        open={dialog === 'lock'}
-        tone="danger"
-        title={t.lockTitle(store.name)}
-        confirmLabel={t.lockConfirm}
-        cancelLabel={t.back2}
+      <Sheet
+        open={task === 'lock'}
+        title={t.lockSheet}
+        doneLabel={t.lockConfirm}
         busy={busy}
-        confirmDisabled={reason.trim() === ''}
-        onClose={() => setDialog(null)}
-        onConfirm={() => void run(async () => (await adminApi.lockStore(store.id, reason.trim()), t.locked))}
+        doneDisabled={reason.trim() === ''}
+        dirty={reason.trim() !== (store.lockReason ?? '')}
+        onClose={() => setTask(null)}
+        onSubmit={(event) => {
+          event.preventDefault();
+          void run(async () => (await adminApi.lockStore(store.id, reason.trim()), t.locked));
+        }}
       >
+        <p className="pw-admin-sheet-name">{store.name}</p>
         <p>{t.lockText}</p>
-        <div className="pw-field">
-          <label className="pw-field-label" htmlFor="lock-reason">
-            {t.lockReason}{' '}
-            <span className="pw-field-req" aria-hidden="true">
-              *
-            </span>
-          </label>
-          <textarea
-            id="lock-reason"
-            className="pw-field-input"
-            rows={3}
-            maxLength={500}
-            required
-            value={reason}
-            aria-describedby="lock-hint"
-            aria-invalid={reasonError ? true : undefined}
-            onChange={(event) => setReason(event.target.value)}
-          />
-          <p id="lock-hint" className="pw-field-msg">
-            {t.lockHint}
-          </p>
-        </div>
-        {failure ? <ErrorBanner title={reasonError ?? messageFor(failure)} /> : null}
-      </Dialog>
-      <Dialog
-        open={dialog === 'unlock'}
-        title={t.unlockTitle(store.name)}
-        confirmLabel={t.unlock}
-        cancelLabel={t.back2}
+        <TextField
+          label={t.lockReason}
+          multiline
+          required
+          maxLength={500}
+          value={reason}
+          hint={t.lockHint}
+          error={reasonError ?? undefined}
+          onChange={(event) => setReason(event.target.value)}
+        />
+        {failure && !reasonError ? <ErrorBanner title={messageFor(failure)} /> : null}
+      </Sheet>
+      <Sheet
+        open={task === 'transfer'}
+        title={t.transferSheet}
+        doneLabel={t.transferConfirm}
         busy={busy}
-        onClose={() => setDialog(null)}
-        onConfirm={() => void run(async () => (await adminApi.unlockStore(store.id), t.unlocked))}
+        doneDisabled={candidates.length === 0}
+        onClose={() => setTask(null)}
+        onSubmit={(event) => {
+          event.preventDefault();
+          void run(async () => t.transferred((await adminApi.transferOwner(store.id, Number(newOwner))).ownerEmail));
+        }}
       >
-        <p>{t.unlockText}</p>
-        {failure ? <ErrorBanner title={messageFor(failure)} /> : null}
-      </Dialog>
-      <Dialog
-        open={dialog === 'transfer'}
-        tone="danger"
-        title={t.transferTitle(store.name)}
-        confirmLabel={t.transferConfirm}
-        cancelLabel={t.back2}
-        busy={busy}
-        confirmDisabled={candidates.length === 0}
-        onClose={() => setDialog(null)}
-        onConfirm={() =>
-          void run(async () => {
-            const result = await adminApi.transferOwner(store.id, Number(newOwner));
-            return t.transferred(result.ownerEmail);
-          })
-        }
-      >
+        <p className="pw-admin-sheet-name">{store.name}</p>
         {candidates.length === 0 ? (
           <p>{t.noCandidate}</p>
         ) : (
@@ -271,7 +302,23 @@ function StoreDetail({ store }: { store: AdminStoreDetail }) {
         )}
         <p>{t.transferText(owner)}</p>
         {failure ? <ErrorBanner title={messageFor(failure)} /> : null}
-      </Dialog>
+      </Sheet>
+      <Alert
+        open={task === 'unlock'}
+        title={t.unlockTitle(store.name)}
+        message={failure ? messageFor(failure) : t.unlockText}
+        actionLabel={t.unlock}
+        busy={busy}
+        onCancel={() => setTask(null)}
+        onAction={() => void run(async () => (await adminApi.unlockStore(store.id), t.unlocked))}
+      />
+      {toast ? (
+        <ToastDock>
+          <Toast tone="success" onClose={() => setToast('')}>
+            {toast}
+          </Toast>
+        </ToastDock>
+      ) : null}
     </section>
   );
 }

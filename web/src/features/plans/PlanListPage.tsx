@@ -10,7 +10,6 @@ import { useFitRows } from '@/shared/hooks/useFitRows';
 import { useMediaQuery, WIDE_QUERY } from '@/shared/hooks/useMediaQuery';
 import { vi } from '@/shared/i18n/vi';
 import {
-  Button,
   buttonClass,
   ChevronRightIcon,
   ClearFilters,

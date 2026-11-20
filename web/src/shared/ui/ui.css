@@ -4158,3 +4158,7 @@ html {
   height: 10px;
   border-radius: 3px;
 }
+/* The More button of a page's top row (MoreMenu): keeps its circle in a row of buttons. */
+.pw-more-button {
+  flex: none;
+}

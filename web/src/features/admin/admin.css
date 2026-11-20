@@ -214,3 +214,38 @@
     display: block;
   }
 }
+
+/* Store detail (§12): the status and the meta line under the title; a section heading with its link at the end. */
+.pw-admin-meta {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.pw-admin-section-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2) var(--space-4);
+}
+/* A read-only row (members on a phone, the latest log entries): nothing to open, so the text is never cut — it wraps,
+   unspaced strings too (HIG Typography; checklist L1). No chevron: the trailing inset equals the leading one. */
+.pw-admin-row {
+  padding-right: 16px;
+  cursor: default;
+}
+.pw-admin-row-title {
+  overflow-wrap: anywhere;
+}
+/* The store a sheet acts on, its full name (the sheet's title stays short: HIG Toolbars "under 15 characters"). */
+.pw-admin-sheet-name {
+  margin: 0;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+/* A long name takes as many lines as it needs (§9.8): the More button stays level with its first line. */
+.pw-admin-title-head {
+  align-items: flex-start;
+}
+.pw-admin-title-head .pw-more-button {
+  margin-top: -5px;
+}

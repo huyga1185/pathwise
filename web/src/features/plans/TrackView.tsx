@@ -3,12 +3,12 @@ import { DriverIcon, RouteMap, routeColour, type MapDriver } from '@/platform/ma
 import { formatDateLong, formatPhone, formatTime } from '@/shared/format';
 import { vi } from '@/shared/i18n/vi';
 import { BackLink } from '@/shared/ui/BackLink';
-import { MapStage, StatusPill, type RowMenuItem } from '@/shared/ui';
+import { MapStage, MoreMenu, type RowMenuItem, StatusPill } from '@/shared/ui';
 import { ChevronLeftIcon } from '@/shared/ui/icons';
 import { useStoreReadOnly } from '@/data/meQuery';
 import { CopySheet } from './CopySheet';
 import { CancelAlert } from './PlanDialogs';
-import { MoreMenu, RouteGroup, StopCard } from './PlanStage';
+import { RouteGroup, StopCard } from './PlanStage';
 import { allStops, useDriverLocations, type DriverLocation, type PlanDetail, type PlanStop } from './planApi';
 import { driverName, MAP_LABELS, mapData, stopTitle, vehicleText, type PlanRoute } from './planShared';
 
@@ -138,7 +138,7 @@ export function TrackView({ plan, updatedAt }: { plan: PlanDetail; updatedAt: nu
           <StatusPill kind="plan" status={plan.status} />
           {/* The only action here: at the trailing end of the title row (HIG Toolbars), not a row of its own. */}
           <span className="pw-stage-title-more">
-            <MoreMenu items={moreItems} />
+            <MoreMenu label={vi.result.more} items={moreItems} />
           </span>
         </div>
         <p className="pw-muted">{headline}</p>
