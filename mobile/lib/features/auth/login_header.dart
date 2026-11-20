@@ -1,57 +1,90 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../shared/i18n/vi.dart';
 import '../../shared/theme/tokens.g.dart';
 import '../../shared/ui/ui.dart';
 
 /// Header of the prototype "Tài xế — đăng nhập": brand gradient, street grid, a dashed route to a pin; the logo and
-/// tagline sit at the bottom right, clear of the route.
+/// tagline sit at the bottom right, clear of the route. The drawing starts below the status bar.
 class LoginHeader extends StatelessWidget {
   const LoginHeader({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 280,
-      decoration: const BoxDecoration(gradient: PwGradients.brandGradient),
-      child: Stack(
-        children: [
-          const Positioned.fill(
-            child: ExcludeSemantics(child: CustomPaint(painter: _RoutePainter())),
-          ),
-          Positioned(
-            right: PwSpacing.space6,
-            bottom: PwSpacing.space6,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Row(
-                  mainAxisSize: MainAxisSize.min,
+    // The header is drawn behind the status bar in both themes: light icons, or they are dark on dark green
+    // (developer.android.com edge-to-edge: "manually update the system bar icon colors so they contrast with your
+    // app's background").
+    return AnnotatedRegion<SystemUiOverlayStyle>(value: statusBarFor(Brightness.light), child: _content(context));
+  }
+
+  Widget _content(BuildContext context) {
+    // Below the status bar: the pin would sit under its icons, white on white with large system text (D2).
+    final top = MediaQuery.paddingOf(context).top;
+    // The logo and tagline start where they do at 100 % text (280 − 24 − 72: logo 40 + 8 + one tagline line 24) and
+    // grow downward with system text, so the header grows instead of the words running over the route (D2).
+    const drawing = 280.0;
+    const blockAt100 = 40 + PwSpacing.space2 + 24;
+    // Clipped: the street grid is drawn past the drawing's box and ran down over the form (D2).
+    return ClipRect(
+      child: DecoratedBox(
+        decoration: const BoxDecoration(gradient: PwGradients.brandGradient),
+        child: Stack(
+          children: [
+            Positioned(
+              top: top,
+              left: 0,
+              right: 0,
+              height: drawing,
+              child: const ExcludeSemantics(child: CustomPaint(painter: _RoutePainter())),
+            ),
+            Padding(
+              padding: EdgeInsets.fromLTRB(
+                PwSpacing.space6,
+                top + drawing - PwSpacing.space6 - blockAt100,
+                PwSpacing.space6,
+                PwSpacing.space6,
+              ),
+              child: Align(
+                alignment: Alignment.centerRight,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    const PathwiseMarkWhite(),
-                    const SizedBox(width: PwSpacing.space2),
-                    // Wordmark: "Wise" in the brand mint, as on the web's account screens (chủ dự án, 2026-11-16).
-                    Text.rich(
-                      const TextSpan(
-                        text: 'Path',
-                        children: [
-                          TextSpan(
-                            text: 'Wise',
-                            style: TextStyle(color: Color(0xFF9FF0D3)),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const PathwiseMarkWhite(),
+                        const SizedBox(width: PwSpacing.space2),
+                        // Wordmark: "Wise" in the brand mint, as on the web's account screens (chủ dự án, 2026-11-16).
+                        Flexible(
+                          child: Text.rich(
+                            const TextSpan(
+                              text: 'Path',
+                              children: [
+                                TextSpan(
+                                  text: 'Wise',
+                                  style: TextStyle(color: Color(0xFF9FF0D3)),
+                                ),
+                              ],
+                            ),
+                            semanticsLabel: Vi.appName,
+                            style: PwTypeStyles.display.copyWith(color: Colors.white, fontSize: 24),
                           ),
-                        ],
-                      ),
-                      semanticsLabel: Vi.appName,
-                      style: PwTypeStyles.display.copyWith(color: Colors.white, fontSize: 24),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: PwSpacing.space2),
+                    Text(
+                      Vi.appTagline,
+                      textAlign: TextAlign.end,
+                      style: PwTypeStyles.bodyTouch.copyWith(color: Colors.white),
                     ),
                   ],
                 ),
-                const SizedBox(height: PwSpacing.space2),
-                Text(Vi.appTagline, style: PwTypeStyles.bodyTouch.copyWith(color: Colors.white)),
-              ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

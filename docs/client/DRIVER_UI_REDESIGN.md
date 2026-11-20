@@ -1,6 +1,6 @@
 # DRIVER_UI_REDESIGN — Thiết kế lại app tài xế theo Material 3 (gồm M06)
 
-> **Trạng thái (2026-11-20):** kế hoạch đã chốt (chủ dự án trả lời Q1–Q6 ở §6); **D1 đã làm** (§7, branch `feat/driver-ui-d1`); **D2 là giai đoạn tiếp theo**. Nền tảng thiết kế theo P-77.
+> **Trạng thái (2026-11-20):** kế hoạch đã chốt (chủ dự án trả lời Q1–Q6 ở §6); **D1 đã làm** (§7, PR #139); **D2 đã làm** (§8, branch `feat/driver-ui-d2`); **D3 là giai đoạn tiếp theo**. Nền tảng thiết kế theo P-77.
 > Phiên sau làm tiếp từ đây: đọc §0, §4 (giai đoạn đang mở) và §5 (cách kiểm), rồi cập nhật trạng thái ở đầu file và
 > mục kết quả của giai đoạn vừa làm.
 >
@@ -196,6 +196,8 @@ ghi vào mục "D*n* — kết quả" cuối file này.
 | Q3 | Lý do không giao được: hộp thoại, bottom sheet hay màn toàn trang? | **Bottom sheet** |
 | Q4 | M06 "Thông tin của tôi": màn riêng hay sửa trong menu? | **Màn riêng** |
 | Q5 | Font: Be Vietnam Pro hay Roboto? | **Giữ Be Vietnam Pro** |
+| Q7 (D2) | Ô nhập: ô viền nhãn trên (như hiện tại), ô nền nhãn trong ô (mặc định Android), hay ô viền nhãn trong ô? | **Giữ ô viền, nhãn trên** |
+| Q8 (D2) | Hai màn chờ lúc mở app: giữ màn chờ hệ thống bằng API của Flutter, vẽ màn chờ Flutter giống màn hệ thống, thêm thư viện `core-splashscreen`, hay giữ nguyên? | **Thêm `core-splashscreen`** (P-78) |
 | Q6 | Danh sách điểm: đọc nguồn M3 trước | Đã đọc (§2.3a): m3.material.io không đọc được; Material Web và `ListTile` của Flutter ủng hộ thẻ cho điểm tiếp theo, hàng danh sách cho các điểm khác |
 
 ## 7. D1 — kết quả (2026-11-20)
@@ -208,4 +210,16 @@ ghi vào mục "D*n* — kết quả" cuối file này.
 - **`scripts/seed_driver_demo.py`:** dựng tài xế có tuyến hôm nay cho máy ảo (§5).
 - **Kiểm:** `flutter analyze` sạch; `flutter test` 129/129 (thêm 4 test: kiểu nút và hình, nút tắt, nút đang chạy, hộp xác nhận). Máy ảo: Tuyến của tôi, menu tài khoản, hộp Đăng xuất, Chi tiết tuyến, Báo kết quả — sáng; Báo kết quả tối + chữ 200% (nhãn nút xuống dòng, không cắt).
 - `UI_GUIDELINES.md` §1b: chữ dài ✅ (nhãn nút xuống dòng); trống/tải/lỗi — (không đổi màn); chuyển động ✅ (chuyển trang theo cử chỉ back của hệ thống); accessibility ✅ (nhãn và trạng thái tắt của nút có test).
+
+## 8. D2 — kết quả (2026-11-20)
+
+Hiện trạng đo trên máy ảo (Pixel 8, API 36): mở app thấy **hai màn chờ** (màn hệ thống nền xanh có logo, rồi màn Flutter nền trơn có vòng xoay); biểu tượng thanh trạng thái **màu tối trên phần đầu xanh** của màn đăng nhập; cỡ chữ 200%: hình ghim nằm dưới biểu tượng wifi (trắng trên trắng), đường nét đứt chạy qua logo và dòng "App giao hàng cho tài xế."; lưới đường phố vẽ tràn xuống form. Nút ("Đăng nhập" tô nền, "Quên mật khẩu?", "Nhập mã mời" nút chữ; "Đăng xuất" tô nền ở Chưa có quyền) đã đúng mức nhấn từ D1.
+
+- **Màn chờ (Q8, P-78):** `MainActivity` cài `core-splashscreen` 1.2.0, giữ màn chờ hệ thống tới khi Flutter gọi `dismiss` qua kênh `pathwise/splash` (port `SystemSplash`); `app.dart` gọi sau khi phiên rõ và màn đầu đã vẽ (hai khung hình). Tối đa 3 giây rồi thả (tải qua mạng không rõ thời gian, Android khuyên hiện chỗ chờ). Đo: bản release trên máy ảo biết phiên sau ~1,9–2,2 s; bản debug ~3,9–4,9 s (debug chạy Dart chậm, nên trên máy ảo debug vẫn thấy vòng chờ sau 3 s).
+- **Thanh trạng thái:** mặc định cả app theo theme (`statusBarFor`, `shared/ui/system_bars.dart`, chỉ đổi biểu tượng thanh trạng thái, không đụng thanh điều hướng); phần đầu màn đăng nhập luôn biểu tượng sáng. Nguồn: developer.android.com edge-to-edge *"manually update the system bar icon colors so they contrast with your app's background"*.
+- **Phần đầu màn đăng nhập:** hình vẽ bắt đầu dưới thanh trạng thái (phần đầu cao thêm bằng thanh trạng thái so với prototype); logo và dòng giới thiệu bắt đầu ở chỗ của cỡ chữ 100% và to xuống dưới, phần đầu cao thêm thay vì chữ đè lên đường đi; cắt hình vẽ theo khung phần đầu.
+- **Ô nhập (Q7):** giữ như cũ.
+- **Kiểm:** `flutter analyze` sạch; `flutter test` 134/134 (thêm 5: giữ/thả màn chờ khi khôi phục phiên và khi chưa đăng nhập, biểu tượng sáng trên phần đầu ở hai theme, theo theme ở Chưa có quyền rồi sáng lại ở Đăng nhập, logo giữ chỗ ở chữ 200%). Máy ảo: Đăng nhập sáng/tối, tối + chữ 200%, bàn phím mở; Chưa có quyền sáng, tối + chữ 200%; chuỗi mở app khi chưa đăng nhập và khi khôi phục phiên.
+- `UI_GUIDELINES.md` §1b: chữ dài ✅ (chữ 200% không đè hình, câu dài ở Chưa có quyền xuống dòng); trống/tải/lỗi ✅ (màn chờ, lỗi đăng nhập không đổi); chuyển động — ; accessibility ✅ (tương phản biểu tượng thanh trạng thái).
+- Máy ảo RAM khách 2 GB bị OOM killer của máy chủ tắt hai lần khi Gradle đang build cùng lúc: build xong thì `./gradlew --stop` rồi mới bật máy ảo.
 

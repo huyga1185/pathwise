@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:pathwise_driver/features/auth/login_header.dart';
+import 'package:pathwise_driver/shared/ui/ui.dart';
+
 import '../support/app.dart';
 import '../support/fake_api.dart';
 
@@ -17,6 +20,37 @@ Future<void> logIn(WidgetTester tester, {String email = 'taixe.a@example.com', S
 }
 
 void main() {
+  testWidgets('chữ hệ thống 200%: logo giữ chỗ như cỡ 100%, phần đầu cao thêm thay vì chữ đè lên hình (D2)', (
+    tester,
+  ) async {
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+    Future<(double, double)> measure(double scale) async {
+      tester.platformDispatcher.textScaleFactorTestValue = scale;
+      await pumpApp(tester, FakeServer((request) async => FakeReply.ok(null)));
+      final drawing = tester.getRect(
+        find.descendant(of: find.byType(LoginHeader), matching: find.byType(CustomPaint)).first,
+      );
+      final logo = tester
+          .getTopLeft(find.ancestor(of: find.byType(PathwiseMarkWhite), matching: find.byType(Row)).first)
+          .dy;
+      return (logo - drawing.top, tester.getSize(find.byType(LoginHeader)).height);
+    }
+
+    final (logoAt100, headerAt100) = await measure(1);
+    final (logoAt200, headerAt200) = await measure(2);
+    expect(logoAt200, closeTo(logoAt100, 1));
+    expect(headerAt200, greaterThan(headerAt100));
+  });
+
+  testWidgets('biểu tượng thanh trạng thái màu sáng trên phần đầu xanh, ở cả theme tối (D2)', (tester) async {
+    addTearDown(tester.platformDispatcher.clearPlatformBrightnessTestValue);
+    for (final brightness in Brightness.values) {
+      tester.platformDispatcher.platformBrightnessTestValue = brightness;
+      await pumpApp(tester, FakeServer((request) async => FakeReply.ok(null)));
+      expect(statusBarIcons(tester), Brightness.light, reason: '$brightness');
+    }
+  });
+
   testWidgets('đăng nhập là tài xế: gửi X-Client-Platform, lưu refresh token, vào Tuyến của tôi', (tester) async {
     final server = FakeServer((request) async {
       if (request.path == '/api/v1/driver/routes') return FakeReply.ok(<Object>[]);
