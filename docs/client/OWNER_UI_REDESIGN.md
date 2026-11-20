@@ -739,3 +739,38 @@ Chủ dự án: "Từ ngày – Đến ngày" ở Tùy chọn trên PC xếp nga
 
 Chủ dự án: "Từ ngày – Đến ngày" của Tùy chọn khác nút chọn ngày ở Kế hoạch và Nhật ký — nhãn nằm trên thay vì trong nút, nền xám hơn dù đã có ngày. Lý do: G6-Q1 dùng `DateField` (ô của biểu mẫu, G4.4), trong khi khoảng ngày ở đây là bộ lọc của một danh sách số liệu, cùng loại với "Ngày giao" (Kế hoạch) và "Từ ngày / Đến ngày" (Nhật ký). Đổi sang `DatePickerFilter` (G2.2): viên thuốc "📅 Từ ngày: 01/11/2026", có ngày thì nền màu nhấn nhạt và ngày màu nhấn (đo: cùng màu nền `accent / 0.16` với "Ngày giao: 10/11/2026" của Kế hoạch); lịch popover trên máy tính, inline trên điện thoại (§8.11). Hai ngày bắt buộc nên không có nút xoá ngày. Giới hạn "Tối đa 31 ngày." là một dòng dưới hai nút, quá 31 ngày thì dòng đó thành lỗi đỏ "Chọn tối đa 31 ngày." và được đọc lên (`aria-live`, WCAG 3.3.1, 4.1.3). Máy tính: hai nút và dòng giới hạn căn giữa dưới thanh khoảng (tâm 835 = tâm thanh ở 1440px, giữ §11.9); điện thoại: hai nút cao 44, xuống dòng khi không đủ chỗ (390, 320px), không tràn ngang. [Apple] HIG Date pickers (compact: *"a button that shows the current value in your app's accent color"*); checklist C13.
 
+## 12. Kế hoạch G7: khu quản trị ADMIN (2026-11-20, đã chốt các câu hỏi)
+
+§0 để khu quản trị "làm sau, dùng lại kết quả". G1 đã áp khung app (sidebar, tab bar, menu tài khoản) cho cả quản trị; **các trang bên trong chưa redesign**. `/admin/profile` dùng chung màn `/profile` (đã làm ở G3), chỉ kiểm lại.
+
+### 12.1 Hiện trạng (chụp 2026-11-20, stack e2e, 1440 và 390px, tài khoản ADMIN)
+
+| Trang | Lệch so với các khu đã redesign | Mục áp dụng |
+|---|---|---|
+| Tổng quan `/admin` | Chọn khoảng là segmented kiểu cũ, 3 nút bị gãy thành 2 hàng (7 ngày, 30 ngày / 90 ngày); mỗi số một thẻ có viền, nhãn VIẾT HOA; biểu đồ, khối kỹ thuật, hai bảng kỹ thuật trong thẻ có viền; điện thoại mỗi số một thẻ, trang cao 3607px | G6.2 segmented (căn giữa); G6 nhóm số một khối bo 16 không viền, 2×2 khi hẹp; L6 |
+| Cửa hàng `/admin/stores` | Bộ lọc là ô biểu mẫu có nhãn trên (ô tìm, select trạng thái); bảng có viền; tên là link gạch chân; nhãn trạng thái VIẾT HOA; thanh trang "Trang trước / Trang sau" + "3 cửa hàng · trang 1/1"; **điện thoại bảng cuộn ngang 925/341px** | G2.2 bộ lọc viên thuốc + ô tìm; G2.9 "‹ Trang x/y ›" vừa màn, `?page=`; G2.11; L3 điện thoại thành hàng |
+| Chi tiết cửa hàng | Nút quay lại là link chữ "← Cửa hàng"; hai hành động "Khoá (chỉ đọc)", "Chuyển chủ cửa hàng" là nút xám dưới tiêu đề; thẻ số có viền; bảng thành viên và nhật ký có viền; hộp thoại kiểu cũ; **điện thoại bảng cuộn ngang 573/341** | G4 `BackLink` (điện thoại lên thanh trên, §9.11); G5.6 menu "…" hoặc G2.1; D12 sheet/alert; L3 |
+| Người dùng `/admin/users` | Bộ lọc ô biểu mẫu, "Mã cửa hàng" gõ số; mỗi hàng 2–3 nút chữ (đặt lại mật khẩu, buộc đăng xuất, khoá), hàng cao và xuống dòng; **thanh trang ghi "5 cửa hàng" (F-76)**; **điện thoại cuộn ngang 903/341** | G3 Thành viên (hàng mở sheet có hành động) hoặc G2.13 menu hàng; D12 alert xác nhận |
+| Nhật ký `/admin/audit` | Bộ lọc 5 ô biểu mẫu, ô ngày **`<input type="date">` của trình duyệt** (mm/dd/yyyy, không theo định dạng Việt Nam, không phải lịch của app); "Mới hơn / Cũ hơn"; hàng không mở chi tiết; **điện thoại cuộn ngang 612/341** | G3 Nhật ký cửa hàng (§8.10): `DatePickerFilter`, hàng mở sheet "Chi tiết", G2.9 |
+
+Hộp thoại: 4 chỗ dùng `Dialog` kiểu cũ (khoá/mở khoá, chuyển chủ, hành động người dùng).
+
+### 12.2 Đề xuất chia việc
+
+Một branch `feat/owner-ui-g7`, commit nhỏ theo trang, một PR; mỗi trang qua `APPLE_CHECKLIST.md` §1 và §1b trước khi báo xong.
+
+1. **Tổng quan:** segmented 7 / 30 / 90 ngày như G6; nhóm số không viền (các nhóm "Hiện tại", "N ngày gần nhất", "Kỹ thuật"); biểu đồ dùng chung (`DailyBarChart`, đã làm ở G6) trong nhóm; khối và bảng kỹ thuật thành nhóm bo 16.
+2. **Cửa hàng:** ô tìm + bộ lọc trạng thái viên thuốc; bảng trong nhóm, tên 2 dòng "…", email dòng phụ; điện thoại danh sách hàng; G2.9.
+3. **Chi tiết cửa hàng:** `BackLink`; hành động; nhóm số; thành viên, nhật ký dạng nhóm; sheet/alert cho khoá, chuyển chủ.
+4. **Người dùng:** bộ lọc; hàng/sheet; alert xác nhận; sửa F-76.
+5. **Nhật ký:** như Nhật ký cửa hàng (§8.10).
+6. Docs: SCREENS, DESIGN_SYSTEM, CURRENT_STATE, §12.x kết quả đo.
+
+### 12.3 Câu hỏi cho chủ dự án
+
+| # | Câu hỏi | Trả lời (chủ dự án, 2026-11-20) |
+|---|---|---|
+| G7-Q1 | Hành động của hàng ở Người dùng (2–3 nút chữ mỗi hàng) | **Menu "…" cuối hàng** (như menu hàng G2.13); hành động nguy hiểm (Khoá) màu đỏ ở cuối menu, xác nhận bằng alert |
+| G7-Q2 | Lọc theo mã (Mã cửa hàng ở Người dùng; Mã cửa hàng, Mã người làm ở Nhật ký) — API chỉ nhận mã số | **Chỉ đặt sẵn từ trang khác**: bỏ ô gõ mã khỏi thanh lọc; mở từ trang cửa hàng / người dùng thì hiện viên thuốc đã lọc (vd "Cửa hàng: Tiệm A") có nút ⓧ để bỏ |
+| G7-Q3 | Hai hành động ở Chi tiết cửa hàng ("Khoá (chỉ đọc)", "Chuyển chủ cửa hàng") | **Menu "…" ở hàng tiêu đề** (như G5.6, HIG Toolbars "More menu"); "Khoá" màu đỏ ở cuối; chọn thì mở sheet / alert |
+
