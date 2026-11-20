@@ -4,7 +4,7 @@
 >
 > Backend MVP đã xong (T00–T45). Kế hoạch này **không** sửa backend; thiếu gì ở API thì ghi vào báo cáo và tạo task backend riêng (đánh số T46 trở đi, ghi ở `docs/IMPLEMENTATION_PLAN.md`), như T45.
 >
-> Ước lượng tính cho 1 người kèm agent; tổng web khoảng 11–13 ngày, mobile khoảng 5–6 ngày. Mỗi task một branch (`task/W01-web-shell`, `task/M00-mobile-shell`) từ `develop`, một PR vào `develop`.
+> Ước lượng tính cho 1 người kèm agent; tổng web khoảng 11–13 ngày, mobile khoảng 5–6 ngày. Mỗi task một branch từ `develop` (`task/W01-web-shell`, `task/M00-mobile-shell`; việc ngoài plan như redesign dùng `feat/...`, `fix/...`, `docs/CONTRIBUTING.md` §1), một PR vào `develop`.
 
 ## 0. Thứ tự và phụ thuộc
 

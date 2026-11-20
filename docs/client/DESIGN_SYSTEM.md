@@ -37,7 +37,7 @@ PathWise là phần mềm lập tuyến giao hàng cho cửa hàng nhỏ ở Vi�
 - Hai theme dùng cùng tên token; client chỉ đổi giá trị. Luôn theo cài đặt hệ điều hành (`prefers-color-scheme` trên web, `ThemeMode.system` trên Flutter), không có nút hay lựa chọn sáng/tối trong app (P-73; HIG Dark Mode: "Avoid offering an app-specific appearance setting… they may think your app is broken because it doesn't respond to their systemwide appearance choice").
 - Ở theme tối, màu nhấn (`route`, trạng thái) sáng lên để đọc được trên nền tối; vì thế chữ đặt trên nền màu nhấn luôn dùng `on-accent`, không viết cứng màu trắng.
 - Phân tầng ở theme tối vẫn bằng nền: `surface` tối nhất, `surface-raised` sáng hơn một bậc. Bóng chỉ cho lớp nổi như ở theme sáng; token bóng đậm hơn để còn thấy trên nền tối.
-- Bản đồ: tile OSM chuẩn chỉ có bản sáng. Ở theme tối, khung bản đồ vẫn dùng tile sáng cho đến khi chọn nguồn tile tối (cần quyết định riêng vì là dịch vụ ngoài); đường route và marker vẫn dùng token theo theme sáng để nổi trên tile sáng.
+- Bản đồ: tile MapTiler (P-45; `osm()` chỉ khi dev) luôn dùng kiểu sáng. Ở theme tối, khung bản đồ vẫn dùng tile sáng cho đến khi chọn kiểu tile tối (cần quyết định riêng vì là dịch vụ ngoài); đường route và marker vẫn dùng token theo theme sáng để nổi trên tile sáng.
 - Ảnh và logo: theme tối dùng mark trắng.
 
 ### Màu theo trạng thái
@@ -126,7 +126,7 @@ Mark là chữ P kèm con đường và ghim vị trí: con đường là tuyế
 
 - **Mark màu** (`pathwise-mark.svg`, nền chuyển `#1fa189` → `#0b6a5c` → `#054a40`): dùng trên nền sáng (`surface`, `surface-raised`).
 - **Mark trắng** (`pathwise-mark-white.svg`): dùng trên nền màu thương hiệu `#0b6a5c`, ảnh tối, và mọi nền ở theme tối (phần tối của mark màu chìm vào nền tối). Không đặt mark màu lên nền màu. Ở theme tối, `route` sáng hơn nên không làm nền cho mark trắng.
-- **Lockup**: mark đứng trước, cách chữ `space-2`, chữ **PathWise** Be Vietnam Pro 700; chiều cao mark bằng khoảng 1,4 lần cỡ chữ. Header web dùng lockup; chỗ hẹp chỉ dùng mark.
+- **Lockup**: mark đứng trước, cách chữ `space-2`, chữ **PathWise** Be Vietnam Pro 700; chiều cao mark bằng khoảng 1,4 lần cỡ chữ. Lockup chỉ ở chỗ cần ngữ cảnh: thẻ các màn tài khoản (đăng nhập, đăng ký, nhận lời mời…) và trang lỗi khi chưa đăng nhập; trang trong app không có logo (P-74, HIG Branding); chỗ hẹp chỉ dùng mark.
 - **Chữ logo hai màu** (P-72): "Path" màu chữ (`ink`, hoặc trắng trên nền tối/thương hiệu), "Wise" màu nhấn: `route` trên nền sáng (trang lỗi; tự sáng lên ở theme tối), bạc hà `#9ff0d3` trên nền tối hoặc nền xanh thương hiệu (màn tài khoản, dải đầu email, đăng nhập app tài xế). Web dùng component `Wordmark`; đọc liền là "PathWise".
 - **Cỡ nhỏ**: dưới 48px dùng bản không có vạch đường, vì vạch đứt thành nhiễu ở cỡ đó. `favicon.svg` (icon tab trình duyệt), `favicon-32.png` và `favicon.ico` (16, 32, 48px, dự phòng cho trình duyệt và công cụ không đọc SVG) là bản không vạch; `favicon-192.png`, `favicon-512.png`, `apple-touch-icon.png` giữ vạch. Mark không nhỏ hơn 16px.
 - **App icon** (`app-icon.svg`, `app-icon-foreground.svg` cho icon Android thích ứng): chỉ dùng cho icon cài đặt, không dùng trong giao diện.
@@ -248,22 +248,18 @@ Chấm tròn đánh số `sequence` đánh dấu một điểm giao trên bản 
 - Mặc định `route`; điểm đã giao `success`, không giao được `danger`, không xếp được (`INFEASIBLE`) `signal` không số, chưa xếp tuyến `muted` không số.
 - `selected`: to hơn, viền `ink` — đồng bộ với dòng đang chọn trong `DataTable`.
 - Viền trắng 2px và bóng nhẹ để nổi trên tile bản đồ.
-- **Luôn dùng màu theme sáng** (component tự đặt `data-theme="light"`): tile OSM chỉ có bản sáng, nên marker giữ màu sáng cả khi app ở theme tối.
+- **Luôn dùng màu theme sáng** (component tự đặt `data-theme="light"`): tile luôn là kiểu sáng (mục "Theme sáng và tối"), nên marker giữ màu sáng cả khi app ở theme tối.
 - Trên web, dùng làm `L.divIcon` (render ra HTML); kích thước 28px, 36px khi chọn.
 - `routeIndex` (0 = route đầu tiên): tô theo `map-route-1…7`, ghi đè `tone`. Dùng khi plan còn nháp hoặc stop còn `PENDING`; stop đã có kết quả thì dùng `tone`.
 - Luôn kèm chú giải tên tài xế theo màu tuyến.
 
 ### Dialog
 
-Hộp xác nhận cho hành động không hoàn tác được: giao việc, huỷ plan, xoá; nêu rõ hậu quả trước khi làm.
+Từ G3 (`OWNER_UI_REDESIGN.md` §8.2), xác nhận dùng **Alert** và việc có nhập liệu dùng **Sheet** (mục "Sheet, Alert, SwitchRow, SegmentedControl"); hộp thoại cũ giao việc, huỷ kế hoạch, nhập file, sao chép đã chuyển hết ở G4–G5. `Dialog` chỉ còn một chỗ dùng: `PinPickerDialog` (`size="full"`, chọn vị trí trên bản đồ: ô tìm địa chỉ + bản đồ lớn + ghim kéo được).
 
-- Tiêu đề là câu hỏi có tên đối tượng: "Huỷ kế hoạch "Giao sáng 01/12"?".
-- Thân: hậu quả cụ thể bằng số ("2 tài xế đang có tuyến…", "không khôi phục được").
-- Nút xác nhận lặp lại động từ của hành động ("Huỷ kế hoạch", "Giao việc"), không dùng "OK"/"Có". Nút phụ "Quay lại".
-- `tone="danger"` cho hành động phá huỷ (nút `danger`, `role="alertdialog"`).
-- Mở thì focus vào nút đầu tiên; `Esc` đóng; đóng thì trả focus về chỗ cũ.
-- `size`: `md` (mặc định, xác nhận), `lg` (form ngắn), `full` (gần toàn màn hình, dùng cho chọn vị trí trên bản đồ: ô tìm địa chỉ + bản đồ lớn + ghim kéo được). `confirmDisabled` khoá nút xác nhận tới khi nội dung hợp lệ.
-- `busy` trong lúc request chạy; lỗi API hiện trong thân hộp, không đóng hộp.
+- Mở thì focus vào phần tử đầu tiên; `Esc` đóng; đóng thì trả focus về chỗ cũ.
+- `confirmDisabled` khoá nút xác nhận tới khi nội dung hợp lệ; `busy` trong lúc request chạy; lỗi API hiện trong thân hộp, không đóng hộp.
+- *Lịch sử (W01–W06):* `Dialog` từng là hộp xác nhận cho hành động không hoàn tác (tiêu đề là câu hỏi, nút xác nhận lặp động từ, nút phụ "Quay lại", `tone="danger"`); các quy tắc đó nay thuộc Alert (S2: "Huỷ" ở đầu hàng, không tô đỏ khi người dùng chủ động chọn).
 
 ### Bản đồ (web, W04)
 

@@ -1,6 +1,6 @@
 # LIQUID_GLASS — Đặc tả vật liệu kính cho web PathWise
 
-> **Trạng thái:** nguyên tắc **đã duyệt** (P-71, 2026-11-16): hướng dẫn chính thức của Apple đứng trước, quy tắc cũ của dự án chỉ áp ở chỗ Apple không nói. Đã áp cho màn **Đăng nhập**, **Đăng ký cửa hàng** (§9, P-72) **Nhận lời mời** và **Quên mật khẩu** (§9, chủ dự án yêu cầu 2026-11-17). Các bề mặt khác ở §2 (header, menu, hộp thoại, điều khiển trên bản đồ) **chưa làm**; khi làm thì theo tài liệu này. Phạm vi: web dispatcher (`web/`); app tài xế không thuộc tài liệu này, trừ chữ logo (§9). Bổ sung cho `docs/client/DESIGN_SYSTEM.md`, không thay nó. Kiểm từng thành phần theo danh sách `docs/client/APPLE_CHECKLIST.md`.
+> **Trạng thái:** nguyên tắc **đã duyệt** (P-71, 2026-11-16): hướng dẫn chính thức của Apple đứng trước, quy tắc cũ của dự án chỉ áp ở chỗ Apple không nói. Đã áp cho màn **Đăng nhập**, **Đăng ký cửa hàng** (§9, P-72) **Nhận lời mời** và **Quên mật khẩu** (§9, chủ dự án yêu cầu 2026-11-17). Khu đã đăng nhập (OWNER_UI_REDESIGN G1–G7, P-74) đã áp §2 cho sidebar, tab bar, menu tài khoản, popover (menu lọc, lịch, chọn trang), điều khiển và panel/sheet trên bản đồ; sheet và alert thường hiện dùng bề mặt đặc (xem §2). Phạm vi: web dispatcher (`web/`); app tài xế không thuộc tài liệu này, trừ chữ logo (§9). Bổ sung cho `docs/client/DESIGN_SYSTEM.md`, không thay nó. Kiểm từng thành phần theo danh sách `docs/client/APPLE_CHECKLIST.md`.
 
 ## 0. Quy ước
 
@@ -53,10 +53,10 @@ Không có nhãn "agent tự suy": thứ gì không thuộc ba nhãn trên thì 
 
 | Bề mặt | Thuộc loại nào theo Apple | Vật liệu |
 |---|---|---|
-| Header ứng dụng (logo, menu, người dùng) | Thanh điều hướng (bar) — M1, M4 | Liquid Glass Regular |
-| Điều khiển nổi trên bản đồ (phóng to, chọn tuyến, chú giải) | Control nổi trên nội dung — M1 | Liquid Glass Regular |
-| Menu, dropdown, popover | M4 | Liquid Glass Regular |
-| Hộp thoại xác nhận (giao việc, huỷ, nhập file, sao chép) | Sheet/alert modal — M4; có nhiều chữ — M7 | Liquid Glass Regular + lớp làm tối khi chen ngang tác vụ ([Apple] "When a task interrupts the main flow, pair Liquid Glass with a dimming layer" [356]) |
+| Sidebar (màn rộng), tab bar (màn hẹp) — thay header có logo (P-74) | Thanh điều hướng (bar) — M1, M4 | Liquid Glass Regular (đã làm, G1). Thanh trên của vùng nội dung là dải đặc, lệch có chủ đích: phần tử nhoè thành nền của phần tử con nên menu tài khoản bên trong sẽ mất nhoè (`OWNER_UI_REDESIGN.md` §6.1 H5; G1 đo ở 94%, sau đổi thành đặc hẳn vì chữ cuộn dưới lộ mờ sau nút tài khoản, ghi chú ở `.pw-topbar`) |
+| Điều khiển nổi trên bản đồ (phóng to, chọn tuyến, chú giải); panel và sheet ba nấc của trang chi tiết kế hoạch | Control nổi trên nội dung — M1 | Liquid Glass Regular (đã làm, G5) |
+| Menu, dropdown, popover | M4 | Liquid Glass Regular (đã làm: menu tài khoản, `pw-popover` cho menu lọc, lịch, chọn trang) |
+| Sheet, alert (thay hộp thoại cũ từ G3) | Sheet/alert modal — M4; có nhiều chữ — M7 | Theo Apple: Liquid Glass Regular + lớp làm tối khi chen ngang tác vụ ([Apple] "When a task interrupts the main flow, pair Liquid Glass with a dimming layer" [356]). **Hiện trạng:** bề mặt đặc `surface-raised` + lớp làm tối; **chưa có quyết định** cho chỗ lệch này |
 | Bảng, panel, thẻ dữ liệu, biểu đồ, form trong trang, danh sách quản trị | Lớp nội dung — M2 | Không Liquid Glass; giữ bề mặt đặc như hiện tại |
 | Toast | Nguồn không nói tới | Giữ như hiện tại (không áp dụng) |
 | **Thẻ đăng nhập / đăng ký trên ảnh giới thiệu** | **Không phải thanh, control, menu hay modal: là nội dung chính của trang — M2** | **Theo Apple: vật liệu tiêu chuẩn, không Liquid Glass** (xem §7, cần chủ dự án quyết) |
@@ -105,8 +105,8 @@ Tương phản đo theo T4: chụp ảnh thật, ẩn chữ, lấy nền sau ch�
 
 1. **Thẻ đăng nhập/đăng ký:** theo M1, M2, M4 thẻ là nội dung chính của trang (không phải thanh, control, menu hay modal) → **bề mặt đặc của lớp nội dung**, không Liquid Glass, không lensing hay lớp highlights. Chủ dự án đã thử Clear, Regular với nhiều độ phủ rồi chọn bề mặt đặc.
 2. **Ảnh `map-route.svg`:** dùng làm nền màn đăng nhập/đăng ký (lớp nội dung), giữ tông xanh lá của ảnh; đường tuyến trong ảnh uốn theo nét vẽ của chủ dự án (`docs/ux/samples/fb_4.png`).
-3. **Lensing:** không dùng (không còn bề mặt Liquid Glass nào trên web).
-4. **Thứ tự triển khai các bề mặt ở §2:** chưa chốt; làm khi có task.
+3. **Lensing:** không dùng (H9 của `APPLE_CHECKLIST.md`: chỉ Chromium, thử ở nút 44px không thấy khác). Kính trên web chỉ là nhoè + chỉnh độ sáng (M8).
+4. **Thứ tự triển khai các bề mặt ở §2:** theo các giai đoạn G1–G7 của `OWNER_UI_REDESIGN.md` (P-74).
 
 ## 8. Đã bỏ khỏi bản trước vì là tự suy (không có nguồn, không bắt buộc cho web)
 

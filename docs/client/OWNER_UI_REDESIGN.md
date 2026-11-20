@@ -1,6 +1,6 @@
 # OWNER_UI_REDESIGN — Nghiên cứu thiết kế lại giao diện chính của chủ cửa hàng theo Apple
 
-> **Trạng thái:** nghiên cứu xong; chủ dự án đã trả lời Q1–Q5 (§5, 2026-11-17), quyết định ở P-74. **G1 (khung app) đã làm** (§6, branch `docs/owner-ui-redesign`). **G2 (danh sách kế hoạch) đã làm** (§7, PR #129). **G3 (Xe, Thành viên, Cửa hàng, Nhật ký, Tài khoản) đã làm** (§8, PR #130). **G4 (tạo/sửa kế hoạch, nhập file, sao chép) đã làm** (§9, PR #131). **G5 (chi tiết kế hoạch) đã làm** (§10, PR #132). **G6 (Báo cáo) đang làm** (§11, branch `feat/owner-ui-g6`).
+> **Trạng thái:** nghiên cứu xong; chủ dự án đã trả lời Q1–Q5 (§5, 2026-11-17), quyết định ở P-74. **G1 (khung app) đã làm** (§6, branch `docs/owner-ui-redesign`). **G2 (danh sách kế hoạch) đã làm** (§7, PR #129). **G3 (Xe, Thành viên, Cửa hàng, Nhật ký, Tài khoản) đã làm** (§8, PR #130). **G4 (tạo/sửa kế hoạch, nhập file, sao chép) đã làm** (§9, PR #131). **G5 (chi tiết kế hoạch) đã làm** (§10, PR #132). **G6 (Báo cáo) đã làm** (§11, PR #136). **G7 (khu quản trị ADMIN) đã làm** (§12, branch `feat/owner-ui-g7`, chưa mở PR).
 >
 > Theo P-71 (hướng dẫn Apple đứng trước), quy tắc ở `docs/client/LIQUID_GLASS.md`, kiểm từng thành phần theo `docs/client/APPLE_CHECKLIST.md`. Nhãn: **[Apple]** trích nguyên văn HIG (bản tải 2026-11-17), **[Web]** điều web buộc phải có, chọn bằng đo, **[Chủ dự án]** chờ hoặc đã có quyết định. Phần "Đề xuất" là ý của agent, mỗi dòng ghi nguồn; chỗ nào Apple không nói thì ghi rõ.
 
@@ -8,7 +8,7 @@
 
 Khu đã đăng nhập của OWNER (và DISPATCHER, cùng màn): khung app (header, điều hướng, tài khoản) và các màn `/plans`, `/plans/new` + `/plans/:id/edit`, `/plans/:id` (tìm toạ độ, kết quả tối ưu, chỉnh tay, theo dõi), `/reports`, `/vehicles`, `/members`, `/store` + `/store/audit`, `/profile`.
 
-Ngoài phạm vi: màn tài khoản (đã làm, P-72), khu quản trị ADMIN (làm sau, dùng lại kết quả), app tài xế.
+Ngoài phạm vi: màn tài khoản (đã làm, P-72), khu quản trị ADMIN (lúc nghiên cứu để làm sau, dùng lại kết quả; đã làm ở G7, §12), app tài xế.
 
 **Nền tảng tham chiếu.** Web PathWise chạy trên máy tính (chuột, cửa sổ rộng) và điện thoại (chạm, màn hẹp). Apple chia theo kích thước, không theo thiết bị: [Apple] HIG Layout: "Determine layout based on size classes, not device type or orientation." Đề xuất: **rộng** (≥ 960px, như bước của màn tài khoản) theo iPadOS/macOS; **hẹp** theo iOS. Chức năng giữ nguyên ở mọi khổ: [Apple] "Don't change your app's functionality based on the space it occupies."
 
@@ -112,6 +112,7 @@ Mỗi giai đoạn một branch, một PR, kiểm theo `APPLE_CHECKLIST.md`, c�
 5. **G5 Chi tiết kế hoạch:** tìm toạ độ, kết quả tối ưu, chỉnh tay, theo dõi (D15) — cần dữ liệu mẫu.
    - *Đã chốt cho G5 (chủ dự án, 2026-11-18):* các ô trắng của trang (khối "Còn N điểm…", "Chưa có tài xế…", thanh tiến độ, nhóm bảng, khung sửa điểm, thẻ ở màn kết quả / theo dõi) đổi sang nhóm **bo 16, không viền** như các trang đã redesign; bản đồ trong nhóm bo đồng tâm (S1/S2). Khối **lỗi** (vd "Còn N điểm giao chưa có toạ độ") bỏ viền đỏ, báo bằng **nền đỏ nhạt**. Hiện vẫn kiểu cũ (bo 8, bảng bo 4, có viền) — chủ dự án chọn để G5 cả, không đổi lẻ (§9.9).
 6. **G6 Báo cáo** (D17).
+7. **G7 Khu quản trị ADMIN** (thêm sau, §12): Tổng quan, Cửa hàng, Chi tiết cửa hàng, Người dùng, Nhật ký theo các mẫu G2–G6.
 
 Prototype (artboard) cập nhật theo từng giai đoạn hoặc sau cùng — §5 Q5.
 
@@ -523,7 +524,7 @@ Chủ dự án: "Sửa điểm giao", "Sao chép", "Tối ưu lộ trình" trên
 
 Làm: dưới 440px (`(max-width: 439px)`) ba nút xếp dọc rộng hết, **nút chính trên cùng**, rồi "Sửa điểm giao", "Sao chép"; thứ tự trong DOM đổi theo (không đảo bằng CSS) để trình đọc màn hình và Tab đi đúng thứ tự nhìn thấy (WCAG 1.3.2, 2.4.3). Từ 440px: một hàng, nút chính cuối (§9.10). Đo 390 / 320px: ba nút 343 / 273px, cao 44px, không tràn. Màn kết quả và theo dõi: G5.
 
-## 10. Thiết kế G5: chi tiết kế hoạch (2026-11-18, đang làm)
+## 10. Thiết kế G5: chi tiết kế hoạch (2026-11-18, đã làm, PR #132)
 
 Phạm vi (SCREENS.md, `/plans/:id` là một route, màn chọn theo trạng thái): **tìm toạ độ** (DRAFT chưa tối ưu), **kết quả tối ưu** (DRAFT đã tối ưu), **chỉnh tay tuyến**, **giao việc / huỷ**, **theo dõi** (PUBLISHED → COMPLETED / CANCELLED). Hành vi (API, polling, lỗi, câu chữ) giữ như SCREENS §1.1 và UX_BRIEF; G5 đổi bố cục, control và hộp thoại.
 
@@ -590,7 +591,7 @@ Phạm vi (SCREENS.md, `/plans/:id` là một route, màn chọn theo trạng th
 6. Tìm toạ độ (thẻ sửa điểm, ghim trên bản đồ lớn); bỏ `Dialog` cũ ở trang kế hoạch.
 7. Đo theo APPLE_CHECKLIST (1440/1024/390/320, sáng/tối, giảm chuyển động, tăng tương phản), cập nhật SCREENS, DESIGN_SYSTEM, CURRENT_STATE.
 
-### 10.5 Làm (2026-11-18, đang làm)
+### 10.5 Làm (2026-11-18)
 
 - **Bước 1–2 xong:** `MapStage` (`shared/ui/MapStage.tsx`): bản đồ phủ vùng nội dung (trang không đệm, không cuộn), panel kính 460px (rộng), sheet kính ba nấc trên tab bar (điện thoại; grabber bấm chuyển nấc, mũi tên lên/xuống, kéo; nấc thấp đo theo phần đầu đánh dấu `data-peek`); bản đồ canh khung chừa phần panel/sheet che (`RouteMap inset`, `staged` bỏ nút mở rộng và chú giải); chú thích bản quyền bản đồ trên nấc thấp của sheet 10px (HIG Maps). Màn kết quả trong `MapStage`: đầu panel (quay lại, tên, dòng phụ, dòng tóm tắt, nút … / Chỉnh tay / Giao việc), nhóm tuyến (màu tuyến, thu gọn), hàng điểm hai dòng, thẻ điểm (focus vào tiêu đề, quay lại trả focus về hàng), nhóm "Chưa xếp tuyến". Nhóm trong panel bo 8: panel bo 16 đệm 16 nên bán kính đồng tâm là 0 → bán kính dự phòng (S1/S2), khác nhóm bo 16 ở cấp trang. Chỉnh tay và hộp thoại tạm giữ như cũ trong panel (bước 3, 5).
 - **Bước 3 xong:** giao việc là **Sheet** "Giao việc" (Huỷ / Giao việc hoặc "Vẫn giao việc" khi còn vi phạm; câu hỏi "Giao việc cho N tài xế?" là dòng đầu thân sheet — tiêu đề < 15 ký tự như G4; trùng ca biến sheet thành "Trùng ca làm" với link kế hoạch kia và "Sửa phân công"); huỷ kế hoạch là **Alert** với nút "Huỷ" và "Huỷ kế hoạch" đỏ (HIG Alerts: *"Always use the title "Cancel" for a button that cancels an alert's action"*; lỗi nói trong lời nhắn); "Huỷ" khi đang chỉnh tay có thay đổi là **action sheet** "Bỏ thay đổi" / "Tiếp tục chỉnh" (HIG Alerts: *"Use an action sheet — not an alert — to offer choices related to an intentional action"*), có dòng tiêu đề + lời nhắn như iOS (cũng là tên trợ năng); "Tối ưu lại?" và "Rời trang khi chưa lưu?" là Alert. Màn kết quả và theo dõi không còn dùng `Dialog` cũ.
@@ -654,7 +655,7 @@ Làm: nấc cao chạm đáy màn (thấp và giữa vẫn trên tab bar); khung
 Chủ dự án: đổi các chấm tròn thành ghim; điểm đã xếp thứ tự thì có số trong ghim. Kiểm tra: HIG Maps *"Use annotations that match the visual style of your app"*; marker mặc định của Apple là ghim, *"You can change the icon to a string"* → ghim có số đúng kiểu; WCAG: viền trắng + bóng (1.4.11), số đi cùng màu (1.4.1), tên trợ năng giữ (4.1.2). Làm: marker điểm (`RouteMap`) là ghim giọt nước chân nhọn (hình vuông một góc nhọn xoay −45°, số dựng thẳng bên trong), màu tuyến / màu kết quả như cũ, điểm chưa xếp thì không số; neo ở chân ghim (0,707 × cạnh dưới tâm) nên chân chạm đúng đỉnh đường tuyến; ghim được chọn to hơn, viền theo hình ghim. Chú giải và số trong danh sách giữ hình tròn (`.pw-marker` dùng chung).
 - *Sửa cùng ngày (phác thảo `docs/ux/samples/fb_17.png`):* ghim kiểu ghim bản đồ cổ điển — đầu tròn, thân thon xuống mũi nhọn, **vòng trắng ở giữa đầu**; có số thì số nằm trong vòng trắng, cùng màu ghim (đo tương phản trên nền trắng: mọi màu tuyến và màu kết quả 5,86–10,10:1 ≥ 4,5:1, WCAG 1.4.3); không số thì vòng trắng rỗng. Vẽ bằng SVG (`pinSvg`, viền trắng 1,5, bóng; chọn: 36px, viền đậm); ghim đặt toạ độ cho điểm giao (`PinMap kind="stop"`) dùng cùng hình, màu nhấn.
 
-## 11. Thiết kế G6: Báo cáo (2026-11-19, đang làm)
+## 11. Thiết kế G6: Báo cáo (2026-11-19, đã làm, PR #136)
 
 Phạm vi: `/reports?from=&to=` (SCREENS §1; API `GET /reports/summary`, `/reports/stops.csv`, T63). Hành vi và câu chữ giữ như SCREENS, UX_BRIEF (khoảng ≤ 31 ngày, `INVALID_DATE_RANGE`, `DATE_RANGE_TOO_LONG`); G6 đổi bố cục, control và biểu đồ. Biểu đồ dùng chung với Tổng quan của khu quản trị (P-59).
 
@@ -701,7 +702,7 @@ Phạm vi: `/reports?from=&to=` (SCREENS §1; API `GET /reports/summary`, `/repo
 3. Tài xế, lý do: bảng / hàng + sheet.
 4. Đo theo APPLE_CHECKLIST; SCREENS, DESIGN_SYSTEM, CURRENT_STATE; e2e.
 
-### 11.6 Làm (2026-11-19, đang làm)
+### 11.6 Làm (2026-11-19)
 
 - **Bước 1 xong:** `DailyBarChart` (dùng chung Báo cáo và Tổng quan quản trị, G6-Q4): chú giải có chữ dưới biểu đồ; đường tách giữa các phần cột chồng (viền màu nền); chọn ngày bằng rê / bấm / chạm cả vùng vẽ (HIG: *"expanding the hit target to include the entire plot area"*), cột được chọn đậm, cột khác nhạt; vùng vẽ là một điểm Tab vai trò `slider` (←/→/Home/End chọn ngày, Escape bỏ; giá trị đọc là ngày đầy đủ và số liệu); dòng tóm tắt (`summary`) đổi theo ngày chọn và được đọc khi đổi; danh sách ẩn mỗi ngày một dòng ("Thứ Hai, 1 tháng 12, 2026: 30 đã giao, …", `spokenDate`); hình vẽ và nhãn trục ẩn khỏi trình đọc màn hình; bỏ tooltip (chỉ hiện khi rê chuột).
 - **Bước 2 xong:** hàng tiêu đề "Báo cáo" + "Xuất CSV" có biểu tượng xuất (`ShareIcon`, kiểu `square.and.arrow.up`; điện thoại: nút tròn chỉ biểu tượng, tên trợ năng "Xuất CSV"); khoảng ngày là `SegmentedControl` [Hôm nay | 7 ngày | 30 ngày | Tùy chọn] (khoảng trên URL không khớp ba mục → Tùy chọn), Tùy chọn hiện hai `DateField` (lịch của app, "T3, 01/12/2026"); bốn số tổng trong một nhóm bo 16 không viền (rộng một hàng, < 760px 2×2, đường kẻ mảnh giữa ô); biểu đồ trong nhóm bo 16, dòng tóm tắt "190 đã giao · 12 không giao được · 3 bỏ qua" đổi thành số của ngày đang chọn ("Thứ Tư, 02/12/2026: 28 đã giao · …"); trạng thái trống theo G2.7 (không thẻ, biểu tượng biểu đồ). Đo 1440 / 390px: không tràn ngang, không lỗi; bốn ô khoảng ngày 85×44px ở 390px.
