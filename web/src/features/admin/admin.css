@@ -249,3 +249,23 @@
 .pw-admin-title-head .pw-more-button {
   margin-top: -5px;
 }
+
+/* Users (§12): narrow, role, store and date become a line under the email (needs ~830px with every column). */
+.pw-admin-users-table {
+  container-type: inline-size;
+}
+.pw-admin-col-name .pw-cell-sub.pw-admin-users-fold {
+  display: none;
+}
+@container (max-width: 54rem) {
+  .pw-admin-users-table .pw-admin-users-col-fold {
+    display: none;
+  }
+  .pw-admin-users-table .pw-admin-col-name .pw-cell-sub.pw-admin-users-fold {
+    display: block;
+  }
+}
+/* A phone row with its "…" button at the end: no extra trailing inset. */
+.pw-admin-row .pw-more-button {
+  margin-right: -8px;
+}

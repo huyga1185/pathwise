@@ -34,6 +34,7 @@ export {
   PlaceholderRows,
   PopUpButton,
   PopUpFilter,
+  PresetFilter,
   SearchField,
 } from './Filters';
 export { ActivityIndicator } from './ActivityIndicator';

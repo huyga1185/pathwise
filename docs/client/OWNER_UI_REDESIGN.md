@@ -801,3 +801,11 @@ Theo mẫu trang Kế hoạch (G2):
 - Sửa chung: `RowMenu` đo độ rộng thật để không tràn mép phải (trước giả định 216px; menu "…" ở cuối hàng tiêu đề tràn khỏi màn 1440px); đo bằng `offsetWidth` vì hiệu ứng mở thu nhỏ menu.
 - Đo: 1440 / 1024 / 390 / 320px không tràn ngang; tên 150 ký tự ở 320px xuống nhiều dòng, nút "…" ngang dòng đầu.
 
+### 12.7 Làm: Người dùng (2026-11-20)
+
+- Bộ lọc: `PopUpFilter` vai trò, trạng thái + "Xoá bộ lọc". **Cửa hàng chỉ đặt sẵn** (G7-Q2): bỏ ô gõ mã; từ trang chi tiết cửa hàng có link "Xem trong Người dùng" → `?storeId=3&storeName=…`, trang hiện viên thuốc đã lọc `PresetFilter` "Cửa hàng: Tiệm A ⓧ" (một dòng "…" nếu dài). API người dùng/nhật ký không trả tên cửa hàng và `GET /admin/stores/{id}` mỗi lần gọi ghi `STORE_VIEWED` mà chủ cửa hàng thấy (T58), nên tên đi theo link thay vì gọi thêm API; link không có tên (gõ tay) thì hiện "Cửa hàng #3".
+- **Hành động trong menu "…" cuối mỗi hàng** (G7-Q1; cũng mở bằng chuột phải / chạm giữ như G2.13): theo trạng thái — "Gửi lại email xác thực" (chờ xác thực), "Gửi link đặt lại mật khẩu" (đang hoạt động), "Xem nhật ký của người này" (mới: mở Nhật ký đặt sẵn người làm), "Buộc đăng xuất", "Mở khoá" (đã khoá), "Khoá" đỏ ở cuối (không có cho chính mình). Mỗi hành động hỏi bằng **alert**, kết quả bằng `Toast`.
+- Rộng: bảng, email 2 dòng "…" + `title`, mã cửa hàng là link sang trang cửa hàng; bảng hẹp hơn 54rem (cần ~830px) thì vai trò, cửa hàng, ngày tạo thành dòng phụ dưới email. G2.9 như trang Cửa hàng. Điện thoại: hàng chỉ đọc (email không cắt, dòng phụ, nhãn trạng thái **dưới chữ** để email có đủ chỗ — trước bị bẻ 3 dòng), nút "…" cuối hàng.
+- F-76 hết: thanh trang mới không có dòng đếm "N cửa hàng".
+- Đo: 1440 / 960 / 390 / 320px không tràn ngang (960 trước sửa: 822/663).
+

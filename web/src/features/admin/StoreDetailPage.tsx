@@ -74,6 +74,7 @@ function StoreDetail({ store }: { store: AdminStoreDetail }) {
   const [toast, setToast] = useState('');
   const locked = store.status === 'READ_ONLY';
   const owner = store.ownerEmail ?? t.noOwner;
+  const preset = new URLSearchParams({ storeId: String(store.id), storeName: store.name }).toString();
 
   const open = (next: Task) => {
     setFailure(null);
@@ -166,9 +167,13 @@ function StoreDetail({ store }: { store: AdminStoreDetail }) {
       </section>
 
       <section className="pw-admin-block" aria-labelledby="members-title">
-        <h2 id="members-title" className="pw-section-title">
-          {t.members}
-        </h2>
+        <div className="pw-admin-section-head">
+          <h2 id="members-title" className="pw-section-title">
+            {t.members}
+          </h2>
+          {/* The store as a preset filter there, its name to show (G7-Q2). */}
+          <Link to={`/admin/users?${preset}`}>{t.usersAll}</Link>
+        </div>
         {wide ? (
           <DataTable
             caption={t.members}
@@ -224,7 +229,7 @@ function StoreDetail({ store }: { store: AdminStoreDetail }) {
           <h2 id="audit-title" className="pw-section-title">
             {t.audit}
           </h2>
-          <Link to={`/admin/audit?storeId=${store.id}`}>{t.auditAll}</Link>
+          <Link to={`/admin/audit?${preset}`}>{t.auditAll}</Link>
         </div>
         {audit.isError ? <ErrorBanner title={messageFor(audit.error)} /> : null}
         {audit.data && audit.data.items.length === 0 ? <p className="pw-muted">{vi.audit.empty}</p> : null}

@@ -1869,6 +1869,19 @@ textarea.pw-field-input {
     border: 1px solid CanvasText;
   }
 }
+/* A preset filter (PresetFilter): the tinted filter capsule, not a button itself; its clear button at the end. A long
+   value (a store's name) keeps one line. */
+.pw-filter-preset {
+  max-width: 100%;
+  padding-right: 4px;
+  cursor: default;
+}
+.pw-filter-preset .pw-filter-value {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 /* A filter is a capsule button showing its value, filled grey, no outline (HIG Buttons: system styles are filled —
    prominent, grey, plain or glass; shape by input, S3). While it filters, it is
    tinted with the accent colour. */

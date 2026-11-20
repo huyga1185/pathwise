@@ -355,7 +355,8 @@ describe('Khu quản trị (W11)', () => {
     expect(await screen.findByText('Không tìm thấy cửa hàng này.')).toBeInTheDocument();
   });
 
-  it('người dùng: mỗi trạng thái có đúng hành động; gửi link hỏi trước rồi gọi đúng API; không tự khoá mình', async () => {
+  it('người dùng: menu "…" của hàng có đúng hành động theo trạng thái; gửi link hỏi trước rồi gọi đúng API; không tự khoá mình', async () => {
+    wideWindow();
     const posted: string[] = [];
     server.use(
       http.get(`${API}/admin/users`, () => ok(page(users))),
@@ -367,21 +368,55 @@ describe('Khu quản trị (W11)', () => {
     );
     renderApp('/admin/users');
     const user = userEvent.setup();
+    const menuOf = async (email: string) => {
+      await user.click(await screen.findByRole('button', { name: `Thao tác với ${email}` }));
+      const labels = screen.getAllByRole('menuitem').map((item) => item.textContent);
+      return labels;
+    };
 
-    const table = await screen.findByRole('table', { name: 'Người dùng của nền tảng' });
-    const ownerRow = (await within(table).findByText('chu@tiemhoahong.vn')).closest('tr')!;
-    const adminRow = within(table).getByText('admin@pathwise.vn').closest('tr')!;
-    const pendingRow = within(table).getByText('moi@gas.vn').closest('tr')!;
-    expect(within(adminRow).queryByRole('button', { name: /^Khoá/ })).not.toBeInTheDocument();
-    expect(within(pendingRow).getByRole('button', { name: 'Gửi lại email xác thực' })).toBeInTheDocument();
-    expect(within(pendingRow).queryByRole('button', { name: 'Gửi link đặt lại mật khẩu' })).not.toBeInTheDocument();
-
-    await user.click(within(ownerRow).getByRole('button', { name: 'Gửi link đặt lại mật khẩu' }));
-    const dialog = screen.getByRole('dialog', { name: 'Gửi link đặt lại mật khẩu?' });
-    expect(dialog).toHaveTextContent('mở được trong 24 giờ');
-    await user.click(within(dialog).getByRole('button', { name: 'Gửi link' }));
+    await screen.findByRole('table', { name: 'Người dùng của nền tảng' });
+    // Oneself: no "Khoá".
+    expect(await menuOf('admin@pathwise.vn')).not.toContain('Khoá');
+    await user.keyboard('{Escape}');
+    // Waiting for email: resend the verification, no reset link.
+    const pendingItems = await menuOf('moi@gas.vn');
+    expect(pendingItems).toContain('Gửi lại email xác thực');
+    expect(pendingItems).not.toContain('Gửi link đặt lại mật khẩu');
+    await user.keyboard('{Escape}');
+    // Active: the reset link, the log, logging out, "Khoá" last (destructive).
+    expect(await menuOf('chu@tiemhoahong.vn')).toEqual([
+      'Gửi link đặt lại mật khẩu',
+      'Xem nhật ký của người này',
+      'Buộc đăng xuất',
+      'Khoá',
+    ]);
+    await user.click(screen.getByRole('menuitem', { name: 'Gửi link đặt lại mật khẩu' }));
+    const alert = screen.getByRole('alertdialog', { name: 'Gửi link đặt lại mật khẩu?' });
+    expect(alert).toHaveTextContent('mở được trong 24 giờ');
+    await user.click(within(alert).getByRole('button', { name: 'Gửi link' }));
     expect(await screen.findByText('Đã gửi link đặt lại mật khẩu cho chu@tiemhoahong.vn.')).toBeInTheDocument();
     expect(posted).toEqual(['449/password-reset-email']);
+  });
+
+  it('người dùng: cửa hàng chỉ đặt sẵn từ trang cửa hàng, hiện tên và bỏ được; F-76 không còn đếm "cửa hàng"', async () => {
+    const queries: URLSearchParams[] = [];
+    server.use(
+      http.get(`${API}/admin/users`, ({ request }) => {
+        queries.push(new URL(request.url).searchParams);
+        return ok(page(users));
+      }),
+      ...adminHandlers(),
+    );
+    const { router } = renderApp('/admin/users?storeId=3&storeName=Ti%E1%BB%87m%20Hoa%20H%E1%BB%93ng');
+    const user = userEvent.setup();
+
+    await screen.findByRole('list', { name: 'Người dùng của nền tảng' });
+    expect(queries[0]?.get('storeId')).toBe('3');
+    expect(screen.getByText('Tiệm Hoa Hồng')).toBeInTheDocument();
+    expect(screen.queryByText(/cửa hàng · trang/)).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Bỏ lọc cửa hàng' }));
+    await waitFor(() => expect(router.state.location.search).toBe(''));
+    await waitFor(() => expect(queries.at(-1)?.get('storeId')).toBeNull());
   });
 
   it('nhật ký: câu theo hành động, lọc hành động gửi action', async () => {

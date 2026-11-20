@@ -863,3 +863,32 @@ export function SearchField({
     </form>
   );
 }
+
+/**
+ * A filter set by the page that opened this one (G7-Q2: "Cửa hàng: Tiệm A" from a store's page), not chosen here: the
+ * filter button's tinted capsule with its value and a clear button (HIG Buttons; T-9) that removes it.
+ */
+export function PresetFilter({
+  label,
+  value,
+  clearText,
+  onClear,
+}: {
+  label: string;
+  value: string;
+  clearText: string;
+  onClear: () => void;
+}) {
+  return (
+    <span className="pw-filter is-set pw-filter-preset">
+      <span className="pw-filter-label">{label}:</span>
+      <span className="pw-filter-value" title={value}>
+        {value}
+      </span>
+      <button type="button" className="pw-search-clear" aria-label={clearText} title={clearText} onClick={onClear}>
+        <ClearIcon />
+      </button>
+    </span>
+  );
+}
+
