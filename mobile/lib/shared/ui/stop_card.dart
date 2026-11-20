@@ -53,7 +53,7 @@ class StopCard extends StatelessWidget {
         // tint (D4).
         color: t.surfaceRaised,
         border: Border.all(color: current ? t.route : t.line, width: current ? 2 : 1),
-        borderRadius: BorderRadius.circular(PwRadius.radiusMd),
+        borderRadius: BorderRadius.circular(PwShapes.cornerMedium),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

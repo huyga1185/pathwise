@@ -3,6 +3,14 @@ import 'package:flutter/material.dart';
 import 'tokens.g.dart';
 
 /// The design tokens of the current theme (P-42): `context.pw.route`, `context.pw.inkMuted`…
+/// Corners of the driver app's cards and boxes (route card, next stop, stop group, sharing box, banners): Material 3
+/// `md.sys.shape.corner.medium`, the shape of its elevated, filled and outlined cards (token data of the Flutter SDK
+/// 3.47.9, `dev/tools/gen_defaults/data/card_*.json`, version 6_1_0; Flutter's `Card` defaults to it). The web keeps
+/// the project's `radius-md` (8) (chủ dự án chọn, D6).
+abstract final class PwShapes {
+  static const double cornerMedium = 12;
+}
+
 extension PwThemeContext on BuildContext {
   PwColorTokens get pw => Theme.of(this).extension<PwColors>()!.tokens;
 }

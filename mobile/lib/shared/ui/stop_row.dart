@@ -94,7 +94,7 @@ class StopGroup extends StatelessWidget {
     return Material(
       color: t.surfaceRaised,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(PwRadius.radiusMd),
+        borderRadius: BorderRadius.circular(PwShapes.cornerMedium),
         side: BorderSide(color: t.line),
       ),
       clipBehavior: Clip.antiAlias,

@@ -75,6 +75,7 @@ Future<MemoryTokenStore> pumpApp(
   DirectionsSource? directions,
   FakeScreenAwake? screenAwake,
   FakeSystemSplash? splash,
+  Basemap? basemap,
   bool settle = true,
 }) async {
   final store = MemoryTokenStore(refreshToken: refreshToken);
@@ -88,7 +89,7 @@ Future<MemoryTokenStore> pumpApp(
         locationSourceProvider.overrideWithValue(location ?? FakeLocationSource()),
         directionsSourceProvider.overrideWithValue(directions ?? FakeDirectionsSource()),
         screenAwakeProvider.overrideWithValue(screenAwake ?? FakeScreenAwake()),
-        basemapProvider.overrideWithValue(blankBasemap()),
+        basemapProvider.overrideWithValue(basemap ?? blankBasemap()),
         systemSplashProvider.overrideWithValue(splash ?? FakeSystemSplash()),
       ],
       child: const PathwiseApp(),

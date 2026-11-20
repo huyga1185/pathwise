@@ -115,7 +115,7 @@ class _Sharing extends StatelessWidget {
         decoration: BoxDecoration(
           color: t.surfaceRaised,
           border: Border.all(color: t.line),
-          borderRadius: BorderRadius.circular(PwRadius.radiusMd),
+          borderRadius: BorderRadius.circular(PwShapes.cornerMedium),
         ),
         child: Row(
           children: [
@@ -165,7 +165,7 @@ class _Warning extends StatelessWidget {
         decoration: BoxDecoration(
           color: t.surfaceRaised,
           border: Border.all(color: t.signal),
-          borderRadius: BorderRadius.circular(PwRadius.radiusMd),
+          borderRadius: BorderRadius.circular(PwShapes.cornerMedium),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,

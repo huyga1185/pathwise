@@ -23,8 +23,13 @@ class NavigationMap extends StatefulWidget {
     required this.onUserMoved,
     this.position,
     this.headingDegrees,
+    this.showAttribution = true,
     super.key,
   });
+
+  /// False when the screen shows [Basemap.attribution] itself: the navigation screen's bottom panel covered the map's
+  /// own corner, and the OpenStreetMap credit must stay visible (D6).
+  final bool showAttribution;
 
   /// Zoom while following: a few streets around the driver.
   static const followZoom = 17.0;
@@ -112,10 +117,11 @@ class _NavigationMapState extends State<NavigationMap> {
               Marker(point: _latLng(position), width: 40, height: 40, child: _PositionArrow(widget.headingDegrees)),
           ],
         ),
-        SimpleAttributionWidget(
-          source: Text(basemap.attribution, style: PwTypeStyles.small.copyWith(color: Colors.black87)),
-          backgroundColor: Colors.white70,
-        ),
+        if (widget.showAttribution)
+          SimpleAttributionWidget(
+            source: Text(basemap.attribution, style: PwTypeStyles.small.copyWith(color: Colors.black87)),
+            backgroundColor: Colors.white70,
+          ),
       ],
     );
   }
