@@ -257,6 +257,7 @@ describe('Khu quản trị (W11)', () => {
     wideWindow();
     const queries: URLSearchParams[] = [];
     server.use(
+      http.get(`${API}/admin/stores/3`, () => ok(detail())),
       http.get(`${API}/admin/stores`, ({ request }) => {
         const params = new URL(request.url).searchParams;
         queries.push(params);
@@ -278,6 +279,9 @@ describe('Khu quản trị (W11)', () => {
       within(screen.getByRole('table', { name: 'Cửa hàng của nền tảng' })).getByText('chu@tiemhoahong.vn'),
     );
     await waitFor(() => expect(router.state.location.pathname).toBe('/admin/stores/3'));
+    // Wait for the detail page: a request still on its way when the test ends is answered by the next test's handlers
+    // and counted there as a second view (F-78).
+    expect(await screen.findByRole('heading', { name: 'Tiệm Hoa Hồng' })).toBeInTheDocument();
   });
 
   it('chi tiết cửa hàng: khoá gửi lý do, hiện băng và mở khoá; chuyển chủ gửi userId', async () => {

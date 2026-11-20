@@ -827,3 +827,7 @@ Như Nhật ký cửa hàng (§8.3, §8.10):
 |---|---|---|---|
 | G7-Q4 | Tiêu đề "Nhật ký thao tác" 16 ký tự; [Apple] HIG Toolbars: *"keep the title under 15 characters long"* | **"Nhật ký"** (như Q7) | h1 "Nhật ký" (trùng nhãn sidebar/tab bar); caption của bảng và tên danh sách cho trình đọc màn hình giữ "Nhật ký thao tác" (như G2.1) |
 | G7-Q5 | Bảng Cửa hàng, Người dùng, thành viên ở Chi tiết cửa hàng chưa kéo đổi độ rộng cột như các bảng khác (S5; [Apple] Lists and tables macOS *"Let people resize columns"*) | **Bật cho cả ba** | `DataTable resizable`; đo lại 1440 / 1024 / 960px (stack e2e): không tràn ngang, bảng 1133/1133, 724/724, 663/663 ở cả bốn trang |
+
+### 12.10 Kiểm `/admin/profile` (2026-11-20)
+
+`/admin/profile` dùng chung `ProfilePage` đã làm ở G3 (§8.3), không có gì riêng cho ADMIN ngoài vai trò "Quản trị" và không có cửa hàng. Đo trên stack e2e (Playwright, tài khoản ADMIN), sáng và tối, 1440 / 960 / 390 / 320px: tiêu đề "Tài khoản" (Q7), không tràn ngang ở cả 8 cấu hình; chỉ gọi `POST /auth/refresh`, `GET /users/me`, `GET /auth/sessions`, không gọi `/store` (SCREENS); danh sách thiết bị theo Q8 (thiết bị này + 9 phiên mới nhất, cuộn tới cuối hiện thêm; tài khoản thử có 9 phiên nên hiện đủ). Không cần sửa.
