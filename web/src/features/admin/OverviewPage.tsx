@@ -1,9 +1,17 @@
 import { useState } from 'react';
 import { DailyBarChart } from '@/platform/charts';
 import { messageFor } from '@/shared/errors';
-import { formatDayTime, formatDuration, formatRate, shortDate, spokenDate, todayIn } from '@/shared/format';
+import {
+  formatDateLong,
+  formatDayTime,
+  formatDuration,
+  formatRate,
+  shortDate,
+  spokenDate,
+  todayIn,
+} from '@/shared/format';
 import { vi } from '@/shared/i18n/vi';
-import { ErrorBanner, DataTable, Stat } from '@/shared/ui';
+import { ActivityIndicator, DataTable, ErrorBanner, SegmentedControl, Stat, StatGroup } from '@/shared/ui';
 import { useBusinessMetrics, useTechnicalMetrics, type BusinessMetrics, type TechnicalMetrics } from './adminApi';
 import { formatBytes } from './adminFormat';
 
@@ -17,7 +25,10 @@ function addDays(day: string, days: number): string {
   return date.toISOString().slice(0, 10);
 }
 
-/** Prototype "Quản trị — tổng quan" (W11, T60): cards, two charts by day, technical numbers of the instance. */
+/**
+ * "Quản trị — tổng quan" (W11, T60; redesigned in G7, OWNER_UI_REDESIGN §12): the period as the reports' segmented
+ * control, numbers in groups, the two charts by day in groups with their summary, the instance's technical numbers.
+ */
 export function OverviewPage() {
   const [range, setRange] = useState<Range>(30);
   const to = todayIn(ZONE);
@@ -27,29 +38,29 @@ export function OverviewPage() {
   const t = vi.admin.overview;
   return (
     <section className="pw-page-section" aria-labelledby="overview-title">
-      <div className="pw-admin-head">
-        <div className="pw-admin-intro">
-          <h1 id="overview-title" className="pw-page-title">
-            {t.title}
-          </h1>
-          {business.data ? <p className="pw-muted">{t.lead(formatDayTime(business.data.computedAt, ZONE))}</p> : null}
-        </div>
-        <div className="pw-segmented" role="group" aria-label={t.range}>
-          {RANGES.map((n) => (
-            <button
-              key={n}
-              type="button"
-              className="pw-segmented-btn"
-              aria-pressed={range === n}
-              onClick={() => setRange(n)}
-            >
-              {t.days(n)}
-            </button>
-          ))}
-        </div>
+      <div className="pw-admin-intro">
+        <h1 id="overview-title" className="pw-page-title">
+          {t.title}
+        </h1>
+        {business.data ? <p className="pw-muted">{t.lead(formatDayTime(business.data.computedAt, ZONE))}</p> : null}
       </div>
+      {/* The period (G6.2): centred on a wide window (HIG Tab views), full width on a phone. */}
+      <SegmentedControl<`${Range}`>
+        label={t.range}
+        idPrefix="admin-range"
+        value={`${range}`}
+        options={RANGES.map((n) => ({ value: `${n}` as const, label: t.days(n) }))}
+        onChange={(next) => setRange(Number(next) as Range)}
+      />
       {business.isError ? <ErrorBanner title={messageFor(business.error)} /> : null}
-      {business.data ? <BusinessBlock data={business.data} range={range} /> : null}
+      {/* Loading: the spinner after a moment (G2.12; checklist L4). */}
+      {business.isPending ? <ActivityIndicator label={vi.pages.loading} /> : null}
+      {business.data ? (
+        // A new period's numbers settle in as a new result (§9.6; checklist L5).
+        <div key={`${business.data.from}-${business.data.to}`} className="pw-admin-body">
+          <BusinessBlock data={business.data} range={range} />
+        </div>
+      ) : null}
       {technical.isError ? <ErrorBanner title={messageFor(technical.error)} /> : null}
       {technical.data ? <TechnicalBlock data={technical.data} /> : null}
     </section>
@@ -71,10 +82,10 @@ function BusinessBlock({ data, range }: { data: BusinessMetrics; range: Range })
   return (
     <>
       <section className="pw-admin-block" aria-labelledby="now-title">
-        <h2 id="now-title" className="pw-admin-h2">
+        <h2 id="now-title" className="pw-section-title">
           {t.now}
         </h2>
-        <div className="pw-admin-grid">
+        <StatGroup label={t.now}>
           <Stat label={t.stores} value={now.stores} sub={t.locked(now.lockedStores)} />
           <Stat label={t.active7} value={now.activeStores7d} sub={t.activeHint} />
           <Stat label={t.active30} value={now.activeStores30d} sub={t.ofStores(now.stores)} />
@@ -83,13 +94,13 @@ function BusinessBlock({ data, range }: { data: BusinessMetrics; range: Range })
             value={now.owners + now.dispatchers + now.drivers + now.admins}
             sub={t.usersByRole(now.owners, now.dispatchers, now.drivers, now.admins)}
           />
-        </div>
+        </StatGroup>
       </section>
       <section className="pw-admin-block" aria-labelledby="range-title">
-        <h2 id="range-title" className="pw-admin-h2">
+        <h2 id="range-title" className="pw-section-title">
           {t.rangeTitle(range, shortDate(data.from), shortDate(data.to))}
         </h2>
-        <div className="pw-admin-grid">
+        <StatGroup label={t.rangeTitle(range, shortDate(data.from), shortDate(data.to))}>
           <Stat label={t.newStores} value={totals.newStores} />
           <Stat
             label={t.published}
@@ -106,18 +117,29 @@ function BusinessBlock({ data, range }: { data: BusinessMetrics; range: Range })
             value={totals.optimizations}
             sub={t.optFail(formatRate(totals.optimizationFailureRate))}
           />
-        </div>
+        </StatGroup>
         <div className="pw-admin-charts">
-          <div className="pw-admin-card">
-            <h3 className="pw-admin-h3">{t.plansChart}</h3>
+          <section className="pw-group" aria-labelledby="plans-chart-title">
+            <h3 id="plans-chart-title" className="pw-group-title">
+              {t.plansChart}
+            </h3>
             <DailyBarChart
               data={points}
               series={[{ key: 'published', label: t.seriesPublished, token: 'route' }]}
               ariaLabel={t.plansChartLabel(range, totals.plansPublished)}
+              // The main message over the chart, a chosen day's number when one is chosen (HIG Charts, G6.4).
+              summary={(index) => {
+                const day = index === null ? null : days[index];
+                return day
+                  ? t.plansDay(formatDateLong(day.date), day.plansPublished)
+                  : t.plansSummary(totals.plansPublished);
+              }}
             />
-          </div>
-          <div className="pw-admin-card">
-            <h3 className="pw-admin-h3">{t.stopsChart}</h3>
+          </section>
+          <section className="pw-group" aria-labelledby="stops-chart-title">
+            <h3 id="stops-chart-title" className="pw-group-title">
+              {t.stopsChart}
+            </h3>
             <DailyBarChart
               data={points}
               stacked
@@ -127,8 +149,14 @@ function BusinessBlock({ data, range }: { data: BusinessMetrics; range: Range })
                 { key: 'skipped', label: t.seriesSkipped, token: 'signal' },
               ]}
               ariaLabel={t.stopsChartLabel(range, totals.stopsDelivered, totals.stopsFailed, totals.stopsSkipped)}
+              summary={(index) => {
+                const day = index === null ? null : days[index];
+                return day
+                  ? vi.reports.chartDay(formatDateLong(day.date), day.stopsDelivered, day.stopsFailed, day.stopsSkipped)
+                  : vi.reports.chartSummary(totals.stopsDelivered, totals.stopsFailed, totals.stopsSkipped);
+              }}
             />
-          </div>
+          </section>
         </div>
       </section>
     </>
@@ -142,14 +170,14 @@ function TechnicalBlock({ data }: { data: TechnicalMetrics }) {
   return (
     <section className="pw-admin-block" aria-labelledby="tech-title">
       <div className="pw-admin-intro">
-        <h2 id="tech-title" className="pw-admin-h2">
+        <h2 id="tech-title" className="pw-section-title">
           {t.tech}
         </h2>
         <p className="pw-muted">
           {t.techLead(formatDayTime(data.startedAt, ZONE), formatDuration(data.uptimeSeconds))}
         </p>
       </div>
-      <div className="pw-admin-grid">
+      <StatGroup label={t.tech}>
         <Stat
           label={t.rpm}
           value={http.requestsPerMinute.toLocaleString('vi-VN')}
@@ -162,68 +190,116 @@ function TechnicalBlock({ data }: { data: TechnicalMetrics }) {
         />
         <Stat label={t.jobs} value={t.jobsValue(jobs.unfinished)} sub={t.jobsSub(jobs.failedLast24h)} />
         <Stat label={t.rateLimited} value={data.rateLimitedLast24h} sub={t.rateLimitedSub} />
+      </StatGroup>
+      <div className="pw-admin-charts">
+        <section className="pw-group" aria-labelledby="failures-title">
+          <h3 id="failures-title" className="pw-group-title">
+            {t.failures}
+          </h3>
+          <dl className="pw-admin-kv">
+            <div>
+              <dt>{t.email}</dt>
+              <dd>{failures.email}</dd>
+            </div>
+            <div>
+              <dt>{t.routing}</dt>
+              <dd>{failures.routing}</dd>
+            </div>
+            <div>
+              <dt>{t.geocoding}</dt>
+              <dd>{failures.geocoding}</dd>
+            </div>
+            <div>
+              <dt>{t.job}</dt>
+              <dd>{failures.job}</dd>
+            </div>
+          </dl>
+        </section>
+        <section className="pw-group" aria-labelledby="server-title">
+          <h3 id="server-title" className="pw-group-title">
+            {t.server}
+          </h3>
+          <dl className="pw-admin-kv">
+            <div>
+              <dt>{t.heap}</dt>
+              <dd>
+                {formatBytes(jvm.heapUsedBytes)}
+                {jvm.heapMaxBytes ? ` / ${formatBytes(jvm.heapMaxBytes)}` : ''}
+              </dd>
+            </div>
+            <div>
+              <dt>{t.connections}</dt>
+              <dd>
+                {t.connectionsValue(
+                  String(db.activeConnections ?? '—'),
+                  String(db.idleConnections ?? '—'),
+                  String(db.maxConnections ?? '—'),
+                )}
+              </dd>
+            </div>
+            <div>
+              <dt>{t.dbSize}</dt>
+              <dd>{formatBytes(db.sizeBytes)}</dd>
+            </div>
+          </dl>
+        </section>
       </div>
       <div className="pw-admin-charts">
-        <div className="pw-admin-card">
-          <h3 className="pw-admin-h3">{t.failures}</h3>
-          <dl className="pw-admin-kv">
-            <dt>{t.email}</dt>
-            <dd>{failures.email}</dd>
-            <dt>{t.routing}</dt>
-            <dd>{failures.routing}</dd>
-            <dt>{t.geocoding}</dt>
-            <dd>{failures.geocoding}</dd>
-            <dt>{t.job}</dt>
-            <dd>{failures.job}</dd>
-          </dl>
-        </div>
-        <div className="pw-admin-card">
-          <h3 className="pw-admin-h3">{t.server}</h3>
-          <dl className="pw-admin-kv">
-            <dt>{t.heap}</dt>
-            <dd>
-              {formatBytes(jvm.heapUsedBytes)}
-              {jvm.heapMaxBytes ? ` / ${formatBytes(jvm.heapMaxBytes)}` : ''}
-            </dd>
-            <dt>{t.connections}</dt>
-            <dd>
-              {t.connectionsValue(
-                String(db.activeConnections ?? '—'),
-                String(db.idleConnections ?? '—'),
-                String(db.maxConnections ?? '—'),
-              )}
-            </dd>
-            <dt>{t.dbSize}</dt>
-            <dd>{formatBytes(db.sizeBytes)}</dd>
-          </dl>
-        </div>
-      </div>
-      <div className="pw-admin-charts">
-        <DataTable
-          caption={t.groups}
-          rowKey="group"
-          rows={http.groups}
-          columns={[
-            { key: 'group', header: t.group, render: (row) => row.group },
-            { key: 'requests', header: t.requests, numeric: true, render: (row) => row.requestsLastHour },
-            {
-              key: 'p95',
-              header: t.p95,
-              numeric: true,
-              render: (row) => (row.p95Millis == null ? '—' : `${Math.round(row.p95Millis)} ms`),
-            },
-          ]}
-        />
-        <DataTable
-          caption={t.tables}
-          rowKey="name"
-          rows={db.largestTables}
-          columns={[
-            { key: 'name', header: t.table, render: (row) => row.name },
-            { key: 'bytes', header: t.size, numeric: true, render: (row) => formatBytes(row.bytes) },
-            { key: 'rows', header: t.rows, numeric: true, render: (row) => row.rows.toLocaleString('vi-VN') },
-          ]}
-        />
+        <section className="pw-admin-table" aria-labelledby="groups-title">
+          <h3 id="groups-title" className="pw-section-title">
+            {t.groups}
+          </h3>
+          <DataTable
+            caption={t.groups}
+            className="pw-list-group"
+            rowKey="group"
+            rows={http.groups}
+            columns={[
+              { key: 'group', header: t.group, className: 'pw-admin-name', render: (row) => row.group },
+              { key: 'requests', header: t.requests, numeric: true, render: (row) => row.requestsLastHour },
+              {
+                key: 'p95',
+                header: t.p95,
+                numeric: true,
+                className: 'pw-nowrap',
+                render: (row) => (row.p95Millis == null ? '—' : `${Math.round(row.p95Millis)} ms`),
+              },
+            ]}
+          />
+        </section>
+        <section className="pw-admin-table" aria-labelledby="tables-title">
+          <h3 id="tables-title" className="pw-section-title">
+            {t.tables}
+          </h3>
+          <DataTable
+            caption={t.tables}
+            className="pw-list-group"
+            rowKey="name"
+            rows={db.largestTables}
+            columns={[
+              {
+                key: 'name',
+                header: t.table,
+                className: 'pw-admin-name',
+                render: (row) => (
+                  <>
+                    {row.name}
+                    {/* A narrow table: the size folds under the name (G2.11; checklist L3). */}
+                    <div className="pw-muted pw-tabular pw-admin-fold">{formatBytes(row.bytes)}</div>
+                  </>
+                ),
+              },
+              {
+                key: 'bytes',
+                header: t.size,
+                numeric: true,
+                className: 'pw-nowrap pw-admin-col-fold',
+                render: (row) => formatBytes(row.bytes),
+              },
+              { key: 'rows', header: t.rows, numeric: true, render: (row) => row.rows.toLocaleString('vi-VN') },
+            ]}
+          />
+        </section>
       </div>
     </section>
   );

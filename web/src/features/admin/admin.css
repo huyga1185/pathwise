@@ -37,40 +37,10 @@
   flex-direction: column;
   gap: var(--space-4);
 }
-.pw-admin-h2 {
-  margin: 0;
-  font-size: 20px;
-  line-height: 28px;
-  font-weight: 600;
-}
-.pw-admin-h3 {
-  margin: 0;
-  font-size: 16px;
-  line-height: 24px;
-  font-weight: 600;
-}
-.pw-admin-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: var(--space-4);
-}
 .pw-admin-charts {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr));
   gap: var(--space-4);
-}
-.pw-admin-card {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-  min-width: 0;
-  padding: var(--space-4);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-md);
-  background: var(--surface-raised);
-}
-.pw-admin-card {
-  gap: var(--space-2);
 }
 .pw-admin-sub {
   font-size: 12px;
@@ -78,16 +48,23 @@
   color: var(--ink-muted);
 }
 .pw-admin-kv {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: var(--space-2) var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
   margin: 0;
+}
+/* One pair a row, the value trailing; with no room, the value wraps under its label (checklist L1). */
+.pw-admin-kv > div {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0 var(--space-4);
 }
 .pw-admin-kv dt {
   color: var(--ink-muted);
 }
 .pw-admin-kv dd {
-  margin: 0;
+  margin: 0 0 0 auto;
   font-weight: 600;
   text-align: right;
   font-variant-numeric: tabular-nums;
@@ -149,4 +126,44 @@
 .pw-admin-log li > span:first-child {
   min-width: 96px;
   font-variant-numeric: tabular-nums;
+}
+
+/* G7 (OWNER_UI_REDESIGN §12): the overview as the reports page — groups without outlines. A value list in a group:
+   label leading, value trailing. */
+.pw-admin-body {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  animation: pw-result-in 0.32s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .pw-admin-body {
+    animation-name: pw-result-fade;
+  }
+}
+.pw-admin-table {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+}
+/* A name (an endpoint group, a table) breaks anywhere rather than pushing the numbers out (G2.11; checklist L1). */
+.pw-admin-name {
+  overflow-wrap: anywhere;
+}
+/* Narrow tables and value lists (checklist L1, L3): the size column becomes a line under the table's name; a value goes
+   under its label (the list's own rule above). */
+.pw-admin-table {
+  container-type: inline-size;
+}
+.pw-admin-fold {
+  display: none;
+}
+@container (max-width: 380px) {
+  .pw-admin-col-fold {
+    display: none;
+  }
+  .pw-admin-fold {
+    display: block;
+  }
 }

@@ -871,6 +871,8 @@ export const vi = {
       optimizations: 'Lần tối ưu',
       optFail: (rate: string) => `Tỉ lệ lỗi ${rate}`,
       plansChart: 'Kế hoạch giao việc theo ngày',
+      plansSummary: (n: number) => `${n} kế hoạch giao việc`,
+      plansDay: (day: string, n: number) => `${day}: ${n} kế hoạch giao việc`,
       plansChartLabel: (n: number, total: number) =>
         `Biểu đồ cột: kế hoạch giao việc mỗi ngày, ${n} ngày, tổng ${total}.`,
       stopsChart: 'Kết quả điểm giao theo ngày',
@@ -906,10 +908,11 @@ export const vi = {
       group: 'Nhóm',
       requests: 'Request',
       p95: 'p95',
-      tables: 'Bảng lớn nhất',
+      tables: 'Bảng lớn nhất (số dòng ước tính)',
       table: 'Bảng',
       size: 'Dung lượng',
-      rows: 'Số dòng (ước tính)',
+      // Short: the table must fit a phone without scrolling sideways (checklist L3); the estimate is in the title.
+      rows: 'Số dòng',
     },
     stores: {
       title: 'Cửa hàng',

@@ -774,3 +774,11 @@ Một branch `feat/owner-ui-g7`, commit nhỏ theo trang, một PR; mỗi trang 
 | G7-Q2 | Lọc theo mã (Mã cửa hàng ở Người dùng; Mã cửa hàng, Mã người làm ở Nhật ký) — API chỉ nhận mã số | **Chỉ đặt sẵn từ trang khác**: bỏ ô gõ mã khỏi thanh lọc; mở từ trang cửa hàng / người dùng thì hiện viên thuốc đã lọc (vd "Cửa hàng: Tiệm A") có nút ⓧ để bỏ |
 | G7-Q3 | Hai hành động ở Chi tiết cửa hàng ("Khoá (chỉ đọc)", "Chuyển chủ cửa hàng") | **Menu "…" ở hàng tiêu đề** (như G5.6, HIG Toolbars "More menu"); "Khoá" màu đỏ ở cuối; chọn thì mở sheet / alert |
 
+### 12.4 Làm: Tổng quan (2026-11-20)
+
+- Chọn khoảng: `SegmentedControl` [7 ngày | 30 ngày | 90 ngày] như G6.2 (căn giữa khi rộng). Segmented cũ hỏng vì CSS W11 `.pw-segmented` trùng tên với segmented mới — đã bỏ CSS cũ.
+- Số: `StatGroup` dùng chung (Báo cáo cũng chuyển sang, bỏ bản riêng `pw-reports-totals`): một khối bo 16 không viền, nhãn chữ thường (trước VIẾT HOA, mỗi số một thẻ có viền). Tên class `pw-statgroup*` vì `pw-stat*` đã dùng ở thẻ số trang kế hoạch.
+- Hai biểu đồ trong `pw-group`, có dòng tóm tắt và số của ngày đang chọn (G6.4). Khối kỹ thuật: hai danh sách giá trị trong `pw-group`, mỗi cặp một hàng, thiếu chỗ thì giá trị xuống dưới nhãn; hai bảng kỹ thuật trong `pw-list-group` có tiêu đề hiện ra (trước chỉ có caption ẩn). Khung bảng < 380px: cột "Dung lượng" thành dòng phụ dưới tên bảng (trước tên bị bẻ "route_pl an_stop s"); cột "Số dòng (ước tính)" rút thành "Số dòng", "ước tính" lên tiêu đề.
+- Vòng xoay lúc tải; số của khoảng mới trồi lên (`pw-result-in`), giảm chuyển động thì chỉ mờ.
+- Đo (stack e2e): 1440 / 390 / 320px không tràn ngang, bảng 559/559, 358/358, 288/288 (trước ở 390px bảng cuộn 424/341; trang 3607 → 3048px).
+

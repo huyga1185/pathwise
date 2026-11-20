@@ -194,7 +194,7 @@ describe('Khu quản trị (W11)', () => {
     expect(screen.getByText('2 lỗi trong 24 giờ')).toBeInTheDocument();
     expect(within(screen.getByRole('table', { name: /Thời gian phản hồi/ })).getByText('85 ms')).toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole('button', { name: '7 ngày' }));
+    await userEvent.click(screen.getByRole('tab', { name: '7 ngày' }));
     await waitFor(() => expect(asked).toHaveLength(2));
     expect(new Date(asked[1]!).getTime() - new Date(asked[0]!).getTime()).toBe(23 * 86_400_000);
   });

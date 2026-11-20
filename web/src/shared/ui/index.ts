@@ -10,7 +10,7 @@ export { MapMarker, type MapMarkerProps } from './MapMarker';
 export { Dialog, type DialogProps } from './Dialog';
 export { Toast, ToastDock, type ToastProps } from './Toast';
 export { ErrorBanner, FieldError, EmptyState } from './Feedback';
-export { Stat } from './Stat';
+export { Stat, StatGroup } from './Stat';
 export {
   AppShell,
   initials,
