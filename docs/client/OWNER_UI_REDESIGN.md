@@ -782,3 +782,13 @@ Một branch `feat/owner-ui-g7`, commit nhỏ theo trang, một PR; mỗi trang 
 - Vòng xoay lúc tải; số của khoảng mới trồi lên (`pw-result-in`), giảm chuyển động thì chỉ mờ.
 - Đo (stack e2e): 1440 / 390 / 320px không tràn ngang, bảng 559/559, 358/358, 288/288 (trước ở 390px bảng cuộn 424/341; trang 3607 → 3048px).
 
+### 12.5 Làm: Cửa hàng (2026-11-20)
+
+Theo mẫu trang Kế hoạch (G2):
+- **Bộ lọc** một hàng, không còn ô biểu mẫu có nhãn trên: ô tìm `SearchField` mới (dùng chung; viên thuốc nền xám như nút lọc, kính lúp đầu ô, ⓧ cuối ô khi có chữ, tìm khi gõ sau 0,3 s hoặc ngay khi Enter, Esc xoá — [Apple] HIG Search fields *"Consider showing results immediately as people type"*; tên trợ năng "Tìm cửa hàng", placeholder nói tìm gì) + `PopUpFilter` trạng thái + "Xoá bộ lọc" khi đang lọc (`ClearFilters` chuyển từ trang Kế hoạch sang `shared/ui`).
+- **Rộng:** bảng trong nhóm, sắp theo tiêu đề cột "Cửa hàng" (`sort` trên URL), cả hàng mở chi tiết; tên 2 dòng "…" + `title`, email chủ một dòng cắt ở ký tự cuối vừa (trước cắt ở dấu gạch "owner-admin-…"); bảng hẹp hơn 62rem thì "Chủ / Điều phối / Tài xế", "Hoạt động gần nhất", "Tạo lúc" thành dòng phụ "1 chủ · 0 điều phối · 1 tài xế · hoạt động 20/11 07:24 · tạo 20/11/2026" (thử để tiêu đề cột thành viên xuống dòng thì bị bẻ 4 dòng). G2.9: số hàng vừa màn (`useFitRows`, hàng mẫu tên 2 dòng + email), "‹ Trang x/y ›" dưới bảng; API `size` theo số hàng đo được.
+- **Điện thoại:** hàng (tên, email, nhãn trạng thái, chevron) mở chi tiết; 20 một trang, thanh trang ghim ở trên.
+- Hàng giữ chỗ khi tải; trống kiểu ContentUnavailableView ("Không có cửa hàng nào khớp" + gợi ý khi đang lọc); chuyển động kết quả như G2.10.
+- Nhãn trạng thái chữ HOA là kiểu chung của `pw-pill` toàn app (Kế hoạch cũng vậy) — giữ.
+- Đo (24 cửa hàng thêm, tên 150 ký tự và 100 ký tự không dấu cách): 1440 / 1024 / 960 / 390 / 320px không tràn ngang, bảng 1133/1133, 724/724, 663/663.
+

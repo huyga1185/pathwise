@@ -35,13 +35,15 @@ export interface AuditFilter {
   page: number;
 }
 
-const PAGE_SIZE = 20;
+/** Rows a page holds on a phone; a wide window asks for as many as fit (G2.9). */
+export const PAGE_SIZE = 20;
 
 /** Stores of the platform (`GET /admin/stores`, T55). */
-export function useAdminStores(filter: StoreFilter) {
+export function useAdminStores(filter: StoreFilter, size = PAGE_SIZE, enabled = true) {
   const api = useApi();
   return useQuery({
-    queryKey: queryKeys.adminStores(filter),
+    queryKey: queryKeys.adminStores({ ...filter, size }),
+    enabled,
     queryFn: () =>
       unwrap(
         api.GET('/api/v1/admin/stores', {
@@ -50,7 +52,7 @@ export function useAdminStores(filter: StoreFilter) {
               q: filter.q || undefined,
               status: filter.status,
               page: filter.page,
-              size: PAGE_SIZE,
+              size,
               sort: [filter.sort],
             },
           },
@@ -76,10 +78,11 @@ export function useAdminStore(id: number) {
 }
 
 /** Users of the platform (`GET /admin/users`, T55). */
-export function useAdminUsers(filter: UserFilter) {
+export function useAdminUsers(filter: UserFilter, size = PAGE_SIZE, enabled = true) {
   const api = useApi();
   return useQuery({
-    queryKey: queryKeys.adminUsers(filter),
+    queryKey: queryKeys.adminUsers({ ...filter, size }),
+    enabled,
     queryFn: () =>
       unwrap(
         api.GET('/api/v1/admin/users', {
@@ -89,7 +92,7 @@ export function useAdminUsers(filter: UserFilter) {
               role: filter.role,
               status: filter.status,
               page: filter.page,
-              size: PAGE_SIZE,
+              size,
               sort: ['id,asc'],
             },
           },

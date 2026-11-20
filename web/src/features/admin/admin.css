@@ -167,3 +167,50 @@
     display: block;
   }
 }
+
+/* Stores (§12): the table as the plan list's — name column ≥ 14rem, two-line name, owner email under it. The table
+   measures its own width: narrow, members and the two dates become a line under the name (G2.11; checklist L3). */
+.pw-admin-col-name {
+  min-width: 14rem;
+}
+.pw-admin-link {
+  color: inherit;
+  font-weight: 600;
+  text-decoration: none;
+}
+@media (hover: hover) {
+  .pw-admin-link:hover {
+    text-decoration: underline;
+  }
+}
+.pw-admin-stores-table {
+  container-type: inline-size;
+}
+.pw-admin-stores-fold {
+  display: none;
+}
+@container (max-width: 62rem) {
+  .pw-admin-stores-table .pw-admin-stores-col-fold {
+    display: none;
+  }
+  .pw-admin-stores-table .pw-admin-stores-fold {
+    display: block;
+  }
+}
+/* An email is one line cut at its last character that fits (not at a hyphen); all of it in `title` and the store's
+   page (G2.11). The folded dates wrap like a phone's secondary line. */
+.pw-admin-col-name .pw-cell-sub {
+  display: block;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.pw-admin-col-name .pw-cell-sub.pw-admin-stores-fold {
+  display: none;
+  white-space: normal;
+}
+@container (max-width: 62rem) {
+  .pw-admin-stores-table .pw-admin-col-name .pw-cell-sub.pw-admin-stores-fold {
+    display: block;
+  }
+}

@@ -1783,6 +1783,92 @@ textarea.pw-field-input {
   gap: 8px;
   margin-top: -8px;
 }
+/* A search field on the filter row (Filters.tsx SearchField; HIG Search fields): the filter buttons' capsule and grey
+   fill, a magnifying glass leading, a clear button trailing while there is text. As wide as a few words, it grows
+   to fill a row of its own on a phone. */
+.pw-search {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  flex: 0 1 300px;
+  min-width: 200px;
+  min-height: 36px;
+  padding: 0 4px 0 12px;
+  border-radius: var(--radius-full);
+  background: color-mix(in srgb, var(--ink) 7%, transparent);
+}
+.pw-search > svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  color: var(--ink-muted);
+}
+.pw-search input {
+  flex: 1;
+  min-width: 0;
+  height: 36px;
+  padding: 0 8px;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.875rem;
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+}
+.pw-search input::placeholder {
+  color: var(--ink-muted);
+}
+/* The browser's own clear mark: the field has its own. */
+.pw-search input::-webkit-search-cancel-button {
+  display: none;
+}
+.pw-search:focus-within {
+  box-shadow: 0 0 0 2px var(--route);
+}
+.pw-search-clear {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: var(--ink-muted);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.pw-search-clear svg {
+  width: 16px;
+  height: 16px;
+}
+.pw-search-clear:active {
+  background: color-mix(in srgb, var(--ink) 10%, transparent);
+}
+@media (pointer: coarse) {
+  .pw-search,
+  .pw-search input {
+    min-height: 44px;
+    height: 44px;
+  }
+  .pw-search-clear {
+    width: 44px;
+    height: 44px;
+  }
+}
+@media (max-width: 959px) {
+  .pw-search {
+    flex: 1 1 100%;
+  }
+}
+@media (forced-colors: active) {
+  .pw-search {
+    border: 1px solid CanvasText;
+  }
+}
 /* A filter is a capsule button showing its value, filled grey, no outline (HIG Buttons: system styles are filled —
    prominent, grey, plain or glass; shape by input, S3). While it filters, it is
    tinted with the accent colour. */

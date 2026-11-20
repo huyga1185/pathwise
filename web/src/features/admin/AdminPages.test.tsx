@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { describe, expect, it } from 'vitest';
 import type { Schemas } from '@/data/types';
+import { wideWindow } from '@/test/media';
 import { renderApp } from '@/test/renderApp';
 import { API, fail, ok, server, signedInHandlers } from '@/test/server';
 
@@ -218,7 +219,7 @@ describe('Khu quản trị (W11)', () => {
     expect(screen.getByRole('link', { name: 'Về trang chính' })).toHaveAttribute('href', '/admin');
   });
 
-  it('danh sách cửa hàng: tìm bằng Enter gửi q, sắp xếp, link sang chi tiết', async () => {
+  it('danh sách cửa hàng (điện thoại): hàng mở chi tiết; tìm khi gõ và bằng Enter; lọc trạng thái; xoá bộ lọc', async () => {
     const queries: URLSearchParams[] = [];
     server.use(
       http.get(`${API}/admin/stores`, ({ request }) => {
@@ -227,15 +228,56 @@ describe('Khu quản trị (W11)', () => {
       }),
       ...adminHandlers(),
     );
-    renderApp('/admin/stores');
+    const { router } = renderApp('/admin/stores');
     const user = userEvent.setup();
 
-    expect(await screen.findByRole('link', { name: 'Tiệm Hoa Hồng' })).toHaveAttribute('href', '/admin/stores/3');
-    expect(screen.getByText('TẠM KHOÁ')).toBeInTheDocument();
-    await user.type(screen.getByLabelText('Tìm theo tên cửa hàng hoặc email chủ'), 'hoa{Enter}');
+    const rows = await screen.findByRole('list', { name: 'Cửa hàng của nền tảng' });
+    expect(within(rows).getByRole('link', { name: /Tiệm Hoa Hồng/ })).toHaveAttribute('href', '/admin/stores/3');
+    expect(within(rows).getByText('TẠM KHOÁ')).toBeInTheDocument();
+    // No "Xoá bộ lọc" until something filters (G2.2).
+    expect(screen.queryByRole('button', { name: 'Xoá bộ lọc' })).not.toBeInTheDocument();
+
+    await user.type(screen.getByRole('searchbox', { name: 'Tìm cửa hàng' }), 'hoa{Enter}');
     await waitFor(() => expect(queries.at(-1)?.get('q')).toBe('hoa'));
-    await user.click(screen.getByRole('button', { name: /Sắp xếp theo tên/ }));
+    expect(router.state.location.search).toContain('q=hoa');
+    // As people type: sent 0.3 s after the last key.
+    await user.type(screen.getByRole('searchbox', { name: 'Tìm cửa hàng' }), ' hồng');
+    await waitFor(() => expect(queries.at(-1)?.get('q')).toBe('hoa hồng'));
+
+    await user.click(screen.getByRole('button', { name: /Trạng thái: Tất cả/ }));
+    await user.click(screen.getByRole('menuitemradio', { name: 'Tạm khoá (chỉ đọc)' }));
+    await waitFor(() => expect(queries.at(-1)?.get('status')).toBe('READ_ONLY'));
+
+    await user.click(screen.getByRole('button', { name: 'Xoá bộ lọc' }));
+    await waitFor(() => expect(router.state.location.search).toBe(''));
+    expect(screen.getByRole('searchbox', { name: 'Tìm cửa hàng' })).toHaveValue('');
+  });
+
+  it('danh sách cửa hàng (màn rộng): sắp xếp bằng tiêu đề cột, bấm hàng mở chi tiết, trang quá cuối về trang cuối', async () => {
+    wideWindow();
+    const queries: URLSearchParams[] = [];
+    server.use(
+      http.get(`${API}/admin/stores`, ({ request }) => {
+        const params = new URL(request.url).searchParams;
+        queries.push(params);
+        return ok({ ...page([summary]), page: Number(params.get('page')), totalPages: 2, totalElements: 21 });
+      }),
+      ...adminHandlers(),
+    );
+    const { router } = renderApp('/admin/stores?page=7');
+    const user = userEvent.setup();
+
+    await waitFor(() => expect(router.state.location.search).toBe('?page=1'));
+    expect(screen.getByRole('navigation', { name: 'Trang danh sách cửa hàng' })).toHaveTextContent('Trang 2/2');
+    const table = await screen.findByRole('table', { name: 'Cửa hàng của nền tảng' });
+    await user.click(within(table).getByRole('button', { name: /Cửa hàng/ }));
     await waitFor(() => expect(queries.at(-1)?.get('sort')).toBe('name,desc'));
+    expect(router.state.location.search).toBe('?sort=name%2Cdesc');
+
+    await user.click(
+      within(screen.getByRole('table', { name: 'Cửa hàng của nền tảng' })).getByText('chu@tiemhoahong.vn'),
+    );
+    await waitFor(() => expect(router.state.location.pathname).toBe('/admin/stores/3'));
   });
 
   it('chi tiết cửa hàng: khoá gửi lý do, hiện băng và mở khoá; chuyển chủ gửi userId', async () => {

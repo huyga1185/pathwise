@@ -917,7 +917,7 @@ export const vi = {
     stores: {
       title: 'Cửa hàng',
       lead: 'Chỉ số tổng: quản trị viên không xem kế hoạch, xe hay điểm giao của cửa hàng.',
-      search: 'Tìm theo tên cửa hàng hoặc email chủ',
+      search: 'Tên cửa hàng hoặc email chủ',
       searchLabel: 'Tìm cửa hàng',
       status: 'Trạng thái',
       statusAll: 'Tất cả',
@@ -930,12 +930,21 @@ export const vi = {
       plans: 'Kế hoạch',
       lastActivity: 'Hoạt động gần nhất',
       created: 'Tạo lúc',
-      empty: 'Không có cửa hàng nào khớp.',
+      empty: 'Không có cửa hàng nào khớp',
       emptyHint: 'Thử từ khoá khác hoặc bỏ lọc trạng thái.',
       count: (n: number, page: number, total: number) => `${n} cửa hàng · trang ${page}/${Math.max(total, 1)}`,
       previous: 'Trang trước',
       next: 'Trang sau',
       caption: 'Cửa hàng của nền tảng',
+      filterLabel: 'Lọc cửa hàng',
+      clearSearch: 'Xoá từ khoá',
+      pagerLabel: 'Trang danh sách cửa hàng',
+      loading: 'Đang tải danh sách cửa hàng',
+      emptyNone: 'Chưa có cửa hàng nào',
+      membersLine: (owners: number, dispatchers: number, drivers: number) =>
+        `${owners} chủ · ${dispatchers} điều phối · ${drivers} tài xế`,
+      foldLine: (members: string, activity: string | null, created: string) =>
+        [members, activity ? `hoạt động ${activity}` : null, `tạo ${created}`].filter(Boolean).join(' · '),
     },
     store: {
       back: '← Cửa hàng',

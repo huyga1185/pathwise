@@ -27,7 +27,15 @@ export { ActivityText } from './ActivityText';
 export { BackLink } from './BackLink';
 export { DateField, type DateFieldProps } from './DateField';
 export { TimeField, normalizeTime, isTime, type TimeFieldProps } from './TimeField';
-export { DatePickerFilter, PageJump, PlaceholderRows, PopUpButton, PopUpFilter } from './Filters';
+export {
+  ClearFilters,
+  DatePickerFilter,
+  PageJump,
+  PlaceholderRows,
+  PopUpButton,
+  PopUpFilter,
+  SearchField,
+} from './Filters';
 export { ActivityIndicator } from './ActivityIndicator';
 export { Alert, PageActionSheet, Sheet, type AlertProps, type SheetProps } from './Sheet';
 export { RowMenu, useRowMenu, type RowMenuItem } from './RowMenu';
