@@ -1,6 +1,6 @@
 # DRIVER_UI_REDESIGN — Thiết kế lại app tài xế theo Material 3 (gồm M06)
 
-> **Trạng thái (2026-11-20):** kế hoạch đã chốt (chủ dự án trả lời Q1–Q6 ở §6); **D1 đã làm** (§7, PR #139); **D2 đã làm** (§8, PR #140); **D3 đã làm** (§9, PR #141); **D4 đã làm** (§10, branch `feat/driver-ui-d4`); **D5 là giai đoạn tiếp theo**. Nền tảng thiết kế theo P-77.
+> **Trạng thái (2026-11-20):** kế hoạch đã chốt (chủ dự án trả lời Q1–Q6 ở §6); **D1 đã làm** (§7, PR #139); **D2 đã làm** (§8, PR #140); **D3 đã làm** (§9, PR #141); **D4 đã làm** (§10, PR #142); **D5 đã làm** (§11, branch `feat/driver-ui-d5`); **D6 là giai đoạn tiếp theo**. Nền tảng thiết kế theo P-77.
 > Phiên sau làm tiếp từ đây: đọc §0, §4 (giai đoạn đang mở) và §5 (cách kiểm), rồi cập nhật trạng thái ở đầu file và
 > mục kết quả của giai đoạn vừa làm.
 >
@@ -149,7 +149,7 @@ implement predictive back navigation as soon as possible."*
 | Lý do không giao được | Hộp thoại, gợi ý ở trên ô | **Modal bottom sheet** (Q3) có tay nắm, tiêu đề, ô lý do, **suggestion chip** đặt **dưới** ô, nút "Gửi kết quả"; sheet nổi lên trên bàn phím | [M3] 2.5, 2.6; [Chủ dự án] Q3 |
 | Menu tài khoản | Bottom sheet | Giữ modal bottom sheet; thêm hàng "Thông tin của tôi" (M06) mở **màn riêng** (Q4); "Đăng xuất" là nút Outlined (việc quan trọng nhưng không phải việc chính của sheet) | [M3] 2.2, 2.5; [Chủ dự án] Q4 |
 | M06: Thông tin của tôi | Chưa có | Màn riêng (top app bar + form): Họ tên, Số điện thoại (`PATCH /users/me` merge patch, `null` xoá số), lỗi dưới ô theo `UX_BRIEF.md` §6; lưu xong snackbar "Đã lưu thông tin." và quay lại | [Dự án] PLAN M06; [M3] 2.8 |
-| Kết quả việc | Chưa thống nhất | Snackbar ở đáy cho kết quả ngắn ("Đã giao điểm 3.") | [M3] 2.8 |
+| Kết quả việc | Chưa thống nhất | Snackbar ở đáy cho kết quả ngắn ("Đã giao điểm 3."); báo kết quả xong về thẳng chi tiết tuyến kèm snackbar (Q9) | [M3] 2.8; [Chủ dự án] Q9 |
 | Thanh tiến độ | `ProgressBar` riêng, đọc "33" | `LinearProgressIndicator` xác định, nhãn đọc "2 trên 6 điểm đã xong" (sửa H5) | [M3] 2.7; [WCAG] 1.1.1 |
 | Trạng thái tuyến/điểm | `StatusPill` | Giữ (không có hướng dẫn M3 cho nhãn chữ); đặt trong thân trang, cách mép 16 dp | [M3] 2.9; [Dự án] |
 | Back | Nút back trên thanh | Bật predictive back (manifest + `PopScope` chỗ cần chặn, vd form chưa lưu) | [Android] 2.12 |
@@ -198,6 +198,7 @@ ghi vào mục "D*n* — kết quả" cuối file này.
 | Q5 | Font: Be Vietnam Pro hay Roboto? | **Giữ Be Vietnam Pro** |
 | Q7 (D2) | Ô nhập: ô viền nhãn trên (như hiện tại), ô nền nhãn trong ô (mặc định Android), hay ô viền nhãn trong ô? | **Giữ ô viền, nhãn trên** |
 | Q8 (D2) | Hai màn chờ lúc mở app: giữ màn chờ hệ thống bằng API của Flutter, vẽ màn chờ Flutter giống màn hệ thống, thêm thư viện `core-splashscreen`, hay giữ nguyên? | **Thêm `core-splashscreen`** (P-78) |
+| Q9 (D5) | Báo kết quả xong: giữ trang kết quả, về chi tiết tuyến kèm snackbar, hay cả hai? | **Về chi tiết tuyến + snackbar** |
 | Q6 | Danh sách điểm: đọc nguồn M3 trước | Đã đọc (§2.3a): m3.material.io không đọc được; Material Web và `ListTile` của Flutter ủng hộ thẻ cho điểm tiếp theo, hàng danh sách cho các điểm khác |
 
 ## 7. D1 — kết quả (2026-11-20)
@@ -249,4 +250,16 @@ Phạm vi: Chi tiết tuyến và chia sẻ vị trí (hộp hỏi, băng trạn
 - **Số thứ tự:** huy hiệu số trong thẻ và hàng to theo cỡ chữ (`CircleAvatar` giữ số ở 100%).
 - **Kiểm:** `flutter analyze` sạch; `flutter test` 145/145 (thêm 3: thanh trên và trạng thái ở thân trang; thẻ cho điểm tiếp theo, hàng cho điểm khác có trạng thái; hai nút xếp dọc ở chữ 200% trên màn điện thoại, test nạp font Be Vietnam Pro thật để đo; thêm kiểm câu hỏi không còn "Google Maps" và hai nút chữ). Máy ảo: hộp hỏi tối + chữ 200%; từ chối quyền vị trí → băng "Chưa chia sẻ vị trí." tối + 200% và sáng; cho quyền → "Đang chia sẻ vị trí với điều phối viên"; danh sách điểm sáng, tối + 200%.
 - `UI_GUIDELINES.md` §1b: chữ dài ✅ (tên/địa chỉ dài cắt một dòng ở hàng, đầy đủ ở thẻ điểm tiếp theo; lý do đầy đủ); phân trang — ; bảng — ; trống/tải/lỗi ✅ (giữ như cũ, có test); chuyển động — ; accessibility ✅ (nút xếp dọc ở chữ lớn, số thứ tự to theo chữ, nhãn back nói nơi tới).
+
+## 11. D5 — kết quả (2026-11-20)
+
+Phạm vi: Báo kết quả và lý do không giao được.
+
+- **Thanh trên:** top app bar small của M3 như D4: nút back (nhãn "Về chi tiết tuyến", về tuyến cả khi mở thẳng bằng link) và "Điểm N/tổng".
+- **Nút:** "Gọi khách" và "Chỉ đường" filled tonal (§3: việc quan trọng thứ hai), dùng `PwButtonPair` tách từ D4 (xếp dọc khi nhãn không vừa). Ba nút kết quả giữ màu và 56 dp ở đáy (Q1); nền khung đáy kéo xuống dưới thanh cử chỉ (trước đó hở một dải màu nền trang).
+- **Sau khi gửi (Q9, chủ dự án chọn "về tuyến + snackbar"):** server nhận kết quả → về chi tiết tuyến (điểm tiếp theo ở thẻ đầu; tuyến xong thì khối "Bạn đã xong tuyến này") kèm snackbar "Đã giao điểm N." / "Đã báo không giao được điểm N." / "Đã bỏ qua điểm N." (M3 2.8: *"brief notification"*). Trang kết quả cũ chỉ còn cho điểm đã có kết quả khi mở lại (hoặc lần gửi mất response, tuyến đọc lại cho thấy đã xong).
+- **Lý do không giao được (Q3):** modal bottom sheet thay hộp thoại; gợi ý nhanh là suggestion chip (`ActionChip`) đặt **dưới** ô (M3 2.6). Lần đầu trên máy ảo: "Gửi kết quả" đè thanh cử chỉ, và khi bàn phím mở thì nút nằm dưới bàn phím → sheet tránh thanh cử chỉ, hàng nút đặt ngoài phần cuộn nên luôn ở ngay trên bàn phím; phần trên (tiêu đề, ô, gợi ý) cuộn được. Gợi ý không còn trạng thái "đang chọn" (suggestion chip chỉ điền ô; ô hiện chữ đã chọn).
+- **Số thứ tự** ở đầu màn to theo cỡ chữ (như thẻ ở D4).
+- **Kiểm:** `flutter analyze` sạch; `flutter test` 147/147 (thêm 2: thanh trên + nút tonal; sheet có chip dưới ô và hàng nút trên bàn phím 300 dp ở màn điện thoại; sửa 5 test theo luồng mới: snackbar và về tuyến). Máy ảo: báo kết quả sáng; sheet sáng, bàn phím mở; chọn "Vắng nhà" → gửi → chi tiết tuyến 3/6 với snackbar "Đã báo không giao được điểm 3."; báo kết quả tối + chữ 200% (tên/địa chỉ dài xuống dòng, "Gọi khách"/"Chỉ đường" xếp dọc); sheet tối + chữ 200% (cuộn tới gợi ý, nút vẫn hiện).
+- `UI_GUIDELINES.md` §1b: chữ dài ✅ (tên/địa chỉ dài xuống dòng, tiêu đề sheet dài cuộn được); phân trang — ; bảng — ; trống/tải/lỗi ✅ (giữ như cũ: mất mạng, `PLAN_NOT_ACTIVE`, điểm đã có kết quả — có test); chuyển động ✅ (sheet và snackbar dùng chuyển động mặc định của Material); accessibility ✅ (nút xếp dọc ở chữ lớn, tiêu đề sheet là header, snackbar được đọc tự động).
 
