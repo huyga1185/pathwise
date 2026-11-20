@@ -1,6 +1,6 @@
 # DRIVER_UI_REDESIGN — Thiết kế lại app tài xế theo Material 3 (gồm M06)
 
-> **Trạng thái (2026-11-20):** kế hoạch đã chốt (chủ dự án trả lời Q1–Q6 ở §6); **D1 đã làm** (§7, PR #139); **D2 đã làm** (§8, PR #140); **D3 đã làm** (§9, branch `feat/driver-ui-d3`); **D4 là giai đoạn tiếp theo**. Nền tảng thiết kế theo P-77.
+> **Trạng thái (2026-11-20):** kế hoạch đã chốt (chủ dự án trả lời Q1–Q6 ở §6); **D1 đã làm** (§7, PR #139); **D2 đã làm** (§8, PR #140); **D3 đã làm** (§9, PR #141); **D4 đã làm** (§10, branch `feat/driver-ui-d4`); **D5 là giai đoạn tiếp theo**. Nền tảng thiết kế theo P-77.
 > Phiên sau làm tiếp từ đây: đọc §0, §4 (giai đoạn đang mở) và §5 (cách kiểm), rồi cập nhật trạng thái ở đầu file và
 > mục kết quả của giai đoạn vừa làm.
 >
@@ -236,4 +236,17 @@ Phạm vi: Tuyến của tôi, menu tài khoản, M06 "Thông tin của tôi" (p
 - **Không đổi:** thẻ tuyến giữ bo `radius-md` và viền (DESIGN_SYSTEM chưa có quy tắc thẻ M3 cho app; xem câu hỏi ở báo cáo D3); mỗi thẻ tuyến có một nút tô nền ("Tiếp tục giao") — thường một tuyến mỗi ngày; băng cửa hàng tạm khoá, trạng thái trống và lỗi giữ như cũ (đã có test).
 - **Kiểm:** `flutter analyze` sạch; `flutter test` 142/142 (thêm 8: năm test màn Thông tin của tôi, câu lỗi theo ô, câu đọc thanh tiến độ, icon ở chữ 200%). Máy ảo (tài khoản tạo bằng `scripts/seed_driver_demo.py`): Tuyến của tôi sáng, tối + chữ 200%; menu tài khoản sáng, tối + chữ 200%; Thông tin của tôi sáng, bàn phím số mở, lỗi "Chỉ nhận số Việt Nam." từ server, lưu số `0905 123 456` → snackbar → mở lại đọc đúng số từ server; tối + chữ 200%.
 - `UI_GUIDELINES.md` §1b: chữ dài ✅ (tên tuyến xuống dòng cạnh nhãn trạng thái, email dài xuống dòng trong menu); phân trang — ; bảng — ; trống/tải/lỗi ✅ (Thông tin của tôi có đang tải và lỗi kèm "Thử lại"); chuyển động — (chuyển màn mặc định của Android); accessibility ✅ (vùng chạm 48 dp, icon theo cỡ chữ, câu đọc thanh tiến độ).
+
+## 10. D4 — kết quả (2026-11-20)
+
+Phạm vi: Chi tiết tuyến và chia sẻ vị trí (hộp hỏi, băng trạng thái).
+
+- **Thanh trên (H2):** top app bar small của M3, chỉ có nút back (nhãn đọc "Về danh sách tuyến"; mở thẳng bằng id thì về danh sách) và tên plan. Nhãn trạng thái tuyến và ngày xuống đầu thân trang, cạnh nhau, trên thanh tiến độ.
+- **Danh sách điểm (Q6):** điểm tiếp theo giữ `StopCard`; các điểm sau và nhóm đã xong thành `StopRow` (`ListTile`) trong `StopGroup`. Điểm đã xong: `StatusPill` ở dòng ba rồi lý do thất bại đầy đủ. Lần đầu đặt nhãn trạng thái ở cuối hàng thì lý do bị cắt còn "Khách khôn…" (ảnh máy ảo) → chuyển xuống dòng ba; hàng có lý do dài có thể quá ba dòng (lệch "tối đa ba dòng" của §3, để không mất lý do).
+- **Nút:** "Gọi 0905…" và "Chỉ đường" filled tonal, "Báo kết quả" filled (một nút filled mỗi màn). Nền `surface-tint` của thẻ điểm tiếp theo trùng màu nút tonal (nút gần như biến mất, ảnh máy ảo) → thẻ nền `surface-raised`, giữ viền `route` 2 dp. Chữ 200%: "Báo kết quả" xuống hai dòng, hai nửa cao lệch → hai nút xếp dọc khi nhãn không vừa nửa hàng (đo bằng `TextPainter`).
+- **Hộp "Chia sẻ vị trí cho tuyến này?" (H1):** câu bỏ "Google Maps" ("…kể cả khi app chạy nền."; app vẫn gửi vị trí khi chạy nền qua foreground service); `AlertDialog` M3 như `showPwDialog` (hình và màu của theme, hai nút chữ canh cuối, không vừa một hàng thì xếp dọc canh cuối). Ô tick giữ khoảng cách mặc định của `CheckboxListTile`.
+- **Băng chia sẻ vị trí:** nút ("Bật chia sẻ vị trí", "Mở cài đặt", "Bật định vị") filled tonal.
+- **Số thứ tự:** huy hiệu số trong thẻ và hàng to theo cỡ chữ (`CircleAvatar` giữ số ở 100%).
+- **Kiểm:** `flutter analyze` sạch; `flutter test` 145/145 (thêm 3: thanh trên và trạng thái ở thân trang; thẻ cho điểm tiếp theo, hàng cho điểm khác có trạng thái; hai nút xếp dọc ở chữ 200% trên màn điện thoại, test nạp font Be Vietnam Pro thật để đo; thêm kiểm câu hỏi không còn "Google Maps" và hai nút chữ). Máy ảo: hộp hỏi tối + chữ 200%; từ chối quyền vị trí → băng "Chưa chia sẻ vị trí." tối + 200% và sáng; cho quyền → "Đang chia sẻ vị trí với điều phối viên"; danh sách điểm sáng, tối + 200%.
+- `UI_GUIDELINES.md` §1b: chữ dài ✅ (tên/địa chỉ dài cắt một dòng ở hàng, đầy đủ ở thẻ điểm tiếp theo; lý do đầy đủ); phân trang — ; bảng — ; trống/tải/lỗi ✅ (giữ như cũ, có test); chuyển động — ; accessibility ✅ (nút xếp dọc ở chữ lớn, số thứ tự to theo chữ, nhãn back nói nơi tới).
 

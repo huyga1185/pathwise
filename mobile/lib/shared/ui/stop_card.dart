@@ -4,11 +4,13 @@ import '../format.dart';
 import '../status/status.dart';
 import '../theme/theme.dart';
 import '../theme/tokens.g.dart';
+import 'icon_size.dart';
 import 'pw_button.dart';
 import 'status_pill.dart';
 
-/// Design system StopCard: a stop of the driver's route (M01, M02). `current` marks the next stop. With a `phone` and
-/// [onCall] it has a "Gọi 0905 123 456" button; the screen dials through the Launcher port.
+/// Design system StopCard: the next stop of the driver's route, one card with all of it (M01, M02; the other stops are
+/// [StopRow]s, DRIVER_UI_REDESIGN Q6). `current` marks the next stop. With a `phone` and [onCall] it has a "Gọi 0905 123
+/// 456" button, filled tonal (an important second action, M3); the screen dials through the Launcher port.
 class StopCard extends StatelessWidget {
   const StopCard({
     super.key,
@@ -47,7 +49,9 @@ class StopCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(PwSpacing.space4),
       decoration: BoxDecoration(
-        color: current ? t.surfaceTint : t.surfaceRaised,
+        // The 2 dp route border marks the next stop; a tinted fill hid the filled tonal "Gọi" button, which is the same
+        // tint (D4).
+        color: t.surfaceRaised,
         border: Border.all(color: current ? t.route : t.line, width: current ? 2 : 1),
         borderRadius: BorderRadius.circular(PwRadius.radiusMd),
       ),
@@ -60,9 +64,12 @@ class StopCard extends StatelessWidget {
                 Semantics(
                   label: 'Điểm số $sequence',
                   excludeSemantics: true,
-                  child: CircleAvatar(
-                    radius: 14,
-                    backgroundColor: t.route,
+                  // Grows with the system text; a CircleAvatar keeps its number at 100 % (D4).
+                  child: Container(
+                    width: scaledIconSize(context, 28),
+                    height: scaledIconSize(context, 28),
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(color: t.route, shape: BoxShape.circle),
                     child: Text('$sequence', style: PwTypeStyles.label.copyWith(color: t.onAccent)),
                   ),
                 ),
@@ -86,7 +93,13 @@ class StopCard extends StatelessWidget {
             Text('Lý do: $failureReason', style: PwTypeStyles.body.copyWith(color: t.danger)),
           if (hasCall || actions.isNotEmpty) ...[
             const SizedBox(height: PwSpacing.space2),
-            if (hasCall) PwButton(label: 'Gọi ${formatPhone(phone)}', block: true, onPressed: onCall),
+            if (hasCall)
+              PwButton(
+                label: 'Gọi ${formatPhone(phone)}',
+                variant: PwButtonVariant.tonal,
+                block: true,
+                onPressed: onCall,
+              ),
             for (final action in actions) ...[const SizedBox(height: PwSpacing.space2), action],
           ],
         ],
