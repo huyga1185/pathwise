@@ -272,7 +272,9 @@ describe('Khu quản trị (W11)', () => {
     expect(screen.getByRole('navigation', { name: 'Trang danh sách cửa hàng' })).toHaveTextContent('Trang 2/2');
     const table = await screen.findByRole('table', { name: 'Cửa hàng của nền tảng' });
     await user.click(within(table).getByRole('button', { name: /Cửa hàng/ }));
-    await waitFor(() => expect(queries.at(-1)?.get('sort')).toBe('name,desc'));
+    // A request for the previous ascending page may arrive after the descending request. Verify that descending was
+    // requested instead of treating the last network event (which can be stale) as the sort result (F-77).
+    await waitFor(() => expect(queries.some((query) => query.get('sort') === 'name,desc')).toBe(true));
     expect(router.state.location.search).toBe('?sort=name%2Cdesc');
 
     await user.click(

@@ -64,7 +64,14 @@ test('ADMIN khoá rồi mở khoá một cửa hàng', async ({ page }) => {
 
   await test.step('mở khoá thì ghi lại được', async () => {
     await page.getByRole('button', { name: 'Thao tác với cửa hàng' }).click();
-    await page.getByRole('menuitem', { name: 'Mở khoá' }).click();
+    const unlockItem = page.getByRole('menuitem', { name: 'Mở khoá' });
+    await unlockItem.waitFor({ state: 'visible' });
+    await unlockItem.evaluate((element) =>
+      Promise.all(
+        element.closest('[role="menu"]')?.getAnimations().map((animation) => animation.finished) ?? [],
+      ),
+    );
+    await unlockItem.click();
     await page.getByRole('alertdialog', { name: /Mở khoá cửa hàng/ }).getByRole('button', { name: 'Mở khoá' }).click();
     await expect(page.getByText('Đã mở khoá cửa hàng.')).toBeVisible();
     expect((await addVehicle('Xe sau khi mở')).status()).toBe(201);
