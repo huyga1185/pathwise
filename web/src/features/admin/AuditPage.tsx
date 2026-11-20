@@ -290,7 +290,7 @@ export function AuditPage() {
           </section>
         ) : wide ? (
           <DataTable<AuditEvent>
-            caption={a.title}
+            caption={a.caption}
             rows={items}
             columns={columns}
             resizable
@@ -298,7 +298,7 @@ export function AuditPage() {
             onRowClick={setOpened}
           />
         ) : (
-          <ul className="pw-list-group pw-list-rows" aria-label={a.title}>
+          <ul className="pw-list-group pw-list-rows" aria-label={a.caption}>
             {items.map((row) => (
               <li key={row.id} className="pw-list-row">
                 <button type="button" className="pw-list-row-main" onClick={() => setOpened(row)}>

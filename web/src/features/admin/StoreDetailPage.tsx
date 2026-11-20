@@ -177,6 +177,7 @@ function StoreDetail({ store }: { store: AdminStoreDetail }) {
         {wide ? (
           <DataTable
             caption={t.members}
+            resizable
             className="pw-list-group"
             rows={store.members}
             columns={[

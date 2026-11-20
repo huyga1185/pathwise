@@ -338,6 +338,7 @@ export function UsersPage() {
             caption={t.caption}
             columns={columns}
             rows={items}
+            resizable
             className="pw-list-group pw-admin-users-table"
             onRowContextMenu={(row, point) => rowMenu.openAt(row, point)}
           />

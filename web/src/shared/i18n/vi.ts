@@ -1052,7 +1052,9 @@ export const vi = {
       } as Record<'verify' | 'reset' | 'revoke' | 'disable' | 'enable', [string, string, string, string]>,
     },
     audit: {
-      title: 'Nhật ký thao tác',
+      /** A short title (HIG Toolbars: under 15 characters; G7, owner's choice); the caption keeps the longer name. */
+      title: 'Nhật ký',
+      caption: 'Nhật ký thao tác',
       lead: 'Hành động của quản trị viên và hành động nhạy cảm trong cửa hàng. Giữ 1 năm. Giờ Việt Nam.',
       filterLabel: 'Lọc nhật ký',
       /** A person preset from the users page without an email on the link (typed by hand): G7-Q2. */

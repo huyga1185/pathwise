@@ -819,3 +819,10 @@ Như Nhật ký cửa hàng (§8.3, §8.10):
 - Sheet "Chi tiết": hành động, thời điểm có năm, người làm · vai trò, cửa hàng (link sang trang cửa hàng), IP — đủ chữ, bẻ cả chuỗi không dấu cách.
 - Hàng giữ chỗ khi tải; trống kiểu ContentUnavailableView ("Chưa có dòng nhật ký nào khớp." + gợi ý khi đang lọc); chuyển động kết quả như G2.10.
 - Đo (stack e2e, 60 dòng giả qua `page.route`, dữ liệu dài tối đa như trên): 1920 / 1440 / 1300 / 1280 / 1024 / 960 / 390 / 320px không tràn ngang; bảng 1392/1392, 1133/1133, 993/993 (đủ cột), 973/973, 724/724, 663/663 (gập); 1440×900 → 9 dòng, 960×900 → 7; sáng và tối. Trước: ô ngày của trình duyệt (mm/dd/yyyy), ô gõ mã, "Mới hơn / Cũ hơn", điện thoại cuộn ngang 612/341.
+
+### 12.9 Tiêu đề Nhật ký, kéo đổi độ rộng cột (2026-11-20)
+
+| # | Câu hỏi | Trả lời (chủ dự án) | Làm |
+|---|---|---|---|
+| G7-Q4 | Tiêu đề "Nhật ký thao tác" 16 ký tự; [Apple] HIG Toolbars: *"keep the title under 15 characters long"* | **"Nhật ký"** (như Q7) | h1 "Nhật ký" (trùng nhãn sidebar/tab bar); caption của bảng và tên danh sách cho trình đọc màn hình giữ "Nhật ký thao tác" (như G2.1) |
+| G7-Q5 | Bảng Cửa hàng, Người dùng, thành viên ở Chi tiết cửa hàng chưa kéo đổi độ rộng cột như các bảng khác (S5; [Apple] Lists and tables macOS *"Let people resize columns"*) | **Bật cho cả ba** | `DataTable resizable`; đo lại 1440 / 1024 / 960px (stack e2e): không tràn ngang, bảng 1133/1133, 724/724, 663/663 ở cả bốn trang |

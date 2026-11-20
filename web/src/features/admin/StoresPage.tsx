@@ -259,6 +259,7 @@ export function StoresPage() {
             columns={columns}
             rows={items}
             onRowClick={(row) => navigate(`/admin/stores/${row.id}`)}
+            resizable
             className="pw-list-group pw-admin-stores-table"
             sort={{ key: 'name', direction: sortParam === 'name,desc' ? 'desc' : 'asc' }}
             onSort={() => update({ sort: sortParam === 'name,desc' ? undefined : 'name,desc' })}
