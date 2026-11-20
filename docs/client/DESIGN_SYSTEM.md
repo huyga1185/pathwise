@@ -247,12 +247,13 @@ Bảng dữ liệu của web dashboard: danh sách stop, plan, xe, thành viên;
 
 Thẻ một điểm giao trong app tài xế: số thứ tự, đơn và khách, địa chỉ, giờ dự kiến, ghi chú, nút gọi và các nút kết quả.
 
-- Stop tài xế sắp tới: `current` (nền `surface-tint`, viền `route`); chỉ một thẻ `current` mỗi lúc.
+- Stop tài xế sắp tới: `current` (viền `route`; web nền `surface-tint`, app tài xế nền `surface-raised` từ D4); chỉ một thẻ `current` mỗi lúc.
 - `phone` nhận E.164 từ API, hiện dạng `0905 123 456` và là nút gọi `tel:` cao 48px.
 - `actions`: ba `Button` cỡ `xl`, `block`, xếp dọc — Đã giao (`success`), Không giao được (`danger`), Bỏ qua (`signal`). Chỉ hiện trên stop `PENDING` của plan đang chạy; bấm xong mới gọi API, có bước xác nhận ngay trong trang.
 - Không giao được: hỏi lý do (bắt buộc, tối đa 255 ký tự) trước khi gửi; lý do hiện trên thẻ bằng `danger`.
 - Chữ cỡ `body-touch` (16px); vùng chạm tối thiểu 48px.
 - Đây là bản tham chiếu HTML cho thiết kế; app tài xế (Flutter) dựng lại theo cùng token và quy tắc.
+- **App tài xế (D4, Q6):** chỉ điểm tiếp theo là `StopCard` (nền `surface-raised`, viền `route` 2px — nền `surface-tint` làm mất nút "Gọi" filled tonal cùng màu; số thứ tự to theo cỡ chữ). Các điểm sau và đã xong là `StopRow` (hàng `ListTile` của Material) trong một `StopGroup` (khung `surface-raised`, viền `line`, đường kẻ giữa các hàng): số thứ tự, tên (một dòng), địa chỉ (một dòng), dòng giờ; điểm đã xong thay dòng giờ bằng `StatusPill` rồi lý do thất bại **đầy đủ** (không cắt, vì lý do là thông tin chính). Dưới thẻ: "Chỉ đường" (filled tonal) và "Báo kết quả" (filled) cạnh nhau, xếp dọc khi nhãn không vừa nửa hàng (chữ lớn).
 
 ### MapMarker
 

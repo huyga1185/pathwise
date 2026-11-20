@@ -1,5 +1,9 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+import 'package:pathwise_driver/shared/ui/ui.dart';
 
 import '../support/app.dart';
 import '../support/fake_api.dart';
@@ -30,6 +34,7 @@ void main() {
     expect(find.text('Dự kiến 10:39 · Khung 09:00–11:00'), findsOneWidget);
     expect(find.text('Gọi 0905 123 008'), findsOneWidget);
     expect(find.text('Chỉ đường'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('CÒN 11 ĐIỂM SAU ĐÓ'), 200);
     expect(find.text('CÒN 11 ĐIỂM SAU ĐÓ'), findsOneWidget);
     expect(find.textContaining('ĐÃ XONG'), findsNothing);
 
@@ -96,16 +101,17 @@ void main() {
     expect(find.text('ĐANG GIAO'), findsOneWidget);
     expect(find.text('2/12'), findsOneWidget);
     expect(find.text('ĐH-1021 · Chị Mai'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('CÒN 9 ĐIỂM SAU ĐÓ'), 200);
     expect(find.text('CÒN 9 ĐIỂM SAU ĐÓ'), findsOneWidget);
 
     await tester.scrollUntilVisible(find.text('ĐÃ XONG (2)'), 400);
-    await tester.scrollUntilVisible(find.text('Lý do: Vắng nhà'), 200);
+    await tester.scrollUntilVisible(find.textContaining('Lý do: Vắng nhà'), 200);
     expect(find.text('KHÔNG GIAO ĐƯỢC'), findsOneWidget);
     expect(find.text('ĐÃ GIAO'), findsOneWidget);
 
     await tester.tap(find.text('Thu gọn'));
     await tester.pumpAndSettle();
-    expect(find.text('Lý do: Vắng nhà'), findsNothing);
+    expect(find.textContaining('Lý do: Vắng nhà'), findsNothing);
     expect(find.text('Xem'), findsOneWidget);
   });
 
@@ -139,6 +145,61 @@ void main() {
     await tester.tap(find.byTooltip('Về danh sách tuyến'));
     await tester.pumpAndSettle();
     expect(find.text('Tuyến của tôi'), findsOneWidget);
+  });
+
+  testWidgets('thanh trên M3 chỉ có tên plan; trạng thái và ngày ở thân trang (D4, H2)', (tester) async {
+    await openRoute(tester, sampleRoute());
+
+    expect(find.descendant(of: find.byType(AppBar), matching: find.text('Giao sáng 01/12')), findsOneWidget);
+    expect(find.descendant(of: find.byType(AppBar), matching: find.text('CHỜ GIAO')), findsNothing);
+    expect(find.text('CHỜ GIAO'), findsOneWidget);
+    expect(find.text('Thứ Ba, 01/12/2026'), findsOneWidget);
+  });
+
+  testWidgets('điểm tiếp theo là thẻ; các điểm sau và đã xong là hàng danh sách có trạng thái (D4, Q6)', (
+    tester,
+  ) async {
+    await openRoute(
+      tester,
+      sampleRoute(finished: {1: ('FAILED', 'Vắng nhà'), 2: ('DELIVERED', null)}, status: 'IN_PROGRESS'),
+    );
+
+    expect(find.widgetWithText(StopCard, 'ĐH-1021 · Chị Mai'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('CÒN 9 ĐIỂM SAU ĐÓ'), 200);
+    expect(find.byType(StopCard), findsOneWidget);
+    await tester.scrollUntilVisible(find.textContaining('Lý do: Vắng nhà'), 300);
+    final failed = find.ancestor(of: find.textContaining('Lý do: Vắng nhà'), matching: find.byType(StopRow));
+    expect(find.descendant(of: failed, matching: find.text('KHÔNG GIAO ĐƯỢC')), findsOneWidget);
+    // "Chỉ đường" filled tonal, "Báo kết quả" the one filled button (M3).
+    await tester.scrollUntilVisible(find.text('Chỉ đường'), -300);
+    expect(find.widgetWithText(FilledButton, 'Báo kết quả'), findsOneWidget);
+  });
+
+  testWidgets('chữ 200% trên màn điện thoại: "Chỉ đường" và "Báo kết quả" xếp dọc; chữ 100% thì cạnh nhau (D4)', (
+    tester,
+  ) async {
+    // The app's font, so labels measure as on the phone (the test font draws every letter 1 em wide).
+    final font = FontLoader('Be Vietnam Pro')
+      ..addFont(rootBundle.load('assets/fonts/BeVietnamPro-Regular.ttf'))
+      ..addFont(rootBundle.load('assets/fonts/BeVietnamPro-SemiBold.ttf'))
+      ..addFont(rootBundle.load('assets/fonts/BeVietnamPro-Bold.ttf'));
+    await font.load();
+    tester.view
+      ..physicalSize = const Size(1080, 2400)
+      ..devicePixelRatio = 2.625;
+    addTearDown(tester.view.reset);
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+
+    await openRoute(tester, sampleRoute());
+    final directions = find.widgetWithText(PwButton, 'Chỉ đường');
+    final report = find.widgetWithText(PwButton, 'Báo kết quả');
+    await tester.scrollUntilVisible(report, 200);
+    expect(tester.getTopLeft(report).dy, tester.getTopLeft(directions).dy);
+
+    tester.platformDispatcher.textScaleFactorTestValue = 2;
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(report, 200);
+    expect(tester.getTopLeft(report).dy, greaterThan(tester.getBottomLeft(directions).dy));
   });
 }
 

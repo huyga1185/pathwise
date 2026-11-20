@@ -42,8 +42,8 @@ abstract final class Vi {
   // Location sharing (T32, P-54; prototype "Tài xế — chia sẻ vị trí").
   static const shareAskTitle = 'Chia sẻ vị trí cho tuyến này?';
   static String shareAskBody(String plan) =>
-      'Trong lúc giao tuyến $plan, PathWise gửi vị trí của bạn cho điều phối viên của cửa hàng, kể cả khi bạn đang '
-      'mở Google Maps để chỉ đường. App tự dừng khi tuyến xong hoặc bạn đăng xuất.';
+      'Trong lúc giao tuyến $plan, PathWise gửi vị trí của bạn cho điều phối viên của cửa hàng, kể cả khi app chạy '
+      'nền. App tự dừng khi tuyến xong hoặc bạn đăng xuất.';
   static const shareRemember = 'Ghi nhớ lựa chọn, không hỏi lại';
   static const shareRememberHint = 'Đổi lại trong menu tài khoản (chạm chữ viết tắt tên).';
   static const shareConfirm = 'Chia sẻ vị trí';
@@ -100,6 +100,7 @@ abstract final class Vi {
   static const collapse = 'Thu gọn';
   static const expand = 'Xem';
   static const directions = 'Chỉ đường';
+  static String failureReasonLine(String reason) => 'Lý do: $reason';
   static const routeDone = 'Bạn đã xong tuyến này.';
   static String returnTo(String place) => 'Quay về kho: $place.';
   static String startAndEnd(String place) => 'Xuất phát và quay về: $place.';

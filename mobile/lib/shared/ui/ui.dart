@@ -6,4 +6,5 @@ export 'pw_dialog.dart';
 export 'pw_text_field.dart';
 export 'status_pill.dart';
 export 'stop_card.dart';
+export 'stop_row.dart';
 export 'system_bars.dart';

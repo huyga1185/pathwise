@@ -93,12 +93,22 @@ class _RouteDetailScreenState extends ConsumerState<RouteDetailScreen> with Rout
     final route = ref.watch(provider);
     final detail = shownRoute(route);
 
+    // Material 3 small top app bar, pinned (DRIVER_UI_REDESIGN §3 "Thanh trên"): back and the plan's name only; the
+    // status label sits in the page next to the progress, where the bar had no room for it (H2).
     return Scaffold(
-      backgroundColor: t.surface,
+      appBar: AppBar(
+        // The platform's back icon, named for where it goes; opened straight by id there is nothing to pop.
+        leading: IconButton(
+          icon: const BackButtonIcon(),
+          tooltip: Vi.backToRoutes,
+          onPressed: () => context.canPop() ? context.pop() : context.go('/routes'),
+        ),
+        title: detail == null ? null : Text(detail.planName),
+      ),
       body: SafeArea(
+        top: false,
         child: Column(
           children: [
-            _Header(route: detail),
             Expanded(
               child: RefreshIndicator(
                 color: t.route,
@@ -133,6 +143,16 @@ class _RouteDetailScreenState extends ConsumerState<RouteDetailScreen> with Rout
     const gap = SizedBox(height: PwSpacing.space6);
 
     return [
+      Wrap(
+        spacing: PwSpacing.space2,
+        runSpacing: PwSpacing.space1,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          StatusPill(kind: StatusKind.route, status: route.status.value),
+          Text(formatDateLong(route.planDate), style: PwTypeStyles.bodyTouch.copyWith(color: t.inkMuted)),
+        ],
+      ),
+      const SizedBox(height: PwSpacing.space4),
       PwProgressBar(label: Vi.stopsDone, value: done.length, max: route.stops.length),
       if (ref.watch(locationSharingProvider).isFor(route.routeId)) ...[
         const SizedBox(height: PwSpacing.space4),
@@ -144,29 +164,23 @@ class _RouteDetailScreenState extends ConsumerState<RouteDetailScreen> with Rout
         _StopView(
           stop: next,
           timezone: route.timezone,
-          current: true,
           onCall: next.recipientPhone == null ? null : () => unawaited(_open(callUri(next.recipientPhone!))),
         ),
         const SizedBox(height: PwSpacing.space2),
-        Row(
-          children: [
-            Expanded(
-              child: PwButton(
-                label: Vi.directions,
-                block: true,
-                onPressed: () => context.push('/routes/${route.routeId}/navigate?stopId=${next.id}'),
-              ),
-            ),
-            const SizedBox(width: PwSpacing.space2),
-            Expanded(
-              child: PwButton(
-                label: Vi.report,
-                variant: PwButtonVariant.filled,
-                block: true,
-                onPressed: () => context.push('/routes/${route.routeId}/stops/${next.id}'),
-              ),
-            ),
-          ],
+        _ActionPair(
+          first: PwButton(
+            label: Vi.directions,
+            variant: PwButtonVariant.tonal,
+            block: true,
+            onPressed: () => context.push('/routes/${route.routeId}/navigate?stopId=${next.id}'),
+          ),
+          second: PwButton(
+            label: Vi.report,
+            variant: PwButtonVariant.filled,
+            block: true,
+            onPressed: () => context.push('/routes/${route.routeId}/stops/${next.id}'),
+          ),
+          labels: const [Vi.directions, Vi.report],
         ),
       ],
       if (route.status == DriverRouteDetailResponseStatusEnum.COMPLETED) ...[
@@ -197,10 +211,7 @@ class _RouteDetailScreenState extends ConsumerState<RouteDetailScreen> with Rout
       if (pending.length > 1) ...[
         gap,
         _SectionTitle(Vi.restStops(pending.length - 1)),
-        for (final stop in pending.skip(1)) ...[
-          _StopView(stop: stop, timezone: route.timezone),
-          const SizedBox(height: PwSpacing.space2),
-        ],
+        StopGroup(children: [for (final stop in pending.skip(1)) _stopRow(stop, route.timezone)]),
       ],
       if (done.isNotEmpty) ...[
         gap,
@@ -223,15 +234,37 @@ class _RouteDetailScreenState extends ConsumerState<RouteDetailScreen> with Rout
             ),
           ),
         ),
-        if (_doneOpen)
-          for (final stop in done) ...[
-            _StopView(stop: stop, timezone: route.timezone, showStatus: true),
-            const SizedBox(height: PwSpacing.space2),
-          ],
+        if (_doneOpen) StopGroup(children: [for (final stop in done) _stopRow(stop, route.timezone)]),
       ],
       gap,
       Text(_startAndEnd(route), style: PwTypeStyles.body.copyWith(color: t.inkMuted)),
     ];
+  }
+
+  /// A stop after the next one: the address and times; a finished one: its status and failure reason.
+  static Widget _stopRow(DriverStopResponse stop, String timezone) {
+    final finished = stop.status != DriverStopResponseStatusEnum.PENDING;
+    final reason = stop.failureReason;
+    return StopRow(
+      sequence: stop.sequence,
+      title: [stop.label, ?stop.recipientName].join(' · '),
+      address: stop.address ?? Vi.noAddress,
+      detail: finished
+          ? (reason == null || reason.isEmpty ? null : Vi.failureReasonLine(reason))
+          : _times(stop, timezone),
+      status: finished ? stop.status.value : null,
+      danger: finished,
+    );
+  }
+
+  /// "Dự kiến 10:39 · Khung 09:00–11:00", or null without either.
+  static String? _times(DriverStopResponse stop, String timezone) {
+    final window = stop.timeWindow;
+    final parts = [
+      if (stop.plannedArrival != null) 'Dự kiến ${formatTime(stop.plannedArrival, timezone)}',
+      if (window != null) 'Khung ${formatTimeWindow(window.start, window.end)}',
+    ];
+    return parts.isEmpty ? null : parts.join(' · ');
   }
 
   static String _startAndEnd(DriverRouteDetailResponse route) {
@@ -244,47 +277,50 @@ class _RouteDetailScreenState extends ConsumerState<RouteDetailScreen> with Rout
   static String _place(LocationResponse location) => location.address ?? '${location.lat}, ${location.lon}';
 }
 
-class _Header extends StatelessWidget {
-  const _Header({required this.route});
+/// Two buttons side by side, or one above the other when a label would not fit on one line in half the width (large
+/// system text): two halves of different heights, one label broken in two (D4).
+class _ActionPair extends StatelessWidget {
+  const _ActionPair({required this.first, required this.second, required this.labels});
 
-  final DriverRouteDetailResponse? route;
+  final Widget first;
+  final Widget second;
+  final List<String> labels;
 
   @override
   Widget build(BuildContext context) {
-    final t = context.pw;
-    final route = this.route;
-    return Container(
-      padding: const EdgeInsets.all(PwSpacing.space2),
-      decoration: BoxDecoration(
-        color: t.surfaceRaised,
-        border: Border(bottom: BorderSide(color: t.line)),
-      ),
-      child: Row(
-        children: [
-          IconButton(
-            tooltip: Vi.backToRoutes,
-            icon: Icon(Icons.chevron_left, color: t.ink),
-            constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
-            onPressed: () => context.canPop() ? context.pop() : context.go('/routes'),
-          ),
-          const SizedBox(width: PwSpacing.space1),
-          Expanded(
-            child: route == null
-                ? const SizedBox.shrink()
-                : Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Semantics(
-                        header: true,
-                        child: Text(route.planName, style: PwTypeStyles.heading.copyWith(color: t.ink, fontSize: 18)),
-                      ),
-                      Text(formatDateLong(route.planDate), style: PwTypeStyles.body.copyWith(color: t.inkMuted)),
-                    ],
-                  ),
-          ),
-          if (route != null) StatusPill(kind: StatusKind.route, status: route.status.value),
-        ],
-      ),
+    final scaler = MediaQuery.textScalerOf(context);
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final half = (constraints.maxWidth - PwSpacing.space2) / 2;
+        final fits = labels.every((label) {
+          final painter = TextPainter(
+            text: TextSpan(text: label, style: PwTypeStyles.heading),
+            textDirection: TextDirection.ltr,
+            textScaler: scaler,
+          )..layout();
+          final width = painter.width;
+          painter.dispose();
+          // Material 3 buttons pad 24 dp each side, less as text grows; 48 is the most it can take.
+          return width + 48 <= half;
+        });
+        if (fits) {
+          return Row(
+            children: [
+              Expanded(child: first),
+              const SizedBox(width: PwSpacing.space2),
+              Expanded(child: second),
+            ],
+          );
+        }
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            first,
+            const SizedBox(height: PwSpacing.space2),
+            second,
+          ],
+        );
+      },
     );
   }
 }
@@ -305,20 +341,12 @@ class _SectionTitle extends StatelessWidget {
   );
 }
 
-/// A stop as a StopCard: the next one with its phone, the finished ones with their status and reason.
+/// The next stop as a StopCard, with its phone.
 class _StopView extends StatelessWidget {
-  const _StopView({
-    required this.stop,
-    required this.timezone,
-    this.current = false,
-    this.showStatus = false,
-    this.onCall,
-  });
+  const _StopView({required this.stop, required this.timezone, this.onCall});
 
   final DriverStopResponse stop;
   final String timezone;
-  final bool current;
-  final bool showStatus;
   final VoidCallback? onCall;
 
   @override
@@ -328,14 +356,12 @@ class _StopView extends StatelessWidget {
       sequence: stop.sequence,
       title: [stop.label, ?stop.recipientName].join(' · '),
       address: stop.address ?? Vi.noAddress,
-      eta: showStatus || stop.plannedArrival == null ? null : formatTime(stop.plannedArrival, timezone),
-      timeWindow: showStatus || window == null ? null : formatTimeWindow(window.start, window.end),
-      note: showStatus ? null : stop.note,
-      status: showStatus ? stop.status.value : null,
-      failureReason: showStatus ? stop.failureReason : null,
-      phone: current ? stop.recipientPhone : null,
+      eta: stop.plannedArrival == null ? null : formatTime(stop.plannedArrival, timezone),
+      timeWindow: window == null ? null : formatTimeWindow(window.start, window.end),
+      note: stop.note,
+      phone: stop.recipientPhone,
       onCall: onCall,
-      current: current,
+      current: true,
     );
   }
 }
