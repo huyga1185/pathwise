@@ -2937,6 +2937,35 @@ textarea.pw-field-input {
   outline: 2px solid var(--route);
   outline-offset: -2px;
 }
+
+/* Sheets, alerts and action sheets are glass like the popover (LIQUID_GLASS §2: modal surfaces are Liquid Glass
+   Regular, paired with the dimming layer; HIG Materials: a thicker material for text-heavy elements, so the popover's
+   96%). The buttons of an action sheet sit on the group's glass. */
+.pw-sheet,
+.pw-alert,
+.pw-action-sheet-group,
+.pw-action-sheet-button.is-cancel {
+  background: color-mix(in srgb, var(--surface-raised) 96%, transparent);
+  -webkit-backdrop-filter: blur(24px) saturate(1.4);
+  backdrop-filter: blur(24px) saturate(1.4);
+}
+.pw-action-sheet-group .pw-action-sheet-button {
+  background: transparent;
+}
+/* Pressed: a layer over whatever is under the button, so the Cancel button keeps its glass. */
+.pw-action-sheet-button:active {
+  background-image: linear-gradient(color-mix(in srgb, var(--ink) 8%, transparent), color-mix(in srgb, var(--ink) 8%, transparent));
+}
+@media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
+  .pw-sheet,
+  .pw-alert,
+  .pw-action-sheet-group,
+  .pw-action-sheet-button.is-cancel {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    background: var(--surface-raised);
+  }
+}
 @media (prefers-reduced-motion: reduce) {
   .pw-sheet,
   .pw-alert,

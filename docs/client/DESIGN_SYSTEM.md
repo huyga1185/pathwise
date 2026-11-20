@@ -183,6 +183,7 @@ Nhãn trạng thái viết hoa trên nền màu trạng thái; truyền thẳng 
 
 - `Sheet`: việc có nhập liệu; "Huỷ" đầu thanh trên, nút xong (động từ) cuối; điện thoại trồi từ đáy, grabber, vuốt xuống để đóng (còn thay đổi chưa lưu thì hỏi bằng action sheet "Bỏ thay đổi" / "Tiếp tục sửa"); máy tính là thẻ giữa màn hình. Không `doneLabel` = sheet áp dụng ngay, chỉ có "Đóng".
 - `Alert`: chỉ xác nhận việc khó đảo ngược; "Huỷ" bên trái (được focus), hành động bên phải; `destructive` (đỏ) chỉ khi người dùng không chủ động chọn việc phá huỷ.
+- Vật liệu (2026-11-20, LIQUID_GLASS §2): sheet, alert và action sheet là kính như popover (nền `surface-raised` 96%, nhoè 24px) trên lớp làm tối 45%; giảm trong suốt hoặc tăng tương phản thì nền đặc.
 - `SwitchRow`: switch trong một hàng danh sách (nhãn trái, switch phải), `role="switch"`.
 - `SegmentedControl`: chuyển giữa các phần liên quan trên điện thoại; ô bằng nhau, ô đang chọn nổi lên.
 - `useRowMenu` + `RowMenu`: menu ngữ cảnh của hàng cho mọi danh sách (chạm giữ, nhấp chuột phải); mục phá huỷ chữ đỏ.
