@@ -8,6 +8,7 @@
 2. `docs/client/ARCHITECTURE.md`: lớp, quy tắc phụ thuộc, port, auth, polling, lỗi, bản đồ.
 3. Màn hình của task trong `docs/client/SCREENS.md`, rồi mở artboard tương ứng trong prototype (`https://claude.ai/artifact/JPW7uzXLFrpqfgFmQVjs5N`, xem bằng Artifact tool `read` nếu cần mã nguồn của artboard).
 4. `docs/client/DESIGN_SYSTEM.md` và `brand/design-system/` (token, props component). Làm giao diện: hướng dẫn Apple đứng trước (P-71), quy tắc và danh sách kiểm ở `docs/client/UI_GUIDELINES.md` (học từ Apple, chỗ lệch ghi kèm lý do). Thiết kế lại khu đã đăng nhập (G1–G7, P-74) đã xong; lý do, câu trả lời của chủ dự án và số đo ở `docs/archive/client/OWNER_UI_REDESIGN.md` (lưu trữ, số mục giữ nguyên), quy tắc rút ra đã ở `DESIGN_SYSTEM.md` và `SCREENS.md`.
+   App tài xế theo Material 3 (P-77): kế hoạch và cách kiểm trên máy ảo ở `docs/client/DRIVER_UI_REDESIGN.md`.
 5. Endpoint dùng tới trong `docs/API_SPEC.md`, thông điệp và trạng thái trong `docs/ux/UX_BRIEF.md`, dữ liệu mẫu trong `docs/ux/samples/`.
 6. `docs/DECISIONS.md`: P-40 → P-47 (client) cùng các quyết định backend mà màn hình dựa vào (P-34 không hoàn tác, P-35/P-39 trạng thái route, P-36 idempotent…); khu quản trị W11: P-59 → P-66 (P-66: Recharts); nhập file, sao chép, báo cáo W12: P-67, P-68.
 7. `docs/client/PLAN.md` §1: task client nào đã xong; `docs/CURRENT_STATE.md` §2: lỗi còn mở.

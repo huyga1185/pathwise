@@ -34,6 +34,8 @@
 
 ### M06. Tài xế tự sửa thông tin trong app, bỏ ô số điện thoại khỏi Nhận lời mời (để cuối, chủ dự án ghi 2026-11-17)
 
+> **Gộp vào thiết kế lại app tài xế (2026-11-20, chủ dự án):** làm ở `docs/client/DRIVER_UI_REDESIGN.md` D3 (màn "Thông tin của tôi") và D7 (web bỏ ô số điện thoại); phạm vi và acceptance dưới đây giữ nguyên.
+
 - **Lý do:** ô số điện thoại (tuỳ chọn) ở form Nhận lời mời làm form dài; chủ dự án muốn bỏ. Hiện chưa bỏ được vì **tài xế không có chỗ nào khác để nhập số**: web chặn DRIVER (trang "Dùng app tài xế"), app tài xế chưa có màn sửa hồ sơ, chủ cửa hàng không sửa được số của thành viên (`PATCH /store/members/{userId}` không có `phoneNumber`). Số này dùng ở màn theo dõi để điều phối viên gọi nhắc tài xế (P-53, `driver.phoneNumber`).
 - **Phạm vi:**
   - App tài xế (mobile): màn xem và sửa thông tin của mình: họ tên, số điện thoại (`PATCH /users/me` merge patch `{fullName?, phoneNumber?}`, `null` xoá số; lỗi `FULL_NAME_REQUIRED`, `INVALID_FULL_NAME_LENGTH`, `PHONE_NUMBER_*` dưới ô theo UX_BRIEF). Vào từ bảng tài khoản đang có.
