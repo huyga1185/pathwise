@@ -268,4 +268,29 @@ describe('Tạo kế hoạch trên điện thoại (hàng + sheet, G4.8)', () =>
     );
     await waitFor(() => expect(within(stops).getAllByRole('listitem')).toHaveLength(1));
   });
+
+  it('F-83: "Xong" của sheet điểm giao chỉ đóng sheet, không lưu kế hoạch dù form đã hợp lệ', async () => {
+    let called = false;
+    server.use(
+      http.post(`${API}/plans`, () => {
+        called = true;
+        return ok({ id: 90 });
+      }),
+      ...formHandlers(),
+    );
+    renderApp('/plans/new');
+    const user = userEvent.setup();
+    await user.type(await screen.findByLabelText(/^Tên kế hoạch/), 'Giao sáng');
+    const stops = await screen.findByRole('list', { name: 'Điểm giao của kế hoạch' });
+    await user.click(within(stops).getByRole('button', { name: 'Điểm giao 1: Điểm giao 1' }));
+    const sheet = screen.getByRole('dialog', { name: 'Điểm giao' });
+    await user.type(within(sheet).getByLabelText(/^Mã đơn/), 'ĐH-7');
+    await user.type(within(sheet).getByLabelText(/^Địa chỉ/), '12 Lê Duẩn');
+    await user.click(within(sheet).getByRole('button', { name: 'Xong' }));
+
+    expect(within(stops).getByRole('button', { name: 'Điểm giao 1: ĐH-7' })).toBeInTheDocument();
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(called).toBe(false);
+    expect(screen.getByRole('heading', { name: 'Tạo kế hoạch', level: 1 })).toBeInTheDocument();
+  });
 });
