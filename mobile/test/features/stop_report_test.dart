@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pathwise_driver/shared/ui/ui.dart';
 
 import '../support/app.dart';
 import '../support/fake_api.dart';
@@ -80,6 +81,9 @@ Future<void> openReport(WidgetTester tester, RouteServer server) async {
 
 Finder inDialog(String text) => find.descendant(of: find.byType(AlertDialog), matching: find.text(text));
 
+/// In the "Không giao được" bottom sheet.
+Finder inSheet(String text) => find.descendant(of: find.byType(BottomSheet), matching: find.text(text));
+
 Future<void> report(WidgetTester tester, String result, {String confirm = ''}) async {
   await tester.tap(find.text(result));
   await tester.pumpAndSettle();
@@ -101,7 +105,9 @@ void main() {
     }
   });
 
-  testWidgets('đã giao có xác nhận, gửi DELIVERED rồi hiện kết quả và điểm tiếp theo', (tester) async {
+  testWidgets('đã giao có xác nhận, gửi DELIVERED rồi về tuyến với snackbar, điểm tiếp theo ở thẻ đầu (D5)', (
+    tester,
+  ) async {
     final server = RouteServer(sampleRoute());
     await openReport(tester, server);
 
@@ -115,13 +121,7 @@ void main() {
     expect(server.patches, [
       {'status': 'DELIVERED'},
     ]);
-    expect(find.text('Đã báo giao thành công ĐH-1009'), findsOneWidget);
-    expect(find.text('ĐÃ GIAO'), findsOneWidget);
-    expect(find.text('2 · ĐH-1015 · Anh Khoa'), findsOneWidget);
-    expect(find.text('893 Lê Duẩn, Hải Châu, Đà Nẵng · dự kiến 10:42'), findsOneWidget);
-
-    await tester.tap(find.text('Sang điểm tiếp theo'));
-    await tester.pumpAndSettle();
+    expect(find.widgetWithText(SnackBar, 'Đã giao điểm 1.'), findsOneWidget);
     expect(find.text('1/12'), findsOneWidget);
     expect(find.text('ĐH-1015 · Anh Khoa'), findsOneWidget);
   });
@@ -152,7 +152,7 @@ void main() {
     expect(server.patches, [
       {'status': 'SKIPPED'},
     ]);
-    expect(find.text('Đã bỏ qua ĐH-1009'), findsOneWidget);
+    expect(find.widgetWithText(SnackBar, 'Đã bỏ qua điểm 1.'), findsOneWidget);
   });
 
   testWidgets('không giao được: bắt buộc lý do, chọn nhanh được, gửi FAILED kèm lý do', (tester) async {
@@ -167,21 +167,21 @@ void main() {
     // Blank or spaces only: the send button stays off.
     await tester.enterText(find.byType(TextField), '   ');
     await tester.pump();
-    await tester.tap(inDialog('Gửi kết quả'));
+    await tester.tap(inSheet('Gửi kết quả'));
     await tester.pumpAndSettle();
     expect(server.patches, isEmpty);
 
     await tester.tap(find.text('Vắng nhà'));
     await tester.pump();
     expect(find.text('8/255'), findsOneWidget);
-    await tester.tap(inDialog('Gửi kết quả'));
+    await tester.tap(inSheet('Gửi kết quả'));
     await tester.pumpAndSettle();
 
     expect(server.patches, [
       {'status': 'FAILED', 'failureReason': 'Vắng nhà'},
     ]);
-    expect(find.text('Đã báo không giao được ĐH-1009'), findsOneWidget);
-    expect(find.text('Lý do: Vắng nhà'), findsOneWidget);
+    expect(find.widgetWithText(SnackBar, 'Đã báo không giao được điểm 1.'), findsOneWidget);
+    expect(find.text('ĐH-1015 · Anh Khoa'), findsOneWidget);
   });
 
   testWidgets('lý do dừng ở 255 đơn vị UTF-16 như server đếm', (tester) async {
@@ -206,7 +206,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Sai địa chỉ'));
     await tester.pump();
-    await tester.tap(inDialog('Gửi kết quả'));
+    await tester.tap(inSheet('Gửi kết quả'));
     await tester.pumpAndSettle();
 
     expect(find.textContaining('Chưa gửi được: mất kết nối.', findRichText: true), findsOneWidget);
@@ -235,8 +235,7 @@ void main() {
       {'status': 'FAILED', 'failureReason': 'Sai địa chỉ'},
       {'status': 'FAILED', 'failureReason': 'Sai địa chỉ'},
     ]);
-    expect(find.text('Đã báo không giao được ĐH-1009'), findsOneWidget);
-    expect(find.text('Lý do: Sai địa chỉ'), findsOneWidget);
+    expect(find.widgetWithText(SnackBar, 'Đã báo không giao được điểm 1.'), findsOneWidget);
   });
 
   testWidgets('mất response nhưng server đã ghi: lần tải lại tuyến 30 giây sau cho thấy đã xong', (tester) async {
@@ -352,7 +351,7 @@ void main() {
     expect(find.text('Gửi lại'), findsNothing);
   });
 
-  testWidgets('điểm cuối: routeStatus COMPLETED thì báo xong tuyến', (tester) async {
+  testWidgets('điểm cuối: gửi xong về tuyến đã hoàn thành, có snackbar', (tester) async {
     final server = RouteServer(
       sampleRoute(
         finished: {for (var sequence = 1; sequence <= 11; sequence++) sequence: ('DELIVERED', null)},
@@ -364,12 +363,45 @@ void main() {
 
     await report(tester, 'Đã giao');
 
-    expect(find.text('Đã báo giao thành công ĐH-1010'), findsOneWidget);
-    expect(find.text('Bạn đã xong tuyến này.'), findsOneWidget);
-    expect(find.text('Quay về kho: Kho 45 Lê Lợi, Hải Châu, Đà Nẵng.'), findsOneWidget);
-
-    await tester.tap(find.text('Về chi tiết tuyến'));
-    await tester.pumpAndSettle();
+    expect(find.widgetWithText(SnackBar, 'Đã giao điểm 12.'), findsOneWidget);
     expect(find.text('HOÀN THÀNH'), findsOneWidget);
+    expect(find.text('Bạn đã xong tuyến này.'), findsOneWidget);
+  });
+
+  testWidgets('thanh trên M3 có nút back và "Điểm 1/12"; "Gọi khách", "Chỉ đường" là nút tonal (D5)', (tester) async {
+    await openReport(tester, RouteServer(sampleRoute()));
+
+    expect(find.descendant(of: find.byType(AppBar), matching: find.text('Điểm 1/12')), findsOneWidget);
+    expect(find.byTooltip('Về chi tiết tuyến'), findsOneWidget);
+    for (final label in ['Gọi khách', 'Chỉ đường']) {
+      expect(tester.widget<PwButton>(find.widgetWithText(PwButton, label)).variant, PwButtonVariant.tonal);
+    }
+
+    await tester.tap(find.byTooltip('Về chi tiết tuyến'));
+    await tester.pumpAndSettle();
+    expect(find.text('ĐIỂM TIẾP THEO'), findsOneWidget);
+  });
+
+  testWidgets('lý do không giao được là bottom sheet: gợi ý dưới ô, sheet nổi trên bàn phím (D5, Q3)', (tester) async {
+    // A phone (Pixel 8, 412 × 914 dp).
+    tester.view
+      ..physicalSize = const Size(1080, 2400)
+      ..devicePixelRatio = 2.625;
+    addTearDown(tester.view.reset);
+    await openReport(tester, RouteServer(sampleRoute()));
+    await tester.tap(find.text('Không giao được'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(BottomSheet), findsOneWidget);
+    expect(find.byType(AlertDialog), findsNothing);
+    expect(find.byType(ActionChip), findsNWidgets(4));
+    expect(tester.getTopLeft(find.text('Vắng nhà')).dy, greaterThan(tester.getBottomLeft(find.byType(TextField)).dy));
+
+    // The keyboard takes the bottom 300 px: "Gửi kết quả" stays above it.
+    tester.view.viewInsets = FakeViewPadding(bottom: 300 * tester.view.devicePixelRatio);
+    addTearDown(tester.view.resetViewInsets);
+    await tester.pumpAndSettle();
+    final screen = tester.view.physicalSize.height / tester.view.devicePixelRatio;
+    expect(tester.getBottomLeft(inSheet('Gửi kết quả')).dy, lessThanOrEqualTo(screen - 300));
   });
 }

@@ -167,7 +167,7 @@ class _RouteDetailScreenState extends ConsumerState<RouteDetailScreen> with Rout
           onCall: next.recipientPhone == null ? null : () => unawaited(_open(callUri(next.recipientPhone!))),
         ),
         const SizedBox(height: PwSpacing.space2),
-        _ActionPair(
+        PwButtonPair(
           first: PwButton(
             label: Vi.directions,
             variant: PwButtonVariant.tonal,
@@ -275,54 +275,6 @@ class _RouteDetailScreenState extends ConsumerState<RouteDetailScreen> with Rout
 
   /// The depot's address, or its coordinates when it has none.
   static String _place(LocationResponse location) => location.address ?? '${location.lat}, ${location.lon}';
-}
-
-/// Two buttons side by side, or one above the other when a label would not fit on one line in half the width (large
-/// system text): two halves of different heights, one label broken in two (D4).
-class _ActionPair extends StatelessWidget {
-  const _ActionPair({required this.first, required this.second, required this.labels});
-
-  final Widget first;
-  final Widget second;
-  final List<String> labels;
-
-  @override
-  Widget build(BuildContext context) {
-    final scaler = MediaQuery.textScalerOf(context);
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final half = (constraints.maxWidth - PwSpacing.space2) / 2;
-        final fits = labels.every((label) {
-          final painter = TextPainter(
-            text: TextSpan(text: label, style: PwTypeStyles.heading),
-            textDirection: TextDirection.ltr,
-            textScaler: scaler,
-          )..layout();
-          final width = painter.width;
-          painter.dispose();
-          // Material 3 buttons pad 24 dp each side, less as text grows; 48 is the most it can take.
-          return width + 48 <= half;
-        });
-        if (fits) {
-          return Row(
-            children: [
-              Expanded(child: first),
-              const SizedBox(width: PwSpacing.space2),
-              Expanded(child: second),
-            ],
-          );
-        }
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            first,
-            const SizedBox(height: PwSpacing.space2),
-            second,
-          ],
-        );
-      },
-    );
-  }
 }
 
 class _SectionTitle extends StatelessWidget {

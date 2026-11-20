@@ -180,6 +180,11 @@ abstract final class Vi {
   static String sentFailed(String label) => 'Đã báo không giao được $label';
   static String sentSkipped(String label) => 'Đã bỏ qua $label';
   static String reasonWas(String reason) => 'Lý do: $reason';
+
+  /// Snackbar on the route once the server took a result (D5).
+  static String reportedDelivered(int sequence) => 'Đã giao điểm $sequence.';
+  static String reportedFailed(int sequence) => 'Đã báo không giao được điểm $sequence.';
+  static String reportedSkipped(int sequence) => 'Đã bỏ qua điểm $sequence.';
   static const goNext = 'Sang điểm tiếp theo';
   static const notSentOffline = 'Chưa gửi được: mất kết nối.';
   static const notSent = 'Chưa gửi được.';
