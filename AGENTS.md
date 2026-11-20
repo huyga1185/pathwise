@@ -66,6 +66,28 @@ docker compose --profile app up -d --build    # chạy toàn bộ stack trong co
 - Index có thể đang chứa thay đổi do người khác stage sẵn. Commit bằng `git commit -- <danh sách file>` hoặc kiểm tra `git diff --cached --name-only` trước khi commit. Không commit file không thuộc task.
 - Không push khi chủ dự án chưa yêu cầu.
 
+## Chia việc cho sub-agent
+
+Áp dụng cho cả backend và client.
+
+- Sub-agent chỉ tìm, đo, soạn nháp; **không quyết, không commit, không push**. Quy tắc "không tự suy, tự quyết" áp cho cả sub-agent: chỗ chưa rõ ghi thành câu hỏi trong báo cáo; chỉ phiên chính hỏi chủ dự án.
+- Báo cáo phải có bằng chứng (`file:dòng`, trích nguyên văn, lệnh đã chạy và kết quả) và mức `[Verified-code]` / `[Verified-run]` / `[Risk]`. Phiên chính đối chiếu lại trước khi dùng, nhất là báo cáo của model nhỏ.
+- Chỉ giao khi có lợi: phải đọc nhiều file (khoảng hơn 10) hoặc chạy song song được. Thứ phiên chính đã có trong ngữ cảnh thì tự làm.
+- Sub-agent sửa code thì chạy trong worktree riêng; phiên chính xem diff rồi mới đưa vào branch.
+
+| Việc | Ai |
+|---|---|
+| Dò câu chữ trong docs dài hoặc code (vd rà docs lỗi thời) | Explore / Haiku: trả danh sách chỗ kèm trích dẫn, phiên chính kết luận |
+| So docs với code (endpoint, DTO, migration, `ErrorCode` với `API_SPEC.md`/`DATA_MODEL.md`) | Haiku (so khớp máy móc, checklist mục 2–3) |
+| Tra hướng dẫn Apple HIG, WCAG, tài liệu thư viện | web-fetch / Sonnet: trích nguyên văn kèm URL, không tự diễn giải thành quy tắc |
+| Kiểm mục "Nâng cấp" khi phát hành (diff `db/migration`, `.env*.example`, `compose*` từ tag trước) | Haiku |
+| Soạn nháp ghi chú phát hành từ các PR đã merge | Sonnet, theo khung release trước; chủ dự án duyệt |
+| Điều tra test chập chờn | Sonnet trong worktree: nguyên nhân kèm bằng chứng và bản vá đề xuất |
+| Rà diff trước khi mở PR | skill `/code-review` |
+| Thiết kế UI, áp HIG, đo và đọc ảnh chụp, mọi quyết định có chủ đích | Phiên chính |
+| Sửa file nóng (danh sách ở "Quy tắc cứng") | Phiên chính |
+| Commit, mô tả PR, push, tag, GitHub Release | Phiên chính, chỉ khi chủ dự án yêu cầu |
+
 ## Quy ước code
 
 - Code theo phong cách code xung quanh: Lombok (`@RequiredArgsConstructor`), record cho DTO, MapStruct cho mapping, Bean Validation với message là mã UPPER_SNAKE.
