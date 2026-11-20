@@ -53,7 +53,7 @@ platform/   cổng ra hệ thống bên ngoài: map (Basemap, MapView), storage 
 Quy tắc cứng:
 1. **Mũi tên chỉ đi xuống.** `shared` không import `features`; `data` không import `shared/ui`; `platform` không import gì phía trên.
 2. **Feature không import ruột của feature khác.** Mỗi feature có file công khai (`index.ts` / `<feature>.dart`) xuất những gì feature khác được dùng (ví dụ route path, một component chọn tài xế). Cần dùng chung nhiều thì chuyển xuống `shared/`.
-3. **Màn hình không gọi HTTP trực tiếp.** Màn hình → hook/provider của feature → `data/` → client sinh từ OpenAPI.
+3. **Màn hình không gọi HTTP trực tiếp.** Màn hình → hook/provider của feature → `data/` → client sinh từ OpenAPI. Ngoại lệ (mobile, D3): merge patch cần gửi `null` để xoá mà model request sinh bỏ field `null` (`includeIfNull: false`) → provider của feature gửi map qua `ApiClient.dio` và đọc response bằng `fromJson` của model sinh (`features/account/profile_data.dart`, `PATCH /users/me`).
 4. **Không chép kiểu DTO tay.** Kiểu request/response lấy từ code sinh (`api/openapi.json`). Kiểu riêng của màn hình (view model) đặt trong feature và map từ kiểu sinh.
 5. **Không có logic nghiệp vụ trùng server.** Client không tự tính trạng thái route, thời gian dự kiến, kiểm tra trùng ca… Thiếu dữ liệu thì mở task backend (như T45), không tự suy ở client. Ngoại lệ được phép: định dạng hiển thị, validation tức thời trên form (bắt buộc, độ dài, định dạng) **trùng với** validation của server, và gợi ý không ràng buộc (ví dụ lý do không giao được).
 6. **Mọi giá trị giao diện lấy từ token.** Không viết mã màu, khoảng cách, bo góc trong code màn hình; ngoại lệ duy nhất là màu cố định của bản đồ và logo đã ghi trong DESIGN_SYSTEM.
@@ -171,7 +171,7 @@ Theo API_SPEC §2 và UX_BRIEF §3.
 ## 9. Điều hướng
 
 - Web: React Router, mỗi màn một route (danh sách ở `SCREENS.md`); base path `/app/` (P-47); route cần đăng nhập bọc `RequireAuth` rồi guard theo vai trò (P-75): `RequireDispatcher` (OWNER, DISPATCHER), `RequireAdmin` (ADMIN), `RequireRole` (trang chỉ OWNER: `/store/audit`), `RequireDriver` (`/driver`); sai vai trò thì **trang 403 ngay tại địa chỉ đã mở** (không chuyển hướng), trong khung app nếu người dùng có khung, câu mô tả chung không nói trang dành cho ai; `/` vẫn đưa về trang chủ của vai trò. Guard chỉ để hiển thị, quyền thật do API kiểm. Trạng thái có thể chia sẻ (bộ lọc, trang, plan đang xem) nằm trên URL.
-- Mobile: go_router; redirect theo trạng thái phiên; deep link `pathwise://routes/{routeId}` (để dành cho thông báo sau MVP) mở thẳng chi tiết tuyến (đã có `planName`, T45).
+- Mobile: go_router; redirect theo trạng thái phiên (chỉ chạy lại khi nơi phiên dẫn tới đổi: đang tải / chưa đăng nhập / không có quyền / tài xế; đổi tên ở `/profile` không chạy lại, D3); deep link `pathwise://routes/{routeId}` (để dành cho thông báo sau MVP) mở thẳng chi tiết tuyến (đã có `planName`, T45).
 
 ## 10. Kiểm thử
 

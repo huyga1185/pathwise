@@ -1,6 +1,6 @@
 # DRIVER_UI_REDESIGN — Thiết kế lại app tài xế theo Material 3 (gồm M06)
 
-> **Trạng thái (2026-11-20):** kế hoạch đã chốt (chủ dự án trả lời Q1–Q6 ở §6); **D1 đã làm** (§7, PR #139); **D2 đã làm** (§8, branch `feat/driver-ui-d2`); **D3 là giai đoạn tiếp theo**. Nền tảng thiết kế theo P-77.
+> **Trạng thái (2026-11-20):** kế hoạch đã chốt (chủ dự án trả lời Q1–Q6 ở §6); **D1 đã làm** (§7, PR #139); **D2 đã làm** (§8, PR #140); **D3 đã làm** (§9, branch `feat/driver-ui-d3`); **D4 là giai đoạn tiếp theo**. Nền tảng thiết kế theo P-77.
 > Phiên sau làm tiếp từ đây: đọc §0, §4 (giai đoạn đang mở) và §5 (cách kiểm), rồi cập nhật trạng thái ở đầu file và
 > mục kết quả của giai đoạn vừa làm.
 >
@@ -222,4 +222,18 @@ Hiện trạng đo trên máy ảo (Pixel 8, API 36): mở app thấy **hai màn
 - **Kiểm:** `flutter analyze` sạch; `flutter test` 134/134 (thêm 5: giữ/thả màn chờ khi khôi phục phiên và khi chưa đăng nhập, biểu tượng sáng trên phần đầu ở hai theme, theo theme ở Chưa có quyền rồi sáng lại ở Đăng nhập, logo giữ chỗ ở chữ 200%). Máy ảo: Đăng nhập sáng/tối, tối + chữ 200%, bàn phím mở; Chưa có quyền sáng, tối + chữ 200%; chuỗi mở app khi chưa đăng nhập và khi khôi phục phiên.
 - `UI_GUIDELINES.md` §1b: chữ dài ✅ (chữ 200% không đè hình, câu dài ở Chưa có quyền xuống dòng); trống/tải/lỗi ✅ (màn chờ, lỗi đăng nhập không đổi); chuyển động — ; accessibility ✅ (tương phản biểu tượng thanh trạng thái).
 - Máy ảo RAM khách 2 GB bị OOM killer của máy chủ tắt hai lần khi Gradle đang build cùng lúc: build xong thì `./gradlew --stop` rồi mới bật máy ảo.
+
+## 9. D3 — kết quả (2026-11-20)
+
+Phạm vi: Tuyến của tôi, menu tài khoản, M06 "Thông tin của tôi" (phần app; phần web là D7).
+
+- **Thanh trên:** Tuyến của tôi dùng top app bar small của M3 (`AppBar`, ghim, nền `surface`), chữ viết tắt tên ở cuối thanh mở menu tài khoản; bỏ thanh trắng có đường kẻ tự dựng. Màn "Thông tin của tôi" cũng là `AppBar` có nút back chuẩn.
+- **Menu tài khoản:** thêm hàng `ListTile` "Thông tin của tôi" (icon người, mũi tên ở cuối) mở màn riêng (Q4); "Đăng xuất" là nút viền (Outlined); nhãn đọc của nút mở menu bỏ "và giao diện" (không còn lựa chọn giao diện từ P-73).
+- **M06 Thông tin của tôi** (route `/profile`): đọc `GET /users/me` mỗi lần mở (đang tải, lỗi kèm "Thử lại"); ô Họ tên, Số điện thoại (gợi ý "Tuỳ chọn. Chỉ nhận số Việt Nam.", placeholder "0905 123 456", hiện số theo `formatPhone`); "Lưu" tô nền. Gửi `PATCH /users/me` merge patch: ô để trống gửi `null` để xoá, giống trang hồ sơ của web (gửi bằng map vì client sinh từ OpenAPI bỏ field `null`). Lỗi theo ô (`details[]`) hiện dưới ô theo UX_BRIEF §6.2 (`fieldMessage`, cùng câu với web); lỗi khác hiện băng lỗi. Lưu xong: phiên nhận tên mới (chữ viết tắt đổi theo), snackbar "Đã lưu thông tin." và quay về. Back (nút, cử chỉ, predictive back) khi còn thay đổi chưa lưu: hộp "Bỏ thay đổi chưa lưu?" ("Ở lại" / "Bỏ thay đổi").
+- **Thanh tiến độ (H5):** `PwProgressBar` và thẻ tuyến đọc một câu "2 trên 6 điểm đã xong", không còn đọc "2/6" hay phần trăm.
+- **Icon theo cỡ chữ:** mũi tên đổi ngày, icon hàng "Thông tin của tôi" và nút radio chia sẻ vị trí to theo cỡ chữ hệ thống (`scaledIconSize`; 48 dp ở 200%) — sửa phần còn lại của H6.
+- **Lỗi tìm thấy khi làm:** đổi tên làm phiên đổi, router chạy lại redirect và giữ màn "Thông tin của tôi" lại sau khi bấm Lưu. Router giờ chỉ chạy lại khi nơi phiên dẫn tới đổi (đang tải / chưa đăng nhập / không có quyền / tài xế).
+- **Không đổi:** thẻ tuyến giữ bo `radius-md` và viền (DESIGN_SYSTEM chưa có quy tắc thẻ M3 cho app; xem câu hỏi ở báo cáo D3); mỗi thẻ tuyến có một nút tô nền ("Tiếp tục giao") — thường một tuyến mỗi ngày; băng cửa hàng tạm khoá, trạng thái trống và lỗi giữ như cũ (đã có test).
+- **Kiểm:** `flutter analyze` sạch; `flutter test` 142/142 (thêm 8: năm test màn Thông tin của tôi, câu lỗi theo ô, câu đọc thanh tiến độ, icon ở chữ 200%). Máy ảo (tài khoản tạo bằng `scripts/seed_driver_demo.py`): Tuyến của tôi sáng, tối + chữ 200%; menu tài khoản sáng, tối + chữ 200%; Thông tin của tôi sáng, bàn phím số mở, lỗi "Chỉ nhận số Việt Nam." từ server, lưu số `0905 123 456` → snackbar → mở lại đọc đúng số từ server; tối + chữ 200%.
+- `UI_GUIDELINES.md` §1b: chữ dài ✅ (tên tuyến xuống dòng cạnh nhãn trạng thái, email dài xuống dòng trong menu); phân trang — ; bảng — ; trống/tải/lỗi ✅ (Thông tin của tôi có đang tải và lỗi kèm "Thử lại"); chuyển động — (chuyển màn mặc định của Android); accessibility ✅ (vùng chạm 48 dp, icon theo cỡ chữ, câu đọc thanh tiến độ).
 

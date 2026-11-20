@@ -49,4 +49,21 @@ void main() {
     expect(formatPhone('+84905123456'), '0905 123 456');
     expect(formatPhone('+14155550100'), '+14155550100');
   });
+
+  test('câu lỗi theo ô: số điện thoại theo bảng, bắt buộc và độ dài theo tên ô (UX_BRIEF §6.2)', () {
+    expect(fieldMessage('PHONE_NUMBER_WRONG_REGION', 'Số điện thoại'), 'Chỉ nhận số Việt Nam.');
+    expect(fieldMessage('FULL_NAME_REQUIRED', 'Họ tên'), 'Vui lòng nhập họ tên.');
+    expect(fieldMessage('INVALID_FULL_NAME_LENGTH', 'Họ tên'), 'Họ tên quá dài hoặc quá ngắn.');
+    expect(fieldMessage('SOMETHING_ELSE', 'Họ tên'), 'Giá trị không hợp lệ.');
+    const error = ApiError(
+      code: 'VALIDATION_ERROR',
+      status: 400,
+      details: [
+        {'field': 'fullName', 'code': 'FULL_NAME_REQUIRED'},
+        {'field': 'fullName', 'code': 'INVALID_FULL_NAME_LENGTH'},
+      ],
+    );
+    expect(fieldErrors(error, const {'fullName': 'Họ tên'}), {'fullName': 'Vui lòng nhập họ tên.'});
+    expect(fieldErrors(const ApiError(code: 'NETWORK_ERROR'), const {}), isEmpty);
+  });
 }

@@ -29,7 +29,7 @@ void main() {
     expect(find.text('Xuất phát dự kiến 10:38'), findsOneWidget);
     expect(find.text('12 điểm giao'), findsOneWidget);
     expect(find.text('Bắt đầu tuyến'), findsOneWidget);
-    expect(find.bySemanticsLabel(RegExp('^Giao sáng 01/12, CHỜ GIAO, 0/12 điểm đã xong')), findsOneWidget);
+    expect(find.bySemanticsLabel(RegExp('^Giao sáng 01/12, CHỜ GIAO, 0 trên 12 điểm đã xong')), findsOneWidget);
     // No date: the server picks today in the store's timezone (API_SPEC §8).
     expect(routeRequests(server).single.queryParameters, isEmpty);
   });
@@ -165,6 +165,18 @@ void main() {
 
     // The open sheet itself turns dark, not only the screen behind it.
     expect(sheetColor(), PwColorTokens.dark.surfaceRaised);
+  });
+
+  testWidgets('chữ hệ thống 200%: mũi tên đổi ngày và icon của menu tài khoản to theo chữ (D3)', (tester) async {
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+    tester.platformDispatcher.textScaleFactorTestValue = 2;
+    await pumpApp(tester, driverServer((request) async => FakeReply.ok(<Object>[])), refreshToken: 'refresh-1');
+
+    expect(tester.getSize(find.byIcon(Icons.chevron_left)), const Size(48, 48));
+    await tester.tap(find.text('TA'));
+    await tester.pumpAndSettle();
+    expect(tester.getSize(find.byIcon(Icons.person_outline)), const Size(48, 48));
+    expect(tester.getSize(find.byIcon(Icons.radio_button_checked)), const Size(48, 48));
   });
 
   test('chữ viết tắt lấy chữ đầu của từ đầu và từ cuối', () {
