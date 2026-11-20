@@ -161,7 +161,7 @@ class _RouteDetailScreenState extends ConsumerState<RouteDetailScreen> with Rout
             Expanded(
               child: PwButton(
                 label: Vi.report,
-                variant: PwButtonVariant.primary,
+                variant: PwButtonVariant.filled,
                 block: true,
                 onPressed: () => context.push('/routes/${route.routeId}/stops/${next.id}'),
               ),

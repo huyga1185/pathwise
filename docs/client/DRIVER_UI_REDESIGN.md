@@ -1,6 +1,6 @@
 # DRIVER_UI_REDESIGN — Thiết kế lại app tài xế theo Material 3 (gồm M06)
 
-> **Trạng thái (2026-11-20):** kế hoạch đã chốt (chủ dự án trả lời Q1–Q6 ở §6); **D1 là giai đoạn tiếp theo**. Nền tảng thiết kế theo P-77.
+> **Trạng thái (2026-11-20):** kế hoạch đã chốt (chủ dự án trả lời Q1–Q6 ở §6); **D1 đã làm** (§7, branch `feat/driver-ui-d1`); **D2 là giai đoạn tiếp theo**. Nền tảng thiết kế theo P-77.
 > Phiên sau làm tiếp từ đây: đọc §0, §4 (giai đoạn đang mở) và §5 (cách kiểm), rồi cập nhật trạng thái ở đầu file và
 > mục kết quả của giai đoạn vừa làm.
 >
@@ -197,3 +197,15 @@ ghi vào mục "D*n* — kết quả" cuối file này.
 | Q4 | M06 "Thông tin của tôi": màn riêng hay sửa trong menu? | **Màn riêng** |
 | Q5 | Font: Be Vietnam Pro hay Roboto? | **Giữ Be Vietnam Pro** |
 | Q6 | Danh sách điểm: đọc nguồn M3 trước | Đã đọc (§2.3a): m3.material.io không đọc được; Material Web và `ListTile` của Flutter ủng hộ thẻ cho điểm tiếp theo, hàng danh sách cho các điểm khác |
+
+## 7. D1 — kết quả (2026-11-20)
+
+- **`PwButton`** dựng trên `FilledButton`, `FilledButton.tonal`, `OutlinedButton`, `TextButton`; kiểu `filled`, `tonal`, `outlined`, `text`, `textDanger`, và ba nút kết quả `success`/`danger`/`signal` (Q1). Hình viên thuốc và đệm hai bên lấy mặc định M3 của Flutter (đọc trong SDK 3.47.9: `StadiumBorder`, đệm 24 dp, nút chữ 12 dp, thu lại theo cỡ chữ). Nút tắt dùng màu tắt M3 (trước đây nút đỏ "Gửi kết quả" tắt vẫn đỏ nhạt); `busy` giữ màu và bỏ qua lần bấm.
+- Các chỗ gọi đổi tên giữ nguyên mức nhấn cũ (`primary`→`filled`, `secondary`→`outlined`, `quiet`→`text`); chọn lại mức nhấn theo §3 làm ở D2–D6 từng màn.
+- **Theme:** điền vai trò màu M3 từ token (container `surface-tint` + `ink`; `surfaceContainer*` = `surface-raised`; snackbar trên `ink`/`surface`); bottom sheet có tay nắm mặc định; snackbar nổi.
+- **Hộp xác nhận** (`showPwDialog`): hình/màu mặc định M3, hai nút chữ canh cuối.
+- **Predictive back:** `android:enableOnBackInvokedCallback="true"`; Flutter 3.47.9 đã dùng `PredictiveBackPageTransitionsBuilder` làm chuyển trang mặc định trên Android.
+- **`scripts/seed_driver_demo.py`:** dựng tài xế có tuyến hôm nay cho máy ảo (§5).
+- **Kiểm:** `flutter analyze` sạch; `flutter test` 129/129 (thêm 4 test: kiểu nút và hình, nút tắt, nút đang chạy, hộp xác nhận). Máy ảo: Tuyến của tôi, menu tài khoản, hộp Đăng xuất, Chi tiết tuyến, Báo kết quả — sáng; Báo kết quả tối + chữ 200% (nhãn nút xuống dòng, không cắt).
+- `UI_GUIDELINES.md` §1b: chữ dài ✅ (nhãn nút xuống dòng); trống/tải/lỗi — (không đổi màn); chuyển động ✅ (chuyển trang theo cử chỉ back của hệ thống); accessibility ✅ (nhãn và trạng thái tắt của nút có test).
+

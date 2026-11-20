@@ -241,7 +241,7 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> {
                                 child: PwButton(
                                   label: Vi.report,
                                   block: true,
-                                  variant: progress.arrived ? PwButtonVariant.primary : PwButtonVariant.secondary,
+                                  variant: progress.arrived ? PwButtonVariant.filled : PwButtonVariant.outlined,
                                   // The report screen with the route detail under it, whatever led here.
                                   onPressed: () => context.go('/routes/${widget.routeId}/stops/$stopId'),
                                 ),

@@ -143,13 +143,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       alignment: Alignment.centerRight,
                       child: PwButton(
                         label: Vi.forgot,
-                        variant: PwButtonVariant.quiet,
+                        variant: PwButtonVariant.text,
                         onPressed: () => unawaited(_openWeb('forgot-password')),
                       ),
                     ),
                     PwButton(
                       label: _lockedSeconds > 0 ? Vi.retryIn(formatWait(_lockedSeconds)) : Vi.submit,
-                      variant: PwButtonVariant.primary,
+                      variant: PwButtonVariant.filled,
                       block: true,
                       busy: _busy,
                       onPressed: _lockedSeconds > 0 ? null : () => unawaited(_submit()),
@@ -162,7 +162,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         Text(Vi.invited, style: PwTypeStyles.bodyTouch.copyWith(color: t.inkMuted)),
                         PwButton(
                           label: Vi.enterInvite,
-                          variant: PwButtonVariant.quiet,
+                          variant: PwButtonVariant.text,
                           onPressed: () => unawaited(_openWeb('invite')),
                         ),
                       ],

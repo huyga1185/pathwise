@@ -31,9 +31,24 @@ ThemeData pwTheme(Brightness brightness) {
     onSecondary: t.onAccent,
     error: t.danger,
     onError: t.onAccent,
+    // Material 3 roles filled from the tokens (P-77): tonal buttons, selected items and the next stop sit on
+    // surface-tint with ink; cards, sheets and dialogs on surface-raised; snackbars on the inverse of the page.
+    primaryContainer: t.surfaceTint,
+    onPrimaryContainer: t.ink,
+    secondaryContainer: t.surfaceTint,
+    onSecondaryContainer: t.ink,
+    tertiary: t.info,
+    onTertiary: t.onAccent,
     surface: t.surface,
     onSurface: t.ink,
+    onSurfaceVariant: t.inkMuted,
+    surfaceContainerLowest: t.surfaceRaised,
+    surfaceContainerLow: t.surfaceRaised,
+    surfaceContainer: t.surfaceRaised,
+    surfaceContainerHigh: t.surfaceRaised,
     surfaceContainerHighest: t.surfaceRaised,
+    inverseSurface: t.ink,
+    onInverseSurface: t.surface,
     outline: t.inkMuted,
     outlineVariant: t.line,
   );
@@ -57,7 +72,13 @@ ThemeData pwTheme(Brightness brightness) {
     extensions: [PwColors(t)],
     // In the theme, not passed when the sheet opens: a colour passed then stays the old theme's when the user switches
     // light/dark from inside the sheet (the account sheet).
-    bottomSheetTheme: BottomSheetThemeData(backgroundColor: t.surfaceRaised, modalBackgroundColor: t.surfaceRaised),
+    bottomSheetTheme: BottomSheetThemeData(
+      backgroundColor: t.surfaceRaised,
+      modalBackgroundColor: t.surfaceRaised,
+      showDragHandle: true,
+    ),
+    // Floating, above the bottom of the screen and the result buttons (M3: a brief notification at the bottom).
+    snackBarTheme: const SnackBarThemeData(behavior: SnackBarBehavior.floating),
     focusColor: t.route.withValues(alpha: 0.24),
   );
 }

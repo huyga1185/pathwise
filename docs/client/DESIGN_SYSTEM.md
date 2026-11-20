@@ -104,7 +104,7 @@ Bộ component React (`window.PathWise`) là bản tham chiếu cho web dashboar
 
 - Khoảng cách theo bậc `space-1` (4), `space-2` (8), `space-4` (16), `space-6` (24); không dùng giá trị lẻ.
 - Panel và thẻ padding `space-4`, cách nhau `space-6`. Ô bảng padding dọc `space-2`.
-- Bo góc: ô nhập, nút, khung bảng, khung bản đồ `radius-sm`; thẻ, panel, hộp thoại `radius-md`; thẻ nổi đứng riêng (thẻ đăng nhập) `radius-lg`; pill và marker `radius-full`.
+- Bo góc: ô nhập, nút, khung bảng, khung bản đồ `radius-sm`; thẻ, panel, hộp thoại `radius-md`; thẻ nổi đứng riêng (thẻ đăng nhập) `radius-lg`; pill và marker `radius-full`. App tài xế: nút, hộp thoại, bottom sheet theo hình mặc định của Material 3 (P-77; nút viên thuốc, hộp thoại bo 28, sheet bo 28 cạnh trên).
   - **Khu chủ cửa hàng đã redesign (G2–G4, `OWNER_UI_REDESIGN.md`) thay quy tắc thẻ/panel trên:** nhóm nội dung là ô nền `surface-raised`, **bo 16, không viền** (`pw-list-group`, `pw-store-group`, `pw-form-group`); bảng trong nhóm không có khung riêng. Trang chưa redesign còn thẻ `radius-md` có viền: **chi tiết kế hoạch** (để G5, chủ dự án chọn 2026-11-18), Báo cáo (G6), khu quản trị. Đo 2026-11-18: chi tiết kế hoạch bo 8 / bảng bo 4, có viền; các trang đã redesign bo 16 không viền.
 - Web dashboard: màn hình soạn plan chia đôi, bảng stop bên trái, bản đồ bên phải; dưới 1024px bản đồ xuống dưới bảng.
 - App tài xế: vùng chạm tối thiểu 48px; ba nút kết quả của stop (Đã giao, Không giao được, Bỏ qua) xếp dọc, cao 56px, ở nửa dưới màn hình để bấm bằng ngón cái.
@@ -147,6 +147,15 @@ Nút bấm cho mọi hành động; mỗi màn hình chỉ một nút `primary`,
 - Cỡ: `md` 36px cho web; `lg` 48px là tối thiểu trong app tài xế; `xl` 56px cho nút kết quả.
 - Nhãn: động từ đứng đầu, viết hoa chữ cái đầu câu. Khi đang gửi request dùng `busy` và đổi nhãn sang dạng tiếp diễn ("Đang giao việc…"), không thay bằng spinner.
 - Màu chữ trên nút màu dùng `on-accent`, đổi theo theme.
+
+**App tài xế (Material 3, P-77, từ D1 của `DRIVER_UI_REDESIGN.md`):** `PwButton` dựng trên nút Material 3 của Flutter, hình viên thuốc và đệm hai bên theo mặc định M3 (24 dp, nút chữ 12 dp, thu lại khi chữ hệ thống to).
+
+- **filled**: việc chính của màn, một nút mỗi màn ("Đăng nhập", "Tiếp tục giao", "Báo kết quả").
+- **tonal** (nền `surface-tint`, chữ `ink`): việc quan trọng thứ hai ("Chỉ đường", "Gọi khách").
+- **outlined** (mặc định): mức trung bình trên nền trơn ("Đăng xuất" trong menu tài khoản).
+- **text**: việc nhẹ, link, nút của hộp thoại; **textDanger**: việc phá huỷ trong hộp thoại (chữ `danger`).
+- **success / danger / signal** cỡ `xl`: ba nút kết quả, giữ màu và 56 dp dù M3 khuyên một nút tô nền mỗi màn (lệch có chủ đích, `DRIVER_UI_REDESIGN.md` §6 Q1).
+- Nút tắt dùng màu tắt của M3; `busy` giữ màu, hiện vòng chờ, không nhận bấm.
 
 ### TextField
 
@@ -260,6 +269,7 @@ Từ G3 (`OWNER_UI_REDESIGN.md` §8.2), xác nhận dùng **Alert** và việc c
 
 - Mở thì focus vào phần tử đầu tiên; `Esc` đóng; đóng thì trả focus về chỗ cũ.
 - `confirmDisabled` khoá nút xác nhận tới khi nội dung hợp lệ; `busy` trong lúc request chạy; lỗi API hiện trong thân hộp, không đóng hộp.
+- **App tài xế (P-77):** `showPwDialog` là `AlertDialog` Material 3 với hình và màu mặc định của theme; hai nút chữ canh cuối hàng (mẫu `AlertDialog` của developer.android.com dùng `TextButton` cho cả hai nút), việc phá huỷ dùng `textDanger`; nhãn quá dài thì xếp dọc, vẫn canh cuối.
 - *Lịch sử (W01–W06):* `Dialog` từng là hộp xác nhận cho hành động không hoàn tác (tiêu đề là câu hỏi, nút xác nhận lặp động từ, nút phụ "Quay lại", `tone="danger"`); các quy tắc đó nay thuộc Alert (S2: "Huỷ" ở đầu hàng, không tô đỏ khi người dùng chủ động chọn).
 
 ### Bản đồ (web, W04)
