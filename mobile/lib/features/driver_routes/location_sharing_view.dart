@@ -49,7 +49,7 @@ Future<({bool share, bool remember})?> showShareDialog(BuildContext context, Str
               ),
               PwButton(
                 label: Vi.shareConfirm,
-                variant: PwButtonVariant.primary,
+                variant: PwButtonVariant.filled,
                 onPressed: () => Navigator.of(context).pop((share: true, remember: remember)),
               ),
             ],

@@ -10,7 +10,9 @@
     <application
         android:label="PathWise"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"
+        android:enableOnBackInvokedCallback="true">
+        <!-- Predictive back (P-77): Flutter's default Android page transition follows the back gesture. -->
         <activity
             android:name=".MainActivity"
             android:exported="true"

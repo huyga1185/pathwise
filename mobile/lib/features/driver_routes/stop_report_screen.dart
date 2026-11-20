@@ -157,7 +157,7 @@ class _StopReportScreenState extends ConsumerState<StopReportScreen> with RouteP
         body = _result(detail, stop, next);
         footer = PwButton(
           label: next == null ? Vi.backToRoute : Vi.goNext,
-          variant: PwButtonVariant.primary,
+          variant: PwButtonVariant.filled,
           size: PwButtonSize.xl,
           block: true,
           onPressed: _backToRoute,

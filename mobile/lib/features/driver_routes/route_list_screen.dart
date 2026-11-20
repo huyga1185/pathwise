@@ -368,7 +368,7 @@ class _RouteCard extends StatelessWidget {
                 if (start != null) Text(start, style: muted),
                 Text(Vi.stopCount(route.stopCount), style: muted),
                 const SizedBox(height: PwSpacing.space4),
-                PwButton(label: cta, variant: PwButtonVariant.primary, block: true, onPressed: onOpen),
+                PwButton(label: cta, variant: PwButtonVariant.filled, block: true, onPressed: onOpen),
               ],
             ),
           ),

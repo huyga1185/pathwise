@@ -33,7 +33,7 @@ class NoAccessScreen extends ConsumerWidget {
               const SizedBox(height: PwSpacing.space6),
               PwButton(
                 label: Vi.logout,
-                variant: PwButtonVariant.primary,
+                variant: PwButtonVariant.filled,
                 block: true,
                 onPressed: () => unawaited(ref.read(sessionProvider.notifier).logOut()),
               ),

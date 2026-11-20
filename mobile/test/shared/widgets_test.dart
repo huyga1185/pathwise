@@ -26,6 +26,75 @@ void main() {
     );
   });
 
+  testWidgets('nút theo kiểu Material 3: tô nền, tonal, viền, chữ; hình viên thuốc mặc định của M3 (P-77)', (
+    tester,
+  ) async {
+    for (final (variant, type) in [
+      (PwButtonVariant.filled, FilledButton),
+      (PwButtonVariant.tonal, FilledButton),
+      (PwButtonVariant.outlined, OutlinedButton),
+      (PwButtonVariant.text, TextButton),
+      (PwButtonVariant.danger, FilledButton),
+    ]) {
+      await tester.pumpWidget(frame(PwButton(label: 'Lưu', variant: variant, onPressed: () {})));
+      expect(find.byType(type), findsOneWidget, reason: '$variant');
+      final material = tester.widget<Material>(find.descendant(of: find.byType(type), matching: find.byType(Material)));
+      expect(material.shape, isA<StadiumBorder>(), reason: '$variant');
+    }
+  });
+
+  testWidgets('nút kết quả bị tắt thì mang màu tắt của M3, không giữ màu đỏ', (tester) async {
+    await tester.pumpWidget(frame(const PwButton(label: 'Gửi kết quả', variant: PwButtonVariant.danger)));
+    final material = tester.widget<Material>(
+      find.descendant(of: find.byType(FilledButton), matching: find.byType(Material)),
+    );
+    final context = tester.element(find.byType(PwButton));
+    expect(material.color, isNot(context.pw.danger));
+    expect(
+      tester.getSemantics(find.byType(PwButton)),
+      isSemantics(label: 'Gửi kết quả', isButton: true, isEnabled: false),
+    );
+  });
+
+  testWidgets('nút đang chạy giữ màu, hiện vòng chờ, bấm không gọi lại', (tester) async {
+    var taps = 0;
+    await tester.pumpWidget(
+      frame(PwButton(label: 'Lưu', variant: PwButtonVariant.filled, busy: true, onPressed: () => taps++)),
+    );
+    final material = tester.widget<Material>(
+      find.descendant(of: find.byType(FilledButton), matching: find.byType(Material)),
+    );
+    expect(material.color, Theme.of(tester.element(find.byType(PwButton))).colorScheme.primary);
+    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    await tester.tap(find.byType(PwButton));
+    expect(taps, 0);
+    expect(tester.getSemantics(find.byType(PwButton)), isSemantics(label: 'Lưu', isButton: true, isEnabled: false));
+  });
+
+  testWidgets('hộp xác nhận: hai nút chữ canh cuối; việc phá huỷ màu danger', (tester) async {
+    await tester.pumpWidget(
+      frame(
+        Builder(
+          builder: (context) => PwButton(
+            label: 'Mở',
+            onPressed: () =>
+                showPwDialog(context, title: 'Đăng xuất?', body: 'B', confirmLabel: 'Đăng xuất', danger: true),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('Mở'));
+    await tester.pumpAndSettle();
+    expect(find.descendant(of: find.byType(AlertDialog), matching: find.byType(TextButton)), findsNWidgets(2));
+    final confirm = tester.widget<Text>(find.descendant(of: find.byType(TextButton), matching: find.text('Đăng xuất')));
+    final context = tester.element(find.byType(AlertDialog));
+    expect(DefaultTextStyle.of(tester.element(find.byWidget(confirm))).style.color, context.pw.danger);
+    expect(
+      tester.getTopRight(find.text('Đăng xuất').last).dx,
+      greaterThan(tester.getTopRight(find.text('Quay lại')).dx),
+    );
+  });
+
   testWidgets('StatusPill lấy nhãn từ statusInfo, ở cả theme tối', (tester) async {
     await tester.pumpWidget(
       frame(
