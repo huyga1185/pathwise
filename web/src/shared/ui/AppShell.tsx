@@ -317,7 +317,7 @@ function AccountMenu({ account, crossFade }: { account: ShellAccount; crossFade:
 }
 
 /**
- * Frame of every signed-in page (P-74, docs/client/OWNER_UI_REDESIGN.md §6): on a wide window a sidebar on the
+ * Frame of every signed-in page (P-74, docs/archive/client/OWNER_UI_REDESIGN.md §6): on a wide window a sidebar on the
  * leading side that can be hidden (HIG Sidebars), on a phone a tab bar floating at the bottom (HIG Tab bars, iOS); a
  * top bar with the sidebar button and the account menu. No logo (HIG Toolbars: "Don't title windows with your app
  * name"); each page carries its own title.

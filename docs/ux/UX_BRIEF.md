@@ -32,37 +32,7 @@ Một người có `canDrive` dùng cả hai: web để điều phối, mobile �
 
 ## 4. Màn hình
 
-### 4.1 Web (OWNER, DISPATCHER)
-
-| Màn hình | Endpoint | Ghi chú thiết kế |
-|---|---|---|
-| Đăng ký | `POST /auth/register` | Sau đó chuyển sang nhập OTP. |
-| Xác thực email | `POST /auth/email/verify`, `/email/verify/resend` | OTP 6 số, hạn 5 phút; nút gửi lại khoá 60 s; sai 3 lần phải xin mã mới. |
-| Đăng nhập | `POST /auth/log-in` | `EMAIL_NOT_VERIFIED` → dẫn sang xác thực; `ACCOUNT_DISABLED` → báo liên hệ chủ cửa hàng. |
-| Quên mật khẩu (3 bước) | `POST /auth/password/forgot` → `/password/reset/verify` → `/password/reset` | Bước 1 luôn báo "đã gửi nếu email tồn tại". Xong thì mọi thiết bị bị đăng xuất. |
-| Hồ sơ, đổi mật khẩu, thiết bị | `GET/PATCH /users/me`, `POST /auth/password/change/otp`, `PUT /auth/password`, `/auth/sessions` | Đổi mật khẩu: mật khẩu hiện tại → OTP qua email → mật khẩu mới. |
-| Cửa hàng (OWNER) | `GET/PUT /store` | Depot chọn trên bản đồ (bắt buộc `lat`/`lon`, địa chỉ tuỳ chọn); có thể tìm bằng `GET /geocoding/search`. Chưa có depot thì không tạo được plan (`STORE_DEPOT_REQUIRED`). |
-| Thành viên (OWNER sửa, DISPATCHER xem) | `GET /store/members`, `PATCH /store/members/{userId}`, `PATCH /store/members/me/can-drive` | Vô hiệu hoá thì người đó bị đăng xuất ngay. Không sửa được role/status của OWNER. |
-| Lời mời (OWNER) | `POST/GET /store/invitations`, `POST /store/invitations/{id}/revoke` | Trạng thái `PENDING`, `ACCEPTED`, `REVOKED`, `EXPIRED` (7 ngày). |
-| Nhận lời mời (công khai, mã trong email) | `GET /invitations/{code}`, `POST /invitations/accept` | Email hiện chỉ chứa mã mời 43 ký tự (chưa có link), nên cần ô dán mã; sau đó hiện tên cửa hàng, email, vai trò; người được mời đặt mật khẩu và tên. |
-| Xe | `GET/POST /vehicles`, `GET/PUT /vehicles/{id}` | Tắt xe thay vì xoá. |
-| Danh sách plan | `GET /plans?date=&status=` | Lọc theo ngày và trạng thái; phân trang. |
-| Soạn plan | `POST /plans`, `PUT /plans/{id}`, `PATCH /plans/{id}/stops/{stopId}` | Bảng stop + bản đồ; phân công tài xế/xe/ca (`GET /store/members?assignable=true`, `GET /vehicles?active=true`). Tối đa 100 stop, 20 phân công. Mọi request sửa gửi `version` đang có. |
-| Geocode | tự chạy khi lưu; `POST /plans/{id}/geocode` | §5.1. Stop `FAILED` cần nổi bật kèm lý do; sửa bằng địa chỉ mới hoặc kéo pin trên bản đồ. |
-| Tối ưu và kết quả | `POST /plans/{id}/optimize`, `GET /plans/{id}` | Mỗi route một màu trên bản đồ, danh sách stop theo `sequence` kèm ETA; tổng km/thời gian, tải/capacity mỗi xe; `unassignedStops` có `dropReason = INFEASIBLE` là cảnh báo, vẫn publish được. Optimize mất khoảng 10 s: hiện trạng thái đang tính. |
-| Publish, huỷ | `POST /plans/{id}/publish`, `/cancel` | `SHIFT_OVERLAP` chỉ ra phân công nào trùng ca với plan nào (`details[].conflictPlanId`, dẫn link sang plan đó). Huỷ được ở DRAFT và PUBLISHED. |
-| Theo dõi tiến độ | `GET /plans/{id}`, `GET /plans/{id}/driver-locations` (tải lại định kỳ, T32) | Trạng thái từng stop và từng route; lý do thất bại; vị trí cuối của tài xế (10 phút) hoặc lý do không có (tài xế tắt chia sẻ, chưa cấp quyền, GPS tắt, mất sóng) kèm số điện thoại `driver.phoneNumber` để gọi nhắc. Không có realtime trong MVP. |
-
-### 4.2 Mobile (tài xế)
-
-| Màn hình | Endpoint | Ghi chú thiết kế |
-|---|---|---|
-| Đăng nhập, quên mật khẩu, nhận lời mời | như web, kèm `X-Client-Platform: mobile` | |
-| Route trong ngày | `GET /driver/routes?date=` | Mặc định hôm nay; mỗi route: tên plan, số stop đã xong/tổng, giờ xuất phát, `status` riêng của route. |
-| Chi tiết route | `GET /driver/routes/{routeId}` | Tiêu đề lấy `planName` của response (mở thẳng màn này vẫn có tên). Danh sách stop theo `sequence`: nhãn, người nhận (nút gọi), địa chỉ, ETA, time window, ghi chú, trạng thái. Stop kế tiếp nổi bật. |
-| Dẫn đường | không có endpoint | Nút mở Google Maps (`https://www.google.com/maps/dir/?api=1&destination={lat},{lon}`) hoặc Apple Maps (`https://maps.apple.com/?daddr={lat},{lon}`) theo nền tảng (D-07, FR-D02). |
-| Báo kết quả stop | `PATCH /driver/routes/{routeId}/stops/{stopId}/status` | Ba nút: Đã giao, Không giao được (bắt buộc lý do, ≤ 255 ký tự), Bỏ qua. **Không hoàn tác được** (P-34): cần bước xác nhận. Response có `routeStatus`, `planStatus` để báo "đã xong route". Mất mạng thì gửi lại cùng trạng thái: server trả 200 (idempotent). |
-| Chia sẻ vị trí (T32, P-53, P-54) | `PUT /driver/location/sharing`, `POST /driver/location` | Mặc định hỏi khi mở một tuyến chưa xong ("Chia sẻ vị trí cho tuyến này?", ô ghi nhớ); menu tài khoản chọn Hỏi / Luôn / Không (chỉ lưu trên máy). App báo trạng thái `SHARING`, `DECLINED`, `NO_PERMISSION`, `GPS_OFF` để dispatcher biết lý do; gửi lô điểm mỗi 30 giây kể cả khi chạy nền (thông báo cố định trên Android), dừng khi tuyến xong, plan hết chạy hoặc đăng xuất. |
+Danh sách màn, endpoint gọi và hành vi bắt buộc của web và app tài xế ở `docs/client/SCREENS.md` (§1 web, §2 app). Giới hạn nghiệp vụ (OTP, số điểm giao, phân công, thời gian tối ưu…) ở `API_SPEC.md` và `REQUIREMENTS.md` §4. Bảng màn hình viết cho bước thiết kế 2026-11-03 đã bỏ vì trùng SCREENS và đã cũ (link mời P-69, dẫn đường trong app T33); bản cũ xem trong lịch sử git của file này.
 
 ## 5. Trạng thái cần thiết kế
 

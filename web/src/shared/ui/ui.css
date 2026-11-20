@@ -1160,7 +1160,7 @@ textarea.pw-field-input {
   }
 }
 
-/* ---------- App shell (P-74, docs/client/OWNER_UI_REDESIGN.md §6) ----------
+/* ---------- App shell (P-74, docs/archive/client/OWNER_UI_REDESIGN.md §6) ----------
    Text sizes in rem so the shell follows the text size set in the browser (the web's stand-in for Dynamic Type, HIG
    Layout: "Be prepared for text-size changes").
    Wide window (≥ 960px): a sidebar floating on the leading side, glass of the functional layer (HIG Sidebars: sidebars
