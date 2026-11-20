@@ -175,7 +175,13 @@ export function Sheet({
           id={formId}
           className="pw-sheet-body"
           noValidate
-          onSubmit={(event) => (onSubmit ? onSubmit(event) : event.preventDefault())}
+          onSubmit={(event) => {
+            // The sheet is a portal: React would bubble this submit to a form that renders it (the plan form saved the
+            // whole plan when a stop's "Xong" was pressed, F-83). The sheet's form never submits natively either.
+            event.preventDefault();
+            event.stopPropagation();
+            onSubmit?.(event);
+          }}
         >
           {children}
         </form>

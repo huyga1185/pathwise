@@ -32,6 +32,30 @@ describe('Sheet', () => {
   });
 });
 
+describe('Sheet trong một form khác', () => {
+  // F-83: the sheet is a portal, so React bubbled its submit up to the page's form (the plan form saved the whole plan
+  // when "Xong" closed a stop's sheet on a phone).
+  it('nút xong chỉ gửi form của sheet, không gửi form của trang chứa nó', async () => {
+    const inner = vi.fn();
+    const outer = vi.fn((event: { preventDefault: () => void }) => event.preventDefault());
+    render(
+      <form onSubmit={outer}>
+        <Sheet open title="Điểm giao" doneLabel="Xong" onSubmit={inner} onClose={() => {}}>
+          <label>
+            Mã đơn
+            <input name="code" />
+          </label>
+        </Sheet>
+      </form>,
+    );
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Xong' }));
+    expect(inner).toHaveBeenCalledTimes(1);
+    expect(inner.mock.calls[0]?.[0].defaultPrevented).toBe(true);
+    expect(outer).not.toHaveBeenCalled();
+  });
+});
+
 describe('Sheet và popover bên trong', () => {
   it('Escape mà popover bên trong đã xử lý (preventDefault) chỉ đóng popover, không đóng sheet', async () => {
     const onClose = vi.fn();
