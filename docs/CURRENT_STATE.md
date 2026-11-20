@@ -361,3 +361,13 @@ Nhóm: (1) nghiệp vụ/hiểu sai yêu cầu · (2) implementation · (3) ki�
 | 2026-11-19 | branch `feat/owner-ui-g5` | — | Sheet điện thoại ở nấc cao chạm đáy màn, tab bar nổi trên; nội dung chừa đáy để không bị tab bar che (`OWNER_UI_REDESIGN.md` §10.14). |
 | 2026-11-19 | branch `feat/owner-ui-g5` | — | Điểm giao trên bản đồ là ghim (số thứ tự bên trong khi đã xếp) thay cho chấm tròn (`OWNER_UI_REDESIGN.md` §10.15). |
 | 2026-11-19 | branch `feat/owner-ui-g5` | — | Ghim điểm giao theo kiểu fb_17: vòng trắng giữa đầu, số thứ tự trong vòng trắng (`OWNER_UI_REDESIGN.md` §10.15). |
+| 2026-11-19 | branch `feat/owner-ui-g6` | — | Thiết kế G6 (Báo cáo): khoảng ngày segmented + tùy chọn, nhóm số, biểu đồ có chú giải, đường tách, chọn ngày bằng chuột / chạm / bàn phím (`OWNER_UI_REDESIGN.md` §11). |
+| 2026-11-19 | branch `feat/owner-ui-g6` | — | G6 bước 1: biểu đồ theo ngày có chú giải, đường tách, chọn ngày bằng chuột / chạm / bàn phím, nhãn trợ năng từng ngày (`OWNER_UI_REDESIGN.md` §11.6). |
+| 2026-11-19 | branch `feat/owner-ui-g6` | — | G6 bước 2: Báo cáo — hàng tiêu đề có nút xuất, khoảng ngày segmented + tùy chọn (lịch của app), nhóm số tổng, nhóm biểu đồ có tóm tắt, trạng thái trống không thẻ (`OWNER_UI_REDESIGN.md` §11.6). |
+| 2026-11-19 | branch `feat/owner-ui-g6` | — | G6 bước 3: Báo cáo — bảng tài xế 6 cột vừa khung (gộp tuyến/km dưới tên, báo đầu – cuối một cột), điện thoại là hàng + sheet; lý do là bảng / hàng (`OWNER_UI_REDESIGN.md` §11.6). |
+| 2026-11-19 | branch `feat/owner-ui-g6` | — | G6 bước 4: đo trang Báo cáo (4 cỡ, sáng/tối), SCREENS và DESIGN_SYSTEM cho Báo cáo và biểu đồ dùng chung (`OWNER_UI_REDESIGN.md` §11.6). |
+| 2026-11-19 | branch `feat/owner-ui-g6` | — | Biểu đồ theo ngày: nhãn ngày nhịp đều kiểu Health (tuần: thứ; dài hơn: mỗi 7 ngày), trục số bên phải (`OWNER_UI_REDESIGN.md` §11.7). |
+| 2026-11-19 | branch `feat/owner-ui-g6` | — | Báo cáo: tài xế 10 một trang, tên dài cắt 2 dòng có sheet đọc đủ, lý do không cắt, bảng không cuộn ngang (cột báo kết quả gập dưới tên), vòng xoay lúc tải, chuyển động; checklist §1b mới (`OWNER_UI_REDESIGN.md` §11.8). |
+| 2026-11-20 | branch `feat/owner-ui-g6` | — | Báo cáo: ô Từ ngày – Đến ngày trên PC xếp ngang, căn giữa dưới thanh khoảng ngày (`OWNER_UI_REDESIGN.md` §11.9). |
+| 2026-11-20 | branch `feat/owner-ui-g6` | — | Báo cáo: "Xuất CSV" thành nút chính nền màu nhấn như "+ Tạo kế hoạch" (`OWNER_UI_REDESIGN.md` §11.10). |
+| 2026-11-20 | branch `feat/owner-ui-g6` | — | Báo cáo: ô Từ ngày – Đến ngày của Tùy chọn thành nút lọc ngày như Kế hoạch / Nhật ký (nhãn trong nút, nền màu nhấn nhạt), giới hạn 31 ngày là một dòng dưới (`OWNER_UI_REDESIGN.md` §11.11). |

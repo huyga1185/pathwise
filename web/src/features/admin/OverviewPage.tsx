@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { DailyBarChart } from '@/platform/charts';
 import { messageFor } from '@/shared/errors';
-import { formatDayTime, formatDuration, formatRate, shortDate, todayIn } from '@/shared/format';
+import { formatDayTime, formatDuration, formatRate, shortDate, spokenDate, todayIn } from '@/shared/format';
 import { vi } from '@/shared/i18n/vi';
 import { ErrorBanner, DataTable, Stat } from '@/shared/ui';
 import { useBusinessMetrics, useTechnicalMetrics, type BusinessMetrics, type TechnicalMetrics } from './adminApi';
@@ -61,6 +61,8 @@ function BusinessBlock({ data, range }: { data: BusinessMetrics; range: Range })
   const { now, totals, days } = data;
   const points = days.map((day) => ({
     label: shortDate(day.date),
+    // The full day for assistive technologies (HIG Charts: "June 6" rather than "6/6").
+    spoken: spokenDate(day.date),
     published: day.plansPublished,
     delivered: day.stopsDelivered,
     failed: day.stopsFailed,

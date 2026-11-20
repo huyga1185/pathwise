@@ -1,11 +1,6 @@
 /* Store reports (W12, prototype "Báo cáo"). Tokens only. */
-.pw-reports-head {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: var(--space-4);
-}
+/* G6 (OWNER_UI_REDESIGN §11): title row with the export action, the period (segmented, dates for "Tùy chọn"), one group
+   of totals, the chart in a group — groups with a fill, radius 16, no outline, as the redesigned pages. */
 .pw-reports-intro {
   display: flex;
   flex-direction: column;
@@ -15,42 +10,93 @@
 .pw-reports-intro p {
   margin: 0;
 }
+/* Phone: export is a round icon button (G2.1's "+"; HIG Icons "square.and.arrow.up"). */
+.pw-reports-export {
+  flex: none;
+}
 .pw-reports-filters {
   display: flex;
-  flex-wrap: wrap;
-  /* Top, not bottom: a hint or an error under one field must not push the others up (fb_1). */
+  flex-direction: column;
   align-items: flex-start;
   gap: var(--space-4);
 }
-/* The quick choices have no label: they start one label line lower and are as tall as a date input (40px). */
-.pw-reports-filters > .pw-segmented {
-  margin-top: calc(20px + var(--space-1));
+.pw-reports-dates {
+  margin-top: 0;
 }
-.pw-reports-filters .pw-segmented-btn {
-  min-height: 38px;
+.pw-reports-range-msg {
+  margin: -8px 0 0;
+  font-size: 0.8125rem;
+  color: var(--ink-muted);
 }
-/* Touch screens: 42px + the 1px border on each side = 44px, as tall as the 44px date fields (ui.css). */
-@media (pointer: coarse) {
-  .pw-reports-filters .pw-segmented-btn {
-    min-height: 42px;
+.pw-reports-range-msg.is-error {
+  color: var(--danger);
+}
+/* Wide window: the two filters side by side, centred under the period control (which is centred there too, HIG Tab
+   views), the limit centred under them. */
+@media (min-width: 960px) {
+  .pw-reports-dates {
+    align-self: center;
+    justify-content: center;
+  }
+  .pw-reports-range-msg {
+    align-self: center;
   }
 }
-.pw-reports-filters .pw-field {
-  flex: 0 1 200px;
-}
-.pw-reports-grid {
+.pw-reports-totals {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: var(--space-4);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  border-radius: 16px;
+  background: var(--surface-raised);
+  overflow: hidden;
 }
-.pw-reports-card {
+.pw-reports-total {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  padding: 16px 20px;
+}
+.pw-reports-total + .pw-reports-total {
+  border-left: 1px solid var(--line);
+}
+.pw-reports-total-label {
+  font-size: 0.8125rem;
+  color: var(--ink-muted);
+}
+.pw-reports-total-value {
+  font-size: 1.75rem;
+  line-height: 2.25rem;
+  font-weight: 700;
+}
+.pw-reports-total-sub {
+  font-size: 0.8125rem;
+  line-height: 1.125rem;
+}
+/* Phone and narrow windows: 2 × 2, hairlines between. */
+@media (max-width: 759px) {
+  .pw-reports-totals {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .pw-reports-total + .pw-reports-total {
+    border-left: 0;
+  }
+  .pw-reports-total:nth-child(even) {
+    border-left: 1px solid var(--line);
+  }
+  .pw-reports-total:nth-child(n + 3) {
+    border-top: 1px solid var(--line);
+  }
+}
+.pw-reports-group {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
-  padding: var(--space-4);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-md);
+  padding: 16px 20px 20px;
+  border-radius: 16px;
   background: var(--surface-raised);
+}
+.pw-reports-group .pw-reports-h2 {
+  margin: 0;
 }
 .pw-reports-h2 {
   margin: 0 0 var(--space-2);
@@ -72,6 +118,79 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
-.pw-reports-drivers .pw-table {
-  min-width: 860px;
+/* The driver's numbers in a sheet (phone, G3). */
+.pw-reports-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin: 0;
+}
+.pw-reports-detail dt {
+  font-size: 0.8125rem;
+  line-height: 1.125rem;
+  color: var(--ink-muted);
+}
+.pw-reports-detail dd {
+  margin: 2px 0 0;
+}
+/* A reason row on a phone: the reason, its count at the end. */
+.pw-reports-reason {
+  justify-content: space-between;
+  gap: 12px;
+  /* No chevron at the end: the same 16px as the leading side. */
+  padding-right: 16px;
+}
+/* Wide: the routes and kilometres under a driver's name stay on one line; the name column fits them. */
+.pw-reports-driver-sub {
+  white-space: nowrap;
+}
+/* A reason is read here only: all of it, however long (G2.11, HIG Typography). */
+.pw-reports-reason-text {
+  display: block;
+  -webkit-line-clamp: unset;
+  line-clamp: unset;
+  overflow: visible;
+}
+/* The driver's full name in its sheet: any length, unspaced names break. */
+.pw-reports-detail dd {
+  overflow-wrap: anywhere;
+}
+.pw-reports-col-reason {
+  width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+/* The drivers table measures its own width: under 760px (it needs ~750 with every column) the "Báo kết quả" column
+   becomes a line under the name instead of making the table scroll sideways (G2.11; checklist L3). */
+.pw-reports-drivers {
+  container-type: inline-size;
+}
+.pw-reports-driver-reported {
+  display: none;
+  white-space: nowrap;
+}
+@container (max-width: 760px) {
+  .pw-reports-drivers .pw-reports-col-reported {
+    display: none;
+  }
+  .pw-reports-drivers .pw-reports-driver-reported {
+    display: block;
+  }
+}
+/* Motion (§9.6; checklist L5): a new period's report rises in; another page of drivers fades in. Reduced motion:
+   fades only. */
+.pw-reports-body {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  animation: pw-result-in 0.32s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.pw-reports-drivers .pw-table-wrap,
+.pw-reports-page {
+  animation: pw-result-fade 0.2s ease both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .pw-reports-body {
+    animation-name: pw-result-fade;
+  }
 }

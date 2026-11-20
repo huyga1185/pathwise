@@ -1049,6 +1049,12 @@ export const vi = {
     range: 'Khoảng ngày',
     today: 'Hôm nay',
     week: '7 ngày',
+    month: '30 ngày',
+    custom: 'Tùy chọn',
+    totals: 'Tổng của khoảng',
+    chartSummary: (d: number, f: number, s: number) => `${d} đã giao · ${f} không giao được · ${s} bỏ qua`,
+    chartDay: (day: string, d: number, f: number, s: number) =>
+      `${day}: ${d} đã giao · ${f} không giao được · ${s} bỏ qua`,
     from: 'Từ ngày',
     to: 'Đến ngày',
     maxHint: 'Tối đa 31 ngày.',
@@ -1086,6 +1092,18 @@ export const vi = {
     count: 'Số lần',
     noReasons: 'Chưa có điểm nào không giao được.',
     unnamed: '(chưa có tên)',
+    /** G6 (OWNER_UI_REDESIGN §11). */
+    driverSub: (routes: number, km: string) => `${routes} tuyến · ${km}`,
+    driverRow: (routes: number, d: number, f: number, s: number, p: number) =>
+      [`${routes} tuyến`, `${d} đã giao`, f && `${f} không giao được`, s && `${s} bỏ qua`, p && `${p} chờ`]
+        .filter(Boolean)
+        .join(' · '),
+    reported: 'Báo kết quả',
+    reportedRange: (first: string, last: string) => (first === last ? first : `${first} – ${last}`),
+    reportedLine: (range: string) => `báo ${range}`,
+    driverOpen: (name: string) => `${name}: xem chi tiết`,
+    driversPager: 'Trang danh sách tài xế',
+    close: 'Đóng',
   },
   pages: {
     notFoundTitle: 'Không tìm thấy trang',

@@ -1,6 +1,6 @@
 # OWNER_UI_REDESIGN — Nghiên cứu thiết kế lại giao diện chính của chủ cửa hàng theo Apple
 
-> **Trạng thái:** nghiên cứu xong; chủ dự án đã trả lời Q1–Q5 (§5, 2026-11-17), quyết định ở P-74. **G1 (khung app) đã làm** (§6, branch `docs/owner-ui-redesign`). **G2 (danh sách kế hoạch) đã làm** (§7, PR #129). **G3 (Xe, Thành viên, Cửa hàng, Nhật ký, Tài khoản) đã làm** (§8, PR #130). **G4 (tạo/sửa kế hoạch, nhập file, sao chép) đã làm** (§9, PR #131). **G5 (chi tiết kế hoạch) đang làm** (§10, branch `feat/owner-ui-g5`).
+> **Trạng thái:** nghiên cứu xong; chủ dự án đã trả lời Q1–Q5 (§5, 2026-11-17), quyết định ở P-74. **G1 (khung app) đã làm** (§6, branch `docs/owner-ui-redesign`). **G2 (danh sách kế hoạch) đã làm** (§7, PR #129). **G3 (Xe, Thành viên, Cửa hàng, Nhật ký, Tài khoản) đã làm** (§8, PR #130). **G4 (tạo/sửa kế hoạch, nhập file, sao chép) đã làm** (§9, PR #131). **G5 (chi tiết kế hoạch) đã làm** (§10, PR #132). **G6 (Báo cáo) đang làm** (§11, branch `feat/owner-ui-g6`).
 >
 > Theo P-71 (hướng dẫn Apple đứng trước), quy tắc ở `docs/client/LIQUID_GLASS.md`, kiểm từng thành phần theo `docs/client/APPLE_CHECKLIST.md`. Nhãn: **[Apple]** trích nguyên văn HIG (bản tải 2026-11-17), **[Web]** điều web buộc phải có, chọn bằng đo, **[Chủ dự án]** chờ hoặc đã có quyết định. Phần "Đề xuất" là ý của agent, mỗi dòng ghi nguồn; chỗ nào Apple không nói thì ghi rõ.
 
@@ -653,4 +653,89 @@ Làm: nấc cao chạm đáy màn (thấp và giữa vẫn trên tab bar); khung
 
 Chủ dự án: đổi các chấm tròn thành ghim; điểm đã xếp thứ tự thì có số trong ghim. Kiểm tra: HIG Maps *"Use annotations that match the visual style of your app"*; marker mặc định của Apple là ghim, *"You can change the icon to a string"* → ghim có số đúng kiểu; WCAG: viền trắng + bóng (1.4.11), số đi cùng màu (1.4.1), tên trợ năng giữ (4.1.2). Làm: marker điểm (`RouteMap`) là ghim giọt nước chân nhọn (hình vuông một góc nhọn xoay −45°, số dựng thẳng bên trong), màu tuyến / màu kết quả như cũ, điểm chưa xếp thì không số; neo ở chân ghim (0,707 × cạnh dưới tâm) nên chân chạm đúng đỉnh đường tuyến; ghim được chọn to hơn, viền theo hình ghim. Chú giải và số trong danh sách giữ hình tròn (`.pw-marker` dùng chung).
 - *Sửa cùng ngày (phác thảo `docs/ux/samples/fb_17.png`):* ghim kiểu ghim bản đồ cổ điển — đầu tròn, thân thon xuống mũi nhọn, **vòng trắng ở giữa đầu**; có số thì số nằm trong vòng trắng, cùng màu ghim (đo tương phản trên nền trắng: mọi màu tuyến và màu kết quả 5,86–10,10:1 ≥ 4,5:1, WCAG 1.4.3); không số thì vòng trắng rỗng. Vẽ bằng SVG (`pinSvg`, viền trắng 1,5, bóng; chọn: 36px, viền đậm); ghim đặt toạ độ cho điểm giao (`PinMap kind="stop"`) dùng cùng hình, màu nhấn.
+
+## 11. Thiết kế G6: Báo cáo (2026-11-19, đang làm)
+
+Phạm vi: `/reports?from=&to=` (SCREENS §1; API `GET /reports/summary`, `/reports/stops.csv`, T63). Hành vi và câu chữ giữ như SCREENS, UX_BRIEF (khoảng ≤ 31 ngày, `INVALID_DATE_RANGE`, `DATE_RANGE_TOO_LONG`); G6 đổi bố cục, control và biểu đồ. Biểu đồ dùng chung với Tổng quan của khu quản trị (P-59).
+
+### 11.1 Hiện trạng (chụp 2026-11-19, 1440 và 390px, báo cáo mẫu 7 ngày giả qua `page.route`)
+
+- Tiêu đề + lời dẫn; "Xuất CSV" (điện thoại: nằm lẻ dưới tiêu đề); "Hôm nay / 7 ngày" kiểu segmented cũ; hai **ô ngày của trình duyệt** (hiện kiểu Mỹ "12/01/2026").
+- 4 **thẻ số viền** (kế hoạch giao việc, điểm giao, giao được, quãng đường dự kiến).
+- Biểu đồ cột chồng theo ngày: **không chú giải** (đã giao / không giao được / bỏ qua chỉ phân biệt bằng màu), các phần cột dính liền, số từng ngày **chỉ xem được khi rê chuột** (tooltip); trình đọc màn hình chỉ nghe một câu chung.
+- Bảng tài xế 9 cột: rộng bị cắt cột cuối, điện thoại tràn khung; bảng lý do.
+
+### 11.2 Apple / WCAG (HIG Charts, Charting data)
+
+- *"Avoid relying solely on color to differentiate between different pieces of data"* (WCAG 1.4.1) → cần chú giải có chữ.
+- *"in a bar chart that stacks marks… adding separators between the marks"*.
+- *"Summarize the main message of your chart"* — tiêu đề + phụ đề tóm ý chính.
+- *"don't require interaction to reveal critical information"*; *"consider expanding the hit target to include the entire plot area"*; *"Make an interactive chart easy to navigate when using keyboard commands"*.
+- Nhãn trợ năng mỗi mark có ngữ cảnh, *"June 6" is clearer than "6/6"*; *"Hide visible text labels for axes and ticks from assistive technologies"*; không dùng từ chủ quan.
+- *"In a compact environment, maximize the width of the plot area"*; *"Align a chart with surrounding interface elements"*; *"Prefer consistency across multiple charts"*.
+- *"Not every collection of data needs to be displayed in a chart… list or table"*.
+
+### 11.3 Câu hỏi và trả lời (2026-11-19)
+
+| # | Câu hỏi | Trả lời |
+|---|---|---|
+| G6-Q1 | Chọn khoảng ngày | **Segmented [Hôm nay \| 7 ngày \| 30 ngày \| Tùy chọn]**; Tùy chọn thì hiện hai `DateField` (G4, lịch của app). *Đổi 2026-11-20 (§11.11):* hai nút lọc ngày như Kế hoạch, Nhật ký. |
+| G6-Q2 | Thẻ số | **Một nhóm 4 ô, không viền** (rộng một hàng, điện thoại 2×2). |
+| G6-Q3 | Số từng ngày | **Chọn cột + bàn phím** (kiểu Health): bấm / rê / mũi tên chọn một ngày, dòng tóm tắt trên biểu đồ đổi sang số của ngày đó; vùng bấm là cả vùng vẽ; mỗi cột có nhãn trợ năng đầy đủ. |
+| G6-Q4 | Biểu đồ dùng chung với quản trị | **Có, dùng chung** (bố cục trang quản trị vẫn để sau). |
+
+### 11.4 Thiết kế
+
+| # | Phần | Thiết kế | Nguồn |
+|---|---|---|---|
+| G6.1 | Hàng tiêu đề | "Báo cáo" + "Xuất CSV" ở cuối hàng (điện thoại: nút tròn biểu tượng xuất `square.and.arrow.up`, tên trợ năng "Xuất CSV"); lời dẫn dưới | G2.1; [Apple] Toolbars, Icons |
+| G6.2 | Khoảng ngày | G6-Q1; "30 ngày" = 30 ngày tới hôm nay (≤ 31, API); khoảng trên URL không khớp ba mục thì là Tùy chọn; lỗi khoảng dưới ô như cũ | [Apple] Segmented controls; G4.4 |
+| G6.3 | Số tổng | G6-Q2 | G2/G3 nhóm bo 16 |
+| G6.4 | Biểu đồ | Nhóm bo 16; tiêu đề + **dòng tóm tắt** (cả khoảng: "190 đã giao · 12 không giao được · 3 bỏ qua"; đang chọn ngày: số của ngày đó); **chú giải có chữ**; **đường tách** giữa các phần cột chồng; G6-Q3 chọn ngày (cột chọn nổi, cột khác nhạt); nhãn trục ẩn khỏi trình đọc màn hình | §11.2 |
+| G6.5 | Tài xế, lý do | Rộng: bảng trong nhóm, cột không vừa thì thành dòng phụ dưới tên (G2.11); điện thoại: danh sách hàng (tên; dòng phụ "N tuyến · đã giao · không giao được…"), bấm mở sheet chi tiết (G3) | G2.11, G3 |
+
+### 11.5 Thứ tự làm
+
+1. Biểu đồ dùng chung: chú giải, đường tách, chọn ngày (chuột, chạm, bàn phím), nhãn trợ năng, tóm tắt; test.
+2. Trang Báo cáo: hàng tiêu đề, khoảng ngày, nhóm số, nhóm biểu đồ.
+3. Tài xế, lý do: bảng / hàng + sheet.
+4. Đo theo APPLE_CHECKLIST; SCREENS, DESIGN_SYSTEM, CURRENT_STATE; e2e.
+
+### 11.6 Làm (2026-11-19, đang làm)
+
+- **Bước 1 xong:** `DailyBarChart` (dùng chung Báo cáo và Tổng quan quản trị, G6-Q4): chú giải có chữ dưới biểu đồ; đường tách giữa các phần cột chồng (viền màu nền); chọn ngày bằng rê / bấm / chạm cả vùng vẽ (HIG: *"expanding the hit target to include the entire plot area"*), cột được chọn đậm, cột khác nhạt; vùng vẽ là một điểm Tab vai trò `slider` (←/→/Home/End chọn ngày, Escape bỏ; giá trị đọc là ngày đầy đủ và số liệu); dòng tóm tắt (`summary`) đổi theo ngày chọn và được đọc khi đổi; danh sách ẩn mỗi ngày một dòng ("Thứ Hai, 1 tháng 12, 2026: 30 đã giao, …", `spokenDate`); hình vẽ và nhãn trục ẩn khỏi trình đọc màn hình; bỏ tooltip (chỉ hiện khi rê chuột).
+- **Bước 2 xong:** hàng tiêu đề "Báo cáo" + "Xuất CSV" có biểu tượng xuất (`ShareIcon`, kiểu `square.and.arrow.up`; điện thoại: nút tròn chỉ biểu tượng, tên trợ năng "Xuất CSV"); khoảng ngày là `SegmentedControl` [Hôm nay | 7 ngày | 30 ngày | Tùy chọn] (khoảng trên URL không khớp ba mục → Tùy chọn), Tùy chọn hiện hai `DateField` (lịch của app, "T3, 01/12/2026"); bốn số tổng trong một nhóm bo 16 không viền (rộng một hàng, < 760px 2×2, đường kẻ mảnh giữa ô); biểu đồ trong nhóm bo 16, dòng tóm tắt "190 đã giao · 12 không giao được · 3 bỏ qua" đổi thành số của ngày đang chọn ("Thứ Tư, 02/12/2026: 28 đã giao · …"); trạng thái trống theo G2.7 (không thẻ, biểu tượng biểu đồ). Đo 1440 / 390px: không tràn ngang, không lỗi; bốn ô khoảng ngày 85×44px ở 390px.
+- **Bước 3 xong:** tài xế — rộng: bảng trong nhóm (không khung riêng), 6 cột: tên + dòng phụ "N tuyến · km" (một dòng), đã giao, không giao được, bỏ qua, chờ giao, "Báo kết quả" đầu – cuối (G2.11: gộp thay vì cắt; trước đó 9 cột bị cắt ở 1440px); điện thoại: danh sách hàng (tên; "N tuyến · đã giao · …"), bấm mở sheet "Tài xế" đủ mọi số (G3). Lý do — rộng: bảng trong nhóm; điện thoại: hàng chỉ để đọc (lý do, số lần; không chevron, đệm phải 16px). Đo 1440 / 1024 / 390px: không tràn; hàng bảng 57px, hàng danh sách 60–76px.
+- **Bước 4 (đo, 2026-11-19):** 1440 / 1024 (chuột) và 390 / 320 (cảm ứng), sáng và tối: không tràn ngang, không lỗi trang; màu cột, đường tách và chú giải đổi theo theme. Vùng bấm: đo được nút của hàng tài xế 42px ở 390px nhưng hàng có lớp `::after` phủ cả hàng (76px) — vùng bấm thật là cả hàng, như các danh sách G2/G3. axe sạch (test). E2e 3/3. SCREENS, DESIGN_SYSTEM cập nhật.
+
+### 11.7 Trục của biểu đồ (2026-11-19)
+
+Chủ dự án: biểu đồ trên PC không đều, trên điện thoại chỉ hiện vài ngày. Đo: nhãn ngày do thư viện tự bỏ bớt khi thiếu chỗ (`minTickGap`) nên không theo nhịp — PC 30 ngày 02, 04, 06… (mất ngày đầu), điện thoại 30 ngày 06, 12, 18, 24, 30, điện thoại 7 ngày 01, 03, 05, 07; nhãn trục số bên trái đẩy vùng vẽ thụt so với tiêu đề. HIG Charts: *"Prefer familiar sequences of values in the tick and grid-line labels"*; *"Align a chart with surrounding interface elements… display the label for each vertical grid line on its trailing side"*; *"In a compact environment, maximize the width of the plot area"*. Chủ dự án chọn nhãn ngày **kiểu app Sức khoẻ**.
+
+Làm (biểu đồ dùng chung, cả Tổng quan quản trị): ≤ 7 ngày — mọi ngày, nhãn là thứ viết tắt (T2 … CN, `weekdayShort`); dài hơn — một mốc mỗi 7 ngày tính từ ngày đầu (01/11, 08/11, 15/11, 22/11, 29/11), nhãn bắt đầu từ mép trái cột của mốc (căn giữa thì nhãn đầu bị mép biểu đồ cắt ở điện thoại); không để thư viện bỏ nhãn; trục số ở bên phải, vùng vẽ thẳng mép trái với tiêu đề; trang quản trị thêm ngày đầy đủ cho trình đọc màn hình. Đo 1440 / 1024 / 390 / 320px với 7, 14, 30 ngày: nhịp giống nhau ở mọi bề ngang, không chồng, không bị cắt.
+
+### 11.8 Cắt chữ, phân trang và rà checklist §1b (2026-11-19)
+
+Chủ dự án: giữ biểu đồ cột đứng (đã xem phác hai cách cho 30 ngày); cắt chữ xử lý như docs; phân trang ngang như tab Kế hoạch; và ghi các việc hay phải nhắc vào checklist → `APPLE_CHECKLIST.md` §1b (L1–L6), mọi trang mới phải qua trước khi báo xong. Trả lời: **10 tài xế một trang** (G2.9 "vừa một màn hình" không áp vì bảng nằm dưới biểu đồ); thanh trang **như Kế hoạch, không ghim** (PC dưới bảng, điện thoại trên danh sách; trang còn phần khác bên dưới).
+
+| Mục | Kết quả |
+|---|---|
+| L1 chữ dài | ✅ Tên tài xế (thử 100 ký tự, 60 ký tự không dấu cách): bảng 2 dòng "…" + `title`, **bấm hàng mở sheet đủ chữ** (HIG Typography: cắt thì phải có chỗ đọc đủ); hàng điện thoại 2 dòng, sheet đủ chữ. Lý do không giao được (thử 255 ký tự, 80 ký tự không dấu cách): **không cắt**, xuống dòng — không có chỗ nào khác hiện đủ. Đo 1920 / 1440 / 1024 / 960 / 390 / 320px: không tràn |
+| L2 phân trang | ✅ Tài xế 10 một trang, "‹ Trang x/y ›" (`Pager`), `?page=` trên URL, đổi khoảng ngày về trang 1, trang quá cuối về trang cuối (test). Lý do: tối đa 10 theo API → không |
+| L3 bảng không cuộn ngang | ✅ (đã sửa) Bảng lý do trước đó tràn (ô không xuống dòng) → xuống dòng; bảng tài xế cần ~750px: dưới 760px (container query) cột "Báo kết quả" thành dòng phụ "báo 01/12 08:12 – 07/12 16:40" (G2.11). Đo: 917/917 (1920, 6 cột), 745/745, 724/724, 663/663 |
+| L4 trống / tải / lỗi | ✅ (đã sửa) Trước đó tải lần đầu không hiện gì → `ActivityIndicator` (sau 0,3 s); đổi khoảng giữ số cũ tới khi có số mới; trống không thẻ; lỗi `ErrorBanner` |
+| L5 chuyển động | ✅ (đã thêm) Báo cáo mới trồi lên (`pw-result-in`), đổi trang tài xế mờ vào; sheet có sẵn; giảm chuyển động chỉ mờ |
+| L6 nhóm, bo | ✅ Nhóm số, biểu đồ, bảng: nền bo 16 không viền |
+
+### 11.9 Ô ngày "Tùy chọn" trên máy tính (2026-11-20)
+
+Chủ dự án: "Từ ngày – Đến ngày" ở Tùy chọn trên PC xếp ngang, căn giữa. Trước đó hai ô xếp dọc sát trái (khung `flex-wrap` co theo nội dung nên tự xuống dòng) trong khi thanh chọn khoảng căn giữa (HIG Tab views, G3). Từ 960px: hai ô 220px cạnh nhau, khối căn giữa dưới thanh (tâm trùng tâm thanh: 1440 → 835/835, 960 → 595/595); lỗi hoặc gợi ý dưới một ô không đẩy ô kia (căn trên, fb_1). Điện thoại giữ xếp dọc. Không tràn ngang ở 1440 / 960 / 390px.
+
+### 11.10 Nút "Xuất CSV" cùng kiểu nút chính các trang khác (2026-11-20)
+
+"Xuất CSV" trước là nút nền xám, trong khi ở cùng vị trí (cuối hàng tiêu đề) các trang khác dùng nút chính nền màu nhấn ("+ Tạo kế hoạch"). Đây là hành động duy nhất của trang nên đổi sang nút chính: rộng là viên thuốc nền màu nhấn, hẹp là nút tròn 44px nền màu nhấn (`pw-list-add`), như G2.1 ([Apple] HIG Buttons: *"Use style — not size — to visually distinguish the preferred choice"*; checklist C13). Ô ngày "Tùy chọn" bắt buộc nên không có ⓧ; muốn về khoảng có sẵn thì bấm "Hôm nay / 7 ngày / 30 ngày". Đã thử thêm nút "Đặt lại" cạnh hai ô ngày, chủ dự án xem rồi bỏ.
+
+### 11.11 Ô ngày "Tùy chọn" dùng nút lọc ngày như Kế hoạch, Nhật ký (2026-11-20)
+
+Chủ dự án: "Từ ngày – Đến ngày" của Tùy chọn khác nút chọn ngày ở Kế hoạch và Nhật ký — nhãn nằm trên thay vì trong nút, nền xám hơn dù đã có ngày. Lý do: G6-Q1 dùng `DateField` (ô của biểu mẫu, G4.4), trong khi khoảng ngày ở đây là bộ lọc của một danh sách số liệu, cùng loại với "Ngày giao" (Kế hoạch) và "Từ ngày / Đến ngày" (Nhật ký). Đổi sang `DatePickerFilter` (G2.2): viên thuốc "📅 Từ ngày: 01/11/2026", có ngày thì nền màu nhấn nhạt và ngày màu nhấn (đo: cùng màu nền `accent / 0.16` với "Ngày giao: 10/11/2026" của Kế hoạch); lịch popover trên máy tính, inline trên điện thoại (§8.11). Hai ngày bắt buộc nên không có nút xoá ngày. Giới hạn "Tối đa 31 ngày." là một dòng dưới hai nút, quá 31 ngày thì dòng đó thành lỗi đỏ "Chọn tối đa 31 ngày." và được đọc lên (`aria-live`, WCAG 3.3.1, 4.1.3). Máy tính: hai nút và dòng giới hạn căn giữa dưới thanh khoảng (tâm 835 = tâm thanh ở 1440px, giữ §11.9); điện thoại: hai nút cao 44, xuống dòng khi không đủ chỗ (390, 320px), không tràn ngang. [Apple] HIG Date pickers (compact: *"a button that shows the current value in your app's accent color"*); checklist C13.
 
