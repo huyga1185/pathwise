@@ -336,7 +336,7 @@ export function Alert({
   const presence = useExit(open, 160);
   const panel = useRef<HTMLDivElement>(null);
   const actions = useRef<HTMLDivElement>(null);
-  // Touch: two capsules in a row; a title too long for its capsule stacks them, the action on top and Cancel at the
+  // Two buttons in a row; a title too long for its button stacks them, the action on top and Cancel at the
   // bottom (HIG Alerts: "Always place the default button on the trailing side of a row or at the top of a stack.
   // Cancel buttons are typically on the leading side of a row or at the bottom of a stack."). Measured before paint;
   // the order in the DOM follows, so the focus order matches what people see.
@@ -347,7 +347,7 @@ export function Alert({
     if (!open) setStacked(false);
   }
   useLayoutEffect(() => {
-    if (!open || stacked || !window.matchMedia?.('(pointer: coarse)').matches) return;
+    if (!open || stacked) return;
     const buttons = actions.current ? [...actions.current.querySelectorAll('button')] : [];
     if (buttons.some((button) => button.scrollWidth > button.clientWidth)) setStacked(true);
   }, [open, stacked, actionLabel, cancelLabel]);
