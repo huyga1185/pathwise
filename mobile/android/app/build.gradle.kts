@@ -70,3 +70,10 @@ kotlin {
 flutter {
     source = "../.."
 }
+
+dependencies {
+    // Keeps the system splash screen up while the session is restored, instead of a second splash drawn by Flutter
+    // (developer.android.com "Splash screens": "we strongly recommend using the Androidx SplashScreen compat library";
+    // DRIVER_UI_REDESIGN D2, chủ dự án chọn).
+    implementation("androidx.core:core-splashscreen:1.2.0")
+}

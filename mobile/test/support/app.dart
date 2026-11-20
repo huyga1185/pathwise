@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pathwise_driver/app/app.dart';
@@ -8,11 +9,17 @@ import 'package:pathwise_driver/platform/launcher.dart';
 import 'package:pathwise_driver/platform/location.dart';
 import 'package:pathwise_driver/platform/map/basemap.dart';
 import 'package:pathwise_driver/platform/preferences.dart';
+import 'package:pathwise_driver/platform/system_splash.dart';
 import 'package:pathwise_driver/platform/token_store.dart';
 
 import 'fake_api.dart';
 import 'location.dart';
 import 'navigation.dart';
+
+/// The status bar style Flutter sends to Android: the topmost annotation where the status bar is (RenderView).
+Brightness? statusBarIcons(WidgetTester tester) => tester.binding.renderViews.first.debugLayer!
+    .find<SystemUiOverlayStyle>(Offset(tester.binding.renderViews.first.size.width / 2, 0))
+    ?.statusBarIconBrightness;
 
 /// 2026-12-01 09:00 in Đà Nẵng: the day of the plan in docs/ux/samples.
 final sampleNow = DateTime.utc(2026, 12, 1, 2);
@@ -38,6 +45,20 @@ class FakeLauncher implements Launcher {
   }
 }
 
+/// Counts the times the app let the system splash go; [onDismiss] runs at that moment (to see what is on screen).
+class FakeSystemSplash implements SystemSplash {
+  FakeSystemSplash({this.onDismiss});
+
+  final void Function()? onDismiss;
+  int dismissed = 0;
+
+  @override
+  Future<void> dismiss() async {
+    dismissed++;
+    onDismiss?.call();
+  }
+}
+
 /// Preferences of a driver who chose not to share their location (T32): screens that are not about sharing open
 /// without the question. Tests of sharing pass their own [MemoryPreferences].
 MemoryPreferences notSharing() => MemoryPreferences({'pw-location-sharing': 'NEVER'});
@@ -53,6 +74,8 @@ Future<MemoryTokenStore> pumpApp(
   LocationSource? location,
   DirectionsSource? directions,
   FakeScreenAwake? screenAwake,
+  FakeSystemSplash? splash,
+  bool settle = true,
 }) async {
   final store = MemoryTokenStore(refreshToken: refreshToken);
   await tester.pumpWidget(
@@ -66,10 +89,11 @@ Future<MemoryTokenStore> pumpApp(
         directionsSourceProvider.overrideWithValue(directions ?? FakeDirectionsSource()),
         screenAwakeProvider.overrideWithValue(screenAwake ?? FakeScreenAwake()),
         basemapProvider.overrideWithValue(blankBasemap()),
+        systemSplashProvider.overrideWithValue(splash ?? FakeSystemSplash()),
       ],
       child: const PathwiseApp(),
     ),
   );
-  await tester.pumpAndSettle();
+  if (settle) await tester.pumpAndSettle();
   return store;
 }

@@ -171,6 +171,7 @@ Nút bấm cho mọi hành động; mỗi màn hình chỉ một nút `primary`,
 - `PasswordField`: ô mật khẩu ẩn chữ + nút con mắt cuối ô (`aria-label`, `title`, `aria-pressed`), nút đồng tâm với ô (sheet: chuột 32 bo 6 trong ô 36 bo 8; cảm ứng tròn 40 trong ô 44) — §8.16.
 - Web (W01) thêm `startIcon` (icon trong ô, ví dụ thư, ổ khoá ở màn tài khoản), `endAction` (nút trong ô, ví dụ hiện mật khẩu, có `aria-label` và `aria-pressed`) và `size="lg"` (48px, chữ 16px cho màn tài khoản). Thêm `clearable`: nút xoá nội dung ⓧ ở cuối ô khi ô có chữ (HIG Text fields: "Display a Clear button in the trailing end of a text field"); chỉ ô một dòng không có `endAction`, không dùng cho mật khẩu; ngoài thứ tự Tab (bàn phím chọn rồi xoá), bấm không lấy focus khỏi ô. Đang bật ở các ô chữ của màn tài khoản (email, tên cửa hàng, họ tên, số điện thoại, mã mời); form khác bật dần.
 - Trong app tài xế, form hiếm khi xuất hiện (chỉ lý do không giao được); khi có, dùng cỡ chữ `body-touch` qua CSS của client.
+- App tài xế (Material 3, P-77): giữ ô **viền** với nhãn phía trên ô (chủ dự án chọn ở D2, 2026-11-20). M3 cho phép nhãn ngoài (Material Web: *"a floating `label`, a `placeholder`, or an external label"*); Android mặc định ô nền (*"Default styling is filled"*) nhưng không nói khi nào chọn kiểu nào.
 
 ### SelectField, Checkbox, card (web, W03)
 
