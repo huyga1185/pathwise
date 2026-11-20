@@ -368,7 +368,7 @@ class _StopReportScreenState extends ConsumerState<StopReportScreen> with RouteP
           decoration: BoxDecoration(
             color: t.surfaceRaised,
             border: Border.all(color: t.success),
-            borderRadius: BorderRadius.circular(PwRadius.radiusMd),
+            borderRadius: BorderRadius.circular(PwShapes.cornerMedium),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -390,7 +390,7 @@ class _StopReportScreenState extends ConsumerState<StopReportScreen> with RouteP
       else
         Container(
           padding: const EdgeInsets.all(PwSpacing.space4),
-          decoration: BoxDecoration(color: t.surfaceTint, borderRadius: BorderRadius.circular(PwRadius.radiusMd)),
+          decoration: BoxDecoration(color: t.surfaceTint, borderRadius: BorderRadius.circular(PwShapes.cornerMedium)),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [

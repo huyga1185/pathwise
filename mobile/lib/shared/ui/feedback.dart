@@ -22,7 +22,7 @@ class ErrorBanner extends StatelessWidget {
         decoration: BoxDecoration(
           color: t.surfaceRaised,
           border: Border.all(color: t.danger),
-          borderRadius: BorderRadius.circular(PwRadius.radiusMd),
+          borderRadius: BorderRadius.circular(PwShapes.cornerMedium),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,

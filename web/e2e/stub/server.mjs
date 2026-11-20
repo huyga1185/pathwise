@@ -1,5 +1,6 @@
-// Stand-in for the map services during E2E (W07): the backend's Nominatim and OSRM clients point here
-// (compose.e2e.yaml), so the end-to-end run never calls a real third-party service (docs/client/README.md §2).
+// Stand-in for the map services during E2E (W07): the backend's Nominatim and OSRM clients (matrix, and directions
+// since D6) point here (compose.e2e.yaml), so the end-to-end run never calls a real third-party service
+// (docs/client/README.md §2).
 // Plain Node, no dependencies; answers are deterministic.
 import { createServer } from 'node:http';
 
@@ -49,6 +50,62 @@ function table(coordinates, params) {
   return { code: 'Ok', distances, durations };
 }
 
+/** Google's encoded polyline at 1e6 precision (OSRM geometries=polyline6), of {lat, lon} points. */
+function polyline6(points) {
+  let out = '';
+  let lastLat = 0;
+  let lastLon = 0;
+  const encode = (value) => {
+    let v = value < 0 ? ~(value << 1) : value << 1;
+    while (v >= 0x20) {
+      out += String.fromCharCode((0x20 | (v & 0x1f)) + 63);
+      v >>= 5;
+    }
+    out += String.fromCharCode(v + 63);
+  };
+  for (const { lat, lon } of points) {
+    const latE6 = Math.round(lat * 1e6);
+    const lonE6 = Math.round(lon * 1e6);
+    encode(latE6 - lastLat);
+    encode(lonE6 - lastLon);
+    lastLat = latE6;
+    lastLon = lonE6;
+  }
+  return out;
+}
+
+/**
+ * OSRM /route/v1/{profile}/{lon,lat;lon,lat}?steps=true&geometries=polyline6 (driver directions, T33): an L-shaped
+ * drive, east or west along one road then north or south along another, with depart, one turn and arrive steps.
+ */
+function route(coordinates) {
+  const [from, to] = coordinates.split(';').map((pair) => {
+    const [lon, lat] = pair.split(',').map(Number);
+    return { lat, lon };
+  });
+  const corner = { lat: from.lat, lon: to.lon };
+  const first = metres(from, corner) / ROAD_FACTOR;
+  const second = metres(corner, to) / ROAD_FACTOR;
+  const east = to.lon >= from.lon;
+  const north = to.lat >= from.lat;
+  const step = (distance, name, type, modifier, at) => ({
+    distance,
+    duration: distance / SPEED_MPS,
+    name,
+    maneuver: { type, ...(modifier ? { modifier } : {}), location: [at.lon, at.lat] },
+  });
+  const steps = [
+    step(first, 'Nguyễn Văn Linh', 'depart', undefined, from),
+    step(second, 'Lê Duẩn', 'turn', east === north ? 'left' : 'right', corner),
+    step(0, '', 'arrive', undefined, to),
+  ];
+  const distance = first + second;
+  return {
+    code: 'Ok',
+    routes: [{ distance, duration: distance / SPEED_MPS, geometry: polyline6([from, corner, to]), legs: [{ steps }] }],
+  };
+}
+
 createServer((request, response) => {
   const url = new URL(request.url ?? '/', 'http://stub');
   const send = (status, body) => {
@@ -59,5 +116,7 @@ createServer((request, response) => {
   if (url.pathname === '/search') return send(200, search(url.searchParams.get('q') ?? ''));
   const osrm = /^\/table\/v1\/[^/]+\/(.+)$/.exec(url.pathname);
   if (osrm) return send(200, table(decodeURIComponent(osrm[1]), url.searchParams));
+  const directions = /^\/route\/v1\/[^/]+\/(.+)$/.exec(url.pathname);
+  if (directions) return send(200, route(decodeURIComponent(directions[1])));
   return send(404, { code: 'NotFound' });
 }).listen(PORT, () => console.log(`map stub on ${PORT}`));

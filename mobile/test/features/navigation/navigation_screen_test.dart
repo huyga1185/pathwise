@@ -1,12 +1,16 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pathwise_driver/data/api_error.dart';
 import 'package:pathwise_driver/platform/clock.dart';
 import 'package:pathwise_driver/platform/location.dart';
+import 'package:pathwise_driver/platform/map/basemap.dart';
 import 'package:pathwise_driver/shared/geo.dart';
+import 'package:pathwise_driver/shared/ui/ui.dart';
 
 import '../../support/app.dart';
 import '../../support/fake_api.dart';
@@ -50,6 +54,7 @@ Future<Navigation> openNavigation(
   FakeLocationSource? location,
   FakeDirectionsSource? directions,
   Map<String, Object?>? route,
+  String attribution = '',
 }) async {
   final nav = (
     location: location ?? FakeLocationSource(),
@@ -71,6 +76,7 @@ Future<Navigation> openNavigation(
     location: nav.location,
     directions: nav.directions,
     screenAwake: nav.awake,
+    basemap: blankBasemap(attribution),
   );
   await goTo(tester, '/routes/64');
   unawaited(GoRouter.of(tester.element(find.byType(Scaffold).first)).push('/routes/64/navigate?stopId=116'));
@@ -249,5 +255,78 @@ void main() {
 
     expect(location.currentRequests, 2);
     expect(nav.directions.requests.single.from, start);
+  });
+
+  PwButtonVariant variantOf(WidgetTester tester, String label) =>
+      tester.widget<PwButton>(find.widgetWithText(PwButton, label)).variant;
+
+  testWidgets('mức nhấn nút: "Báo kết quả" tonal khi đang đi, filled khi đã tới; Google Maps viền (D6)', (
+    tester,
+  ) async {
+    final nav = await openNavigation(tester);
+    await emit(tester, nav.location, at(start));
+    expect(variantOf(tester, 'Báo kết quả'), PwButtonVariant.tonal);
+    expect(variantOf(tester, 'Mở Google Maps'), PwButtonVariant.outlined);
+
+    await emit(tester, nav.location, at(const GeoPoint(16.0481, 108.196)));
+    expect(variantOf(tester, 'Báo kết quả'), PwButtonVariant.filled);
+  });
+
+  testWidgets('màn báo lỗi: việc chính ("Thử lại") filled, Google Maps viền (D6)', (tester) async {
+    final directions = FakeDirectionsSource()..error = const ApiError(code: 'ROUTING_PROVIDER_ERROR', status: 502);
+    final nav = await openNavigation(tester, directions: directions);
+    await emit(tester, nav.location, at(start));
+
+    expect(variantOf(tester, 'Thử lại'), PwButtonVariant.filled);
+    expect(variantOf(tester, 'Mở Google Maps'), PwButtonVariant.outlined);
+  });
+
+  testWidgets('tên điểm dài ở thanh dưới tối đa hai dòng, không che bản đồ (D6)', (tester) async {
+    final route = sampleRoute();
+    final stops = (route['stops']! as List<Object?>).cast<Map<String, Object?>>();
+    stops.firstWhere((stop) => stop['id'] == 116)['label'] =
+        'Văn phòng Công ty TNHH Thương mại Dịch vụ và Xuất nhập khẩu Hoàng Gia Phát (tầng 7, toà nhà Vĩnh Trung Plaza)';
+    final nav = await openNavigation(tester, route: route);
+    await emit(tester, nav.location, at(start));
+
+    final name = tester.widget<Text>(
+      find.text(
+        'Văn phòng Công ty TNHH Thương mại Dịch vụ và Xuất nhập khẩu Hoàng Gia Phát (tầng 7, toà nhà Vĩnh Trung Plaza) '
+        '· Chị Lan',
+      ),
+    );
+    expect(name.maxLines, 2);
+    expect(name.overflow, TextOverflow.ellipsis);
+  });
+
+  testWidgets('ghi công bản đồ nằm trong thanh dưới, không bị thanh che (D6)', (tester) async {
+    final nav = await openNavigation(tester, attribution: '© OpenStreetMap contributors');
+    await emit(tester, nav.location, at(start));
+
+    final credit = find.text('© OpenStreetMap contributors');
+    expect(credit, findsOneWidget);
+    expect(find.ancestor(of: credit, matching: find.byType(Material)), findsWidgets);
+    expect(tester.getBottomLeft(credit).dy, greaterThan(tester.getTopLeft(find.text('Báo kết quả')).dy));
+  });
+
+  testWidgets('bản đồ sáng ở cả theme tối: biểu tượng thanh trạng thái màu tối (D6)', (tester) async {
+    tester.platformDispatcher.platformBrightnessTestValue = Brightness.dark;
+    addTearDown(tester.platformDispatcher.clearPlatformBrightnessTestValue);
+    final nav = await openNavigation(tester);
+    await emit(tester, nav.location, at(start));
+
+    final regions = tester.widgetList<AnnotatedRegion<SystemUiOverlayStyle>>(
+      find.byType(AnnotatedRegion<SystemUiOverlayStyle>),
+    );
+    expect(regions.map((region) => region.value.statusBarIconBrightness), contains(Brightness.dark));
+  });
+
+  // geolocator's foreground service takes a partial wake lock (enableWakeLock in platform/location.dart); without the
+  // permission its position stream failed at once on Android, so no position was ever shared or used to navigate (D6).
+  test('AndroidManifest khai báo WAKE_LOCK vì dịch vụ vị trí giữ wake lock', () {
+    final manifest = File('android/app/src/main/AndroidManifest.xml').readAsStringSync();
+    final location = File('lib/platform/location.dart').readAsStringSync();
+    expect(location, contains('enableWakeLock: true'));
+    expect(manifest, contains('<uses-permission android:name="android.permission.WAKE_LOCK" />'));
   });
 }

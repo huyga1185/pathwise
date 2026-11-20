@@ -138,7 +138,7 @@ class _StoreLockBanner extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: PwSpacing.space4, vertical: PwSpacing.space2 + 4),
         decoration: BoxDecoration(
           color: t.surfaceRaised,
-          borderRadius: BorderRadius.circular(PwRadius.radiusMd),
+          borderRadius: BorderRadius.circular(PwShapes.cornerMedium),
           border: Border(
             left: BorderSide(color: t.signal, width: 4),
             top: BorderSide(color: t.signal),
@@ -334,7 +334,7 @@ class _RouteCard extends StatelessWidget {
       child: Material(
         color: t.surfaceRaised,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(PwRadius.radiusMd),
+          borderRadius: BorderRadius.circular(PwShapes.cornerMedium),
           side: BorderSide(color: t.line),
         ),
         clipBehavior: Clip.antiAlias,

@@ -1,6 +1,6 @@
 # DRIVER_UI_REDESIGN — Thiết kế lại app tài xế theo Material 3 (gồm M06)
 
-> **Trạng thái (2026-11-20):** kế hoạch đã chốt (chủ dự án trả lời Q1–Q6 ở §6); **D1 đã làm** (§7, PR #139); **D2 đã làm** (§8, PR #140); **D3 đã làm** (§9, PR #141); **D4 đã làm** (§10, PR #142); **D5 đã làm** (§11, branch `feat/driver-ui-d5`); **D6 là giai đoạn tiếp theo**. Nền tảng thiết kế theo P-77.
+> **Trạng thái (2026-11-20):** kế hoạch đã chốt (chủ dự án trả lời Q1–Q6 ở §6); **D1 đã làm** (§7, PR #139); **D2 đã làm** (§8, PR #140); **D3 đã làm** (§9, PR #141); **D4 đã làm** (§10, PR #142); **D5 đã làm** (§11, PR #143); **D6 đã làm** (§12, branch `feat/driver-ui-d6`); **D7 là giai đoạn tiếp theo**. Nền tảng thiết kế theo P-77.
 > Phiên sau làm tiếp từ đây: đọc §0, §4 (giai đoạn đang mở) và §5 (cách kiểm), rồi cập nhật trạng thái ở đầu file và
 > mục kết quả của giai đoạn vừa làm.
 >
@@ -199,6 +199,8 @@ ghi vào mục "D*n* — kết quả" cuối file này.
 | Q7 (D2) | Ô nhập: ô viền nhãn trên (như hiện tại), ô nền nhãn trong ô (mặc định Android), hay ô viền nhãn trong ô? | **Giữ ô viền, nhãn trên** |
 | Q8 (D2) | Hai màn chờ lúc mở app: giữ màn chờ hệ thống bằng API của Flutter, vẽ màn chờ Flutter giống màn hệ thống, thêm thư viện `core-splashscreen`, hay giữ nguyên? | **Thêm `core-splashscreen`** (P-78) |
 | Q9 (D5) | Báo kết quả xong: giữ trang kết quả, về chi tiết tuyến kèm snackbar, hay cả hai? | **Về chi tiết tuyến + snackbar** |
+| Q10 (D6) | Stub bản đồ của stack e2e không có `/route/v1` (OSRM) nên không chụp được lúc đang dẫn đường: thêm vào stub, stub tạm, hay chỉ chụp màn lỗi? | **Thêm `/route/v1` vào stub** (commit) |
+| Q11 (D6) | Góc thẻ: M3 ghi thẻ = `corner.medium` 12 dp; app đang dùng `radius-md` 8. Đổi? | **Đổi sang 12** (app tài xế; web giữ 8) |
 | Q6 | Danh sách điểm: đọc nguồn M3 trước | Đã đọc (§2.3a): m3.material.io không đọc được; Material Web và `ListTile` của Flutter ủng hộ thẻ cho điểm tiếp theo, hàng danh sách cho các điểm khác |
 
 ## 7. D1 — kết quả (2026-11-20)
@@ -262,4 +264,18 @@ Phạm vi: Báo kết quả và lý do không giao được.
 - **Số thứ tự** ở đầu màn to theo cỡ chữ (như thẻ ở D4).
 - **Kiểm:** `flutter analyze` sạch; `flutter test` 147/147 (thêm 2: thanh trên + nút tonal; sheet có chip dưới ô và hàng nút trên bàn phím 300 dp ở màn điện thoại; sửa 5 test theo luồng mới: snackbar và về tuyến). Máy ảo: báo kết quả sáng; sheet sáng, bàn phím mở; chọn "Vắng nhà" → gửi → chi tiết tuyến 3/6 với snackbar "Đã báo không giao được điểm 3."; báo kết quả tối + chữ 200% (tên/địa chỉ dài xuống dòng, "Gọi khách"/"Chỉ đường" xếp dọc); sheet tối + chữ 200% (cuộn tới gợi ý, nút vẫn hiện).
 - `UI_GUIDELINES.md` §1b: chữ dài ✅ (tên/địa chỉ dài xuống dòng, tiêu đề sheet dài cuộn được); phân trang — ; bảng — ; trống/tải/lỗi ✅ (giữ như cũ: mất mạng, `PLAN_NOT_ACTIVE`, điểm đã có kết quả — có test); chuyển động ✅ (sheet và snackbar dùng chuyển động mặc định của Material); accessibility ✅ (nút xếp dọc ở chữ lớn, tiêu đề sheet là header, snackbar được đọc tự động).
+
+## 12. D6 — kết quả (2026-11-20)
+
+Phạm vi: Dẫn đường (đo lại trên máy ảo có vị trí giả) và góc thẻ (Q11).
+
+- **Dữ liệu máy ảo (Q10):** `web/e2e/stub/server.mjs` trả thêm OSRM `/route/v1/{profile}/{lon,lat;lon,lat}`: đường gấp khúc (đi theo vĩ độ tới kinh độ đích rồi rẽ trái/phải), ba bước depart / turn / arrive, `geometries=polyline6`. Backend dùng chung server OSRM của matrix cho dẫn đường nên không cần đổi `compose.e2e.yaml`; E2E web không gọi `/route`. Vị trí giả: phát `adb emu geo fix` mỗi giây; lần đầu phải bấm "Turn on" ở hộp "Location Accuracy" của Google (H11, thuộc hệ thống).
+- **Lỗi lớn tìm thấy (F-81, đã sửa):** trên Android luồng vị trí của geolocator hỏng ngay khi mở: `SecurityException: Neither user … nor current process has android.permission.WAKE_LOCK` (logcat). `platform/location.dart` bật `enableWakeLock` cho dịch vụ nền nhưng `AndroidManifest.xml` thiếu quyền → **không có vị trí nào được gửi khi chia sẻ** (Redis không có `driver:location:*` dù trạng thái `SHARING`) và **dẫn đường luôn báo "Chưa lấy được vị trí của bạn."**. Thêm `WAKE_LOCK` → vị trí lên server ngay (`driver:location:62:70`), dẫn đường chạy.
+- **Thanh dưới:** tên điểm tối đa hai dòng (tên dài chiếm bốn dòng, che bản đồ); "Mở Google Maps" (outlined, lối thoát) và "Báo kết quả" (filled tonal khi đang đi, filled khi đã tới) dùng `PwButtonPair` (trước: "Mở Google Maps" hai dòng cạnh "Báo kết quả" một dòng).
+- **Ghi công bản đồ (F-82, đã sửa):** "© OpenStreetMap contributors" ở góc dưới bản đồ bị thanh dưới che (chỉ còn "rs"); chuyển vào cuối thanh dưới.
+- **Thanh trạng thái:** bản đồ luôn sáng; ở theme tối giờ, pin trắng nằm trên bản đồ sáng → biểu tượng thanh trạng thái tối khi đang dẫn đường (`statusBarFor(Brightness.dark)`, như D2 làm cho đầu màn đăng nhập).
+- **Nút khác:** "Về vị trí của tôi" filled tonal (trước: viền mảnh trên bản đồ); màn báo lỗi/xin quyền: việc chính ("Thử lại", "Bật định vị", "Mở cài đặt", "Cho phép vị trí", "Về danh sách tuyến") filled, Google Maps outlined. Biểu tượng thao tác rẽ to theo cỡ chữ.
+- **Góc thẻ (Q11):** `PwShapes.cornerMedium` = 12 (M3 `md.sys.shape.corner.medium`; nguồn: token M3 trong SDK Flutter 3.47.9 `dev/tools/gen_defaults/data/card_{elevated,filled,outlined}.json` bản 6_1_0 ghi `container.shape: md.sys.shape.corner.medium`, `shape.json` ghi medium = 12; `Card` M3 của Flutter mặc định bo 12 — [Verified-code]) cho thẻ tuyến, thẻ điểm tiếp theo, nhóm hàng điểm, ô chia sẻ vị trí, ô lỗi, khối "đã xong tuyến". Web giữ `radius-md` 8.
+- **Kiểm:** `flutter analyze` sạch; `flutter test` 153/153 (thêm 6: mức nhấn nút khi đang đi/đã tới, màn lỗi, tên dài hai dòng, ghi công trong thanh dưới, biểu tượng thanh trạng thái tối, manifest có `WAKE_LOCK`). Máy ảo: đang dẫn đường sáng, kéo bản đồ → "Về vị trí của tôi", tối, tối + chữ 200%; danh sách tuyến và chi tiết tuyến bo 12; màn "Chưa lấy được vị trí" (trước khi sửa F-81).
+- `UI_GUIDELINES.md` §1b: chữ dài ✅ (tên điểm hai dòng, câu chỉ dẫn xuống dòng ở chữ 200%); phân trang — ; bảng — ; trống/tải/lỗi ✅ (màn lỗi, có test); chuyển động — (không đổi); accessibility ✅ (nút xếp dọc khi chữ lớn, biểu tượng thao tác to theo chữ, tương phản thanh trạng thái).
 

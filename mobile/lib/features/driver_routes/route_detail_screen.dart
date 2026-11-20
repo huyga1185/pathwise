@@ -192,7 +192,7 @@ class _RouteDetailScreenState extends ConsumerState<RouteDetailScreen> with Rout
             decoration: BoxDecoration(
               color: t.surfaceRaised,
               border: Border.all(color: t.success),
-              borderRadius: BorderRadius.circular(PwRadius.radiusMd),
+              borderRadius: BorderRadius.circular(PwShapes.cornerMedium),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
