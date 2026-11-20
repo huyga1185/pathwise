@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../features/account/account.dart';
 import '../features/auth/auth.dart';
 import '../features/driver_routes/driver_routes.dart';
 import '../features/navigation/navigation.dart';
@@ -10,11 +11,14 @@ import '../shared/i18n/vi.dart';
 /// Routes of the driver app (SCREENS §2), redirected by the session (ARCHITECTURE §9): loading → splash,
 /// anonymous → login, not a driver → no access, signed in → today's routes. `/routes/{routeId}` opens a route straight
 /// away (later the `pathwise://routes/{routeId}` deep link of notifications); `/routes/{routeId}/stops/{stopId}` reports
-/// a stop's result (M02); `/routes/{routeId}/navigate?stopId=` gives turn-by-turn directions (M05).
+/// a stop's result (M02); `/routes/{routeId}/navigate?stopId=` gives turn-by-turn directions (M05); `/profile` is
+/// "Thông tin của tôi" (M06).
 final routerProvider = Provider<GoRouter>((ref) {
-  final refresh = ValueNotifier<Session>(ref.read(sessionProvider));
+  // Redirects run again only when where the session leads changes: a renamed driver (M06) is still signed in, and a
+  // refresh then raced the pop of "Thông tin của tôi" and kept it open.
+  final refresh = ValueNotifier<_Access>(_accessOf(ref.read(sessionProvider)));
   ref
-    ..listen<Session>(sessionProvider, (_, next) => refresh.value = next)
+    ..listen<_Access>(sessionProvider.select(_accessOf), (_, next) => refresh.value = next)
     ..onDispose(refresh.dispose);
   return GoRouter(
     initialLocation: '/routes',
@@ -33,6 +37,8 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/splash', builder: (context, state) => const _Splash()),
       GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
       GoRoute(path: '/no-access', builder: (context, state) => const NoAccessScreen()),
+      // "Thông tin của tôi" (M06), pushed over the routes from the account sheet.
+      GoRoute(path: '/profile', builder: (context, state) => const ProfileScreen()),
       GoRoute(
         path: '/routes',
         builder: (context, state) => const RouteListScreen(),
@@ -66,6 +72,15 @@ final routerProvider = Provider<GoRouter>((ref) {
     ],
   );
 });
+
+enum _Access { loading, anonymous, noAccess, driver }
+
+_Access _accessOf(Session session) => switch (session) {
+  SessionLoading() => _Access.loading,
+  SessionAnonymous() => _Access.anonymous,
+  SessionSignedIn(:final user) when !user.drives => _Access.noAccess,
+  SessionSignedIn() => _Access.driver,
+};
 
 class _Splash extends StatelessWidget {
   const _Splash();

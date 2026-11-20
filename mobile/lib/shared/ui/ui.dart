@@ -1,4 +1,5 @@
 export 'feedback.dart';
+export 'icon_size.dart';
 export 'progress_bar.dart';
 export 'pw_button.dart';
 export 'pw_dialog.dart';

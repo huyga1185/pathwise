@@ -65,12 +65,14 @@ class _RouteListScreenState extends ConsumerState<RouteListScreen> {
     // Without a day asked for, the server's today is the plan date of what it returned.
     final shown = _day ?? (loaded != null && loaded.isNotEmpty ? loaded.first.planDate : today);
 
+    // Material 3 small top app bar, pinned (DRIVER_UI_REDESIGN §3 "Thanh trên"): the title, and the driver's initials
+    // at the end, which open the account sheet.
     return Scaffold(
-      backgroundColor: t.surface,
+      appBar: AppBar(title: const Text(Vi.myRoutes), actions: const [_AccountButton()]),
       body: SafeArea(
+        top: false,
         child: Column(
           children: [
-            const _Header(),
             if (lockReason != null) _StoreLockBanner(reason: lockReason),
             _DaySwitcher(
               day: shown,
@@ -162,9 +164,10 @@ class _StoreLockBanner extends StatelessWidget {
   }
 }
 
-/// "Tuyến của tôi" and the driver's initials, which open the account sheet: appearance and sign-out (M03).
-class _Header extends ConsumerWidget {
-  const _Header();
+/// The driver's initials in the top app bar; they open the account sheet: name, "Thông tin của tôi", location sharing,
+/// sign out (M03, M06).
+class _AccountButton extends ConsumerWidget {
+  const _AccountButton();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -172,57 +175,45 @@ class _Header extends ConsumerWidget {
     final session = ref.watch(sessionProvider);
     final user = session is SessionSignedIn ? session.user : null;
     final name = user == null ? '' : (user.fullName ?? user.email);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: PwSpacing.space4, vertical: PwSpacing.space2),
-      decoration: BoxDecoration(
-        color: t.surfaceRaised,
-        border: Border(bottom: BorderSide(color: t.line)),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Semantics(
-              header: true,
-              child: Text(Vi.myRoutes, style: PwTypeStyles.title.copyWith(color: t.ink)),
+    return Padding(
+      padding: const EdgeInsets.only(right: PwSpacing.space1),
+      child: Semantics(
+        button: true,
+        label: Vi.accountMenu(name),
+        excludeSemantics: true,
+        onTap: () => unawaited(_openAccount(context, ref, name, user?.email ?? '')),
+        child: IconButton(
+          onPressed: () => unawaited(_openAccount(context, ref, name, user?.email ?? '')),
+          constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+          icon: CircleAvatar(
+            radius: 20,
+            backgroundColor: t.surfaceTint,
+            child: Text(
+              initials(name),
+              style: PwTypeStyles.body.copyWith(color: t.ink, fontWeight: FontWeight.w700),
             ),
           ),
-          Semantics(
-            button: true,
-            label: Vi.accountMenu(name),
-            excludeSemantics: true,
-            child: InkResponse(
-              radius: 28,
-              onTap: () => unawaited(_openAccount(context, ref, name, user?.email ?? '')),
-              child: SizedBox(
-                width: 48,
-                height: 48,
-                child: Center(
-                  child: CircleAvatar(
-                    radius: 20,
-                    backgroundColor: t.surfaceTint,
-                    child: Text(
-                      initials(name),
-                      style: PwTypeStyles.body.copyWith(color: t.ink, fontWeight: FontWeight.w700),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
 
   Future<void> _openAccount(BuildContext context, WidgetRef ref, String name, String email) async {
     // No backgroundColor here: the theme gives it (theme.dart), so an open sheet follows the system turning light or dark.
-    final logOut = await showModalBottomSheet<bool>(
+    final action = await showModalBottomSheet<_AccountAction>(
       context: context,
       showDragHandle: true,
       isScrollControlled: true,
       builder: (sheet) => _AccountSheet(name: name, email: email),
     );
-    if ((logOut ?? false) && context.mounted) await _confirmLogOut(context, ref);
+    if (!context.mounted) return;
+    switch (action) {
+      case _AccountAction.profile:
+        await context.push<void>('/profile');
+      case _AccountAction.logOut:
+        await _confirmLogOut(context, ref);
+      case null:
+    }
   }
 
   Future<void> _confirmLogOut(BuildContext context, WidgetRef ref) async {
@@ -291,7 +282,7 @@ class _DayButton extends StatelessWidget {
   Widget build(BuildContext context) => IconButton(
     onPressed: onPressed,
     tooltip: label,
-    icon: Icon(icon, color: context.pw.ink),
+    icon: Icon(icon, color: context.pw.ink, size: scaledIconSize(context)),
     constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
   );
 }
@@ -330,7 +321,7 @@ class _RouteCard extends StatelessWidget {
     final label = [
       route.planName,
       statusInfo(StatusKind.route, status)?.label,
-      '${route.completedCount}/${route.stopCount} ${Vi.stopsDone.toLowerCase()}',
+      Vi.progressOf(route.completedCount, route.stopCount, Vi.stopsDone),
       ?start,
       cta,
     ].whereType<String>().join(', ');
@@ -442,7 +433,10 @@ class _EmptyPainter extends CustomPainter {
   bool shouldRepaint(_EmptyPainter oldDelegate) => oldDelegate.t != t;
 }
 
-/// The account sheet: who is signed in, location sharing (ask, always, never; T32) remembered on the phone, sign out.
+/// What the account sheet closed with.
+enum _AccountAction { profile, logOut }
+
+/// The account sheet: who is signed in, "Thông tin của tôi" (M06, a screen of its own), location sharing (ask, always, never; T32) remembered on the phone, sign out.
 /// No theme choice: the app follows the system's appearance (P-73).
 class _AccountSheet extends ConsumerWidget {
   const _AccountSheet({required this.name, required this.email});
@@ -464,7 +458,17 @@ class _AccountSheet extends ConsumerWidget {
             Text(name, style: PwTypeStyles.title.copyWith(color: t.ink)),
             if (email.isNotEmpty && email != name)
               Text(email, style: PwTypeStyles.bodyTouch.copyWith(color: t.inkMuted)),
-            const SizedBox(height: PwSpacing.space4),
+            const SizedBox(height: PwSpacing.space2),
+            // A list row that opens a screen: leading icon, chevron at the end (Flutter ListTile, DRIVER_UI_REDESIGN §2.3a).
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              minTileHeight: 56,
+              leading: Icon(Icons.person_outline, color: t.inkMuted, size: scaledIconSize(context)),
+              title: Text(Vi.myProfile, style: PwTypeStyles.bodyTouch.copyWith(color: t.ink)),
+              trailing: Icon(Icons.chevron_right, color: t.inkMuted, size: scaledIconSize(context)),
+              onTap: () => Navigator.of(context).pop(_AccountAction.profile),
+            ),
+            Divider(height: PwSpacing.space4, color: t.line),
             Semantics(
               header: true,
               child: Text(Vi.sharingSetting.toUpperCase(), style: PwTypeStyles.label.copyWith(color: t.inkMuted)),
@@ -482,7 +486,13 @@ class _AccountSheet extends ConsumerWidget {
                 onTap: () => unawaited(ref.read(sharingChoiceProvider.notifier).choose(option)),
               ),
             const SizedBox(height: PwSpacing.space4),
-            PwButton(label: Vi.logout, block: true, onPressed: () => Navigator.of(context).pop(true)),
+            // Outlined: important, but not what the sheet is mostly for (DRIVER_UI_REDESIGN §3 "Menu tài khoản").
+            PwButton(
+              label: Vi.logout,
+              variant: PwButtonVariant.outlined,
+              block: true,
+              onPressed: () => Navigator.of(context).pop(_AccountAction.logOut),
+            ),
           ],
         ),
       ),
@@ -519,6 +529,7 @@ class _ChoiceOption extends StatelessWidget {
               Icon(
                 selected ? Icons.radio_button_checked : Icons.radio_button_unchecked,
                 color: selected ? t.route : t.inkMuted,
+                size: scaledIconSize(context),
               ),
               const SizedBox(width: PwSpacing.space2),
               Expanded(

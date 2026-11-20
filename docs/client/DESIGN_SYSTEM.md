@@ -107,6 +107,7 @@ Bộ component React (`window.PathWise`) là bản tham chiếu cho web dashboar
 - Bo góc: ô nhập, nút, khung bảng, khung bản đồ `radius-sm`; thẻ, panel, hộp thoại `radius-md`; thẻ nổi đứng riêng (thẻ đăng nhập) `radius-lg`; pill và marker `radius-full`. App tài xế: nút, hộp thoại, bottom sheet theo hình mặc định của Material 3 (P-77; nút viên thuốc, hộp thoại bo 28, sheet bo 28 cạnh trên).
   - **Khu chủ cửa hàng đã redesign (G2–G4, `OWNER_UI_REDESIGN.md`) thay quy tắc thẻ/panel trên:** nhóm nội dung là ô nền `surface-raised`, **bo 16, không viền** (`pw-list-group`, `pw-store-group`, `pw-form-group`); bảng trong nhóm không có khung riêng. Trang chưa redesign còn thẻ `radius-md` có viền: **chi tiết kế hoạch** (để G5, chủ dự án chọn 2026-11-18), Báo cáo (G6), khu quản trị. Đo 2026-11-18: chi tiết kế hoạch bo 8 / bảng bo 4, có viền; các trang đã redesign bo 16 không viền.
 - Web dashboard: màn hình soạn plan chia đôi, bảng stop bên trái, bản đồ bên phải; dưới 1024px bản đồ xuống dưới bảng.
+- App tài xế (D3): màn có top app bar small của Material 3 (`AppBar`, ghim); icon cạnh chữ (mũi tên đổi ngày, icon hàng danh sách, nút radio) to theo cỡ chữ hệ thống (`scaledIconSize`).
 - App tài xế: vùng chạm tối thiểu 48px; ba nút kết quả của stop (Đã giao, Không giao được, Bỏ qua) xếp dọc, cao 56px, ở nửa dưới màn hình để bấm bằng ngón cái.
 
 ## Trạng thái và tương tác
@@ -218,6 +219,7 @@ Thanh tiến độ mảnh màu `info` cho việc chạy nền của plan (geocod
 - Biết số lượng (đã geocode 7/12 stop) thì truyền `value`/`max`; không biết (tối ưu) thì bỏ trống để chạy vô định.
 - Tôn trọng `prefers-reduced-motion`: thanh vô định đứng yên.
 - Không dùng spinner che cả trang.
+- Trình đọc màn hình đọc một câu "{value} trên {max} {nhãn}" ("2 trên 6 điểm đã xong"), không đọc "2/6" hay phần trăm (app tài xế D3, H5).
 
 ### DataTable
 

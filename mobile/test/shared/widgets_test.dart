@@ -133,4 +133,10 @@ void main() {
     await tester.pumpWidget(frame(const StopCard(title: 'ĐH-1015', address: '893 Lê Duẩn', phone: '+84905123014')));
     expect(find.textContaining('Gọi'), findsNothing);
   });
+
+  testWidgets('thanh tiến độ đọc thành một câu "2 trên 6 điểm đã xong", không đọc phần trăm (H5)', (tester) async {
+    await tester.pumpWidget(frame(const PwProgressBar(label: 'Điểm đã xong', value: 2, max: 6)));
+    expect(find.bySemanticsLabel('2 trên 6 điểm đã xong'), findsOneWidget);
+    expect(find.bySemanticsLabel(RegExp('33')), findsNothing);
+  });
 }

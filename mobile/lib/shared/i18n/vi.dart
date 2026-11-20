@@ -24,7 +24,21 @@ abstract final class Vi {
   static const retry = 'Thử lại';
   static const logoutTitle = 'Đăng xuất khỏi app?';
   static const logoutBody = 'Bạn cần đăng nhập lại để xem tuyến của mình.';
-  static String accountMenu(String name) => '$name — tài khoản và giao diện';
+  // The sheet has no appearance choice since P-73.
+  static String accountMenu(String name) => '$name — tài khoản';
+  // Thông tin của tôi (M06, D3; same words as the web's profile page).
+  static const myProfile = 'Thông tin của tôi';
+  static const fullName = 'Họ tên';
+  static const phone = 'Số điện thoại';
+  static const phoneHint = 'Tuỳ chọn. Chỉ nhận số Việt Nam.';
+  static const save = 'Lưu';
+  static const profileSaved = 'Đã lưu thông tin.';
+  static const profileLoadFailed = 'Không tải được thông tin của bạn';
+  static const discardTitle = 'Bỏ thay đổi chưa lưu?';
+  static const discardBody = 'Họ tên và số điện thoại sẽ giữ như trước.';
+  static const discard = 'Bỏ thay đổi';
+  static const keepEditing = 'Ở lại';
+  static String progressOf(int done, int total, String what) => '$done trên $total ${what.toLowerCase()}';
   // Location sharing (T32, P-54; prototype "Tài xế — chia sẻ vị trí").
   static const shareAskTitle = 'Chia sẻ vị trí cho tuyến này?';
   static String shareAskBody(String plan) =>
