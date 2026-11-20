@@ -1,6 +1,6 @@
 # DRIVER_UI_REDESIGN — Thiết kế lại app tài xế theo Material 3 (gồm M06)
 
-> **Trạng thái (2026-11-20):** kế hoạch, **chờ chủ dự án trả lời §6** rồi mới làm D1. Nền tảng thiết kế theo P-77.
+> **Trạng thái (2026-11-20):** kế hoạch đã chốt (chủ dự án trả lời Q1–Q6 ở §6); **D1 là giai đoạn tiếp theo**. Nền tảng thiết kế theo P-77.
 > Phiên sau làm tiếp từ đây: đọc §0, §4 (giai đoạn đang mở) và §5 (cách kiểm), rồi cập nhật trạng thái ở đầu file và
 > mục kết quả của giai đoạn vừa làm.
 >
@@ -78,6 +78,16 @@ links"*.
 [M3] https://developer.android.com/develop/ui/compose/components/card — *"Cards typically present a single coherent
 piece of content."*
 
+### 2.3a Danh sách
+m3.material.io không đọc được (trang dựng bằng JavaScript, chỉ trả về tiêu đề). Nguồn đọc được:
+[M3] https://material-web.dev/components/list/ (Material Web của Google) — *"Lists are continuous, vertical indexes of
+text and images"*. [Flutter] https://api.flutter.dev/flutter/material/ListTile-class.html — *"A single fixed-height
+row that typically contains some text as well as a leading or trailing icon."*; *"A list tile contains one to three
+lines of text optionally flanked by icons or other widgets"*; *"To be accessible, tappable leading and trailing widgets
+have to be at least 48x48 in size."*; *"List tiles are typically used in ListViews, or arranged in Columns in Drawers
+and Cards."*; *"Card, which can be used with Column to show a few ListTiles."* Chưa có câu chính thức về khi nào dùng
+thẻ, khi nào dùng danh sách ngoài §2.3.
+
 ### 2.4 Hộp thoại
 [M3] https://developer.android.com/develop/ui/compose/components/dialog — dùng cho *"Confirming user action"*,
 *"Requesting user input"*; *"If you only need to display a two-button dialog … you should use `AlertDialog`"*; *"if
@@ -86,7 +96,7 @@ content"*; *"Material dialogs align their actions to the end, 8.dp apart."*
 
 ### 2.5 Bottom sheet
 [M3] https://developer.android.com/develop/ui/compose/components/bottom-sheets — modal bottom sheet (`ModalBottomSheet`).
-Chưa có câu chính thức về chọn sheet hay hộp thoại (§6 Q3).
+Chưa có câu chính thức về chọn sheet hay hộp thoại; chủ dự án chọn bottom sheet cho lý do không giao được (§6 Q3).
 
 ### 2.6 Chip
 [M3] https://developer.android.com/develop/ui/compose/components/chip — Suggestion: *"Typically appear beneath an
@@ -131,13 +141,13 @@ implement predictive back navigation as soon as possible."*
 
 | Thành phần | Hiện tại | Đề xuất | Nguồn |
 |---|---|---|---|
-| Theme | `ColorScheme` dựng tay từ token, font Be Vietnam Pro | Giữ token và font thương hiệu; điền đủ vai trò màu M3 (primary/onPrimary/primaryContainer/secondaryContainer/surfaceContainer…) từ token để widget Material mặc định đúng màu ở cả hai theme; không dùng màu động theo hình nền (§6 Q2) | [M3] 2.11; [Dự án] token |
-| Nút | `PwButton` 6 biến thể, bo `radius-sm` | Một nút **Filled** mỗi màn cho việc chính ("Đăng nhập", "Tiếp tục giao", "Báo kết quả", "Lưu"); **Filled tonal** cho việc quan trọng thứ hai ("Chỉ đường", "Gọi khách"); **Outlined** chỉ khi cần mức trung bình trên nền trơn; **Text** cho link/việc nhẹ ("Quên mật khẩu?", "Thu gọn", "Quay lại" trong hộp thoại); hình theo mặc định M3. Ba nút kết quả giữ màu và 56 dp (§6 Q1) | [M3] 2.2; [Dự án] DESIGN_SYSTEM |
+| Theme | `ColorScheme` dựng tay từ token, font Be Vietnam Pro | Giữ token và font **Be Vietnam Pro** (Q5); điền đủ vai trò màu M3 (primary/onPrimary/primaryContainer/secondaryContainer/surfaceContainer…) từ token để widget Material mặc định đúng màu ở cả hai theme; **không dùng màu động** theo hình nền (Q2) | [M3] 2.11; [Dự án] token; [Chủ dự án] Q2, Q5 |
+| Nút | `PwButton` 6 biến thể, bo `radius-sm` | Một nút **Filled** mỗi màn cho việc chính ("Đăng nhập", "Tiếp tục giao", "Báo kết quả", "Lưu"); **Filled tonal** cho việc quan trọng thứ hai ("Chỉ đường", "Gọi khách"); **Outlined** chỉ khi cần mức trung bình trên nền trơn; **Text** cho link/việc nhẹ ("Quên mật khẩu?", "Thu gọn", "Quay lại" trong hộp thoại); hình theo mặc định M3. Ba nút kết quả **giữ** màu (xanh/đỏ/cam) và 56 dp, xếp dọc ở đáy — lệch có chủ đích so với "one filled per page" (Q1) | [M3] 2.2; [Dự án] DESIGN_SYSTEM; [Chủ dự án] Q1 |
 | Thanh trên | Thanh trắng có đường kẻ, tiêu đề + phụ đề; pill sát mép | Top app bar **small** ghim (pinned), nền theo `surface`, nút back chuẩn; nhãn trạng thái đưa xuống thân trang (cạnh tiến độ) để thanh không chật (sửa H2) | [M3] 2.1 |
-| Danh sách điểm | Mỗi điểm một thẻ viền | Điểm tiếp theo: **một thẻ** (một nội dung trọn vẹn: khách, địa chỉ, giờ, ghi chú, nút); các điểm còn lại và đã xong: hàng danh sách trong nhóm (chờ nguồn Lists, §6 Q6) | [M3] 2.3 |
+| Danh sách điểm | Mỗi điểm một thẻ viền | Điểm tiếp theo: **một thẻ** (một nội dung trọn vẹn: khách, địa chỉ, giờ, ghi chú, nút); các điểm còn lại và đã xong: **hàng `ListTile`** (số thứ tự ở đầu, tên + địa chỉ + giờ, tối đa ba dòng) xếp trong một nhóm (Q6) | [M3] 2.3, 2.3a |
 | Hộp thoại | `AlertDialog` bo `radius-lg`, nút xếp lệch | `AlertDialog` M3: nút canh cuối, cách 8; nhãn không vừa một hàng thì xếp dọc canh cuối (sửa H1); câu chữ bỏ "Google Maps" | [M3] 2.4 |
-| Lý do không giao được | Hộp thoại, gợi ý ở trên ô | Gợi ý là **suggestion chip** đặt **dưới** ô lý do; khung chứa (hộp thoại / bottom sheet / màn toàn trang) theo §6 Q3 | [M3] 2.6, 2.4 |
-| Menu tài khoản | Bottom sheet | Giữ modal bottom sheet; thêm hàng "Thông tin của tôi" (M06) mở màn sửa; "Đăng xuất" dạng nút Text/Outlined theo §6 Q4 | [M3] 2.5 |
+| Lý do không giao được | Hộp thoại, gợi ý ở trên ô | **Modal bottom sheet** (Q3) có tay nắm, tiêu đề, ô lý do, **suggestion chip** đặt **dưới** ô, nút "Gửi kết quả"; sheet nổi lên trên bàn phím | [M3] 2.5, 2.6; [Chủ dự án] Q3 |
+| Menu tài khoản | Bottom sheet | Giữ modal bottom sheet; thêm hàng "Thông tin của tôi" (M06) mở **màn riêng** (Q4); "Đăng xuất" là nút Outlined (việc quan trọng nhưng không phải việc chính của sheet) | [M3] 2.2, 2.5; [Chủ dự án] Q4 |
 | M06: Thông tin của tôi | Chưa có | Màn riêng (top app bar + form): Họ tên, Số điện thoại (`PATCH /users/me` merge patch, `null` xoá số), lỗi dưới ô theo `UX_BRIEF.md` §6; lưu xong snackbar "Đã lưu thông tin." và quay lại | [Dự án] PLAN M06; [M3] 2.8 |
 | Kết quả việc | Chưa thống nhất | Snackbar ở đáy cho kết quả ngắn ("Đã giao điểm 3.") | [M3] 2.8 |
 | Thanh tiến độ | `ProgressBar` riêng, đọc "33" | `LinearProgressIndicator` xác định, nhãn đọc "2 trên 6 điểm đã xong" (sửa H5) | [M3] 2.7; [WCAG] 1.1.1 |
@@ -153,11 +163,11 @@ ghi vào mục "D*n* — kết quả" cuối file này.
 
 | GĐ | Nội dung | Phụ thuộc |
 |---|---|---|
-| D1 | **Nền:** theme M3 đủ vai trò màu từ token (sáng/tối), shape mặc định M3; `PwButton` ánh xạ sang Filled / Filled tonal / Outlined / Text (+ ba nút kết quả); `AlertDialog`, bottom sheet, snackbar dùng chung; predictive back; script dựng dữ liệu cho máy ảo đưa vào repo (`scripts/`) | §6 Q1, Q2 |
+| D1 | **Nền:** theme M3 đủ vai trò màu từ token (sáng/tối), shape mặc định M3; `PwButton` ánh xạ sang Filled / Filled tonal / Outlined / Text (+ ba nút kết quả); `AlertDialog`, bottom sheet, snackbar dùng chung; predictive back; script dựng dữ liệu cho máy ảo đưa vào repo (`scripts/`) | — |
 | D2 | **Đăng nhập, Chưa có quyền, màn chờ** | D1 |
-| D3 | **Tuyến của tôi** (đổi ngày, thẻ tuyến, trống/lỗi/khoá) + **menu tài khoản** + **M06 Thông tin của tôi** | D1, §6 Q4 |
-| D4 | **Chi tiết tuyến** + **chia sẻ vị trí** (hộp hỏi, băng trạng thái, câu chữ bỏ Google Maps) | D1, §6 Q6 |
-| D5 | **Báo kết quả** + **lý do không giao được** | D1, §6 Q3 |
+| D3 | **Tuyến của tôi** (đổi ngày, thẻ tuyến, trống/lỗi/khoá) + **menu tài khoản** + **M06 Thông tin của tôi** | D1 |
+| D4 | **Chi tiết tuyến** + **chia sẻ vị trí** (hộp hỏi, băng trạng thái, câu chữ bỏ Google Maps) | D1 |
+| D5 | **Báo kết quả** + **lý do không giao được** | D1 |
 | D6 | **Dẫn đường** (đo lại trên máy ảo có vị trí giả) | D1 |
 | D7 | **M06 phía web:** bỏ ô số điện thoại khỏi Nhận lời mời (`AcceptInvitePage`), sửa `SCREENS.md` và test; đóng M06 trong `PLAN.md` | D3 |
 
@@ -177,20 +187,13 @@ ghi vào mục "D*n* — kết quả" cuối file này.
 - **Test:** `flutter analyze`, `flutter test` xanh; test widget cho hành vi mới (`testWidgets('<hành vi> khi <điều kiện>')`).
 - **Báo cáo cuối giai đoạn:** liệt kê từng mục ở §3 đã đụng và `UI_GUIDELINES.md` §1b: ✅ / ❌ (lý do) / —.
 
-## 6. Câu hỏi cho chủ dự án
+## 6. Câu hỏi cho chủ dự án và trả lời (2026-11-20)
 
-- **Q1 — Ba nút kết quả** (Đã giao xanh / Không giao được đỏ / Bỏ qua cam, 56 dp, xếp dọc ở đáy): M3 khuyên chỉ một
-  nút Filled mỗi màn (§2.2). Đề xuất **giữ** như [Dự án] DESIGN_SYSTEM (đây là việc chính của màn, cần bấm bằng ngón
-  cái, màu giúp phân biệt nhanh ngoài nắng), ghi là lệch có chủ đích; hay đổi theo M3 (một Filled "Đã giao", hai nút
-  còn lại tonal/outlined)?
-- **Q2 — Màu động** (Material You lấy màu theo hình nền điện thoại): đề xuất **không dùng**, giữ màu thương hiệu
-  PathWise để màu trạng thái và màu tuyến luôn đúng nghĩa.
-- **Q3 — Lý do không giao được:** hiện là hộp thoại có form. M3 cho phép `Dialog` tuỳ biến có form (§2.4); khi bàn
-  phím mở, hộp thoại bị đẩy lên và chật. Chọn: (a) giữ hộp thoại, (b) modal bottom sheet, (c) màn toàn trang có thanh
-  trên "Huỷ / Gửi". Đề xuất (b).
-- **Q4 — M06:** "Thông tin của tôi" là **màn riêng** mở từ menu tài khoản (đề xuất), hay sửa ngay trong bottom sheet?
-- **Q5 — Font:** giữ **Be Vietnam Pro** (thương hiệu, hỗ trợ dấu tiếng Việt tốt; M3 cho đổi type scale) — đề xuất giữ;
-  hay dùng Roboto mặc định của Android?
-- **Q6 — Danh sách điểm:** trang Lists của developer.android.com trả 404 nên chưa có nguồn nguyên văn cho hàng danh
-  sách M3. Đề xuất điểm tiếp theo là thẻ, các điểm khác là hàng danh sách (`ListTile`) trong nhóm; đồng ý theo hướng
-  này, hay cho phép tôi đọc m3.material.io / api.flutter.dev (đang bị chặn fetch) để có nguồn trước?
+| # | Câu hỏi | Trả lời |
+|---|---|---|
+| Q1 | Ba nút kết quả màu, 56 dp, xếp dọc ở đáy: giữ hay theo M3 (một nút Filled)? | **Giữ nguyên** (lệch có chủ đích, ghi ở §3) |
+| Q2 | Màu động theo hình nền (Material You)? | **Không dùng** |
+| Q3 | Lý do không giao được: hộp thoại, bottom sheet hay màn toàn trang? | **Bottom sheet** |
+| Q4 | M06 "Thông tin của tôi": màn riêng hay sửa trong menu? | **Màn riêng** |
+| Q5 | Font: Be Vietnam Pro hay Roboto? | **Giữ Be Vietnam Pro** |
+| Q6 | Danh sách điểm: đọc nguồn M3 trước | Đã đọc (§2.3a): m3.material.io không đọc được; Material Web và `ListTile` của Flutter ủng hộ thẻ cho điểm tiếp theo, hàng danh sách cho các điểm khác |
