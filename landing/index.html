@@ -9,25 +9,28 @@
 <link rel="icon" sizes="32x32" href="/app/favicon.ico">
 <link rel="apple-touch-icon" href="/app/apple-touch-icon.png">
 <meta name="description" content="Phần mềm giao hàng cho cửa hàng ở Đà Nẵng và Hội An: chia đơn cho từng xe, tối ưu tuyến đường theo khung giờ và tải trọng, tài xế nhận tuyến trên app Android.">
-<link rel="canonical" href="https://huy-vu.uk/">
+<link rel="canonical" href="https://pathwise.huy-vu.uk/">
 <meta property="og:type" content="website">
 <meta property="og:locale" content="vi_VN">
 <meta property="og:site_name" content="PathWise">
 <meta property="og:title" content="Phần mềm quản lý giao hàng cho đội xe tại Đà Nẵng | PathWise">
 <meta property="og:description" content="Phần mềm giao hàng cho cửa hàng ở Đà Nẵng và Hội An: chia đơn cho từng xe, tối ưu tuyến đường theo khung giờ và tải trọng, tài xế nhận tuyến trên app Android.">
-<meta property="og:url" content="https://huy-vu.uk/">
-<meta property="og:image" content="https://huy-vu.uk/og.png">
+<meta property="og:url" content="https://pathwise.huy-vu.uk/">
+<meta property="og:image" content="https://pathwise.huy-vu.uk/og.png">
 <meta name="twitter:card" content="summary_large_image">
 <script type="application/ld+json">
 {"@context":"https://schema.org","@graph":[
-{"@type":"Organization","@id":"https://huy-vu.uk/#org","name":"PathWise","url":"https://huy-vu.uk/","logo":"https://huy-vu.uk/app/favicon-512.png",
+{"@type":"Organization","@id":"https://pathwise.huy-vu.uk/#org","name":"PathWise","url":"https://pathwise.huy-vu.uk/","logo":"https://pathwise.huy-vu.uk/app/favicon-512.png",
  "areaServed":[{"@type":"City","name":"Đà Nẵng"},{"@type":"City","name":"Hội An"}]},
-{"@type":"WebSite","@id":"https://huy-vu.uk/#site","name":"PathWise","url":"https://huy-vu.uk/","inLanguage":"vi","publisher":{"@id":"https://huy-vu.uk/#org"}}
+{"@type":"WebSite","@id":"https://pathwise.huy-vu.uk/#site","name":"PathWise","url":"https://pathwise.huy-vu.uk/","inLanguage":"vi","publisher":{"@id":"https://pathwise.huy-vu.uk/#org"}}
 ]}
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap">
+<!-- The font's stylesheet does not block the first paint: text shows in the system font, then swaps (display=swap). -->
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap"></noscript>
 <style>
 /* Layout: one "bản đồ điều phối" hero (the dispatcher's own map, three routes out of a depot), then a quiet single
    column of sections on a 1120px grid; the brand green is spent on the routes and the two calls to action only. */
@@ -461,9 +464,9 @@ footer a { text-decoration: none; } footer a:hover { color: var(--ink); }
       <span>Path<b>Wise</b></span>
     </a>
     <nav class="nav" aria-label="Mục chính">
-      <a href="#da-nang">Đà Nẵng</a>
+      <a href="#da-nang">Khu vực phục vụ</a>
       <a href="#cach-hoat-dong">Cách hoạt động</a>
-      <a href="#xem-thu">Bấm thử</a>
+      <a href="#xem-thu">Trải nghiệm</a>
       <a href="#dieu-phoi">Báo cáo</a>
       <a href="#app-tai-xe">App tài xế</a>
       <a href="#hoi-dap">Hỏi đáp</a>
@@ -478,9 +481,9 @@ footer a { text-decoration: none; } footer a:hover { color: var(--ink); }
   </div>
   <div class="menu-panel" id="menu-panel" hidden>
     <nav aria-label="Mục chính trên điện thoại">
-      <a href="#da-nang">Đà Nẵng</a>
+      <a href="#da-nang">Khu vực phục vụ</a>
       <a href="#cach-hoat-dong">Cách hoạt động</a>
-      <a href="#xem-thu">Bấm thử</a>
+      <a href="#xem-thu">Trải nghiệm</a>
       <a href="#dieu-phoi">Báo cáo</a>
       <a href="#app-tai-xe">App tài xế</a>
       <a href="#hoi-dap">Hỏi đáp</a>
@@ -777,6 +780,7 @@ footer a { text-decoration: none; } footer a:hover { color: var(--ink); }
       <a href="/app/login">Đăng nhập</a>
       <a href="/app/invite">Nhận lời mời</a>
       <a href="#hoi-dap">Hỏi đáp</a>
+      <a href="mailto:lienhe@pathwise.huy-vu.uk">lienhe@pathwise.huy-vu.uk</a>
     </nav>
   </div>
 </footer>
