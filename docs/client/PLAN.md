@@ -45,7 +45,9 @@
 - **Phụ thuộc:** M03 (bảng tài khoản trong app). Backend không cần đổi.
 - **Acceptance:** tài xế đổi được họ tên và số trong app, màn theo dõi trên web thấy số mới sau khi tải lại; form Nhận lời mời chỉ còn họ tên và mật khẩu; test mobile và web cho cả hai.
 
-### W15. Build APK tài xế trong workflow `release`, đính vào GitHub Release (P-79; thêm 2026-11-21)
+### W15. Build APK tài xế trong workflow `release`, đính vào GitHub Release (P-79; thêm 2026-11-21) — code xong, chờ chạy release thật
+
+> **Trạng thái (2026-11-21, branch `task/W15-release-apk`):** job `driver-apk` đã có trong `release.yml`; còn acceptance cần một release thật (chủ dự án đặt secret, biến rồi publish).
 
 - **Lý do:** nút "Tải app tài xế cho Android" của landing (W14) cần một link APK ổn định. Hiện APK build tay (`mobile/README.md`) và không phát hành ở đâu; chủ dự án chọn dùng GitHub Release làm nơi tải (P-79).
 - **Phạm vi:**
@@ -58,6 +60,12 @@
 - **Ngoài phạm vi:** Play Store; cập nhật tự động trong app.
 - **File nóng:** `.github/workflows/release.yml`. Chạy actionlint; thử bằng một release nháp (pre-release) trước bản thật.
 - **Acceptance:** publish release thì release có `pathwise-driver.apk`; link `releases/latest/download/pathwise-driver.apk` tải được; APK cài được trên máy Android thật hoặc máy ảo và đăng nhập được vào API của domain; (nếu chốt keystore cố định) bản sau cài đè bản trước không cần gỡ.
+- **Phát sinh khi làm (2026-11-21):**
+  - Chủ dự án chọn keystore cố định lưu trong GitHub secret (`ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, alias `upload`, PKCS12); không có thì job **dừng**, không ký key debug thay. Job kiểm chữ ký bằng `apksigner` và từ chối APK ký key debug.
+  - Domain: Actions variable `APK_API_BASE` (phải `https://`). Key MapTiler của màn dẫn đường: secret tuỳ chọn `ANDROID_MAPTILER_KEY` (thiếu thì cảnh báo, màn dẫn đường không có nền).
+  - Version của APK lấy từ `pubspec.yaml` (theo lệ commit `chore(release)` nâng version): job dừng nếu không khớp tag (`vX.Y.Z` hoặc `vX.Y.Z-*` cho pre-release).
+  - Kiểm trên máy: actionlint; chạy lại các bước ký và `flutter build apk --release` với một keystore thử: APK ký `CN=PathWise CI test` (60 MB, mọi ABI).
+  - Việc của chủ dự án: tạo keystore (`mobile/README.md`), đặt 2 secret + biến, publish một pre-release thử (vd `v1.1.0-rc1`… cần `pubspec.yaml` khớp), tải APK cài thử, rồi đặt `APK_URL` trên VPS.
 
 ## 3. Sau MVP (chưa lên lịch)
 

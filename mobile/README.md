@@ -58,14 +58,29 @@ flutter build apk --release --dart-define=API_BASE=https://<domain>
 Mặc định bản release ký bằng key debug: cài trực tiếp APK lên máy tài xế được (app không đưa lên Google Play). Ai cần ký bằng key riêng thì tạo upload key rồi ghi `android/key.properties` (đã nằm trong `.gitignore`, không commit):
 
 ```bash
-keytool -genkeypair -v -keystore ~/pathwise-upload.jks -keyalg RSA -keysize 2048 -validity 10000 -alias upload
+keytool -genkeypair -v -keystore ~/pathwise-upload.jks -storetype PKCS12 -keyalg RSA -keysize 2048 -validity 10000 -alias upload
 ```
 
 ```properties
 storeFile=/home/<user>/pathwise-upload.jks
 storePassword=…
 keyAlias=upload
-keyPassword=…
+keyPassword=…   # PKCS12: trùng storePassword
 ```
 
-File ra ở `build/app/outputs/flutter-apk/app-release.apk`; cài bằng `adb install` hoặc gửi file cho tài xế (máy phải cho phép cài app ngoài Play Store).
+File ra ở `build/app/outputs/flutter-apk/app-release.apk`; cài bằng `adb install` hoặc gửi file cho tài xế (máy phải cho phép cài app ngoài Play Store). Kiểm chữ ký: `apksigner verify --print-certs <apk>` (trong `$ANDROID_HOME/build-tools/<bản>/`).
+
+Giữ file `.jks` và mật khẩu ở chỗ an toàn ngoài máy: mất key thì bản sau không cài đè được nữa (tài xế phải gỡ app). Lần đầu đổi từ key debug sang key riêng, máy đang cài bản ký key debug cũng phải gỡ app một lần.
+
+### APK trong GitHub Release (W15, P-79)
+
+Publish một GitHub Release thì workflow `release` build APK, ký bằng key riêng và đính `pathwise-driver.apk` vào release. Link cố định của bản mới nhất (pre-release không tính): `https://github.com/huyga1185/pathwise/releases/latest/download/pathwise-driver.apk`, dùng cho `APK_URL` của landing (`docs/DEPLOYMENT.md` §8). Cần đặt một lần trên GitHub:
+
+```bash
+base64 -w0 ~/pathwise-upload.jks | gh secret set ANDROID_KEYSTORE_BASE64
+gh secret set ANDROID_KEYSTORE_PASSWORD               # gõ mật khẩu khi được hỏi
+gh secret set ANDROID_MAPTILER_KEY                    # tuỳ chọn: key MapTiler của màn dẫn đường
+gh variable set APK_API_BASE --body https://<domain>  # origin của API mà app gọi
+```
+
+Workflow dừng sớm (báo lỗi) khi thiếu keystore hoặc `APK_API_BASE`, hoặc khi `version` của `pubspec.yaml` không khớp tag (`v1.2.0`, hay `v1.2.0-rc1` cho pre-release): nâng version trong commit `chore(release)` trước khi tạo tag. APK ký bằng key debug thì không được đính.
