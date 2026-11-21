@@ -1,119 +1,101 @@
 # PathWise
 
-SaaS lập tuyến giao hàng đa tenant cho cửa hàng ở Đà Nẵng và Hội An: backend Spring Boot 4.1 / Java 21 (`be/`), web dispatcher (`web/`, React), app tài xế Android (`mobile/`, Flutter) và trang giới thiệu tĩnh (`landing/`). Tài liệu thiết kế nằm trong `docs/`, quy tắc cho coding agent ở `AGENTS.md`.
+PathWise giúp cửa hàng có đội tài xế riêng sắp xếp việc giao hàng mỗi ngày. Chủ cửa hàng hoặc người điều phối nhập danh sách đơn; PathWise chia đơn cho từng xe, xếp thứ tự đi sao cho kịp khung giờ khách hẹn và không quá tải xe; tài xế nhận tuyến trên app Android, giao tới đâu báo kết quả tới đó, còn người điều phối theo dõi tiến độ và xem báo cáo trên web.
 
-- Bản chạy thật: https://pathwise.huy-vu.uk (trang giới thiệu ở `/`, web dispatcher ở `/app/`).
-- App tài xế: file `pathwise-driver.apk` đính trong [GitHub Release mới nhất](https://github.com/huyga1185/pathwise/releases/latest), cài trực tiếp (không có trên Play Store).
+Hiện PathWise phục vụ các cửa hàng ở Đà Nẵng và Hội An.
 
-## Yêu cầu môi trường
+## Sản phẩm đang chạy
 
-- Docker (kèm Docker Compose v2.24 trở lên).
-- JDK 21 nếu chạy app từ IDE hoặc `./mvnw`. Không cần cài MariaDB, Redis hay SMTP.
+- Trang giới thiệu: [pathwise.huy-vu.uk](https://pathwise.huy-vu.uk)
+- Web điều phối: [pathwise.huy-vu.uk/app](https://pathwise.huy-vu.uk/app/) (đăng ký cửa hàng miễn phí)
+- App tài xế Android: file `pathwise-driver.apk` trong [GitHub Release mới nhất](https://github.com/huyga1185/pathwise/releases/latest), cài trực tiếp (không có trên Play Store)
 
-## Cách 1: hạ tầng trong container, app chạy từ IDE (mặc định khi dev)
+<p align="center">
+  <img src="landing/web/4.webp" alt="Kế hoạch đã tối ưu: hai tuyến trên bản đồ Đà Nẵng, mỗi tuyến kèm thứ tự điểm và giờ tới dự kiến" width="840">
+</p>
+<p align="center">
+  <img src="landing/phone/2.webp" alt="App tài xế: chi tiết tuyến, điểm tiếp theo và giờ tới dự kiến" width="220">
+  &nbsp;
+  <img src="landing/phone/6.webp" alt="App tài xế: dẫn đường tới điểm giao tiếp theo" width="220">
+</p>
+<p align="center">
+  <img src="landing/img/bao-cao.webp" alt="Báo cáo: số kế hoạch, điểm giao, tỉ lệ giao được, quãng đường và kết quả theo tài xế" width="840">
+</p>
+
+## Tính năng chính
+
+**Lập tuyến**
+- Nhập đơn từng dòng hoặc tải lên file Excel, CSV; PathWise tự tìm toạ độ địa chỉ và chỉ ra địa chỉ cần kiểm lại.
+- Tối ưu tuyến theo khung giờ giao, sức chứa và giới hạn quãng đường của từng xe, ca làm của từng tài xế; xem trước giờ tới dự kiến và quãng đường mỗi tuyến.
+- Sửa tay: kéo điểm giao sang tuyến khác hoặc đổi thứ tự; sao chép kế hoạch sang ngày khác.
+
+**Phân công tài xế**
+- Giao việc một lần cho cả kế hoạch; PathWise chặn giao trùng ca của cùng tài xế hoặc cùng xe.
+- Mời điều phối viên và tài xế qua email; chủ cửa hàng cũng có thể tự nhận tuyến.
+
+**Theo dõi giao hàng**
+- Tài xế xem tuyến theo thứ tự, dẫn đường ngay trong app hoặc mở Google Maps, báo đã giao, không giao được (kèm lý do) hoặc bỏ qua.
+- Người điều phối thấy vị trí tài xế và kết quả từng điểm trên web.
+
+**Báo cáo**
+- Thống kê theo ngày, theo tài xế và lý do không giao được; xuất CSV để đối soát (tối đa 31 ngày mỗi lần).
+
+## Kiến trúc
+
+| Thành phần | Công nghệ |
+|---|---|
+| Backend (`be/`) | Spring Boot 4.1, Java 21, Flyway, tối ưu tuyến bằng Google OR-Tools |
+| Web điều phối (`web/`) | React 19, Vite, TanStack Query, Leaflet |
+| App tài xế (`mobile/`) | Flutter, Android |
+| Cơ sở dữ liệu | MariaDB 11.8 |
+| Trạng thái ngắn hạn | Redis (OTP, rate limit, cache toạ độ, vị trí tài xế) |
+| Bản đồ và đường đi | OpenStreetMap, OSRM (đường đi, thời gian), Nominatim (toạ độ địa chỉ) |
+| Phục vụ web và HTTPS | Caddy |
+
+Các module backend, quy tắc phụ thuộc và luồng chính: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md). Hợp đồng API giữa backend và client: [`api/openapi.json`](api/openapi.json), sinh từ backend.
+
+## Chạy trên máy
+
+Cần Docker (Compose v2.24 trở lên); JDK 21 nếu chạy backend từ IDE.
 
 ```bash
 cp .env.example .env
-cp be/src/main/resources/application-dev.example.yaml be/src/main/resources/application-dev.yaml
-docker compose up -d                 # MariaDB 11.8 (cổng 3307), Redis (6380), Mailpit (1025 / 8025)
-cd be && ./mvnw spring-boot:run -Dspring-boot.run.profiles=dev
+docker compose --profile app up -d --build    # MariaDB, Redis, Mailpit và backend ở http://localhost:8080
+cd web && pnpm install && pnpm dev            # web điều phối ở http://localhost:5173/app/
 ```
 
-`application-dev.yaml` đã được gitignore, có thể sửa thoải mái (secret thật chỉ để ở đây hoặc trong `.env`). Nếu đổi cổng hay mật khẩu trong `.env` thì sửa `application-dev.yaml` cho khớp.
+Email (OTP, lời mời) gửi về Mailpit: http://localhost:8025. Chạy backend từ IDE, app tài xế, test, E2E và OSRM/Nominatim tự host: [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md).
 
-## Cách 2: chạy toàn bộ stack trong container
+## Cấu trúc repository
 
-```bash
-cp .env.example .env
-docker compose --profile app up -d --build
-curl http://localhost:8080/actuator/health   # {"status":"UP"} sau khoảng 1 phút
-```
+| Thư mục | Nội dung |
+|---|---|
+| `be/` | Backend Spring Boot: API, tối ưu tuyến, migration Flyway, test (Testcontainers) |
+| `web/` | Web điều phối (React), test Vitest và E2E Playwright |
+| `mobile/` | App tài xế (Flutter) |
+| `landing/` | Trang giới thiệu tĩnh ở `/`, viết tay, không build |
+| `api/` | `openapi.json`, hợp đồng API dùng chung cho hai client |
+| `brand/` | Logo và token giao diện (`design-system/tokens.json`) |
+| `deploy/` | Cấu hình Caddy và script giám sát cho VPS |
+| `scripts/` | Sinh OpenAPI, client Dart, theme và icon; dữ liệu demo |
+| `docs/` | Yêu cầu, kiến trúc, API, dữ liệu, quyết định, kế hoạch, triển khai |
 
-App được build từ `be/Dockerfile` (multi-stage), chạy bằng user không phải root, mọi cấu hình đi qua biến môi trường trong `.env`. API nằm dưới `http://localhost:8080/api/v1`.
+## Tài liệu
 
-Dừng: `docker compose --profile app down`. Thêm `-v` để xoá luôn dữ liệu MariaDB và Redis.
-
-**DB dev tạo trước T50:** app chạy từ IDE (JVM múi giờ +07) từng lưu giờ ca và khung giờ lệch 8 tiếng (F-54). Dữ liệu dev không quan trọng thì xoá volume (`docker compose down -v`); muốn giữ thì chạy một lần, **chỉ trên DB dev đã ghi từ IDE** (không chạy trên staging/prod, nơi app chạy trong container UTC):
-
-```sql
--- Dời thêm 8 giờ, quay vòng trong ngày (giờ lưu 16:30 là 00:30 thật).
-UPDATE route_plan_routes SET shift_start = SEC_TO_TIME(MOD(TIME_TO_SEC(shift_start) + 8 * 3600 + 86400, 86400)), shift_end = SEC_TO_TIME(MOD(TIME_TO_SEC(shift_end) + 8 * 3600 + 86400, 86400));
-UPDATE route_plan_stops SET tw_start = SEC_TO_TIME(MOD(TIME_TO_SEC(tw_start) + 8 * 3600 + 86400, 86400)), tw_end = SEC_TO_TIME(MOD(TIME_TO_SEC(tw_end) + 8 * 3600 + 86400, 86400)) WHERE tw_start IS NOT NULL;
-```
-
-## OSRM và Nominatim tự host (tuỳ chọn)
-
-Mặc định app gọi server công khai của OSRM và Nominatim (chỉ hợp cho dev/demo). Chạy bản tự host với dữ liệu OpenStreetMap cắt theo vùng `ROUTING_BBOX` (mặc định Đà Nẵng và Hội An):
-
-```bash
-docker compose -f compose.yaml -f compose.routing.yaml up -d   # lần đầu: tải ~330 MB, cắt vùng, dựng OSRM, import Nominatim
-```
-
-Rồi trỏ app vào `http://localhost:5000` (OSRM) và `http://localhost:8088` (Nominatim), tắt rate limit của Nominatim: biến ở `.env.example`. Prod và máy routing riêng: `docs/DEPLOYMENT.md` §7.
-
-## Chạy test
-
-```bash
-cd be && ./mvnw test
-```
-
-Chỉ cần Docker: test tích hợp tự bật MariaDB và Redis bằng Testcontainers, không dùng stack ở trên.
-
-## Client
-
-Kế hoạch, kiến trúc và quy tắc của web và app tài xế: `docs/client/` (bắt đầu từ `docs/client/README.md`). Hai client dùng chung:
-
-- `api/openapi.json`: hợp đồng API máy đọc, sinh từ backend. Đổi API thì chạy `scripts/sync_openapi.sh` (cần Docker) và commit file này cùng PR; CI fail khi file lệch backend.
-- `brand/design-system/tokens.json`: token giao diện. `python3 scripts/build_tokens.py` sinh theme cho web và mobile; `--check` kiểm file sinh còn khớp.
-- Test của các script: `python3 -m unittest discover -s scripts/tests`.
-
-Web dispatcher (`web/`, Node 24+, pnpm theo `packageManager`):
-
-```bash
-cd web && pnpm install
-pnpm dev          # http://localhost:5173/app/, proxy /api tới backend ở :8080
-pnpm test         # Vitest + MSW, không cần backend
-pnpm lint && pnpm typecheck && pnpm build
-```
-
-App tài xế (`mobile/`, Flutter theo `mobile/.fvmrc`):
-
-```bash
-cd mobile && flutter pub get
-flutter run --dart-define=API_BASE=http://10.0.2.2:8080   # emulator Android tới backend trên máy
-flutter analyze && flutter test
-../scripts/gen_dart_api.sh        # sinh lại client sau khi đổi api/openapi.json (cần Docker)
-../scripts/build_mobile_brand.sh  # sinh lại icon/logo từ brand/logo (cần rsvg-convert)
-```
-
-E2E (Playwright, cần Docker): stack riêng `pathwise-e2e` (cổng trong `web/e2e/e2e.env`, không đụng DB/Mailpit dev; server giả thay Nominatim và OSRM, P-49):
-
-```bash
-export E2E_JWT_SECRET="$(openssl rand -base64 32)"   # sinh mỗi lần, không commit
-docker compose -p pathwise-e2e --env-file web/e2e/e2e.env -f compose.yaml -f compose.e2e.yaml --profile app up -d --build --wait
-cd web && pnpm exec playwright install chromium   # lần đầu
-pnpm e2e          # build web, vite preview :4173 proxy /api tới :8091, chạy web/e2e/
-docker compose -p pathwise-e2e --env-file web/e2e/e2e.env -f compose.yaml -f compose.e2e.yaml --profile app down -v
-```
-
-Trang giới thiệu (`landing/`): HTML, CSS và JS viết tay, không build. Caddy phục vụ nó ở `/`, đi chung image `pathwise-web` và tarball của release. Xem thử như prod: `landing/README.md`.
-
-## Phát hành
-
-Push tag `vX.Y.Z` thì workflow `image` build image backend và web lên GHCR. Publish GitHub Release từ tag đó thì workflow `release` đính tarball web (kèm landing và `Caddyfile`) và `pathwise-driver.apk` (app tài xế ký bằng release key từ GitHub secret; chỉ build khi tag nằm trên `main`). Quy trình: `docs/CONTRIBUTING.md`; secret và cách tạo key: `mobile/README.md` (mục "APK trong GitHub Release").
-
-## Xem email (OTP, lời mời)
-
-Mọi email khi dev được gửi tới Mailpit: mở http://localhost:8025.
+- [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md): cài môi trường, chạy local, test, phát hành
+- [`docs/REQUIREMENTS.md`](docs/REQUIREMENTS.md): yêu cầu nghiệp vụ
+- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md): kiến trúc backend
+- [`docs/API_SPEC.md`](docs/API_SPEC.md), [`docs/DATA_MODEL.md`](docs/DATA_MODEL.md): API và mô hình dữ liệu
+- [`docs/DECISIONS.md`](docs/DECISIONS.md): các quyết định đã chốt
+- [`docs/client/README.md`](docs/client/README.md): web và app tài xế
+- [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md): triển khai lên VPS
+- [`docs/CURRENT_STATE.md`](docs/CURRENT_STATE.md): hiện trạng, lỗi đã biết
+- [`AGENTS.md`](AGENTS.md): quy tắc cho coding agent
 
 ## Đóng góp
 
-Quy trình branch và CI: `docs/CONTRIBUTING.md`.
+Quy trình branch, commit và CI: [`docs/CONTRIBUTING.md`](docs/CONTRIBUTING.md).
 
-Deploy lên VPS (staging/prod): `docs/DEPLOYMENT.md`. Trang giới thiệu, web dispatcher và HTTPS chạy qua Caddy, trong container (`compose.web.yaml`) hoặc trên host (`deploy/caddy/Caddyfile`), xem §8; link tải APK trên trang giới thiệu đặt bằng `APK_URL` trong `.env`.
+## Giấy phép
 
-## Troubleshooting
-
-**Flyway báo "Unable to check whether schema is empty" khi dùng MariaDB cài trên máy (không phải container).** Thường xảy ra sau khi nâng cấp MariaDB mà chưa chạy `mariadb-upgrade`, nên bảng hệ thống còn ở định dạng cũ. Chạy `sudo mariadb-upgrade` rồi khởi động lại MariaDB. Khuyến nghị dùng MariaDB trong compose (đã ghim `mariadb:11.8`, D-35) để tránh lệch version.
-
-**Cổng đã bị chiếm.** Đổi `MARIADB_PORT`, `REDIS_PORT`, `MAILPIT_*_PORT` hoặc `APP_PORT` trong `.env`, rồi sửa `application-dev.yaml` cho khớp.
+[MIT](LICENSE)
