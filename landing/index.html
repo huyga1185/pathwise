@@ -701,11 +701,13 @@ footer a { text-decoration: none; } footer a:hover { color: var(--ink); }
             <li data-s="4"><strong>Sang điểm kế</strong><span>Điều phối viên thấy kết quả ngay; chỉ đường tới điểm sau.</span></li>
           </ol>
           <div class="try-actions">
-            <!-- LINK TẢI APP: thay href="#" bằng đường dẫn tới file APK. -->
-            <a class="btn btn-primary" id="apk-link" href="#" download>
+            <!-- Caddy (templates) fills the link from PATHWISE_APK_URL when it serves the page; unset, there is no button. -->
+            {{- with env "PATHWISE_APK_URL"}}
+            <a class="btn btn-primary" id="apk-link" href="{{html .}}">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 20h14"/></svg>
               Tải app tài xế cho Android
             </a>
+            {{- end}}
             <button class="btn btn-quiet" type="button" id="try-reset">Bấm thử lại từ đầu</button>
           </div>
           <p class="caption">Ảnh chụp app tài xế với dữ liệu thử. Bấm vào nút trên màn hình điện thoại như khi dùng app.</p>

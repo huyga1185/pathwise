@@ -1,6 +1,6 @@
 # Release assets (W08, P-56): when a GitHub release is published, attach the web app for a Caddy installed on the host
-# (docs/DEPLOYMENT.md §8.2): pathwise-web-<tag>.tar.gz with app/ (the build, configured at runtime by app/config.js)
-# and the Caddyfile. The images themselves come from image.yml on the tag.
+# (docs/DEPLOYMENT.md §8.2): pathwise-web-<tag>.tar.gz with app/ (the build, configured at runtime by app/config.js),
+# the landing page at its root (W14) and the Caddyfile. The images themselves come from image.yml on the tag.
 name: release
 
 on:
@@ -34,6 +34,8 @@ jobs:
         run: |
           mkdir -p "pathwise-web-$TAG"
           cp -r web/dist "pathwise-web-$TAG/app"
+          cp -r landing/. "pathwise-web-$TAG/"
+          rm "pathwise-web-$TAG/README.md"
           cp deploy/caddy/Caddyfile "pathwise-web-$TAG/Caddyfile"
           tar -czf "pathwise-web-$TAG.tar.gz" "pathwise-web-$TAG"
       - name: Upload to the release
