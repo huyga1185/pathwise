@@ -78,8 +78,10 @@ public class PasswordChangeService {
         if (!otpManager.verifyOtp(OtpPurpose.CHANGE_PASSWORD, userId, request.otp()))
             throw new AppException(ErrorCode.INVALID_OTP);
         transactionTemplate.executeWithoutResult(status -> {
-            userService.updateUserPassword(userId, request.newPassword());
+            // Revoke first: after a plain read (and the slow hash) MariaDB would fail the revoke if a refresh of
+            // this user committed meanwhile (F-44, ARCHITECTURE §7).
             refreshTokenManager.revokeAllForUser(userId, actor.sessionId());
+            userService.updateUserPassword(userId, request.newPassword());
         });
         log.info("Password changed, other sessions revoked. userId={}", userId);
     }

@@ -20,7 +20,14 @@ public interface RefreshTokenRepository extends JpaRepository<RefreshToken, Long
     @Query("SELECT rf FROM RefreshToken rf WHERE rf.token = :token")
     Optional<RefreshToken> findByTokenForUpdate(@Param("token") String token);
 
-    List<RefreshToken> findByFamilyIdAndState(String familyId, RefreshTokenState state);
+    /**
+     * Locking read: a plain read here would open a read view, and MariaDB 11.6+ then fails the later update of a token
+     * another rotation changed meanwhile (error 1020, F-44). Waits for that rotation and returns the latest state.
+     */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT rf FROM RefreshToken rf WHERE rf.familyId = :familyId AND rf.state = :state")
+    List<RefreshToken> findByFamilyIdAndStateForUpdate(@Param("familyId") String familyId,
+                                                       @Param("state") RefreshTokenState state);
 
     @Modifying
     @Query("UPDATE RefreshToken rf SET rf.state = 'REVOKED' WHERE rf.familyId = :familyId")
@@ -28,7 +35,12 @@ public interface RefreshTokenRepository extends JpaRepository<RefreshToken, Long
 
     List<RefreshToken> findByUserIdAndStateAndExpiresAtAfter(Long userId, RefreshTokenState state, Instant now);
 
-    boolean existsByUserIdAndFamilyIdAndStateAndExpiresAtAfter(Long userId, String familyId, RefreshTokenState state, Instant now);
+    /**
+     * Tokens of one family owned by {@code userId}, locked: same reason as {@link #findByFamilyIdAndStateForUpdate}.
+     */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT rf FROM RefreshToken rf WHERE rf.userId = :userId AND rf.familyId = :familyId")
+    List<RefreshToken> findByUserIdAndFamilyIdForUpdate(@Param("userId") Long userId, @Param("familyId") String familyId);
 
     /**
      * Revokes every family of the user except {@code exceptFamilyId} (null: all families).

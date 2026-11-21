@@ -102,8 +102,10 @@ public class PasswordResetService {
         if (request == null) throw new NullPointerException("Reset password request could not be null");
         long userId = verifyResetToken(request.resetToken());
         transactionTemplate.executeWithoutResult(status -> {
-            userService.updateUserPassword(userId, request.newPassword());
+            // Revoke first: after a plain read (and the slow hash) MariaDB would fail the revoke if a refresh of
+            // this user committed meanwhile (F-44, ARCHITECTURE §7).
             refreshTokenManager.revokeAllForUser(userId, null);
+            userService.updateUserPassword(userId, request.newPassword());
         });
         log.info("Password reset, all sessions revoked. userId={}", userId);
     }
