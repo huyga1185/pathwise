@@ -385,4 +385,14 @@ File nóng của client (không hai task song song cùng sửa): `web/package.js
 
 Vị trí tài xế: xong ở T32/W09/M04 · dẫn đường trong app: M05 (cùng T33) · chỉnh tay tuyến: W10 (cùng T28) · thông báo đẩy · trang theo dõi đơn cho khách (client thứ ba) · đa ngôn ngữ.
 
-### M06. (còn mở, ở `docs/client/PLAN.md` §2)
+### M06. Tài xế tự sửa thông tin trong app, bỏ ô số điện thoại khỏi Nhận lời mời (để cuối, chủ dự án ghi 2026-11-17) — ✅ xong (D3 + D7)
+
+> **Gộp vào thiết kế lại app tài xế (2026-11-20, chủ dự án):** làm ở `docs/client/DRIVER_UI_REDESIGN.md` D3 (màn "Thông tin của tôi") và D7 (web bỏ ô số điện thoại); **Phần app đã làm ở D3** (2026-11-20, PR #141, `DRIVER_UI_REDESIGN.md` §9); **phần web đã làm ở D7** (2026-11-20, branch `feat/driver-ui-d7`, §13): **M06 xong**. Phạm vi và acceptance dưới đây giữ nguyên.
+
+- **Lý do:** ô số điện thoại (tuỳ chọn) ở form Nhận lời mời làm form dài; chủ dự án muốn bỏ. Hiện chưa bỏ được vì **tài xế không có chỗ nào khác để nhập số**: web chặn DRIVER (trang "Dùng app tài xế"), app tài xế chưa có màn sửa hồ sơ, chủ cửa hàng không sửa được số của thành viên (`PATCH /store/members/{userId}` không có `phoneNumber`). Số này dùng ở màn theo dõi để điều phối viên gọi nhắc tài xế (P-53, `driver.phoneNumber`).
+- **Phạm vi:**
+  - App tài xế (mobile): màn xem và sửa thông tin của mình: họ tên, số điện thoại (`PATCH /users/me` merge patch `{fullName?, phoneNumber?}`, `null` xoá số; lỗi `FULL_NAME_REQUIRED`, `INVALID_FULL_NAME_LENGTH`, `PHONE_NUMBER_*` dưới ô theo UX_BRIEF). Vào từ bảng tài khoản đang có.
+  - Web: bỏ ô số điện thoại khỏi bước "Tạo tài khoản" của Nhận lời mời (`AcceptInvitePage`); không gửi `phoneNumber` (API vẫn nhận, tuỳ chọn). Sửa `SCREENS.md` (bỏ `INVALID_PHONE_NUMBER` dưới ô số điện thoại) và test.
+- **Ngoài phạm vi:** chủ cửa hàng sửa số của thành viên (cần API mới, hỏi lại khi làm).
+- **Phụ thuộc:** M03 (bảng tài khoản trong app). Backend không cần đổi.
+- **Acceptance:** tài xế đổi được họ tên và số trong app, màn theo dõi trên web thấy số mới sau khi tải lại; form Nhận lời mời chỉ còn họ tên và mật khẩu; test mobile và web cho cả hai.
