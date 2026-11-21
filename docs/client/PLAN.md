@@ -63,9 +63,10 @@
 - **Phát sinh khi làm (2026-11-21):**
   - Chủ dự án chọn keystore cố định lưu trong GitHub secret (`ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, alias `upload`, PKCS12); không có thì job **dừng**, không ký key debug thay. Job kiểm chữ ký bằng `apksigner` và từ chối APK ký key debug.
   - Domain: Actions variable `APK_API_BASE` (phải `https://`). Key MapTiler của màn dẫn đường: secret tuỳ chọn `ANDROID_MAPTILER_KEY` (thiếu thì cảnh báo, màn dẫn đường không có nền).
+  - Chủ dự án: chỉ build APK cho release từ `main`, không build ở `develop`. Job kiểm tag có nằm trên `main` (`git merge-base --is-ancestor`), không thì báo lỗi, không đính APK. Release thử (pre-release) cũng phải gắn tag trên `main`.
   - Version của APK lấy từ `pubspec.yaml` (theo lệ commit `chore(release)` nâng version): job dừng nếu không khớp tag (`vX.Y.Z` hoặc `vX.Y.Z-*` cho pre-release).
   - Kiểm trên máy: actionlint; chạy lại các bước ký và `flutter build apk --release` với một keystore thử: APK ký `CN=PathWise CI test` (60 MB, mọi ABI).
-  - Việc của chủ dự án: tạo keystore (`mobile/README.md`), đặt 2 secret + biến, publish một pre-release thử (vd `v1.1.0-rc1`… cần `pubspec.yaml` khớp), tải APK cài thử, rồi đặt `APK_URL` trên VPS.
+  - Việc của chủ dự án: tạo keystore (`mobile/README.md`), đặt 2 secret + biến, publish một pre-release thử từ `main` (vd `vX.Y.Z-rc1`, cần `pubspec.yaml` khớp), tải APK cài thử, rồi đặt `APK_URL` trên VPS.
 
 ## 3. Sau MVP (chưa lên lịch)
 

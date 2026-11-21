@@ -3,6 +3,8 @@
 # the landing page at its root (W14) and the Caddyfile. The images themselves come from image.yml on the tag.
 # It also builds the driver app and attaches pathwise-driver.apk (W15, P-79), signed with the project's own key so a
 # new version installs over the previous one; the landing page links to releases/latest/download/pathwise-driver.apk.
+# The APK is built only for a release whose tag is on main (D-34): a release tagged on develop or another branch fails
+# this job and gets no APK.
 #   secrets  ANDROID_KEYSTORE_BASE64    the keystore (.jks, alias "upload"), base64; required
 #            ANDROID_KEYSTORE_PASSWORD  its password (PKCS12: also the key's password); required
 #            ANDROID_MAPTILER_KEY       map tiles of the navigation screen; optional (no key: no basemap)
@@ -60,13 +62,19 @@ jobs:
         working-directory: mobile
     steps:
       - uses: actions/checkout@v4
-      # Fail before the long build, with every missing setting at once.
+        with:
+          fetch-depth: 0 # the history of main, to check where the tag is
+      # Fail before the long build, with every problem at once.
       - name: Check the settings
         env:
           KEYSTORE: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
           PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
         run: |
           fail=0
+          if ! git merge-base --is-ancestor HEAD origin/main; then
+            echo "::error::$TAG is not on main: the driver app is built only for releases tagged on main (D-34)."
+            fail=1
+          fi
           if [ -z "$KEYSTORE" ] || [ -z "$PASSWORD" ]; then
             echo "::error::Set the secrets ANDROID_KEYSTORE_BASE64 and ANDROID_KEYSTORE_PASSWORD (mobile/README.md)."
             fail=1

@@ -83,4 +83,4 @@ gh secret set ANDROID_MAPTILER_KEY                    # tuỳ chọn: key MapTil
 gh variable set APK_API_BASE --body https://<domain>  # origin của API mà app gọi
 ```
 
-Workflow dừng sớm (báo lỗi) khi thiếu keystore hoặc `APK_API_BASE`, hoặc khi `version` của `pubspec.yaml` không khớp tag (`v1.2.0`, hay `v1.2.0-rc1` cho pre-release): nâng version trong commit `chore(release)` trước khi tạo tag. APK ký bằng key debug thì không được đính.
+APK chỉ build cho release có tag nằm trên `main` (D-34); release gắn tag ở `develop` hay branch khác thì job báo lỗi, không có APK. Workflow cũng dừng sớm (báo lỗi) khi thiếu keystore hoặc `APK_API_BASE`, hoặc khi `version` của `pubspec.yaml` không khớp tag (`v1.2.0`, hay `v1.2.0-rc1` cho pre-release): nâng version trong commit `chore(release)` trước khi tạo tag. APK ký bằng key debug thì không được đính.
