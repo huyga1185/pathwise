@@ -4,6 +4,11 @@ import { API, blockThirdParties, otpSentTo, RUN } from './support';
 
 const FIXTURE = fileURLToPath(new URL('./fixtures/diem-giao.csv', import.meta.url));
 
+// The plan form's stops are a table of fields when the table fits its group, rows and sheets otherwise (G4.7). These
+// tests type into the table; third-party requests are blocked, so the app font (Google Fonts) does not load and the
+// wider fallback font no longer fits 1280px: a 1440×900 window, the table's case.
+test.use({ viewport: { width: 1440, height: 900 } });
+
 /**
  * W12 acceptance on the real backend: a stop file (with coordinates, so no geocoding service is needed) goes into a
  * new plan through the import dialog, its bad row is left out, and the plan is saved with the two good stops.
@@ -43,13 +48,13 @@ test('nhập file điểm giao vào kế hoạch mới rồi lưu', async ({ pag
     await page.getByLabel(/^Email/).fill(email);
     await page.getByLabel(/^Mật khẩu/).fill(password);
     await page.getByRole('button', { name: /Đăng nhập/ }).click();
-    await expect(page.getByRole('heading', { name: 'Kế hoạch giao hàng' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Kế hoạch', level: 1 })).toBeVisible();
   });
 
   await test.step('nhập file trong form tạo kế hoạch', async () => {
     await page.goto('plans/new');
     await page.getByRole('button', { name: 'Nhập từ file' }).click();
-    const dialog = page.getByRole('dialog', { name: 'Nhập điểm giao từ file' });
+    const dialog = page.getByRole('dialog', { name: 'Nhập từ file' });
     await dialog.getByLabel('File điểm giao (.xlsx hoặc .csv)').setInputFiles(FIXTURE);
     await expect(dialog.getByText('diem-giao.csv')).toBeVisible();
     await expect(dialog.getByText('2 thêm được')).toBeVisible();
@@ -63,7 +68,7 @@ test('nhập file điểm giao vào kế hoạch mới rồi lưu', async ({ pag
     await page.getByLabel(/^Tên kế hoạch/).fill(`Từ file ${RUN}`);
     await page.getByRole('button', { name: 'Lưu và tìm toạ độ' }).first().click();
     await expect(page.getByRole('heading', { name: `Từ file ${RUN}` })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'ĐH-E2E-1 · Chị Lan' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'ĐH-E2E-2 · Anh Minh' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'ĐH-E2E-1 · Chị Lan: xem chi tiết' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'ĐH-E2E-2 · Anh Minh: xem chi tiết' })).toBeVisible();
   });
 });

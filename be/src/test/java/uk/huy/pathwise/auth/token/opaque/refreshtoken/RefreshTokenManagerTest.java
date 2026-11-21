@@ -275,7 +275,7 @@ public class RefreshTokenManagerTest {
         Instant activeExpiry = Instant.now().plus(Duration.ofDays(2));
         RefreshToken active = token(RefreshTokenState.ACTIVE, activeExpiry);
         found(used);
-        when(refreshTokenRepository.findByFamilyIdAndState("FAMILY", RefreshTokenState.ACTIVE)).thenReturn(List.of(active));
+        when(refreshTokenRepository.findByFamilyIdAndStateForUpdate("FAMILY", RefreshTokenState.ACTIVE)).thenReturn(List.of(active));
 
         RotationResult result = refreshTokenManager.rotateToken(RAW, CLIENT);
 
@@ -290,7 +290,7 @@ public class RefreshTokenManagerTest {
         used.setRotatedAt(Instant.now());
         RefreshToken active = token(RefreshTokenState.ACTIVE, Instant.now().minusSeconds(1));
         found(used);
-        when(refreshTokenRepository.findByFamilyIdAndState("FAMILY", RefreshTokenState.ACTIVE)).thenReturn(List.of(active));
+        when(refreshTokenRepository.findByFamilyIdAndStateForUpdate("FAMILY", RefreshTokenState.ACTIVE)).thenReturn(List.of(active));
 
         assertThat(refreshTokenManager.rotateToken(RAW, CLIENT)).isEqualTo(new Rejected(RejectReason.EXPIRED));
 
@@ -303,7 +303,7 @@ public class RefreshTokenManagerTest {
         RefreshToken used = token(RefreshTokenState.USED, Instant.now().plus(Duration.ofDays(1)));
         used.setRotatedAt(Instant.now());
         found(used);
-        when(refreshTokenRepository.findByFamilyIdAndState("FAMILY", RefreshTokenState.ACTIVE)).thenReturn(List.of());
+        when(refreshTokenRepository.findByFamilyIdAndStateForUpdate("FAMILY", RefreshTokenState.ACTIVE)).thenReturn(List.of());
 
         assertThat(refreshTokenManager.rotateToken(RAW, CLIENT)).isEqualTo(new Rejected(RejectReason.INCONSISTENT_FAMILY));
     }
@@ -317,8 +317,9 @@ public class RefreshTokenManagerTest {
 
     @Test
     public void revokeSession_whenUserHasNoSuchActiveSession_returnFalseWithoutRevoking() {
-        when(refreshTokenRepository.existsByUserIdAndFamilyIdAndStateAndExpiresAtAfter(eq(1L), eq("FAMILY"),
-                eq(RefreshTokenState.ACTIVE), any())).thenReturn(false);
+        when(refreshTokenRepository.findByUserIdAndFamilyIdForUpdate(1L, "FAMILY"))
+                .thenReturn(List.of(token(RefreshTokenState.USED, Instant.now().plus(Duration.ofDays(1))),
+                        token(RefreshTokenState.ACTIVE, Instant.now().minusSeconds(1))));
 
         assertThat(refreshTokenManager.revokeSession(1L, "FAMILY")).isFalse();
 
@@ -327,8 +328,8 @@ public class RefreshTokenManagerTest {
 
     @Test
     public void revokeSession_whenUserOwnsActiveSession_revokeFamily() {
-        when(refreshTokenRepository.existsByUserIdAndFamilyIdAndStateAndExpiresAtAfter(eq(1L), eq("FAMILY"),
-                eq(RefreshTokenState.ACTIVE), any())).thenReturn(true);
+        when(refreshTokenRepository.findByUserIdAndFamilyIdForUpdate(1L, "FAMILY"))
+                .thenReturn(List.of(token(RefreshTokenState.ACTIVE, Instant.now().plus(Duration.ofDays(1)))));
 
         assertThat(refreshTokenManager.revokeSession(1L, "FAMILY")).isTrue();
 

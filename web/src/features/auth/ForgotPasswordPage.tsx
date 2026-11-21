@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Link } from 'react-router';
 import { ApiError } from '@/data/apiError';
 import { errorMessages, fieldErrors, formatWait, messageFor } from '@/shared/errors';
@@ -6,12 +6,25 @@ import { errorCode } from '@/shared/forms/serverErrors';
 import { formatClock } from '@/shared/format';
 import { useCountdown } from '@/shared/hooks/useCountdown';
 import { vi } from '@/shared/i18n/vi';
-import { Button, buttonClass, ErrorBanner, TextField } from '@/shared/ui';
+import {
+  Button,
+  buttonClass,
+  CheckCircleIcon,
+  CodeField,
+  ErrorBanner,
+  KeyIcon,
+  LockIcon,
+  MailIcon,
+  TextField,
+} from '@/shared/ui';
 import { useAccountApi } from './accountApi';
-import { AuthCardHead, AuthLayout, CompactArt } from './AuthLayout';
+import { AuthCardHead, AuthLayout, MainArt, MapArt } from './AuthLayout';
+import { changeCard } from './changeCard';
 import { emailRules, MAX_OTP_TRIES, passwordRules, RESEND_COOLDOWN_SECONDS } from './rules';
 
 type Step = 0 | 1 | 2 | 3;
+
+const STEP_ICONS = [MailIcon, KeyIcon, LockIcon];
 
 const check = (rule: { validate: (value: string) => true | string }, value: string) => {
   const result = rule.validate(value);
@@ -21,7 +34,7 @@ const check = (rule: { validate: (value: string) => true | string }, value: stri
 /**
  * Prototype "Quên mật khẩu" (SCREENS §1.1): email → code → new password. Step 1 always says the code was sent if the
  * email has an account; step 3 must be done within the 10 minutes of the reset token; afterwards every device is
- * signed out.
+ * signed out. Same picture, card and controls as "Đăng nhập" (AuthStage, SCREENS.md §1.2).
  */
 export function ForgotPasswordPage() {
   const accountApi = useAccountApi();
@@ -38,6 +51,27 @@ export function ForgotPasswordPage() {
   const [busy, setBusy] = useState(false);
   const lock = useCountdown();
   const cooldown = useCountdown();
+
+  // The card changes its content in place: move focus to the new title so screen readers report it (HIG VoiceOver:
+  // "Inform VoiceOver when visible content or layout changes occur") and the keyboard is not left on a gone button.
+  const heading = useRef<HTMLHeadingElement>(null);
+  const shownStep = useRef(step);
+  useEffect(() => {
+    if (shownStep.current === step) return;
+    shownStep.current = step;
+    heading.current?.focus();
+  }, [step]);
+
+  // HIG Text fields: an email is checked "when people switch to another field", a new password "before people switch
+  // to another field" (while typed). The repeat is checked when left: while it is typed it differs anyway.
+  const checkEmail = () => setErrors((current) => ({ ...current, email: check(emailRules(vi.auth.email), email) }));
+  const checkPassword = (value: string) =>
+    setErrors((current) => ({ ...current, password: check(passwordRules(vi.form.newPassword), value) }));
+  const checkConfirm = () =>
+    setErrors((current) => ({
+      ...current,
+      confirm: confirm !== '' && confirm !== password ? vi.form.passwordMismatch : null,
+    }));
 
   const fail = (error: unknown) => {
     if (error instanceof ApiError && error.code === 'RATE_LIMITED' && error.retryAfter !== null) {
@@ -64,10 +98,15 @@ export function ForgotPasswordPage() {
     await run(async () => {
       try {
         await accountApi.forgotPassword(email.trim());
-        setWrongTries(0);
-        setCode('');
         cooldown.start(RESEND_COOLDOWN_SECONDS);
-        setStep(1);
+        // From step 1 only: "Gửi lại mã" on step 2 stays where it is.
+        const next = () => {
+          setWrongTries(0);
+          setCode('');
+          setStep(1);
+        };
+        if (step === 0) changeCard(next);
+        else next();
       } catch (error) {
         const field = fieldErrors(error, { email: vi.auth.email }).email;
         if (errorCode(error) === 'VALIDATION_ERROR' && field) setErrors({ email: field });
@@ -82,9 +121,11 @@ export function ForgotPasswordPage() {
     await run(async () => {
       try {
         const result = await accountApi.verifyResetOtp({ email: email.trim(), otp: code });
-        setResetToken(result.resetToken);
-        setErrors({});
-        setStep(2);
+        changeCard(() => {
+          setResetToken(result.resetToken);
+          setErrors({});
+          setStep(2);
+        });
       } catch (error) {
         if (errorCode(error) === 'INVALID_OTP') {
           const tries = wrongTries + 1;
@@ -106,55 +147,91 @@ export function ForgotPasswordPage() {
     await run(async () => {
       try {
         await accountApi.resetPassword({ resetToken, newPassword: password });
-        setStep(3);
+        changeCard(() => setStep(3));
       } catch (error) {
         const field = fieldErrors(error, { newPassword: vi.form.newPassword }).newPassword;
-        if (errorCode(error) === 'INVALID_RESET_TOKEN') setTokenExpired(true);
+        if (errorCode(error) === 'INVALID_RESET_TOKEN') changeCard(() => setTokenExpired(true));
         else if (errorCode(error) === 'VALIDATION_ERROR' && field) setErrors({ password: field });
         else fail(error);
       }
     });
   };
 
-  const restart = () => {
-    setStep(0);
-    setCode('');
-    setPassword('');
-    setConfirm('');
-    setResetToken('');
-    setTokenExpired(false);
-    setErrors({});
-    setFailure(null);
-  };
+  const restart = () =>
+    changeCard(() => {
+      setStep(0);
+      setCode('');
+      setPassword('');
+      setConfirm('');
+      setResetToken('');
+      setTokenExpired(false);
+      setErrors({});
+      setFailure(null);
+    });
 
   const submit = [sendCode, verifyCode, resetPassword, undefined][step];
 
   return (
     <AuthLayout
-      panel="compact"
+      panel="wide"
       logoToLogin
-      art={<CompactArt picture="lock" />}
-      pitch={<p className="pw-auth-note">{vi.forgot.brandLead}</p>}
+      art={<MapArt />}
+      mainArt={<MainArt variant="register" />}
+      pitch={
+        <div className="pw-auth-pitch pw-auth-pitch-steps">
+          <div className="pw-auth-pitch-text">
+            <p className="pw-auth-headline">
+              {vi.forgot.brandHeadline[0]}
+              <span>{vi.forgot.brandHeadline[1]}</span>
+              {vi.forgot.brandHeadline[2]}
+            </p>
+            <p className="pw-auth-lead">{vi.forgot.brandLead}</p>
+          </div>
+          <ol className="pw-auth-steps-inline">
+            {vi.forgot.steps.map((item, index) => {
+              const StepIcon = STEP_ICONS[index] ?? CheckCircleIcon;
+              return (
+                <li key={item}>
+                  <StepIcon />
+                  <span>{item}</span>
+                </li>
+              );
+            })}
+          </ol>
+        </div>
+      }
     >
       <form
-        className="pw-auth-card pw-auth-card-md"
+        className="pw-auth-card"
         aria-labelledby="f-title"
         onSubmit={submit ? (event) => void submit(event) : (event) => event.preventDefault()}
         noValidate
       >
-        <AuthCardHead id="f-title" title={vi.forgot.titles[step]} lead={vi.forgot.leads[step]} accent={false} />
-        <ol className="pw-auth-steps" aria-label={vi.forgot.stepsLabel}>
-          {vi.forgot.steps.map((label, index) => (
-            <li
-              key={label}
-              className={step >= index ? 'is-on' : undefined}
-              aria-current={step === index ? 'step' : undefined}
+        <AuthCardHead id="f-title" title={vi.forgot.titles[step]} accent={false} headingRef={heading} />
+        {step < 3 ? (
+          // Determinate progress bar of the three steps (HIG Progress indicators: a track that "fills from the leading
+          // side", with a short description). It fills with the steps already done, "as accurate as possible": empty
+          // on step 1, two thirds on step 3. Transient like Apple's: gone once the task is done (step "Xong").
+          <div className="pw-auth-progress">
+            <div
+              className="pw-auth-progress-track"
+              role="progressbar"
+              aria-label={vi.forgot.progressLabel}
+              aria-valuemin={0}
+              aria-valuemax={vi.forgot.steps.length}
+              aria-valuenow={step}
+              aria-valuetext={`${vi.forgot.progress(step + 1, vi.forgot.steps.length)}: ${vi.forgot.steps[step as 0 | 1 | 2]}`}
             >
-              <span />
-              {label}
-            </li>
-          ))}
-        </ol>
+              <span style={{ width: `${(step / vi.forgot.steps.length) * 100}%` }}>
+                {/* One glint over the done part when a step is done (a new element per step, so it runs once). */}
+                <i key={step} className="pw-auth-progress-shine" />
+              </span>
+            </div>
+            <span className="pw-auth-progress-text" aria-hidden="true">
+              {vi.forgot.progress(step + 1, vi.forgot.steps.length)}
+            </span>
+          </div>
+        ) : null}
 
         {failure ? <ErrorBanner title={messageFor(failure)} /> : null}
 
@@ -162,14 +239,18 @@ export function ForgotPasswordPage() {
           <>
             <TextField
               label={vi.auth.email}
+              clearable
               type="email"
               required
+              size="lg"
+              startIcon={<MailIcon />}
               autoComplete="email"
               inputMode="email"
               placeholder="ten@example.com"
               value={email}
               error={errors.email ?? undefined}
               onChange={(event) => setEmail(event.target.value)}
+              onBlur={checkEmail}
             />
             <Button type="submit" variant="primary" size="lg" block busy={busy} disabled={lock.remaining > 0}>
               {lock.remaining > 0 ? vi.auth.retryIn(formatWait(lock.remaining)) : vi.forgot.sendCode}
@@ -182,18 +263,13 @@ export function ForgotPasswordPage() {
             <div className="pw-auth-notice" role="status">
               {vi.forgot.sent}
             </div>
-            <TextField
-              className="pw-field-code"
+            <CodeField
               label={vi.form.otp}
-              inputMode="numeric"
-              autoComplete="one-time-code"
-              maxLength={6}
-              placeholder="••••••"
               value={code}
               hint={errors.code ? undefined : vi.form.otpRule}
               error={errors.code ?? undefined}
-              onChange={(event) => {
-                setCode(event.target.value.replace(/\D/g, '').slice(0, 6));
+              onChange={(value) => {
+                setCode(value);
                 if (wrongTries < MAX_OTP_TRIES) setErrors({});
               }}
             />
@@ -207,16 +283,19 @@ export function ForgotPasswordPage() {
             >
               {vi.forgot.next}
             </Button>
-            <Button
-              variant="quiet"
-              disabled={cooldown.remaining > 0 || lock.remaining > 0 || busy}
-              onClick={() => void sendCode()}
-            >
-              {cooldown.remaining > 0 ? vi.form.resendIn(formatClock(cooldown.remaining)) : vi.form.resend}
-            </Button>
-            <Button variant="quiet" onClick={restart}>
-              {vi.forgot.changeEmail}
-            </Button>
+            <div className="pw-auth-actions">
+              <Button
+                variant="quiet"
+                size="lg"
+                disabled={cooldown.remaining > 0 || lock.remaining > 0 || busy}
+                onClick={() => void sendCode()}
+              >
+                {cooldown.remaining > 0 ? vi.form.resendIn(formatClock(cooldown.remaining)) : vi.form.resend}
+              </Button>
+              <Button variant="quiet" size="lg" onClick={restart}>
+                {vi.forgot.changeEmail}
+              </Button>
+            </div>
           </>
         ) : null}
 
@@ -234,22 +313,30 @@ export function ForgotPasswordPage() {
                 label={vi.form.newPassword}
                 type="password"
                 required
+                size="lg"
+                startIcon={<LockIcon />}
                 maxLength={72}
                 autoComplete="new-password"
                 hint={vi.form.passwordHint}
                 value={password}
                 error={errors.password ?? undefined}
-                onChange={(event) => setPassword(event.target.value)}
+                onChange={(event) => {
+                  setPassword(event.target.value);
+                  checkPassword(event.target.value);
+                }}
               />
               <TextField
                 label={vi.form.confirmPassword}
                 type="password"
                 required
+                size="lg"
+                startIcon={<LockIcon />}
                 maxLength={72}
                 autoComplete="new-password"
                 value={confirm}
                 error={errors.confirm ?? undefined}
                 onChange={(event) => setConfirm(event.target.value)}
+                onBlur={checkConfirm}
               />
               <p className="pw-auth-muted">{vi.forgot.deadline}</p>
               <Button type="submit" variant="primary" size="lg" block busy={busy}>
@@ -265,7 +352,7 @@ export function ForgotPasswordPage() {
               <strong>{vi.forgot.doneTitle}</strong>
               <span>{vi.forgot.doneLead}</span>
             </div>
-            <Link className={buttonClass('primary', 'lg', true)} to="/login">
+            <Link className={buttonClass('primary', 'lg', true)} to="/login" viewTransition>
               {vi.form.toLogin}
             </Link>
           </>
@@ -273,7 +360,10 @@ export function ForgotPasswordPage() {
 
         {step !== 3 ? (
           <p className="pw-auth-center">
-            {vi.form.rememberPassword} <Link to="/login">{vi.form.toLogin}</Link>
+            {vi.form.rememberPassword}{' '}
+            <Link to="/login" viewTransition>
+              {vi.form.toLogin}
+            </Link>
           </p>
         ) : null}
       </form>

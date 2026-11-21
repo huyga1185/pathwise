@@ -19,9 +19,10 @@ Future<({bool share, bool remember})?> showShareDialog(BuildContext context, Str
       return StatefulBuilder(
         builder: (context, setState) {
           final t = context.pw;
+          // Material 3 dialog as `showPwDialog`: the theme's shape and colour, text buttons at the end; labels too long for
+          // one row stack, still at the end (H1, DRIVER_UI_REDESIGN §3 "Hộp thoại").
           return AlertDialog(
-            backgroundColor: t.surfaceRaised,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(PwRadius.radiusLg)),
+            actionsOverflowAlignment: OverflowBarAlignment.end,
             title: Text(Vi.shareAskTitle, style: PwTypeStyles.title.copyWith(color: t.ink)),
             content: SingleChildScrollView(
               child: Column(
@@ -45,11 +46,12 @@ Future<({bool share, bool remember})?> showShareDialog(BuildContext context, Str
             actions: [
               PwButton(
                 label: Vi.shareDecline,
+                variant: PwButtonVariant.text,
                 onPressed: () => Navigator.of(context).pop((share: false, remember: remember)),
               ),
               PwButton(
                 label: Vi.shareConfirm,
-                variant: PwButtonVariant.primary,
+                variant: PwButtonVariant.text,
                 onPressed: () => Navigator.of(context).pop((share: true, remember: remember)),
               ),
             ],
@@ -113,7 +115,7 @@ class _Sharing extends StatelessWidget {
         decoration: BoxDecoration(
           color: t.surfaceRaised,
           border: Border.all(color: t.line),
-          borderRadius: BorderRadius.circular(PwRadius.radiusMd),
+          borderRadius: BorderRadius.circular(PwShapes.cornerMedium),
         ),
         child: Row(
           children: [
@@ -163,7 +165,7 @@ class _Warning extends StatelessWidget {
         decoration: BoxDecoration(
           color: t.surfaceRaised,
           border: Border.all(color: t.signal),
-          borderRadius: BorderRadius.circular(PwRadius.radiusMd),
+          borderRadius: BorderRadius.circular(PwShapes.cornerMedium),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -175,7 +177,8 @@ class _Warning extends StatelessWidget {
             const SizedBox(height: PwSpacing.space2),
             Text(body, style: PwTypeStyles.bodyTouch.copyWith(color: t.ink)),
             const SizedBox(height: PwSpacing.space2),
-            PwButton(label: action, block: true, onPressed: onAction),
+            // Filled tonal: what the box is for, but not the screen's main action ("Báo kết quả").
+            PwButton(label: action, variant: PwButtonVariant.tonal, block: true, onPressed: onAction),
           ],
         ),
       ),

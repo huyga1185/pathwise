@@ -47,6 +47,15 @@ export function formatDateLong(localDate: string): string {
   return `${weekday.charAt(0).toLocaleUpperCase('vi-VN')}${weekday.slice(1)}, ${dmy}`;
 }
 
+/** A local date "2026-12-01" as "T3, 01/12/2026" (CN for Sunday): one short line for lists and tables. */
+export function formatDateShort(localDate: string): string {
+  const [year, month, day] = localDate.split('-').map(Number);
+  const date = new Date(Date.UTC(year ?? 1970, (month ?? 1) - 1, day ?? 1));
+  const weekday = date.getUTCDay();
+  const name = weekday === 0 ? 'CN' : `T${weekday + 1}`;
+  return `${name}, ${String(day).padStart(2, '0')}/${String(month).padStart(2, '0')}/${year}`;
+}
+
 /** "03/11 16:20": a moment (ISO UTC) as day/month and 24-hour time in `timeZone`. */
 export function formatDayTime(instant: string | null | undefined, timeZone: string): string {
   if (!instant) return '';
@@ -98,4 +107,23 @@ export function formatRate(rate: number | null | undefined): string {
 export function shortDate(day: string): string {
   const [, month, date] = day.split('-');
   return `${date}/${month}`;
+}
+
+/**
+ * "Thứ Hai, 1 tháng 12, 2026" from "2026-12-01": a day spelled out for assistive technologies (HIG Charts: "June 6"
+ * is clearer than "6/6").
+ */
+export function spokenDate(localDate: string): string {
+  const [year, month, day] = localDate.split('-').map(Number);
+  const date = new Date(Date.UTC(year ?? 1970, (month ?? 1) - 1, day ?? 1));
+  const weekday = new Intl.DateTimeFormat('vi-VN', { weekday: 'long', timeZone: 'UTC' }).format(date);
+  const capital = weekday.charAt(0).toLocaleUpperCase('vi-VN') + weekday.slice(1);
+  return `${capital}, ${day} tháng ${month}, ${year}`;
+}
+
+/** "T2" … "T7", "CN" for "2026-12-01": a day of the week, short, for a chart's axis (G6, as Health's week chart). */
+export function weekdayShort(localDate: string): string {
+  const [year, month, day] = localDate.split('-').map(Number);
+  const index = new Date(Date.UTC(year ?? 1970, (month ?? 1) - 1, day ?? 1)).getUTCDay();
+  return index === 0 ? 'CN' : `T${index + 1}`;
 }

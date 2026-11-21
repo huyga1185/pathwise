@@ -1,62 +1,54 @@
+import type { ReactNode } from 'react';
 import { Outlet } from 'react-router';
 import { useStoreReadOnly } from '@/data/meQuery';
 import { useStoreQuery } from '@/data/storeQuery';
 import { useSession } from '@/features/auth';
 import { vi } from '@/shared/i18n/vi';
-import { useTheme } from '@/shared/theme/ThemeProvider';
-import { AppHeader, Button, MoonIcon, SunIcon } from '@/shared/ui';
+import { AppShell, ChartIcon, RouteIcon, StoreIcon, TruckIcon, UsersIcon } from '@/shared/ui';
 
 const NAV = [
-  { to: '/plans', label: vi.nav.plans },
-  { to: '/reports', label: vi.nav.reports },
-  { to: '/vehicles', label: vi.nav.vehicles },
-  { to: '/members', label: vi.nav.members },
-  { to: '/store', label: vi.nav.store },
+  { to: '/plans', label: vi.nav.plans, icon: <RouteIcon /> },
+  { to: '/reports', label: vi.nav.reports, icon: <ChartIcon /> },
+  { to: '/vehicles', label: vi.nav.vehicles, icon: <TruckIcon /> },
+  { to: '/members', label: vi.nav.members, icon: <UsersIcon /> },
+  { to: '/store', label: vi.nav.store, icon: <StoreIcon /> },
 ];
 
-/** Layout of every dispatcher page: header with menu, store, user, theme switch and sign out. */
-export function AppLayout() {
+/** The dispatcher frame (sidebar or tab bar, account menu) around any content (P-74). */
+export function DispatcherShell({ children }: { children: ReactNode }) {
   const { session, logOut } = useSession();
-  const { theme, setPreference } = useTheme();
   const store = useStoreQuery();
   const lock = useStoreReadOnly();
   const user = session.status === 'authenticated' ? session.user : null;
   return (
-    <div className="pw-app">
-      <AppHeader
-        items={NAV}
-        navLabel={vi.nav.main}
-        homeTo="/plans"
-        storeName={store.data?.name}
-        userName={user?.fullName || user?.email || ''}
-        profileTo="/profile"
-        darkLogo={theme === 'dark'}
-        actions={
-          <>
-            <button
-              type="button"
-              className="pw-icon-button"
-              aria-label={vi.theme.toggle}
-              onClick={() => setPreference(theme === 'dark' ? 'light' : 'dark')}
-            >
-              {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
-            </button>
-            <Button variant="quiet" onClick={() => void logOut()}>
-              {vi.auth.logout}
-            </Button>
-          </>
-        }
-      />
-      <main className="pw-page">
-        {lock.readOnly ? (
-          <div className="pw-lock-banner" role="status">
-            <strong>{vi.storeLock.banner}</strong>
-            <span>{lock.reason ?? vi.storeLock.noReason}</span>
-            <span className="pw-muted">{vi.storeLock.readOnly}</span>
-          </div>
-        ) : null}
-        <Outlet />
-      </main>
-    </div>
+    <AppShell
+      items={NAV}
+      navLabel={vi.nav.main}
+      account={{
+        name: user?.fullName || user?.email || '',
+        email: user?.email ?? '',
+        context: store.data?.name,
+        profileTo: '/profile',
+        onLogOut: () => void logOut(),
+      }}
+    >
+      {lock.readOnly ? (
+        <div className="pw-lock-banner" role="status">
+          <strong>{vi.storeLock.banner}</strong>
+          <span>{lock.reason ?? vi.storeLock.noReason}</span>
+          <span className="pw-muted">{vi.storeLock.readOnly}</span>
+        </div>
+      ) : null}
+      {children}
+    </AppShell>
+  );
+}
+
+/** Layout of every dispatcher page: the frame around the page of the route. */
+export function AppLayout() {
+  return (
+    <DispatcherShell>
+      <Outlet />
+    </DispatcherShell>
   );
 }

@@ -60,12 +60,13 @@ function profileHandlers(state = { sessions: sessionList() }) {
 const deviceRows = () =>
   within(screen.getByRole('region', { name: 'Thiết bị đang đăng nhập' })).getAllByRole('listitem');
 
-describe('Hồ sơ và bảo mật', () => {
+describe('Tài khoản', () => {
   it('hiện thông tin và thiết bị, thiết bị này đứng đầu, giờ theo timezone của cửa hàng', async () => {
     server.use(...profileHandlers());
     renderApp('/profile');
 
-    expect(await screen.findByRole('heading', { name: 'Hồ sơ và bảo mật' })).toBeInTheDocument();
+    // A short title (HIG Toolbars); the account menu's item has the same name.
+    expect(await screen.findByRole('heading', { name: 'Tài khoản', level: 1 })).toBeInTheDocument();
     expect(await screen.findByLabelText('Họ tên')).toHaveValue('Chủ Lan');
     expect(screen.getByLabelText('Số điện thoại')).toHaveValue('0905 123 456');
     expect(screen.getByText('Chủ cửa hàng')).toBeInTheDocument();
@@ -99,7 +100,8 @@ describe('Hồ sơ và bảo mật', () => {
 
     expect(await screen.findByText('Đã lưu thông tin.')).toBeInTheDocument();
     expect(body).toEqual({ fullName: 'Lan Nguyễn', phoneNumber: null });
-    expect(screen.getByRole('link', { name: 'Lan Nguyễn' })).toHaveAttribute('href', '/profile');
+    // The new name reaches the account button of the app shell.
+    expect(screen.getByRole('button', { name: 'Tài khoản: Lan Nguyễn' })).toBeInTheDocument();
   });
 
   it('số điện thoại sai thì báo dưới ô', async () => {
@@ -140,12 +142,16 @@ describe('Hồ sơ và bảo mật', () => {
     const user = userEvent.setup();
     await waitFor(() => expect(deviceRows()).toHaveLength(3));
 
-    await user.type(screen.getByLabelText(/^Mật khẩu hiện tại/), 'matkhau123');
-    await user.click(screen.getByRole('button', { name: 'Gửi mã xác nhận' }));
-    expect(await screen.findByText('Đã gửi mã 6 số tới chu.cuahang@example.com.')).toBeInTheDocument();
-    await user.type(screen.getByLabelText('Mã xác nhận'), '482913');
-    await user.type(screen.getByLabelText(/^Mật khẩu mới/), 'matkhaumoi1');
-    await user.click(screen.getByRole('button', { name: 'Đổi mật khẩu' }));
+    // The two steps in a sheet: "Tiếp" sends the code; then "Đổi", with "Quay lại" to the first step.
+    await user.click(screen.getByRole('button', { name: 'Đổi mật khẩu…' }));
+    const sheet = screen.getByRole('dialog', { name: 'Đổi mật khẩu' });
+    await user.type(within(sheet).getByLabelText(/^Mật khẩu hiện tại/), 'matkhau123');
+    await user.click(within(sheet).getByRole('button', { name: 'Tiếp' }));
+    expect(await within(sheet).findByText('Đã gửi mã 6 số tới chu.cuahang@example.com.')).toBeInTheDocument();
+    expect(within(sheet).getByRole('button', { name: 'Quay lại' })).toBeInTheDocument();
+    await user.type(within(sheet).getByLabelText('Mã xác nhận'), '482913');
+    await user.type(within(sheet).getByLabelText(/^Mật khẩu mới/), 'matkhaumoi1');
+    await user.click(within(sheet).getByRole('button', { name: 'Đổi' }));
 
     expect(await screen.findByText('Đã đổi mật khẩu. Các thiết bị khác đã bị đăng xuất.')).toBeInTheDocument();
     await waitFor(() => expect(deviceRows()).toHaveLength(1));
@@ -165,11 +171,13 @@ describe('Hồ sơ và bảo mật', () => {
     renderApp('/profile');
     const user = userEvent.setup();
 
-    await user.type(await screen.findByLabelText(/^Mật khẩu hiện tại/), 'sai');
-    await user.click(screen.getByRole('button', { name: 'Gửi mã xác nhận' }));
-    expect(await screen.findByText('Mật khẩu hiện tại không đúng.')).toBeInTheDocument();
+    await user.click(await screen.findByRole('button', { name: 'Đổi mật khẩu…' }));
+    const sheet = screen.getByRole('dialog', { name: 'Đổi mật khẩu' });
+    await user.type(within(sheet).getByLabelText(/^Mật khẩu hiện tại/), 'sai');
+    await user.click(within(sheet).getByRole('button', { name: 'Tiếp' }));
+    expect(await within(sheet).findByText('Mật khẩu hiện tại không đúng.')).toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: 'Gửi mã xác nhận' }));
+    await user.click(within(sheet).getByRole('button', { name: 'Tiếp' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('Vui lòng chờ trước khi xin mã mới.');
   });
 

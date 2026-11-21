@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pathwise_api/pathwise_api.dart';
@@ -125,139 +126,158 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> {
     final arrival = ref.read(clockProvider).now().add(Duration(seconds: progress.remainingSeconds));
     final stopId = directions.destinationStopId;
     final basemap = ref.watch(basemapProvider);
+    final maps = PwButton(
+      label: Vi.openExternalMaps(_apple),
+      block: true,
+      onPressed: () => unawaited(_openExternal(directions.destination)),
+    );
 
-    return Stack(
-      children: [
-        Positioned.fill(
-          child: NavigationMap(
-            basemap: basemap,
-            path: directions.path,
-            destination: directions.destination,
-            position: state.position,
-            headingDegrees: state.headingDegrees,
-            follow: _follow,
-            onUserMoved: () {
-              if (_follow) setState(() => _follow = false);
-            },
+    // The map's tiles are light in both themes: dark status bar icons over them, or in dark mode the clock and battery
+    // were white on a light map (D6; developer.android.com edge-to-edge: "manually update the system bar icon colors
+    // so they contrast with your app's background").
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: statusBarFor(Brightness.dark),
+      child: Stack(
+        children: [
+          Positioned.fill(
+            child: NavigationMap(
+              basemap: basemap,
+              // The credit is in the bottom panel, which covers the map's corner.
+              showAttribution: false,
+              path: directions.path,
+              destination: directions.destination,
+              position: state.position,
+              headingDegrees: state.headingDegrees,
+              follow: _follow,
+              onUserMoved: () {
+                if (_follow) setState(() => _follow = false);
+              },
+            ),
           ),
-        ),
-        // Top: the maneuver ahead.
-        Positioned(
-          left: 0,
-          right: 0,
-          top: 0,
-          child: SafeArea(
-            bottom: false,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(64, PwSpacing.space2, PwSpacing.space2, 0),
-              child: Semantics(
-                liveRegion: true,
-                child: _Panel(
-                  color: t.route,
-                  child: progress.arrived
-                      ? _Instruction(icon: Icons.flag, text: Vi.arrivedAt(place), color: t.onAccent)
-                      : next == null
-                      ? const SizedBox.shrink()
-                      : Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            _Instruction(
-                              icon: _icon(next.maneuver),
-                              text: _text(next, place),
-                              distance: formatDistance(progress.metersToNextStep),
-                              color: t.onAccent,
-                            ),
-                            if (after != null && !state.rerouting) ...[
-                              const SizedBox(height: PwSpacing.space1),
-                              Text(
-                                Vi.thenStep(_text(after, place)),
-                                style: PwTypeStyles.body.copyWith(color: t.onAccent),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
+          // Top: the maneuver ahead.
+          Positioned(
+            left: 0,
+            right: 0,
+            top: 0,
+            child: SafeArea(
+              bottom: false,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(64, PwSpacing.space2, PwSpacing.space2, 0),
+                child: Semantics(
+                  liveRegion: true,
+                  child: _Panel(
+                    color: t.route,
+                    child: progress.arrived
+                        ? _Instruction(icon: Icons.flag, text: Vi.arrivedAt(place), color: t.onAccent)
+                        : next == null
+                        ? const SizedBox.shrink()
+                        : Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              _Instruction(
+                                icon: _icon(next.maneuver),
+                                text: _text(next, place),
+                                distance: formatDistance(progress.metersToNextStep),
+                                color: t.onAccent,
                               ),
+                              if (after != null && !state.rerouting) ...[
+                                const SizedBox(height: PwSpacing.space1),
+                                Text(
+                                  Vi.thenStep(_text(after, place)),
+                                  style: PwTypeStyles.body.copyWith(color: t.onAccent),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                              if (state.rerouting) ...[
+                                const SizedBox(height: PwSpacing.space1),
+                                Text(Vi.rerouting, style: PwTypeStyles.body.copyWith(color: t.onAccent)),
+                              ],
                             ],
-                            if (state.rerouting) ...[
-                              const SizedBox(height: PwSpacing.space1),
-                              Text(Vi.rerouting, style: PwTypeStyles.body.copyWith(color: t.onAccent)),
-                            ],
-                          ],
-                        ),
+                          ),
+                  ),
                 ),
               ),
             ),
           ),
-        ),
-        // Bottom: what is left, and the way out.
-        Positioned(
-          left: 0,
-          right: 0,
-          bottom: 0,
-          child: SafeArea(
-            top: false,
-            child: Padding(
-              padding: const EdgeInsets.all(PwSpacing.space2),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  if (!_follow) ...[
-                    PwButton(
-                      label: Vi.recenter,
-                      icon: Icons.my_location,
-                      onPressed: () => setState(() => _follow = true),
-                    ),
-                    const SizedBox(height: PwSpacing.space2),
-                  ],
-                  _Panel(
-                    color: t.surfaceRaised,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(place, style: PwTypeStyles.heading.copyWith(color: t.ink)),
-                        const SizedBox(height: PwSpacing.space1),
-                        Text(
-                          Vi.remaining(
-                            formatDistance(progress.remainingMeters),
-                            formatDuration(progress.remainingSeconds),
-                            formatTime(arrival, route?.timezone ?? 'Asia/Ho_Chi_Minh'),
+          // Bottom: what is left, and the way out.
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: SafeArea(
+              top: false,
+              child: Padding(
+                padding: const EdgeInsets.all(PwSpacing.space2),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    if (!_follow) ...[
+                      PwButton(
+                        label: Vi.recenter,
+                        icon: Icons.my_location,
+                        variant: PwButtonVariant.tonal,
+                        onPressed: () => setState(() => _follow = true),
+                      ),
+                      const SizedBox(height: PwSpacing.space2),
+                    ],
+                    _Panel(
+                      color: t.surfaceRaised,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // Two lines at most: a long name (an office with its floor and building) took four and covered
+                          // the map; the full name is on the route (D6).
+                          Text(
+                            place,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: PwTypeStyles.heading.copyWith(color: t.ink),
                           ),
-                          style: PwTypeStyles.bodyTouch.copyWith(color: t.inkMuted),
-                        ),
-                        const SizedBox(height: PwSpacing.space2),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: PwButton(
-                                label: Vi.openExternalMaps(_apple),
-                                block: true,
-                                onPressed: () => unawaited(_openExternal(directions.destination)),
-                              ),
+                          const SizedBox(height: PwSpacing.space1),
+                          Text(
+                            Vi.remaining(
+                              formatDistance(progress.remainingMeters),
+                              formatDuration(progress.remainingSeconds),
+                              formatTime(arrival, route?.timezone ?? 'Asia/Ho_Chi_Minh'),
                             ),
-                            if (stopId != null) ...[
-                              const SizedBox(width: PwSpacing.space2),
-                              Expanded(
-                                child: PwButton(
-                                  label: Vi.report,
-                                  block: true,
-                                  variant: progress.arrived ? PwButtonVariant.primary : PwButtonVariant.secondary,
-                                  // The report screen with the route detail under it, whatever led here.
-                                  onPressed: () => context.go('/routes/${widget.routeId}/stops/$stopId'),
-                                ),
+                            style: PwTypeStyles.bodyTouch.copyWith(color: t.inkMuted),
+                          ),
+                          const SizedBox(height: PwSpacing.space2),
+                          // Side by side, stacked when a label does not fit in half the row ("Mở Google Maps" took two
+                          // lines beside a one-line "Báo kết quả", D6). "Báo kết quả" is the second level while driving
+                          // and the main action once arrived; Google Maps, the way out, stays outlined (§3 "Nút").
+                          if (stopId == null)
+                            maps
+                          else
+                            PwButtonPair(
+                              first: maps,
+                              second: PwButton(
+                                label: Vi.report,
+                                block: true,
+                                variant: progress.arrived ? PwButtonVariant.filled : PwButtonVariant.tonal,
+                                // The report screen with the route detail under it, whatever led here.
+                                onPressed: () => context.go('/routes/${widget.routeId}/stops/$stopId'),
                               ),
-                            ],
+                              labels: [Vi.openExternalMaps(_apple), Vi.report],
+                            ),
+                          if (basemap.attribution.isNotEmpty) ...[
+                            const SizedBox(height: PwSpacing.space2),
+                            Text(basemap.attribution, style: PwTypeStyles.small.copyWith(color: t.inkMuted)),
                           ],
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -271,26 +291,48 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> {
     return switch (access) {
       LocationAccess.serviceOff => _message(
         title: Vi.navigationGpsOff,
-        action: PwButton(label: Vi.gpsTurnOn, block: true, onPressed: () => unawaited(controller.openSettings())),
+        action: PwButton(
+          label: Vi.gpsTurnOn,
+          variant: PwButtonVariant.filled,
+          block: true,
+          onPressed: () => unawaited(controller.openSettings()),
+        ),
         fallback: fallback,
       ),
       LocationAccess.deniedForever => _message(
         title: Vi.navigationPermissionForever,
-        action: PwButton(label: Vi.openSettings, block: true, onPressed: () => unawaited(controller.openSettings())),
+        action: PwButton(
+          label: Vi.openSettings,
+          variant: PwButtonVariant.filled,
+          block: true,
+          onPressed: () => unawaited(controller.openSettings()),
+        ),
         fallback: fallback,
       ),
       _ => _message(
         title: Vi.navigationNeedsPermission,
-        action: PwButton(label: Vi.allowLocation, block: true, onPressed: () => unawaited(controller.start())),
+        action: PwButton(
+          label: Vi.allowLocation,
+          variant: PwButtonVariant.filled,
+          block: true,
+          onPressed: () => unawaited(controller.start()),
+        ),
         fallback: fallback,
       ),
     };
   }
 
   Widget _failed(NavigationFailure failure, GeoPoint? fallback) {
-    final back = PwButton(label: Vi.backToRoutes, block: true, onPressed: () => context.go('/routes'));
+    // The one thing to do on a full-screen message is filled; Google Maps below it stays outlined (§3 "Nút", D6).
+    final back = PwButton(
+      label: Vi.backToRoutes,
+      variant: PwButtonVariant.filled,
+      block: true,
+      onPressed: () => context.go('/routes'),
+    );
     final retry = PwButton(
       label: Vi.retry,
+      variant: PwButtonVariant.filled,
       block: true,
       onPressed: () => unawaited(ref.read(navigationProvider(_target).notifier).start()),
     );
@@ -422,7 +464,8 @@ class _Instruction extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Row(
     children: [
-      Icon(icon, size: 40, color: color),
+      // Grows with the system text, as the words beside it do (§3 "Vùng chạm", D6).
+      Icon(icon, size: scaledIconSize(context, 40), color: color),
       const SizedBox(width: PwSpacing.space2),
       Expanded(
         child: Column(

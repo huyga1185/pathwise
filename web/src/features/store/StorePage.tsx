@@ -8,8 +8,18 @@ import type { LatLng } from '@/platform/map';
 import { errorMessages, fieldErrors, messageFor } from '@/shared/errors';
 import { requiredRule } from '@/shared/forms/rules';
 import { applyServerErrors, errorCode } from '@/shared/forms/serverErrors';
+import { useMediaQuery, WIDE_QUERY } from '@/shared/hooks/useMediaQuery';
 import { vi } from '@/shared/i18n/vi';
-import { Button, ErrorBanner, SelectField, TextField } from '@/shared/ui';
+import {
+  buttonClass,
+  CheckIcon,
+  ErrorBanner,
+  SelectField,
+  TextField,
+  Toast,
+  ToastDock,
+  ActivityIndicator,
+} from '@/shared/ui';
 import { PinPicker } from '@/shared/ui/PinPicker';
 import { useStoreApi, type Store } from './storeApi';
 import { StoreTabs } from './StoreTabs';
@@ -49,7 +59,7 @@ export function StorePage() {
           {store.isError ? (
             <ErrorBanner title={messageFor(store.error)} />
           ) : (
-            <p className="pw-muted">{vi.pages.loading}</p>
+            <ActivityIndicator label={vi.pages.loading} />
           )}
         </>
       )}
@@ -67,6 +77,7 @@ const FIELDS = ['name', 'timezone', 'address'] as const;
 const LABELS = { name: vi.store.name, timezone: vi.store.timezone, address: vi.store.depotAddress };
 
 function StoreForm({ store, editable, tabs }: { store: Store; editable: boolean; tabs: ReactNode }) {
+  const wide = useMediaQuery(WIDE_QUERY);
   const storeApi = useStoreApi();
   const search = useGeocodingSearch();
   const [pin, setPin] = useState<LatLng | null>(store.depot ? { lat: store.depot.lat, lon: store.depot.lon } : null);
@@ -117,35 +128,50 @@ function StoreForm({ store, editable, tabs }: { store: Store; editable: boolean;
 
   return (
     <form className="pw-store" aria-labelledby="store-title" onSubmit={onSave} noValidate>
-      <div className="pw-store-head">
-        <div className="pw-store-intro">
-          <h1 id="store-title" className="pw-page-title">
-            {vi.store.title}
-          </h1>
-          <p className="pw-muted">{editable ? vi.store.leadOwner : vi.store.leadViewer}</p>
-        </div>
+      {/* The title with the main action at its end, as on every page (HIG Toolbars); then the tabs, then this tab's
+          lead: the same header as the log tab, so switching tabs moves nothing above the content. */}
+      <div className="pw-list-head pw-store-head">
+        <h1 id="store-title" className="pw-page-title">
+          {vi.store.title}
+        </h1>
         {editable ? (
-          <Button type="submit" variant="primary" busy={isSubmitting} disabled={!pin}>
-            {vi.store.save}
-          </Button>
+          // Save is a checkmark (HIG Icons, standard icons: Done/Save → checkmark), with its words on a wide window and
+          // alone in a round button on a phone, like "+" on the other pages.
+          <button
+            type="submit"
+            className={wide ? buttonClass('primary') : 'pw-icon-button pw-list-add'}
+            aria-label={wide ? undefined : vi.store.save}
+            title={wide ? undefined : vi.store.save}
+            aria-busy={isSubmitting ? 'true' : undefined}
+            disabled={!pin || isSubmitting}
+          >
+            <CheckIcon />
+            {wide ? vi.store.save : null}
+          </button>
         ) : null}
       </div>
       {tabs}
+      <p className={tabs ? 'pw-muted pw-list-lead-tight' : 'pw-muted pw-list-lead'}>
+        {editable ? vi.store.leadOwner : vi.store.leadViewer}
+      </p>
 
       {!pin ? (
         <section role="alert" className="pw-store-warning">
           {editable ? vi.store.noDepot : vi.store.noDepotViewer}
         </section>
       ) : null}
+      {/* Saved: a toast, like the other pages (HIG Alerts: no interruption just to inform). */}
       {saved ? (
-        <section role="status" className="pw-store-saved">
-          {vi.store.saved}
-        </section>
+        <ToastDock>
+          <Toast tone="success" onClose={() => setSaved(false)}>
+            {vi.store.saved}
+          </Toast>
+        </ToastDock>
       ) : null}
       {failure ? <ErrorBanner title={messageFor(failure)} /> : null}
 
       <div className="pw-store-layout">
-        <section className="pw-card pw-store-info" aria-labelledby="info-title">
+        <section className="pw-store-group pw-store-info" aria-labelledby="info-title">
           <h2 id="info-title">{vi.store.info}</h2>
           <TextField
             label={vi.store.name}
@@ -180,7 +206,7 @@ function StoreForm({ store, editable, tabs }: { store: Store; editable: boolean;
           </div>
         </section>
 
-        <section className="pw-card pw-store-map" aria-labelledby="map-title">
+        <section className="pw-store-group pw-store-map" aria-labelledby="map-title">
           <h2 id="map-title">{vi.store.depotTitle}</h2>
           <PinPicker
             value={pin}

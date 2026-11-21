@@ -2,6 +2,7 @@ package uk.huy.pathwise.support;
 
 import uk.huy.pathwise.notification.infrastructure.sender.EmailSender;
 import uk.huy.pathwise.notification.infrastructure.sender.EmailSenderException;
+import uk.huy.pathwise.notification.infrastructure.sender.InlineImage;
 
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -11,15 +12,17 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * Records emails instead of sending them, so integration tests can read OTPs and invitation codes.
  */
 public class FakeEmailSender implements EmailSender {
-    public record SentEmail(String from, String name, String to, String subject, String content, boolean isHtml) {}
+    public record SentEmail(String from, String name, String to, String subject, String content, boolean isHtml,
+                            List<InlineImage> inlineImages) {}
 
     private final List<SentEmail> sent = new CopyOnWriteArrayList<>();
     private final AtomicBoolean failNext = new AtomicBoolean();
 
     @Override
-    public void send(String from, String name, String to, String subject, String content, boolean isHtml) {
+    public void send(String from, String name, String to, String subject, String content, boolean isHtml,
+                     List<InlineImage> inlineImages) {
         if (failNext.getAndSet(false)) throw new EmailSenderException("Simulated SMTP failure");
-        sent.add(new SentEmail(from, name, to, subject, content, isHtml));
+        sent.add(new SentEmail(from, name, to, subject, content, isHtml, List.copyOf(inlineImages)));
     }
 
     public List<SentEmail> sentTo(String to) {

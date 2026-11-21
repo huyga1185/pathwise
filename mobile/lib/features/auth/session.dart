@@ -121,6 +121,16 @@ class SessionController extends Notifier<Session> {
     state = const SessionAnonymous();
   }
 
+  /// The signed-in person changed their name (`PATCH /users/me`, M06): screens showing it follow.
+  void renamed(String? fullName) {
+    final current = state;
+    if (current is! SessionSignedIn) return;
+    final user = current.user;
+    state = SessionSignedIn(
+      SessionUser(id: user.id, email: user.email, fullName: fullName, role: user.role, canDrive: user.canDrive),
+    );
+  }
+
   void _expire() {
     final client = ref.read(apiClientProvider);
     client.tokens.accessToken = null;

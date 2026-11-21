@@ -1,0 +1,110 @@
+# Hướng dẫn phát triển
+
+Cài môi trường, chạy PathWise trên máy và chạy test. Giới thiệu dự án: `README.md` ở root; quy trình branch và CI: `docs/CONTRIBUTING.md`.
+
+## Yêu cầu môi trường
+
+- Docker (kèm Docker Compose v2.24 trở lên).
+- JDK 21 nếu chạy app từ IDE hoặc `./mvnw`. Không cần cài MariaDB, Redis hay SMTP.
+
+## Cách 1: hạ tầng trong container, app chạy từ IDE (mặc định khi dev)
+
+```bash
+cp .env.example .env
+cp be/src/main/resources/application-dev.example.yaml be/src/main/resources/application-dev.yaml
+docker compose up -d                 # MariaDB 11.8 (cổng 3307), Redis (6380), Mailpit (1025 / 8025)
+cd be && ./mvnw spring-boot:run -Dspring-boot.run.profiles=dev
+```
+
+`application-dev.yaml` đã được gitignore, có thể sửa thoải mái (secret thật chỉ để ở đây hoặc trong `.env`). Nếu đổi cổng hay mật khẩu trong `.env` thì sửa `application-dev.yaml` cho khớp.
+
+## Cách 2: chạy toàn bộ stack trong container
+
+```bash
+cp .env.example .env
+docker compose --profile app up -d --build
+curl http://localhost:8080/actuator/health   # {"status":"UP"} sau khoảng 1 phút
+```
+
+App được build từ `be/Dockerfile` (multi-stage), chạy bằng user không phải root, mọi cấu hình đi qua biến môi trường trong `.env`. API nằm dưới `http://localhost:8080/api/v1`.
+
+Dừng: `docker compose --profile app down`. Thêm `-v` để xoá luôn dữ liệu MariaDB và Redis.
+
+**DB dev tạo trước T50:** app chạy từ IDE (JVM múi giờ +07) từng lưu giờ ca và khung giờ lệch 8 tiếng (F-54). Dữ liệu dev không quan trọng thì xoá volume (`docker compose down -v`); muốn giữ thì chạy một lần, **chỉ trên DB dev đã ghi từ IDE** (không chạy trên staging/prod, nơi app chạy trong container UTC):
+
+```sql
+-- Dời thêm 8 giờ, quay vòng trong ngày (giờ lưu 16:30 là 00:30 thật).
+UPDATE route_plan_routes SET shift_start = SEC_TO_TIME(MOD(TIME_TO_SEC(shift_start) + 8 * 3600 + 86400, 86400)), shift_end = SEC_TO_TIME(MOD(TIME_TO_SEC(shift_end) + 8 * 3600 + 86400, 86400));
+UPDATE route_plan_stops SET tw_start = SEC_TO_TIME(MOD(TIME_TO_SEC(tw_start) + 8 * 3600 + 86400, 86400)), tw_end = SEC_TO_TIME(MOD(TIME_TO_SEC(tw_end) + 8 * 3600 + 86400, 86400)) WHERE tw_start IS NOT NULL;
+```
+
+## OSRM và Nominatim tự host (tuỳ chọn)
+
+Mặc định app gọi server công khai của OSRM và Nominatim (chỉ hợp cho dev/demo). Chạy bản tự host với dữ liệu OpenStreetMap cắt theo vùng `ROUTING_BBOX` (mặc định Đà Nẵng và Hội An):
+
+```bash
+docker compose -f compose.yaml -f compose.routing.yaml up -d   # lần đầu: tải ~330 MB, cắt vùng, dựng OSRM, import Nominatim
+```
+
+Rồi trỏ app vào `http://localhost:5000` (OSRM) và `http://localhost:8088` (Nominatim), tắt rate limit của Nominatim: biến ở `.env.example`. Prod và máy routing riêng: `docs/DEPLOYMENT.md` §7.
+
+## Chạy test
+
+```bash
+cd be && ./mvnw test
+```
+
+Chỉ cần Docker: test tích hợp tự bật MariaDB và Redis bằng Testcontainers, không dùng stack ở trên.
+
+## Client (web, app tài xế)
+
+Kế hoạch, kiến trúc và quy tắc của web và app tài xế: `docs/client/` (bắt đầu từ `docs/client/README.md`). Hai client dùng chung:
+
+- `api/openapi.json`: hợp đồng API máy đọc, sinh từ backend. Đổi API thì chạy `scripts/sync_openapi.sh` (cần Docker) và commit file này cùng PR; CI fail khi file lệch backend.
+- `brand/design-system/tokens.json`: token giao diện. `python3 scripts/build_tokens.py` sinh theme cho web và mobile; `--check` kiểm file sinh còn khớp.
+- Test của các script: `python3 -m unittest discover -s scripts/tests`.
+
+Web dispatcher (`web/`, Node 24+, pnpm theo `packageManager`):
+
+```bash
+cd web && pnpm install
+pnpm dev          # http://localhost:5173/app/, proxy /api tới backend ở :8080
+pnpm test         # Vitest + MSW, không cần backend
+pnpm lint && pnpm typecheck && pnpm build
+```
+
+App tài xế (`mobile/`, Flutter theo `mobile/.fvmrc`):
+
+```bash
+cd mobile && flutter pub get
+flutter run --dart-define=API_BASE=http://10.0.2.2:8080   # emulator Android tới backend trên máy
+flutter analyze && flutter test
+../scripts/gen_dart_api.sh        # sinh lại client sau khi đổi api/openapi.json (cần Docker)
+../scripts/build_mobile_brand.sh  # sinh lại icon/logo từ brand/logo (cần rsvg-convert)
+```
+
+E2E (Playwright, cần Docker): stack riêng `pathwise-e2e` (cổng trong `web/e2e/e2e.env`, không đụng DB/Mailpit dev; server giả thay Nominatim và OSRM, P-49):
+
+```bash
+export E2E_JWT_SECRET="$(openssl rand -base64 32)"   # sinh mỗi lần, không commit
+docker compose -p pathwise-e2e --env-file web/e2e/e2e.env -f compose.yaml -f compose.e2e.yaml --profile app up -d --build --wait
+cd web && pnpm exec playwright install chromium   # lần đầu
+pnpm e2e          # build web, vite preview :4173 proxy /api tới :8091, chạy web/e2e/
+docker compose -p pathwise-e2e --env-file web/e2e/e2e.env -f compose.yaml -f compose.e2e.yaml --profile app down -v
+```
+
+Trang giới thiệu (`landing/`): HTML, CSS và JS viết tay, không build; xem thử đúng như prod (Caddy, template, 404) theo `landing/README.md`.
+
+## Xem email (OTP, lời mời)
+
+Mọi email khi dev được gửi tới Mailpit: mở http://localhost:8025.
+
+## Phát hành
+
+Push tag `vX.Y.Z` thì workflow `image` build image backend và web lên GHCR. Publish GitHub Release từ tag đó thì workflow `release` đính tarball web (kèm landing và `Caddyfile`) và `pathwise-driver.apk` (app tài xế ký bằng release key từ GitHub secret; chỉ build khi tag nằm trên `main`). Quy trình: `docs/CONTRIBUTING.md`; secret và cách tạo key: `mobile/README.md` (mục "APK trong GitHub Release").
+
+## Xử lý sự cố
+
+**Flyway báo "Unable to check whether schema is empty" khi dùng MariaDB cài trên máy (không phải container).** Thường xảy ra sau khi nâng cấp MariaDB mà chưa chạy `mariadb-upgrade`, nên bảng hệ thống còn ở định dạng cũ. Chạy `sudo mariadb-upgrade` rồi khởi động lại MariaDB. Khuyến nghị dùng MariaDB trong compose (đã ghim `mariadb:11.8`, D-35) để tránh lệch version.
+
+**Cổng đã bị chiếm.** Đổi `MARIADB_PORT`, `REDIS_PORT`, `MAILPIT_*_PORT` hoặc `APP_PORT` trong `.env`, rồi sửa `application-dev.yaml` cho khớp.

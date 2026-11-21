@@ -1,5 +1,7 @@
 # DESIGN_SYSTEM — Brand book và component của PathWise
 
+> **Ưu tiên (P-71):** hướng dẫn chính thức của Apple đứng trước các quy tắc trong tài liệu này; xem `docs/client/UI_GUIDELINES.md`. Màn Đăng nhập/Đăng ký có ngoại lệ ghi ở P-72.
+>
 > Bản trong repo của design system PathWise (Claude Design, artifact `https://claude.ai/artifact/CBQwFPSiBSH6JavBwHgutU`, chép ngày 2026-11-03, version artifact 15; W11 thêm trạng thái cửa hàng vào README, `StatusPill` và `bundle.js` của artifact, version 16). **Repo là nguồn đúng cho code**; artifact là nơi chủ dự án xem và góp ý trực quan. Đổi token hay quy tắc thì sửa cả hai trong cùng PR (xem `docs/client/README.md` §4).
 >
 > File đi kèm trong `brand/design-system/`:
@@ -24,7 +26,7 @@ PathWise là phần mềm lập tuyến giao hàng cho cửa hàng nhỏ ở Vi�
 ## Màu
 
 - Nền trang `surface`; panel, bảng, thẻ, khung bản đồ `surface-raised`. Phân tầng chính bằng nền. Bóng chỉ cho lớp nổi lên trên trang: `shadow-raised` cho thẻ đăng nhập và thông báo, `shadow-overlay` cho hộp thoại. Bảng, panel và thẻ dữ liệu không có bóng.
-- Gradient: chỉ `brand-gradient` cho panel thương hiệu (màn tài khoản, đăng nhập app tài xế), và một lớp sáng rất nhẹ trên nút chính (có sẵn trong `Button`). Không dùng gradient cho nền trang, thẻ dữ liệu, chữ hay icon.
+- Gradient: chỉ `brand-gradient` cho panel thương hiệu (màn tài khoản phụ, đăng nhập app tài xế), và một lớp sáng rất nhẹ trên nút chính (có sẵn trong `Button`). Không dùng gradient cho nền trang, thẻ dữ liệu, chữ hay icon. Màn **Đăng nhập** và **Đăng ký cửa hàng** dùng ảnh `map-route.svg` thay cho panel gradient (P-72, `SCREENS.md` §1.2).
 - Chữ `ink`; chữ phụ (địa chỉ, ETA, chú thích) `ink-muted`. Không dùng màu trạng thái cho chữ thường.
 - `route` là màu duy nhất của thương hiệu: nút chính, link, tab đang chọn, vòng focus, và đường route mặc định trên bản đồ. Mỗi màn hình chỉ một nút chính `route`.
 - Dòng đang chọn, stop tài xế sắp tới: nền `surface-tint`, chữ vẫn `ink`.
@@ -32,21 +34,33 @@ PathWise là phần mềm lập tuyến giao hàng cho cửa hàng nhỏ ở Vi�
 
 ### Theme sáng và tối
 
-- Hai theme dùng cùng tên token; client chỉ đổi giá trị. Mặc định theo cài đặt hệ điều hành (`prefers-color-scheme` trên web, `ThemeMode.system` trên Flutter), người dùng chọn lại được và lựa chọn được nhớ trên máy.
+- Hai theme dùng cùng tên token; client chỉ đổi giá trị. Luôn theo cài đặt hệ điều hành (`prefers-color-scheme` trên web, `ThemeMode.system` trên Flutter), không có nút hay lựa chọn sáng/tối trong app (P-73; HIG Dark Mode: "Avoid offering an app-specific appearance setting… they may think your app is broken because it doesn't respond to their systemwide appearance choice").
 - Ở theme tối, màu nhấn (`route`, trạng thái) sáng lên để đọc được trên nền tối; vì thế chữ đặt trên nền màu nhấn luôn dùng `on-accent`, không viết cứng màu trắng.
 - Phân tầng ở theme tối vẫn bằng nền: `surface` tối nhất, `surface-raised` sáng hơn một bậc. Bóng chỉ cho lớp nổi như ở theme sáng; token bóng đậm hơn để còn thấy trên nền tối.
-- Bản đồ: tile OSM chuẩn chỉ có bản sáng. Ở theme tối, khung bản đồ vẫn dùng tile sáng cho đến khi chọn nguồn tile tối (cần quyết định riêng vì là dịch vụ ngoài); đường route và marker vẫn dùng token theo theme sáng để nổi trên tile sáng.
+- Bản đồ: tile MapTiler (P-45; `osm()` chỉ khi dev) luôn dùng kiểu sáng. Ở theme tối, khung bản đồ vẫn dùng tile sáng cho đến khi chọn kiểu tile tối (cần quyết định riêng vì là dịch vụ ngoài); đường route và marker vẫn dùng token theo theme sáng để nổi trên tile sáng.
 - Ảnh và logo: theme tối dùng mark trắng.
 
 ### Màu theo trạng thái
 
 Mỗi trạng thái hiện bằng **pill**: nhãn `label` viết hoa, chữ `on-accent` trên nền màu trạng thái, bo `radius-full`. Màu không bao giờ đứng một mình: luôn có chữ.
 
+**Mỗi màu một nghĩa** (P-76, [Apple] Color: "Avoid using the same color to mean different things… especially when you use it to help communicate information like status"):
+
+| Token | Nghĩa |
+|---|---|
+| `ink-muted` | chưa bắt đầu hoặc không còn hiệu lực (nháp, đã giao việc, chờ giao, chưa xếp tuyến, thu hồi, hết hạn…) |
+| `info` | đang diễn ra hoặc đang xử lý (đang giao, đang tìm toạ độ, đang tối ưu, đang chạy, chờ nhận lời mời) |
+| `signal` | cần chú ý (bỏ qua, không xếp được, cửa hàng tạm khoá) |
+| `success` | xong hoặc đang hoạt động bình thường |
+| `danger` | thất bại, huỷ hoặc bị vô hiệu |
+
+**Tương phản:** theme sáng tô nền pill đậm hơn token 12% (`color-mix(in srgb, token 88%, black)`, app tài xế `Color.lerp(token, black, 0.12)`) để chữ trắng 12px đạt 7:1 ([Apple] Dark Mode: "strive for a contrast ratio of 7:1, especially in small text"); đo: 7,07–7,99:1 (trước 5,86–6,72:1). Theme tối dùng token nguyên (7,72–9,06:1).
+
 | Trạng thái (API) | Nhãn | Token |
 |---|---|---|
 | Plan `DRAFT` | NHÁP | `ink-muted` |
-| Plan `PUBLISHED` | ĐÃ GIAO VIỆC | `info` |
-| Plan `IN_PROGRESS`, route `IN_PROGRESS` | ĐANG GIAO | `signal` |
+| Plan `PUBLISHED` | ĐÃ GIAO VIỆC | `ink-muted` |
+| Plan `IN_PROGRESS`, route `IN_PROGRESS` | ĐANG GIAO | `info` |
 | Plan `COMPLETED`, route `COMPLETED` | HOÀN THÀNH | `success` |
 | Plan `CANCELLED` | ĐÃ HUỶ | `danger` |
 | Stop `PENDING`, route `PENDING` | CHỜ GIAO | `ink-muted` |
@@ -90,8 +104,10 @@ Bộ component React (`window.PathWise`) là bản tham chiếu cho web dashboar
 
 - Khoảng cách theo bậc `space-1` (4), `space-2` (8), `space-4` (16), `space-6` (24); không dùng giá trị lẻ.
 - Panel và thẻ padding `space-4`, cách nhau `space-6`. Ô bảng padding dọc `space-2`.
-- Bo góc: ô nhập, nút, khung bảng, khung bản đồ `radius-sm`; thẻ, panel, hộp thoại `radius-md`; thẻ nổi đứng riêng (thẻ đăng nhập) `radius-lg`; pill và marker `radius-full`.
+- Bo góc: ô nhập, nút, khung bảng, khung bản đồ `radius-sm`; thẻ, panel, hộp thoại `radius-md`; thẻ nổi đứng riêng (thẻ đăng nhập) `radius-lg`; pill và marker `radius-full`. App tài xế: nút, hộp thoại, bottom sheet theo hình mặc định của Material 3 (P-77; nút viên thuốc, hộp thoại bo 28, sheet bo 28 cạnh trên); thẻ và ô (thẻ tuyến, thẻ điểm tiếp theo, nhóm hàng điểm, ô chia sẻ vị trí, ô lỗi) bo **12** = M3 `md.sys.shape.corner.medium`, hình của cả ba loại thẻ M3 (`PwShapes.cornerMedium`, D6, chủ dự án chọn); ô nhập giữ `radius-sm` 4 (= M3 extra small của ô viền); bảng dẫn đường nổi trên bản đồ giữ `radius-lg` 16.
+  - **Khu chủ cửa hàng đã redesign (G2–G4, `OWNER_UI_REDESIGN.md`) thay quy tắc thẻ/panel trên:** nhóm nội dung là ô nền `surface-raised`, **bo 16, không viền** (`pw-list-group`, `pw-store-group`, `pw-form-group`); bảng trong nhóm không có khung riêng. Trang chưa redesign còn thẻ `radius-md` có viền: **chi tiết kế hoạch** (để G5, chủ dự án chọn 2026-11-18), Báo cáo (G6), khu quản trị. Đo 2026-11-18: chi tiết kế hoạch bo 8 / bảng bo 4, có viền; các trang đã redesign bo 16 không viền.
 - Web dashboard: màn hình soạn plan chia đôi, bảng stop bên trái, bản đồ bên phải; dưới 1024px bản đồ xuống dưới bảng.
+- App tài xế (D3): màn có top app bar small của Material 3 (`AppBar`, ghim); icon cạnh chữ (mũi tên đổi ngày, icon hàng danh sách, nút radio) to theo cỡ chữ hệ thống (`scaledIconSize`).
 - App tài xế: vùng chạm tối thiểu 48px; ba nút kết quả của stop (Đã giao, Không giao được, Bỏ qua) xếp dọc, cao 56px, ở nửa dưới màn hình để bấm bằng ngón cái.
 
 ## Trạng thái và tương tác
@@ -111,7 +127,8 @@ Mark là chữ P kèm con đường và ghim vị trí: con đường là tuyế
 
 - **Mark màu** (`pathwise-mark.svg`, nền chuyển `#1fa189` → `#0b6a5c` → `#054a40`): dùng trên nền sáng (`surface`, `surface-raised`).
 - **Mark trắng** (`pathwise-mark-white.svg`): dùng trên nền màu thương hiệu `#0b6a5c`, ảnh tối, và mọi nền ở theme tối (phần tối của mark màu chìm vào nền tối). Không đặt mark màu lên nền màu. Ở theme tối, `route` sáng hơn nên không làm nền cho mark trắng.
-- **Lockup**: mark đứng trước, cách chữ `space-2`, chữ **PathWise** Be Vietnam Pro 700 màu `ink`; chiều cao mark bằng khoảng 1,4 lần cỡ chữ. Header web dùng lockup; chỗ hẹp chỉ dùng mark.
+- **Lockup**: mark đứng trước, cách chữ `space-2`, chữ **PathWise** Be Vietnam Pro 700; chiều cao mark bằng khoảng 1,4 lần cỡ chữ. Lockup chỉ ở chỗ cần ngữ cảnh: thẻ các màn tài khoản (đăng nhập, đăng ký, nhận lời mời…) và trang lỗi khi chưa đăng nhập; trang trong app không có logo (P-74, HIG Branding); chỗ hẹp chỉ dùng mark.
+- **Chữ logo hai màu** (P-72): "Path" màu chữ (`ink`, hoặc trắng trên nền tối/thương hiệu), "Wise" màu nhấn: `route` trên nền sáng (trang lỗi; tự sáng lên ở theme tối), bạc hà `#9ff0d3` trên nền tối hoặc nền xanh thương hiệu (màn tài khoản, dải đầu email, đăng nhập app tài xế). Web dùng component `Wordmark`; đọc liền là "PathWise".
 - **Cỡ nhỏ**: dưới 48px dùng bản không có vạch đường, vì vạch đứt thành nhiễu ở cỡ đó. `favicon.svg` (icon tab trình duyệt), `favicon-32.png` và `favicon.ico` (16, 32, 48px, dự phòng cho trình duyệt và công cụ không đọc SVG) là bản không vạch; `favicon-192.png`, `favicon-512.png`, `apple-touch-icon.png` giữ vạch. Mark không nhỏ hơn 16px.
 - **App icon** (`app-icon.svg`, `app-icon-foreground.svg` cho icon Android thích ứng): chỉ dùng cho icon cài đặt, không dùng trong giao diện.
 - Không đổi màu, xoay, kéo méo, thêm bóng hay viền cho mark. Chừa khoảng trống quanh mark tối thiểu bằng 1/4 chiều cao mark.
@@ -132,6 +149,15 @@ Nút bấm cho mọi hành động; mỗi màn hình chỉ một nút `primary`,
 - Nhãn: động từ đứng đầu, viết hoa chữ cái đầu câu. Khi đang gửi request dùng `busy` và đổi nhãn sang dạng tiếp diễn ("Đang giao việc…"), không thay bằng spinner.
 - Màu chữ trên nút màu dùng `on-accent`, đổi theo theme.
 
+**App tài xế (Material 3, P-77, từ D1 của `DRIVER_UI_REDESIGN.md`):** `PwButton` dựng trên nút Material 3 của Flutter, hình viên thuốc và đệm hai bên theo mặc định M3 (24 dp, nút chữ 12 dp, thu lại khi chữ hệ thống to).
+
+- **filled**: việc chính của màn, một nút mỗi màn ("Đăng nhập", "Tiếp tục giao", "Báo kết quả").
+- **tonal** (nền `surface-tint`, chữ `ink`): việc quan trọng thứ hai ("Chỉ đường", "Gọi khách").
+- **outlined** (mặc định): mức trung bình trên nền trơn ("Đăng xuất" trong menu tài khoản).
+- **text**: việc nhẹ, link, nút của hộp thoại; **textDanger**: việc phá huỷ trong hộp thoại (chữ `danger`).
+- **success / danger / signal** cỡ `xl`: ba nút kết quả, giữ màu và 56 dp dù M3 khuyên một nút tô nền mỗi màn (lệch có chủ đích, `DRIVER_UI_REDESIGN.md` §6 Q1).
+- Nút tắt dùng màu tắt của M3; `busy` giữ màu, hiện vòng chờ, không nhận bấm.
+
 ### TextField
 
 Ô nhập có nhãn, chữ hướng dẫn và câu lỗi; dùng cho mọi form trên web và app.
@@ -140,15 +166,19 @@ Nút bấm cho mọi hành động; mỗi màn hình chỉ một nút `primary`,
 - `error`: câu lỗi lấy từ bảng thông điệp theo mã lỗi API (`docs/ux/UX_BRIEF.md` §6); nói chuyện gì sai và sửa thế nào. Ô lỗi có viền `danger` 2px, câu lỗi `small` màu `danger` ngay dưới ô, liên kết qua `aria-describedby`.
 - Với lỗi validation từ API (`fields`), gắn từng câu vào đúng ô theo tên field.
 - `multiline` cho ghi chú stop và ô dán mã mời (web làm từ W02).
-- Ô mã một dòng (web W02, class `pw-field-code`, thêm `pw-field-code-sm` trong thẻ Hồ sơ): chữ số lớn, giãn chữ, căn giữa, `inputmode="numeric"`, `autocomplete="one-time-code"`; dùng ở Quên mật khẩu bước 2 và đổi mật khẩu theo prototype. Màn Xác thực email dùng `OtpInput` 6 ô.
-- Web (W01) thêm `startIcon` (icon trong ô, ví dụ thư, ổ khoá ở màn tài khoản), `endAction` (nút trong ô, ví dụ hiện mật khẩu, có `aria-label` và `aria-pressed`) và `size="lg"` (48px, chữ 16px cho màn tài khoản).
+- Ô mã xác nhận: `CodeField`, một `<input autocomplete="one-time-code">` vẽ thành 6 khung (SCREENS §1.2) ở các màn nhập mã của thẻ tài khoản (sheet Đổi mật khẩu trong app: một thanh nhập `one-time-code`, §8.15); khung nền fill nhạt, viền như ô nhập, khung đang nhận số sáng viền; bo `radius-md` khi dùng chuột, 22 trên cảm ứng và trong thẻ tài khoản (`OWNER_UI_REDESIGN.md` §8.13). Kiểu cũ `pw-field-code` và `OtpInput` đã bỏ.
+- **`AppShell`** (web, P-74, thay `AppHeader`): khung mọi trang đã đăng nhập. Màn ≥ 960px: sidebar kính nổi bên trái (rộng 232, cách mép 12, bo `radius-lg`, mục cao 36/44 bo `radius-md`, mục đang mở nền `route` 16%), ẩn/hiện được; màn hẹp: tab bar kính hình viên thuốc nổi dưới đáy (cao 64, mục biểu tượng + nhãn 11px). Thanh trên gần đặc, nút tròn chữ viết tắt mở menu tài khoản (kính dày 90%). Control 36px với chuột, 44px khi chạm (`pointer: coarse`). Giảm trong suốt/tăng tương phản: nền đặc; forced colors: viền hệ thống. Chuyển động (OWNER_UI_REDESIGN §6.2): ô đánh dấu mục đang mở trượt giữa các mục, đổi khu: màn rộng chuyển cảnh mờ ra/mờ vào (View Transitions), điện thoại trang mới mờ vào và nhô lên tại chỗ; trượt khi đi sâu/quay lên, menu bật ra từ nút, sidebar trượt khi ẩn/hiện; giảm chuyển động thì chỉ mờ.
+- **`CodeField`** (web, chuẩn mới cho mã một lần): **một** `<input>` thật (`autocomplete="one-time-code"`, `inputmode="numeric"`, chỉ giữ chữ số, tối đa 6) vẽ thành 6 khung; khung kế tiếp sáng viền `route` thay con trỏ; trình đọc màn hình thấy một ô có nhãn, các khung `aria-hidden`. Lý do: tài liệu AutoFill của Apple mô tả việc điền mã cho một ô được đánh dấu one-time-code; Apple không quy định 1 ô hay 6 ô. Đang dùng ở Quên mật khẩu bước 2; Xác thực email và Hồ sơ chuyển sang khi làm lại các màn đó.
+- `PasswordField`: ô mật khẩu ẩn chữ + nút con mắt cuối ô (`aria-label`, `title`, `aria-pressed`), nút đồng tâm với ô (sheet: chuột 32 bo 6 trong ô 36 bo 8; cảm ứng tròn 40 trong ô 44) — §8.16.
+- Web (W01) thêm `startIcon` (icon trong ô, ví dụ thư, ổ khoá ở màn tài khoản), `endAction` (nút trong ô, ví dụ hiện mật khẩu, có `aria-label` và `aria-pressed`) và `size="lg"` (48px, chữ 16px cho màn tài khoản). Thêm `clearable`: nút xoá nội dung ⓧ ở cuối ô khi ô có chữ (HIG Text fields: "Display a Clear button in the trailing end of a text field"); chỉ ô một dòng không có `endAction`, không dùng cho mật khẩu; ngoài thứ tự Tab (bàn phím chọn rồi xoá), bấm không lấy focus khỏi ô. Đang bật ở các ô chữ của màn tài khoản (email, tên cửa hàng, họ tên, số điện thoại, mã mời); form khác bật dần.
 - Trong app tài xế, form hiếm khi xuất hiện (chỉ lý do không giao được); khi có, dùng cỡ chữ `body-touch` qua CSS của client.
+- App tài xế (Material 3, P-77): giữ ô **viền** với nhãn phía trên ô (chủ dự án chọn ở D2, 2026-11-20). M3 cho phép nhãn ngoài (Material Web: *"a floating `label`, a `placeholder`, or an external label"*); Android mặc định ô nền (*"Default styling is filled"*) nhưng không nói khi nào chọn kiểu nào.
 
 ### SelectField, Checkbox, card (web, W03)
 
 - `SelectField`: ô chọn (native `select`) cùng nhãn, hint, câu lỗi, `aria-describedby` như `TextField`; `placeholder` là lựa chọn rỗng đầu tiên ("Chọn đơn vị") cho ô bắt buộc chưa có giá trị. Dùng cho đơn vị của xe, vai trò. Ô chọn vai trò trong bảng thành viên dùng `select.pw-field-input` có `aria-label` theo dòng.
 - `Checkbox`: ô 18px màu `route` kèm chữ (prototype `.check`), cao tối thiểu 36px; trong bảng có `aria-label` theo dòng ("Đi giao: Tài xế A").
-- `.pw-card`: khung của form cạnh danh sách (`surface-raised`, viền `line`, `radius-md`, padding 16px, tiêu đề 20/28). Hộp "đã lưu" `.pw-status-ok` (viền `success`).
+- `.pw-card`: khung của form cạnh danh sách (`surface-raised`, viền `line`, `radius-md`, padding 16px, tiêu đề 20/28). Hộp "đã lưu" `.pw-status-ok` (viền `success`). *Kiểu cũ:* các trang đã redesign dùng nhóm bo 16 không viền (mục Bo góc); `.pw-card` còn ở trang chưa redesign (chi tiết kế hoạch tới G5).
 
 ### StatusPill
 
@@ -160,6 +190,27 @@ Nhãn trạng thái viết hoa trên nền màu trạng thái; truyền thẳng 
 - Màu không bao giờ đứng một mình: pill luôn có chữ. Stop `FAILED` đi kèm lý do ngay dưới, chữ `small`.
 - Chữ pill dùng `on-accent` (trắng ở theme sáng, gần đen ở theme tối).
 
+### Sheet, Alert, SwitchRow, SegmentedControl (web, G3)
+
+- `Sheet`: việc có nhập liệu; "Huỷ" đầu thanh trên, nút xong (động từ) cuối; điện thoại trồi từ đáy, grabber, vuốt xuống để đóng (còn thay đổi chưa lưu thì hỏi bằng action sheet "Bỏ thay đổi" / "Tiếp tục sửa"); máy tính là thẻ giữa màn hình. Không `doneLabel` = sheet áp dụng ngay, chỉ có "Đóng".
+- `Alert`: chỉ xác nhận việc khó đảo ngược; "Huỷ" bên trái (được focus), hành động bên phải; `destructive` (đỏ) chỉ khi người dùng không chủ động chọn việc phá huỷ. Theo hình anatomy của HIG Alerts (2026-11-20): chữ canh trái, tiêu đề 700 (UI_GUIDELINES T1); hai nút tô nền cạnh nhau cách 8, "Huỷ" nền xám, hành động nền màu nhấn (đỏ khi `destructive`); nhãn không vừa một hàng thì xếp chồng, hành động trên, "Huỷ" dưới (HIG: *"at the top of a stack… Cancel… at the bottom of a stack"*; thứ tự DOM đổi theo cho focus khớp). Hình nút theo S3 như mọi nút: chuột bo `radius-md` 8 cao 36, cảm ứng viên thuốc 44 (chủ dự án: web dùng nút bo vuông khi có chuột, nên không theo hình macOS là viên thuốc); khung bo đồng tâm = bo nút + lề 14 (22 khi chuột, 36 khi cảm ứng; WWDC25 356).
+- Vật liệu (2026-11-20, UI_GUIDELINES §A2): sheet, alert và action sheet là kính như popover (nền `surface-raised` 96%, nhoè 24px) trên lớp làm tối 45%; giảm trong suốt hoặc tăng tương phản thì nền đặc.
+- `SwitchRow`: switch trong một hàng danh sách (nhãn trái, switch phải), `role="switch"`.
+- `SegmentedControl`: chuyển giữa các phần liên quan trên điện thoại; ô bằng nhau, ô đang chọn nổi lên.
+- `useRowMenu` + `RowMenu`: menu ngữ cảnh của hàng cho mọi danh sách (chạm giữ, nhấp chuột phải); mục phá huỷ chữ đỏ.
+- `ToastDock`: chỗ hiện toast (góc dưới; điện thoại trên tab bar).
+- Kiểu `tinted` của `Button` (2026-11-18, OWNER_UI_REDESIGN §9.10): chữ màu nhấn trên nền màu nhấn nhạt 16% (như bộ lọc đang bật, G2.2), giữa `secondary` (xám) và `primary`; theo UIKit `UIButton.Configuration.tinted()`. Dùng khi một nút phụ cần tách khỏi nút xám bên cạnh mà không thành nút chính thứ hai (HIG Buttons: ít nút nổi bật; màu chỉ cho vai trò chính / nguy hiểm). Rê / nhấn: nền 22% / 28%, chữ đậm dần để giữ ≥ 4.5:1 (đo sáng 4.73 / 4.99 / 5.26, tối 6.20 / 5.96 / 5.68); tăng tương phản: viền 2px màu chữ.
+- Hình theo cỡ control (S3, WWDC25 356): chuột (cỡ Medium): mọi nút, kể cả `primary`, nút biểu tượng, ô nhập, bộ lọc bo 8, nút chính chỉ khác màu; cảm ứng: viên thuốc 44px; control Large 44px (thẻ tài khoản, nút trạng thái trống) là viên thuốc. `secondary` nền xám, không viền (F-73).
+- Ô nhập, ô chọn: nền fill nhạt, viền 1px `ink-muted`, focus sáng viền màu nhấn (như trang đăng nhập); ô chọn có dấu ⌃⌄.
+- Menu và khung bật ra vẽ trên `body`, đặt theo nút mở. Ô chọn (`<select>`) mở menu của app (`useSelectMenu`), không dùng danh sách của trình duyệt.
+- Lưu/Xong dùng biểu tượng dấu tích (`CheckIcon`, HIG Icons: Save → `checkmark`).
+- Checkbox (chỉ trên máy tính, trong bảng): ô vuông bo 4, tắt không nền, bật nền màu nhấn với dấu tích trắng (HIG Toggles). Trên điện thoại dùng switch trong hàng.
+- Con trỏ như web của Apple (apple.com, developer.apple.com): bàn tay cho mọi thứ bấm được; mũi tên cho control bị tắt và mục đang mở. HIG Pointing devices là của app macOS native, không áp cho web.
+
+### ActivityIndicator (web, G2)
+
+Chờ không biết bao lâu (khôi phục phiên, mở trang, tải dữ liệu một khung): 8 nan xoay màu `ink-muted`, không có chữ hiện ra (HIG Progress indicators: "Avoid vague terms like loading"), `role="status"` với nhãn "Đang tải…" cho trình đọc màn hình; hiện sau 0,3 s. `className="is-page"` khi thay cả trang. Danh sách dùng `PlaceholderRows`, không dùng vòng xoay.
+
 ### ProgressBar
 
 Thanh tiến độ mảnh màu `info` cho việc chạy nền của plan (geocode, tối ưu); không che trang.
@@ -168,28 +219,42 @@ Thanh tiến độ mảnh màu `info` cho việc chạy nền của plan (geocod
 - Biết số lượng (đã geocode 7/12 stop) thì truyền `value`/`max`; không biết (tối ưu) thì bỏ trống để chạy vô định.
 - Tôn trọng `prefers-reduced-motion`: thanh vô định đứng yên.
 - Không dùng spinner che cả trang.
+- Trình đọc màn hình đọc một câu "{value} trên {max} {nhãn}" ("2 trên 6 điểm đã xong"), không đọc "2/6" hay phần trăm (app tài xế D3, H5).
 
 ### DataTable
 
 Bảng dữ liệu của web dashboard: danh sách stop, plan, xe, thành viên; dòng chọn được nối với bản đồ.
 
-- Nền `surface-raised`, đường kẻ `line`, tiêu đề cột `label` viết hoa màu `ink-muted`, tiêu đề dính khi cuộn.
+- Nền `surface-raised`, đường kẻ `line`, tiêu đề cột 13px đậm màu `ink-muted` viết như thường (không HOA, theo HIG Lists and tables; G2), tiêu đề dính khi cuộn.
+- Danh sách của khu chủ cửa hàng (G2): bảng trong nhóm `pw-list-group` (nền, bo 16, không viền); cột có `sortable` thì tiêu đề là nút sắp xếp (`sort`, `onSort`, `aria-sort`); màn hẹp dùng danh sách hàng `pw-list-rows` thay bảng; lọc bằng `DatePickerFilter` (lịch tháng) / `PopUpFilter` (menu có dấu tích), nút lọc nền xám không viền; phân trang có điểm kết thúc: máy tính mỗi trang vừa một màn hình, điện thoại 20 hàng cuộn được, thanh trang "‹ Trang 4/12 ›" ở giữa dưới danh sách, nút tròn nền xám; "Trang 4/12" mở `PageJump` (khung nhỏ « [ô số trang] »); `PopUpButton` dùng cho bộ lọc; đang tải dùng `PlaceholderRows` (`OWNER_UI_REDESIGN.md` §7).
 - Cột số (`numeric`): ETA, khung giờ, km, tải — căn phải, `tabular-nums`.
 - `onRowClick` + `selectedKey`: dòng đang chọn nền `surface-tint`; chọn được bằng bàn phím (Tab, Enter). Trên màn soạn plan, chọn dòng thì marker tương ứng trên bản đồ `selected`, và ngược lại.
 - `empty`: câu hướng dẫn việc tiếp theo, ví dụ "Chưa có điểm giao. Thêm điểm giao để tối ưu lộ trình."
-- Phân trang theo API (`page`, `size`) đặt dưới bảng; component không tự phân trang.
+- Phân trang theo API (`page`, `size`); component không tự phân trang. Máy tính: thanh trang dưới bảng; điện thoại: `Pager pinned` trên danh sách, ghim dưới thanh trên cùng, có mép mờ khi dính, không ghim khi cửa sổ thấp (§8.17).
+- Chữ dài trong bảng (G2.11): `pw-cell-title` (2 dòng rồi "…", bẻ cả chuỗi không dấu cách, kèm `title`), `pw-cell-sub` (1 dòng), `pw-cell-main` (cột chính tối thiểu 12rem), `pw-nowrap` cho giá trị ngắn; bảng hẹp gập cột phụ thành dòng dưới tên (`pw-col-fold` / `pw-cell-fold`, container query). Chỉ cắt khi có màn xem đủ (trang hoặc sheet của dòng).
+- Việc đang chạy (§9.5): `Button busy` + `busyLabel` — vòng xoay và nhãn bận **trong** nút sau 0,3 s, nút không tắt mà không nhận bấm (UI_GUIDELINES B-4, HIG Buttons); thanh tiến độ khi biết tiến độ, kèm vòng xoay cạnh nếu thanh có thể đứng yên; nơi khác `ActivityText` (vòng xoay **không chữ**, chữ là tên trợ năng; HIG macOS *"Avoid labeling a spinning progress indicator"*) thay cho nhãn màu đứng yên.
+- Biểu đồ theo ngày `DailyBarChart` (G6, `OWNER_UI_REDESIGN.md` §11; dùng chung Báo cáo và Tổng quan quản trị): dòng tóm tắt `summary` trên biểu đồ (đổi theo ngày chọn, được đọc khi đổi), chú giải có chữ dưới biểu đồ, đường tách giữa phần cột chồng, nhãn ngày nhịp đều kiểu Health (≤ 7 ngày: thứ; dài hơn: mỗi 7 ngày từ ngày đầu), trục số bên phải; chọn ngày bằng rê / bấm / chạm cả vùng vẽ hoặc phím mũi tên (vùng vẽ là một điểm Tab vai trò `slider`), mỗi ngày một dòng ẩn cho trình đọc màn hình với ngày đầy đủ (`spokenDate`); không tooltip.
+- Nhóm số `StatGroup` + `Stat` (`shared/ui/Stat.tsx`, G6 → dùng chung ở G7): một khối nền `surface-raised`, bo 16, không viền, các số cạnh nhau với vạch mảnh giữa (ô nằm trên nền màu `line`, cách 1px, nên vạch theo mọi bố cục); số cột = số ô; khung < 640px thì 2 ô một hàng, ô lẻ cuối rộng hết. Nhãn chữ thường 13px màu phụ, số 28px đậm. Khối nội dung có tiêu đề (biểu đồ, danh sách giá trị) dùng `pw-group` + `pw-group-title`; tiêu đề mục ngoài khối `pw-section-title`. Class `pw-numcard` và segmented cũ `pw-segmented-btn` (W11) đã bỏ.
+- Chi tiết kế hoạch (G5, `OWNER_UI_REDESIGN.md` §10): `MapStage` (bản đồ phủ vùng nội dung; rộng: panel kính 460px; điện thoại: sheet kính ba nấc trên tab bar, grabber 44px khi cảm ứng; `useMapStage().setDetent`; `RouteMap staged inset` canh khung chừa phần bị che; chú thích bản quyền bản đồ trên nấc thấp 10px); trong panel: `MoreMenu` (nút … mở `RowMenu`, mục huỷ đỏ cuối, mục không dùng được thì ẩn), `RouteGroup` (nhóm bo 8 — bán kính dự phòng vì panel bo 16 đệm 16 — đầu nhóm thu gọn, hàng hai dòng), `StopCard` (thẻ điểm, focus vào tiêu đề, quay lại trả focus về hàng); `useFoldedSidebar` (trang muốn cả cửa sổ thu thanh bên khi mở, bật/tắt trong trang không lưu, rời trang về như trước — §10.7); nút bản đồ một cột ở cạnh phải: +/− rồi nút ghim (biểu tượng, tên đầy đủ là tên trợ năng); `PageActionSheet` (action sheet riêng, có tiêu đề + lời nhắn, cho lựa chọn sau một hành động có chủ đích — HIG Alerts).
+- Form (G4, `OWNER_UI_REDESIGN.md` §9): `BackLink` (nút quay lại chuẩn: chevron + tên trang cha; điện thoại: ở đầu thanh trên, thu về chevron khi tiêu đề nhỏ hiện, §9.11); `DateField` (compact date picker dạng ô, ngày màu nhấn, lịch của bộ lọc); `TimeField` (giờ 24h: chuột gõ "HH:mm", cảm ứng nút mở bánh xe giờ/phút bước 5); `Sheet size="large"` cho nội dung cần chỗ (bảng xem trước); danh sách lựa chọn có dấu tích (`pw-option-list`, `role="radio"`) thay nút radio; hàng ghim dưới thanh trên (`useStuck`, nền đặc, mép mờ khi dính) cho thanh trang và hàng tiêu đề form; Escape trong popover chỉ đóng popover, không đóng sheet chứa nó.
+- Chọn ngày (`DatePickerFilter`): máy tính lịch bật ra (compact); điện thoại lịch inline trong trang dưới hàng lọc (HIG Date pickers, §8.11). Đầu lịch "Tháng x, năm ›" mở hai bánh xe tháng/năm (`Wheel`, §8.12); ô ngày tròn; ‹ › theo hình nút của cách nhập; nút xoá ngày "Bỏ chọn ngày".
+- Ô tìm và bộ lọc đặt sẵn (G7, `OWNER_UI_REDESIGN.md` §12.5, §12.7; `shared/ui/Filters.tsx`): `SearchField` là viên thuốc nền xám như nút lọc, kính lúp đầu ô, ⓧ cuối ô khi có chữ (T-9), tìm khi gõ sau 0,3 s hoặc ngay khi Enter, Esc xoá chữ, `role="search"` và tên trợ năng nói tìm gì (HIG Search fields); `PresetFilter` là bộ lọc trang khác đặt sẵn, không chọn tại chỗ (G7-Q2): viên thuốc nền màu nhấn nhạt như nút lọc đang lọc, "Nhãn: giá trị" (giá trị một dòng "…", đủ chữ trong `title`), ⓧ để bỏ; `ClearFilters` ("Xoá bộ lọc", chuyển từ trang Kế hoạch) chỉ hiện khi đang lọc, bật ra / thu vào cạnh các nút lọc (G2.10).
+- Bảng vừa một màn hình: `useFitRows` (`shared/hooks`) + dòng mẫu ẩn cao nhất có thể (G2.9).
 - Ô chứa trạng thái dùng `StatusPill`.
+- `onRowContextMenu(row, {x, y})`: nhấp chuột phải hàng → trang mở menu ngữ cảnh của hàng tại con trỏ (G2.13); danh sách hàng trên điện thoại mở cùng menu bằng chạm giữ.
 
 ### StopCard
 
 Thẻ một điểm giao trong app tài xế: số thứ tự, đơn và khách, địa chỉ, giờ dự kiến, ghi chú, nút gọi và các nút kết quả.
 
-- Stop tài xế sắp tới: `current` (nền `surface-tint`, viền `route`); chỉ một thẻ `current` mỗi lúc.
+- Stop tài xế sắp tới: `current` (viền `route`; web nền `surface-tint`, app tài xế nền `surface-raised` từ D4); chỉ một thẻ `current` mỗi lúc.
 - `phone` nhận E.164 từ API, hiện dạng `0905 123 456` và là nút gọi `tel:` cao 48px.
 - `actions`: ba `Button` cỡ `xl`, `block`, xếp dọc — Đã giao (`success`), Không giao được (`danger`), Bỏ qua (`signal`). Chỉ hiện trên stop `PENDING` của plan đang chạy; bấm xong mới gọi API, có bước xác nhận ngay trong trang.
 - Không giao được: hỏi lý do (bắt buộc, tối đa 255 ký tự) trước khi gửi; lý do hiện trên thẻ bằng `danger`.
 - Chữ cỡ `body-touch` (16px); vùng chạm tối thiểu 48px.
 - Đây là bản tham chiếu HTML cho thiết kế; app tài xế (Flutter) dựng lại theo cùng token và quy tắc.
+- **App tài xế (D4, Q6):** chỉ điểm tiếp theo là `StopCard` (nền `surface-raised`, viền `route` 2px — nền `surface-tint` làm mất nút "Gọi" filled tonal cùng màu; số thứ tự to theo cỡ chữ). Các điểm sau và đã xong là `StopRow` (hàng `ListTile` của Material) trong một `StopGroup` (khung `surface-raised`, viền `line`, đường kẻ giữa các hàng): số thứ tự, tên (một dòng), địa chỉ (một dòng), dòng giờ; điểm đã xong thay dòng giờ bằng `StatusPill` rồi lý do thất bại **đầy đủ** (không cắt, vì lý do là thông tin chính). Dưới thẻ: "Chỉ đường" (filled tonal) và "Báo kết quả" (filled) cạnh nhau, xếp dọc khi nhãn không vừa nửa hàng (chữ lớn) — `PwButtonPair`, dùng cả cho "Gọi khách" + "Chỉ đường" ở màn báo kết quả (D5).
+- **Lý do không giao được (app tài xế, D5, Q3):** modal bottom sheet có tay nắm: tiêu đề, câu hướng dẫn, ô lý do (bắt buộc, đếm x/255), gợi ý nhanh là suggestion chip (`ActionChip`) **dưới** ô; "Quay lại" (text) và "Gửi kết quả" (`danger`, tắt khi chưa có lý do) canh cuối, nằm ngoài phần cuộn nên luôn ở trên bàn phím.
 
 ### MapMarker
 
@@ -198,25 +263,23 @@ Chấm tròn đánh số `sequence` đánh dấu một điểm giao trên bản 
 - Mặc định `route`; điểm đã giao `success`, không giao được `danger`, không xếp được (`INFEASIBLE`) `signal` không số, chưa xếp tuyến `muted` không số.
 - `selected`: to hơn, viền `ink` — đồng bộ với dòng đang chọn trong `DataTable`.
 - Viền trắng 2px và bóng nhẹ để nổi trên tile bản đồ.
-- **Luôn dùng màu theme sáng** (component tự đặt `data-theme="light"`): tile OSM chỉ có bản sáng, nên marker giữ màu sáng cả khi app ở theme tối.
+- **Luôn dùng màu theme sáng** (component tự đặt `data-theme="light"`): tile luôn là kiểu sáng (mục "Theme sáng và tối"), nên marker giữ màu sáng cả khi app ở theme tối.
 - Trên web, dùng làm `L.divIcon` (render ra HTML); kích thước 28px, 36px khi chọn.
 - `routeIndex` (0 = route đầu tiên): tô theo `map-route-1…7`, ghi đè `tone`. Dùng khi plan còn nháp hoặc stop còn `PENDING`; stop đã có kết quả thì dùng `tone`.
 - Luôn kèm chú giải tên tài xế theo màu tuyến.
 
 ### Dialog
 
-Hộp xác nhận cho hành động không hoàn tác được: giao việc, huỷ plan, xoá; nêu rõ hậu quả trước khi làm.
+Từ G3 (`OWNER_UI_REDESIGN.md` §8.2), xác nhận dùng **Alert** và việc có nhập liệu dùng **Sheet** (mục "Sheet, Alert, SwitchRow, SegmentedControl"); hộp thoại cũ giao việc, huỷ kế hoạch, nhập file, sao chép đã chuyển hết ở G4–G5. `Dialog` chỉ còn một chỗ dùng: `PinPickerDialog` (`size="full"`, chọn vị trí trên bản đồ: ô tìm địa chỉ + bản đồ lớn + ghim kéo được).
 
-- Tiêu đề là câu hỏi có tên đối tượng: "Huỷ kế hoạch "Giao sáng 01/12"?".
-- Thân: hậu quả cụ thể bằng số ("2 tài xế đang có tuyến…", "không khôi phục được").
-- Nút xác nhận lặp lại động từ của hành động ("Huỷ kế hoạch", "Giao việc"), không dùng "OK"/"Có". Nút phụ "Quay lại".
-- `tone="danger"` cho hành động phá huỷ (nút `danger`, `role="alertdialog"`).
-- Mở thì focus vào nút đầu tiên; `Esc` đóng; đóng thì trả focus về chỗ cũ.
-- `size`: `md` (mặc định, xác nhận), `lg` (form ngắn), `full` (gần toàn màn hình, dùng cho chọn vị trí trên bản đồ: ô tìm địa chỉ + bản đồ lớn + ghim kéo được). `confirmDisabled` khoá nút xác nhận tới khi nội dung hợp lệ.
-- `busy` trong lúc request chạy; lỗi API hiện trong thân hộp, không đóng hộp.
+- Mở thì focus vào phần tử đầu tiên; `Esc` đóng; đóng thì trả focus về chỗ cũ.
+- `confirmDisabled` khoá nút xác nhận tới khi nội dung hợp lệ; `busy` trong lúc request chạy; lỗi API hiện trong thân hộp, không đóng hộp.
+- **App tài xế (P-77):** `showPwDialog` là `AlertDialog` Material 3 với hình và màu mặc định của theme; hai nút chữ canh cuối hàng (mẫu `AlertDialog` của developer.android.com dùng `TextButton` cho cả hai nút), việc phá huỷ dùng `textDanger`; nhãn quá dài thì xếp dọc, vẫn canh cuối.
+- *Lịch sử (W01–W06):* `Dialog` từng là hộp xác nhận cho hành động không hoàn tác (tiêu đề là câu hỏi, nút xác nhận lặp động từ, nút phụ "Quay lại", `tone="danger"`); các quy tắc đó nay thuộc Alert (S2: "Huỷ" ở đầu hàng, không tô đỏ khi người dùng chủ động chọn).
 
 ### Bản đồ (web, W04)
 
+- Điểm giao trên bản đồ (G5, `OWNER_UI_REDESIGN.md` §10.15): ghim bản đồ (đầu tròn, mũi nhọn, vòng trắng giữa đầu — fb_17) màu tuyến / kết quả, số thứ tự trong vòng trắng khi đã xếp; kho là ngôi nhà; ghim đặt toạ độ cho điểm giao cùng hình, màu nhấn, vòng trắng rỗng.
 - Khung bản đồ luôn theme sáng, tỉ lệ 16:9 (tối thiểu 240px), viền `line`, bo `radius-sm`; nút + / − ở góc trên phải (trắng, viền `#56635e`, 36px, như prototype), nút chữ ("Đặt ghim ở giữa bản đồ", "Mở rộng bản đồ") ở góc trên trái; attribution góc dưới phải trên nền trắng 85%.
 - Đường tuyến là đường thẳng màu `map-route-n` dày 4px qua kho → các điểm → kho. Marker điểm giao dùng class của `MapMarker`; marker tập trung được bằng Tab, Enter/Space chọn điểm.
 - Chú giải dưới bản đồ: icon kho "Kho xuất phát" rồi chấm màu + tên tài xế từng tuyến.

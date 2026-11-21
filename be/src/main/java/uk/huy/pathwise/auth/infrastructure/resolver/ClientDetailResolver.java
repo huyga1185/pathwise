@@ -15,7 +15,7 @@ import uk.huy.pathwise.auth.model.ClientDetail;
 
 @Component
 @Slf4j
-public class    ClientDetailResolver implements HandlerMethodArgumentResolver {
+public class ClientDetailResolver implements HandlerMethodArgumentResolver {
     @Override
     public boolean supportsParameter(MethodParameter parameter) {
         return parameter.hasParameterAnnotation(CurrentClient.class) &&
@@ -27,7 +27,6 @@ public class    ClientDetailResolver implements HandlerMethodArgumentResolver {
                                             @Nullable ModelAndViewContainer mavContainer,
                                             NativeWebRequest webRequest,
                                             @Nullable WebDataBinderFactory binderFactory) throws Exception {
-        log.info("Resolver is running");
         HttpServletRequest request = (HttpServletRequest) webRequest.getNativeRequest();
         return request.getAttribute("clientDetail");
     }

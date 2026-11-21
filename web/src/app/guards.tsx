@@ -2,17 +2,15 @@ import type { ReactNode } from 'react';
 import { Navigate, useLocation, useSearchParams } from 'react-router';
 import { canUseWeb, homeOf, useSession } from '@/features/auth';
 import { vi } from '@/shared/i18n/vi';
+import { ForbiddenPage } from './pages';
+import { ActivityIndicator } from '@/shared/ui';
 
 /** Signed-in pages: wait for the session to be restored, send anonymous users to /login with ?next=. */
 export function RequireAuth({ children }: { children: ReactNode }) {
   const { session } = useSession();
   const location = useLocation();
   if (session.status === 'loading') {
-    return (
-      <p role="status" className="pw-page-loading">
-        {vi.pages.loading}
-      </p>
-    );
+    return <ActivityIndicator label={vi.pages.loading} className="is-page" />;
   }
   if (session.status === 'anonymous') {
     const next = `${location.pathname}${location.search}`;
@@ -21,27 +19,42 @@ export function RequireAuth({ children }: { children: ReactNode }) {
   return <>{children}</>;
 }
 
-/** Dispatcher pages (P-46): OWNER and DISPATCHER; a DRIVER sees "Dùng app tài xế". Not a security check. */
+/**
+ * Dispatcher pages (P-46): OWNER and DISPATCHER. Anyone else signed in (an ADMIN, a DRIVER) gets 403 at the address they
+ * opened (P-75); the bare "/" still takes everyone home. Not a security check: the API refuses what they may not do.
+ */
 export function RequireDispatcher({ children }: { children: ReactNode }) {
   const { session } = useSession();
+  const { pathname } = useLocation();
   if (session.status !== 'authenticated') return null;
-  if (!canUseWeb(session.user)) return <Navigate to={homeOf(session.user)} replace />;
-  return <>{children}</>;
+  if (canUseWeb(session.user)) return <>{children}</>;
+  if (pathname === '/') return <Navigate to={homeOf(session.user)} replace />;
+  return <ForbiddenPage />;
 }
 
-/** The ADMIN area (W11): anyone else goes back to their own home. Not a security check. */
+/** The ADMIN area (W11): only an ADMIN; anyone else gets 403 (P-75). Not a security check. */
 export function RequireAdmin({ children }: { children: ReactNode }) {
   const { session } = useSession();
   if (session.status !== 'authenticated') return null;
-  if (session.user.role !== 'ADMIN') return <Navigate to={homeOf(session.user)} replace />;
+  if (session.user.role !== 'ADMIN') return <ForbiddenPage />;
   return <>{children}</>;
 }
 
-/** Pages only some roles may open (OWNER-only settings in later tasks). */
+/** Pages only some roles may open (OWNER-only: "Nhật ký cửa hàng"): anyone else gets 403 (P-75). Not a security check. */
 export function RequireRole({ roles, children }: { roles: string[]; children: ReactNode }) {
   const { session } = useSession();
   if (session.status !== 'authenticated') return null;
-  if (!roles.includes(session.user.role)) return <Navigate to="/forbidden" replace />;
+  if (!roles.includes(session.user.role)) return <ForbiddenPage />;
+  return <>{children}</>;
+}
+
+/** "Dùng app tài xế": only for a DRIVER signed in on the web; anyone else gets 403 (P-75). */
+export function RequireDriver({ children }: { children: ReactNode }) {
+  const { session } = useSession();
+  if (session.status !== 'authenticated') return null;
+  if (canUseWeb(session.user) || session.user.role === 'ADMIN') {
+    return <ForbiddenPage />;
+  }
   return <>{children}</>;
 }
 

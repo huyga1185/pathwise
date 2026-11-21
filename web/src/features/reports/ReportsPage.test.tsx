@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { afterEach, describe, expect, it, vi as vitest } from 'vitest';
 import type { Schemas } from '@/data/types';
+import { wideWindow } from '@/test/media';
 import { renderApp } from '@/test/renderApp';
 import { sample } from '@/test/samples';
 import { API, ok, server, signedInHandlers } from '@/test/server';
@@ -62,21 +63,27 @@ describe('Báo cáo', () => {
     expect(screen.getByText('Kế hoạch giao việc').parentElement).toHaveTextContent('Kế hoạch giao việc7');
     expect(screen.getByText('6 hoàn thành · 1 nháp · 1 đã huỷ')).toBeInTheDocument();
     expect(screen.getByText('92,7%')).toBeInTheDocument();
-    expect(screen.getByRole('img', { name: /Biểu đồ cột chồng/ })).toBeInTheDocument();
-    const drivers = screen.getByRole('table', { name: 'Theo tài xế' });
+    expect(screen.getByRole('slider', { name: /Biểu đồ cột chồng/ })).toBeInTheDocument();
+    // Phone (tests run at phone width): drivers and reasons are rows; a driver opens a sheet with all numbers (G6.5).
+    const drivers = screen.getByRole('list', { name: 'Theo tài xế' });
     expect(within(drivers).getByText('Tùng')).toBeInTheDocument();
-    expect(within(drivers).getByText('201,0 km')).toBeInTheDocument();
+    await user.click(within(drivers).getByRole('button', { name: 'Tùng: xem chi tiết' }));
+    const sheet = screen.getByRole('dialog', { name: 'Tài xế' });
+    expect(sheet).toHaveTextContent('201,0 km');
+    await user.click(within(sheet).getByRole('button', { name: 'Đóng' }));
     expect(
-      within(screen.getByRole('table', { name: 'Lý do không giao được hay gặp' })).getByText('Vắng nhà'),
+      within(screen.getByRole('list', { name: 'Lý do không giao được hay gặp' })).getByText('Vắng nhà'),
     ).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Báo cáo' })).toHaveAttribute('aria-current', 'page');
 
-    await user.click(screen.getByRole('button', { name: '7 ngày' }));
+    // The period is a segmented control (G6-Q1): a range not matching a preset shows "Tùy chọn" with the two dates.
+    expect(screen.getByRole('tab', { name: 'Tùy chọn' })).toHaveAttribute('aria-selected', 'true');
+    await user.click(screen.getByRole('tab', { name: '7 ngày' }));
     await waitFor(() =>
       expect(router.state.location.search).toMatch(/^\?from=\d{4}-\d{2}-\d{2}&to=\d{4}-\d{2}-\d{2}$/),
     );
     await waitFor(() => expect(queries.length).toBe(2));
-    expect(screen.getByRole('button', { name: '7 ngày' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('tab', { name: '7 ngày' })).toHaveAttribute('aria-selected', 'true');
   });
 
   it('khoảng quá 31 ngày thì báo lỗi, không gọi API; một ngày thì không có biểu đồ', async () => {
@@ -109,11 +116,63 @@ describe('Báo cáo', () => {
       ...signedInHandlers(),
     );
     const { router } = renderApp('/reports?from=2026-12-01&to=2026-12-01');
-    expect(await screen.findByText('08:12')).toBeInTheDocument();
-    expect(screen.queryByRole('img', { name: /Biểu đồ/ })).not.toBeInTheDocument();
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole('button', { name: 'Tùng: xem chi tiết' }));
+    expect(screen.getByRole('dialog', { name: 'Tài xế' })).toHaveTextContent('08:12');
+    await user.click(screen.getByRole('button', { name: 'Đóng' }));
+    expect(screen.queryByRole('slider', { name: /Biểu đồ/ })).not.toBeInTheDocument();
 
     await router.navigate('/reports?from=2026-12-09&to=2026-12-09');
     expect(await screen.findByText('Chưa có kế hoạch nào trong khoảng này')).toBeInTheDocument();
+  });
+
+  it('màn rộng: bảng tài xế trong nhóm, tuyến và km dưới tên, báo kết quả đầu – cuối một cột', async () => {
+    wideWindow();
+    server.use(
+      http.get(`${API}/reports/summary`, () => ok(report('2026-12-01', '2026-12-07'))),
+      storeHandler(),
+      ...signedInHandlers(),
+    );
+    renderApp('/reports?from=2026-12-01&to=2026-12-07');
+    const drivers = await screen.findByRole('table', { name: 'Theo tài xế' });
+    expect(within(drivers).getAllByRole('columnheader')).toHaveLength(6);
+    expect(within(drivers).getByText('Tùng').closest('td')).toHaveTextContent('6 tuyến · 201,0 km');
+    expect(within(drivers).getByRole('columnheader', { name: 'Báo kết quả' })).toBeInTheDocument();
+  });
+
+  it('tài xế 10 người một trang: trang trên URL, đổi khoảng thì về trang 1, trang quá cuối thì về trang cuối', async () => {
+    const many = (from: string, to: string) => {
+      const base = report(from, to);
+      const one = base.drivers[0] as Record<string, unknown>;
+      return {
+        ...base,
+        drivers: Array.from({ length: 12 }, (_, i) => ({ ...one, driverId: 100 + i, fullName: `Tài xế ${i + 1}` })),
+      };
+    };
+    server.use(
+      http.get(`${API}/reports/summary`, ({ request }) => {
+        const url = new URL(request.url);
+        return ok(many(url.searchParams.get('from') ?? '', url.searchParams.get('to') ?? ''));
+      }),
+      storeHandler(),
+      ...signedInHandlers(),
+    );
+    const { router } = renderApp('/reports?from=2026-12-01&to=2026-12-07&page=9');
+    const user = userEvent.setup();
+
+    // Past the end: the last page.
+    const list = await screen.findByRole('list', { name: 'Theo tài xế' });
+    expect(within(list).getAllByRole('listitem')).toHaveLength(2);
+    expect(screen.getByRole('navigation', { name: 'Trang danh sách tài xế' })).toHaveTextContent('Trang 2/2');
+
+    await user.click(screen.getByRole('button', { name: /Trang trước/ }));
+    await waitFor(() => expect(router.state.location.search).not.toMatch(/page=/));
+    expect(within(screen.getByRole('list', { name: 'Theo tài xế' })).getAllByRole('listitem')).toHaveLength(10);
+
+    await user.click(screen.getByRole('button', { name: /Trang sau/ }));
+    await waitFor(() => expect(router.state.location.search).toMatch(/page=2/));
+    await user.click(screen.getByRole('tab', { name: '7 ngày' }));
+    await waitFor(() => expect(router.state.location.search).not.toMatch(/page=/));
   });
 
   it('Xuất CSV tải file của API với tên trong Content-Disposition', async () => {

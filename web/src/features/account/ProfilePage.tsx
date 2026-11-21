@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useForm } from 'react-hook-form';
 import { ApiError } from '@/data/apiError';
 import { useStoreQuery } from '@/data/storeQuery';
@@ -8,31 +8,30 @@ import { applyServerErrors, errorCode } from '@/shared/forms/serverErrors';
 import { formatDayTime, formatPhone } from '@/shared/format';
 import { useCountdown } from '@/shared/hooks/useCountdown';
 import { vi } from '@/shared/i18n/vi';
-import { Button, ErrorBanner, StatusPill, TextField } from '@/shared/ui';
+import { Button, ErrorBanner, PasswordField, Sheet, StatusPill, TextField, Toast, ToastDock } from '@/shared/ui';
 import { deviceName } from './device';
 import { useDeviceSessions, useMe, useProfileApi, type DeviceSession, type Me } from './profileApi';
 import './profile.css';
 
 const DEVICE_TIME_ZONE = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
-/** Prototype "Hồ sơ và bảo mật" (SCREENS §1.1): profile, two-step password change, signed-in devices. */
+/**
+ * "Tài khoản" (SCREENS §1.1, OWNER_UI_REDESIGN §8.3): profile, the two-step password change in a sheet, signed-in
+ * devices. A short title (HIG Toolbars: under 15 characters; the account menu's item has the same name);
+ * signing out is in the account menu (G1), so not on this page's title row. Groups, not framed cards (D9).
+ */
 export function ProfilePage() {
   const me = useMe();
-  const { session, logOut } = useSession();
+  const { session } = useSession();
   // An ADMIN has no store (W11): dates of their devices in the device's time zone.
   const store = useStoreQuery(session.status === 'authenticated' && session.user.role !== 'ADMIN');
   const timeZone = store.data?.timezone ?? DEVICE_TIME_ZONE;
 
   return (
     <section className="pw-profile" aria-labelledby="profile-title">
-      <div className="pw-profile-head">
-        <h1 id="profile-title" className="pw-page-title">
-          {vi.profile.title}
-        </h1>
-        <Button variant="secondary" onClick={() => void logOut()}>
-          {vi.profile.signOut}
-        </Button>
-      </div>
+      <h1 id="profile-title" className="pw-page-title">
+        {vi.profile.title}
+      </h1>
       {me.isError ? <ErrorBanner title={messageFor(me.error)} /> : null}
       <div className="pw-profile-cards">
         {me.data ? <ProfileCard me={me.data} /> : <section className="pw-profile-card" aria-busy="true" />}
@@ -125,10 +124,17 @@ function ProfileCard({ me }: { me: Me }) {
   );
 }
 
-type PasswordStep = 'current' | 'otp' | 'done';
+type PasswordStep = 'current' | 'otp';
 
+/**
+ * The password: a group with a button that opens a sheet for the two steps (HIG Sheets): the current password ("Tiếp"
+ * sends the code), then the code and the new password ("Đổi"), with "Quay lại" to the first step. Done: the sheet
+ * closes and a toast says so.
+ */
 function PasswordCard({ email }: { email: string }) {
   const profileApi = useProfileApi();
+  const [open, setOpen] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
   const [step, setStep] = useState<PasswordStep>('current');
   const [current, setCurrent] = useState('');
   const [otp, setOtp] = useState('');
@@ -148,9 +154,12 @@ function PasswordCard({ email }: { email: string }) {
     setAlert(null);
     setWrongTries(0);
   };
+  const start = () => {
+    reset();
+    setOpen(true);
+  };
 
-  const onSendOtp = async (event: FormEvent) => {
-    event.preventDefault();
+  const onSendOtp = async () => {
     setAlert(null);
     if (!current) {
       setErrors({ current: fieldMessage('CURRENT_PASSWORD_REQUIRED', vi.profile.currentPassword) });
@@ -175,8 +184,7 @@ function PasswordCard({ email }: { email: string }) {
     }
   };
 
-  const onChange = async (event: FormEvent) => {
-    event.preventDefault();
+  const onChange = async () => {
     setAlert(null);
     const next: Record<string, string | undefined> = {};
     if (otp.length !== 6) next.otp = fieldMessage('OTP_REQUIRED', vi.profile.otp);
@@ -187,7 +195,8 @@ function PasswordCard({ email }: { email: string }) {
     setBusy(true);
     try {
       await profileApi.changePassword({ otp, newPassword: password });
-      setStep('done');
+      setOpen(false);
+      setToast(vi.profile.changed);
     } catch (error) {
       const code = errorCode(error);
       if (code === 'INVALID_OTP') {
@@ -206,93 +215,97 @@ function PasswordCard({ email }: { email: string }) {
   };
 
   return (
-    <form
-      className="pw-profile-card"
-      aria-labelledby="pw-title"
-      onSubmit={step === 'current' ? (event) => void onSendOtp(event) : (event) => void onChange(event)}
-      noValidate
-    >
-      <h2 id="pw-title">{vi.profile.password}</h2>
-      {step === 'current' ? (
-        <>
-          <TextField
-            label={vi.profile.currentPassword}
-            type="password"
-            autoComplete="current-password"
-            required
-            value={current}
-            error={errors.current}
-            onChange={(event) => setCurrent(event.target.value)}
-          />
-          {alert ? (
-            <p role="alert" className="pw-profile-alert">
-              {alert}
+    <section className="pw-profile-card" aria-labelledby="pw-title">
+      <h2 id="pw-title">{vi.profile.passwordGroup}</h2>
+      <p className="pw-profile-muted">{vi.profile.passwordLead}</p>
+      <div>
+        <Button variant="secondary" onClick={start}>
+          {vi.profile.changePassword}
+        </Button>
+      </div>
+      <Sheet
+        open={open}
+        title={vi.profile.password}
+        doneLabel={
+          step === 'current'
+            ? lock.remaining > 0
+              ? vi.auth.retryIn(formatWait(lock.remaining))
+              : vi.profile.next
+            : vi.profile.changeShort
+        }
+        doneDisabled={step === 'current' ? lock.remaining > 0 : wrongTries >= MAX_OTP_TRIES}
+        busy={busy}
+        dirty={current !== '' || otp !== '' || password !== ''}
+        onBack={step === 'otp' ? () => setStep('current') : undefined}
+        onSubmit={(event: FormEvent) => {
+          event.preventDefault();
+          void (step === 'current' ? onSendOtp() : onChange());
+        }}
+        onClose={() => setOpen(false)}
+      >
+        {step === 'current' ? (
+          <>
+            <PasswordField
+              label={vi.profile.currentPassword}
+              autoComplete="current-password"
+              required
+              value={current}
+              error={errors.current}
+              onChange={(event) => setCurrent(event.target.value)}
+            />
+            {alert ? (
+              <p role="alert" className="pw-profile-alert">
+                {alert}
+              </p>
+            ) : null}
+            <p className="pw-profile-muted">{vi.profile.otpNotice}</p>
+          </>
+        ) : (
+          <>
+            <p role="status" className="pw-profile-status">
+              {vi.profile.otpSent(email)}
             </p>
-          ) : null}
-          <p className="pw-profile-muted">{vi.profile.otpNotice}</p>
-          <div>
-            <Button type="submit" variant="secondary" busy={busy} disabled={lock.remaining > 0}>
-              {lock.remaining > 0 ? vi.auth.retryIn(formatWait(lock.remaining)) : vi.profile.sendOtp}
-            </Button>
-          </div>
-        </>
+            {/* One field, the digits centred and spaced, a placeholder for the six digits (as before the six boxes; owner,
+                2026-11-18, §8.15). A separate label above (HIG Text fields: placeholder text disappears when people
+                type, so "include a separate label"); numeric keypad and AutoFill of the code. */}
+            <TextField
+              className="pw-field-code pw-field-code-sm"
+              label={vi.profile.otp}
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              maxLength={6}
+              placeholder="••••••"
+              value={otp}
+              error={errors.otp}
+              onChange={(event) => setOtp(event.target.value.replace(/\D/g, '').slice(0, 6))}
+            />
+            <PasswordField
+              label={vi.form.newPassword}
+              autoComplete="new-password"
+              required
+              maxLength={72}
+              hint={vi.form.passwordHint}
+              value={password}
+              error={errors.password}
+              onChange={(event) => setPassword(event.target.value)}
+            />
+            {alert ? (
+              <p role="alert" className="pw-profile-alert">
+                {alert}
+              </p>
+            ) : null}
+            <p className="pw-profile-muted">{vi.profile.changeNotice}</p>
+          </>
+        )}
+      </Sheet>
+      {toast ? (
+        <ToastDock>
+          <Toast tone="success" onClose={() => setToast(null)}>
+            {toast}
+          </Toast>
+        </ToastDock>
       ) : null}
-      {step === 'otp' ? (
-        <>
-          <p role="status" className="pw-profile-status">
-            {vi.profile.otpSent(email)}
-          </p>
-          <TextField
-            className="pw-field-code pw-field-code-sm"
-            label={vi.profile.otp}
-            inputMode="numeric"
-            autoComplete="one-time-code"
-            maxLength={6}
-            placeholder="••••••"
-            value={otp}
-            error={errors.otp}
-            onChange={(event) => setOtp(event.target.value.replace(/\D/g, '').slice(0, 6))}
-          />
-          <TextField
-            label={vi.form.newPassword}
-            type="password"
-            autoComplete="new-password"
-            required
-            maxLength={72}
-            hint={vi.form.passwordHint}
-            value={password}
-            error={errors.password}
-            onChange={(event) => setPassword(event.target.value)}
-          />
-          {alert ? (
-            <p role="alert" className="pw-profile-alert">
-              {alert}
-            </p>
-          ) : null}
-          <p className="pw-profile-muted">{vi.profile.changeNotice}</p>
-          <div className="pw-profile-actions">
-            <Button variant="quiet" onClick={reset}>
-              {vi.profile.cancel}
-            </Button>
-            <Button type="submit" variant="primary" busy={busy} disabled={wrongTries >= MAX_OTP_TRIES}>
-              {vi.profile.change}
-            </Button>
-          </div>
-        </>
-      ) : null}
-      {step === 'done' ? (
-        <>
-          <div role="status" className="pw-profile-done">
-            {vi.profile.changed}
-          </div>
-          <div>
-            <Button variant="quiet" onClick={reset}>
-              {vi.profile.done}
-            </Button>
-          </div>
-        </>
-      ) : null}
-    </form>
+    </section>
   );
 }
 
@@ -306,6 +319,10 @@ function SessionsCard({ timeZone }: { timeZone: string }) {
   const list = [...(sessions.data ?? [])].sort(
     (a, b) => Number(b.current) - Number(a.current) || b.lastUsedAt.localeCompare(a.lastUsedAt),
   );
+  // This device and the most recent ones first; reaching the end shows 10 more (owner's choice Q8; HIG Lists and
+  // tables: "listing the most relevant items and providing a way for people to view more").
+  const [shown, setShown] = useState(SESSIONS_STEP);
+  const visible = list.slice(0, shown);
   const others = list.filter((item) => !item.current);
 
   const act = async (key: string, action: () => Promise<void>) => {
@@ -335,7 +352,7 @@ function SessionsCard({ timeZone }: { timeZone: string }) {
       </div>
       {(failure ?? sessions.error) ? <ErrorBanner title={messageFor(failure ?? sessions.error)} /> : null}
       <ul className="pw-profile-sessions" aria-busy={sessions.isPending}>
-        {list.map((item) => (
+        {visible.map((item) => (
           <SessionRow
             key={item.sessionId}
             item={item}
@@ -347,7 +364,41 @@ function SessionsCard({ timeZone }: { timeZone: string }) {
           />
         ))}
       </ul>
+      {shown < list.length ? <MoreSessions onReach={() => setShown((count) => count + SESSIONS_STEP)} /> : null}
     </section>
+  );
+}
+
+const SESSIONS_STEP = 10;
+
+/** The end of the device list: reaching it shows more; a browser without IntersectionObserver gets a button. */
+function MoreSessions({ onReach }: { onReach: () => void }) {
+  const end = useRef<HTMLDivElement>(null);
+  const reach = useRef(onReach);
+  useEffect(() => {
+    reach.current = onReach;
+  });
+  const watch = typeof IntersectionObserver !== 'undefined';
+  useEffect(() => {
+    const element = end.current;
+    if (!element || !watch) return undefined;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) reach.current();
+      },
+      { rootMargin: '0px 0px 200px 0px' },
+    );
+    observer.observe(element);
+    return () => observer.disconnect();
+  });
+  return (
+    <div ref={end} className="pw-profile-more">
+      {watch ? null : (
+        <Button variant="quiet" onClick={onReach}>
+          {vi.profile.showMore}
+        </Button>
+      )}
+    </div>
   );
 }
 

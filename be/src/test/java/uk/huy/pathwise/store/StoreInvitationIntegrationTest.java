@@ -75,6 +75,8 @@ class StoreInvitationIntegrationTest extends AbstractIntegrationTest {
         assertThat(sent.subject()).startsWith("Lời mời tham gia cửa hàng");
         assertThat(sent.content()).contains("Cửa hàng " + store.owner().email()).contains("tài xế");
         assertThat(code(email)).hasSize(43);
+        // One tap from the email: the accept page of the web app with the code filled in.
+        assertThat(sent.content()).contains("href=\"http://localhost/app/invite?code=" + code(email) + "\"");
     }
 
     @Test

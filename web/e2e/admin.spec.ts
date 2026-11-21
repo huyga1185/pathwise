@@ -42,14 +42,16 @@ test('ADMIN khoá rồi mở khoá một cửa hàng', async ({ page }) => {
 
   await test.step('tìm cửa hàng và khoá kèm lý do', async () => {
     await page.getByRole('link', { name: 'Cửa hàng', exact: true }).click();
-    await page.getByLabel('Tìm theo tên cửa hàng hoặc email chủ').fill(ownerEmail);
+    await page.getByLabel('Tìm cửa hàng').fill(ownerEmail);
     await page.keyboard.press('Enter');
     await page.getByRole('link', { name: storeName }).click();
     await expect(page.getByRole('heading', { name: storeName })).toBeVisible();
-    await page.getByRole('button', { name: 'Khoá (chỉ đọc)' }).click();
-    const dialog = page.getByRole('alertdialog');
-    await dialog.getByLabel(/Lý do/).fill('Kiểm thử E2E');
-    await dialog.getByRole('button', { name: 'Khoá cửa hàng' }).click();
+    // The store's actions are in the More menu; locking asks for the reason in a sheet (G7).
+    await page.getByRole('button', { name: 'Thao tác với cửa hàng' }).click();
+    await page.getByRole('menuitem', { name: 'Tạm khoá (chỉ đọc)…' }).click();
+    const sheet = page.getByRole('dialog', { name: 'Tạm khoá' });
+    await sheet.getByLabel(/Lý do/).fill('Kiểm thử E2E');
+    await sheet.getByRole('button', { name: 'Khoá', exact: true }).click();
     await expect(page.getByText('Đã khoá cửa hàng.')).toBeVisible();
     await expect(page.getByText('Lý do: Kiểm thử E2E')).toBeVisible();
   });
@@ -61,8 +63,16 @@ test('ADMIN khoá rồi mở khoá một cửa hàng', async ({ page }) => {
   });
 
   await test.step('mở khoá thì ghi lại được', async () => {
-    await page.getByRole('button', { name: 'Mở khoá' }).click();
-    await page.getByRole('dialog').getByRole('button', { name: 'Mở khoá' }).click();
+    await page.getByRole('button', { name: 'Thao tác với cửa hàng' }).click();
+    const unlockItem = page.getByRole('menuitem', { name: 'Mở khoá' });
+    await unlockItem.waitFor({ state: 'visible' });
+    await unlockItem.evaluate((element) =>
+      Promise.all(
+        element.closest('[role="menu"]')?.getAnimations().map((animation) => animation.finished) ?? [],
+      ),
+    );
+    await unlockItem.click();
+    await page.getByRole('alertdialog', { name: /Mở khoá cửa hàng/ }).getByRole('button', { name: 'Mở khoá' }).click();
     await expect(page.getByText('Đã mở khoá cửa hàng.')).toBeVisible();
     expect((await addVehicle('Xe sau khi mở')).status()).toBe(201);
     await owner.dispose();

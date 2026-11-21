@@ -1,22 +1,35 @@
 import { useStoreReadOnly } from '@/data/meQuery';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router';
 import { useStoreQuery } from '@/data/storeQuery';
 import { messageFor } from '@/shared/errors';
-import { formatDateLong, formatDayTime, formatDistance, formatDuration } from '@/shared/format';
+import { formatDateShort, formatDayTime, formatDistance, formatDuration, todayIn } from '@/shared/format';
+import { reducedMotion, useExit } from '@/shared/hooks/useExit';
+import { cx } from '@/shared/ui/cx';
+import { useFitRows } from '@/shared/hooks/useFitRows';
+import { useMediaQuery, WIDE_QUERY } from '@/shared/hooks/useMediaQuery';
 import { vi } from '@/shared/i18n/vi';
 import {
-  Button,
   buttonClass,
+  ChevronRightIcon,
+  ClearFilters,
+  CopyIcon,
   DataTable,
+  DatePickerFilter,
   ErrorBanner,
-  SelectField,
+  Pager,
+  RowMenu,
+  useRowMenu,
+  PlaceholderRows,
+  PlusIcon,
+  RouteIcon,
+  PopUpFilter,
   StatusPill,
-  TextField,
   type DataTableColumn,
+  type TableSort,
 } from '@/shared/ui';
 import { PAGE_SIZE, usePlans, type PlanStatus, type PlanSummary } from './planApi';
-import { CopyDialog } from './CopyDialog';
+import { CopySheet } from './CopySheet';
 import './plans.css';
 
 const STATUSES = new Set<string>(vi.plans.statusOptions.map((option) => option.value));
@@ -28,64 +41,159 @@ function shortDate(localDate: string): string {
   return `${day}/${month}/${year}`;
 }
 
+/** URL ?order= ↔ the API's sort; none = plan date, newest first (the API's default). */
+const ORDERS: Record<string, { sort: TableSort; api: string }> = {
+  'date-asc': { sort: { key: 'date', direction: 'asc' }, api: 'planDate,asc' },
+  'name-asc': { sort: { key: 'name', direction: 'asc' }, api: 'name,asc' },
+  'name-desc': { sort: { key: 'name', direction: 'desc' }, api: 'name,desc' },
+};
+const DEFAULT_SORT: TableSort = { key: 'date', direction: 'desc' };
+
 /**
- * Prototype "Danh sách kế hoạch" (SCREENS §1.1): filters by date and status on the URL (`?date=&status=&page=`),
- * newest first, 20 a page, an empty state with "Tạo kế hoạch".
+ * "Danh sách kế hoạch" (SCREENS §1.1, OWNER_UI_REDESIGN G2): filters by date and status, the order and the page on the
+ * URL (`?date=&status=&order=&page=`). Pages with a clear end (the owner's choice, G2.9): on a wide window a page is as
+ * many rows as fit the window (HIG Scroll views: a page "typically the current height… of the view"; Lists and tables:
+ * "limit the number of rows"); on a phone 20 rows that scroll. A short title with the main action at its end (HIG Toolbars); the
+ * filters as two compact buttons right above the list (HIG Pickers, Pop-up buttons), "Xoá bộ lọc" only while
+ * filtering; a table with sortable headings on a wide window, a list of rows on a phone (HIG Lists and tables);
+ * placeholder rows while loading (HIG Loading); an empty state like ContentUnavailableView. On a phone a row keeps
+ * only what fits (name, date and stops, status, chevron); copying is in the plan's own page.
  */
 export function PlanListPage() {
   const [params, setParams] = useSearchParams();
   const { readOnly } = useStoreReadOnly();
   const [copying, setCopying] = useState<PlanSummary | null>(null);
   const navigate = useNavigate();
+  const wide = useMediaQuery(WIDE_QUERY);
   const date = /^\d{4}-\d{2}-\d{2}$/.test(params.get('date') ?? '') ? (params.get('date') as string) : undefined;
   const rawStatus = params.get('status') ?? '';
   const status = STATUSES.has(rawStatus) ? (rawStatus as PlanStatus) : undefined;
+  const order = ORDERS[params.get('order') ?? ''];
+  const sort = order?.sort ?? DEFAULT_SORT;
   const page = Math.max(0, Number.parseInt(params.get('page') ?? '0', 10) || 0);
-  const plans = usePlans({ date, status, page });
+  const result = useRef<HTMLDivElement>(null);
+  const probe = useRef<HTMLDivElement>(null);
+  const filters = useRef<HTMLDivElement>(null);
+  const fit = useFitRows(wide, result, probe, filters, PAGE_SIZE);
+  const size = wide ? (fit?.rows ?? null) : PAGE_SIZE;
+  const plans = usePlans({ date, status, sort: order?.api, page, size: size ?? PAGE_SIZE }, size !== null);
   const store = useStoreQuery();
   const timeZone = store.data?.timezone ?? DEVICE_TIME_ZONE;
 
   const update = (changes: Record<string, string | undefined>) => {
     const next = new URLSearchParams(params);
     Object.entries(changes).forEach(([key, value]) => (value ? next.set(key, value) : next.delete(key)));
-    if (!('page' in changes)) next.delete('page');
+    if (!('page' in changes)) next.delete('page'); // another filter or order starts again at page 1
     setParams(next, { replace: true });
   };
+  const goToPage = (target: number) => {
+    update({ page: target > 0 ? String(target) : undefined });
+    // On a phone the next page starts at the top of the list: scroll back only as far as needed to see its start
+    // (HIG Scroll views: "scroll automatically to help people find their place… only as much as necessary").
+    // Hidden means above the pinned bars, whose height is the page's scroll padding (ui.css).
+    const top = result.current?.getBoundingClientRect().top ?? 0;
+    const pinned = Number.parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop) || 0;
+    if (!wide && top < pinned) {
+      result.current?.scrollIntoView({ block: 'start', behavior: reducedMotion() ? 'auto' : 'smooth' });
+    }
+  };
+
+  // A wider or narrower window changes the rows a page holds: keep the first plan shown on the page shown.
+  const [lastSize, setLastSize] = useState(size);
+  if (size !== lastSize) {
+    setLastSize(size);
+    if (size && lastSize && page > 0) {
+      const next = new URLSearchParams(params);
+      const moved = Math.floor((page * lastSize) / size);
+      if (moved > 0) next.set('page', String(moved));
+      else next.delete('page');
+      setParams(next, { replace: true });
+    }
+  }
+  // A heading sorts by its column; clicking the sorted one again reverses it (HIG Lists and tables).
+  const onSort = (key: string) => {
+    const direction = sort.key === key ? (sort.direction === 'asc' ? 'desc' : 'asc') : key === 'date' ? 'desc' : 'asc';
+    const next = `${key}-${direction}`;
+    update({ order: next === 'date-desc' ? undefined : next });
+  };
+
+  // Phone: touch and hold a row for its context menu ("Sao chép…"), like Mail and Notes; a right click on a wide
+  // window. The plan's own page has the same command (HIG Context menus: "Always make context menu items available in
+  // the main interface, too").
+  const rowMenu = useRowMenu<PlanSummary>();
+
+  const copyButton = (row: PlanSummary) =>
+    readOnly ? null : (
+      <button
+        type="button"
+        className="pw-icon-button pw-plans-copy"
+        aria-label={vi.planCopy.actionOf(row.name)}
+        title={vi.planCopy.action}
+        onClick={(event) => {
+          event.stopPropagation();
+          setCopying(row);
+        }}
+      >
+        <CopyIcon />
+      </button>
+    );
 
   const columns: DataTableColumn<PlanSummary>[] = [
     {
       key: 'name',
       header: vi.plans.name,
+      sortable: true,
+      className: 'pw-plans-col-name',
+      // At most two lines (up to 150 characters); the whole name shows on hover and in the plan's page (HIG
+      // Typography: truncate in a scrolling list only when people can open a view with the rest).
       render: (row) => (
-        <Link to={`/plans/${row.id}`} className="pw-plans-link" onClick={(event) => event.stopPropagation()}>
-          {row.name}
-        </Link>
+        <>
+          <Link
+            to={`/plans/${row.id}`}
+            className="pw-plans-link"
+            title={row.name}
+            onClick={(event) => event.stopPropagation()}
+          >
+            {row.name}
+          </Link>
+          <HiddenColumns row={row} timeZone={timeZone} />
+        </>
       ),
     },
     {
       key: 'date',
       header: vi.plans.date,
-      render: (row) => <span className="pw-tabular">{formatDateLong(row.planDate)}</span>,
+      sortable: true,
+      render: (row) => <span className="pw-tabular pw-nowrap">{formatDateShort(row.planDate)}</span>,
     },
     { key: 'status', header: vi.plans.status, render: (row) => <StatusPill kind="plan" status={row.status} /> },
     { key: 'stops', header: vi.plans.stops, numeric: true, render: (row) => row.stopCount },
-    { key: 'routes', header: vi.plans.routes, numeric: true, render: (row) => row.routeCount },
+    {
+      key: 'routes',
+      header: vi.plans.routes,
+      numeric: true,
+      className: 'pw-plans-col-more',
+      render: (row) => row.routeCount,
+    },
     {
       key: 'distance',
       header: vi.plans.distance,
       numeric: true,
+      className: 'pw-plans-col-more',
       render: (row) => formatDistance(row.totalDistanceMeters),
     },
     {
       key: 'duration',
       header: vi.plans.duration,
       numeric: true,
+      className: 'pw-plans-col-extra',
       render: (row) => formatDuration(row.totalDurationSeconds),
     },
     {
       key: 'optimized',
       header: vi.plans.optimizedAt,
       numeric: true,
+      className: 'pw-plans-col-extra',
       render: (row) => (row.optimizedAt ? formatDayTime(row.optimizedAt, timeZone) : '—'),
     },
     ...(readOnly
@@ -95,131 +203,244 @@ export function PlanListPage() {
             key: 'actions',
             header: <span className="pw-visually-hidden">{vi.plans.actions}</span>,
             align: 'end' as const,
-            render: (row: PlanSummary) => (
-              <Button
-                variant="quiet"
-                aria-label={vi.planCopy.actionOf(row.name)}
-                onClick={(event) => {
-                  event.stopPropagation();
-                  setCopying(row);
-                }}
-              >
-                {vi.planCopy.action}
-              </Button>
-            ),
+            render: copyButton,
           },
         ]),
   ];
 
   const data = plans.data;
+  const items = data?.items ?? [];
+  const total = data?.totalElements ?? 0;
+  const totalPages = data?.totalPages ?? 0;
   const filtered = Boolean(date || status);
-  const empty = data !== undefined && data.totalElements === 0;
-  const from = data && data.items.length > 0 ? data.page * PAGE_SIZE + 1 : 0;
-  const to = data ? data.page * PAGE_SIZE + data.items.length : 0;
+  const loading = data === undefined && !plans.isError;
+  const empty = data !== undefined && total === 0;
+  // A page past the end (an old link, plans removed): show the last page.
+  const pastEnd = data !== undefined && !plans.isPlaceholderData && totalPages > 0 && page >= totalPages;
+  useEffect(() => {
+    if (!pastEnd) return;
+    const next = new URLSearchParams(params);
+    if (totalPages > 1) next.set('page', String(totalPages - 1));
+    else next.delete('page');
+    setParams(next, { replace: true });
+  }, [pastEnd, params, setParams, totalPages]);
+
+  // What the list shows (placeholders, rows or the empty state) for which filters and order. While another filter's
+  // plans load, the old result stays, dimmed; when they arrive, the new result settles in (OWNER_UI_REDESIGN §7,
+  // G2.10). Not on the first render: the page itself just moved in.
+  // Another page slides in from the side it comes from (next from the right, previous from the left), like turning a
+  // page (HIG Scroll views: page-by-page); a new filter or order settles in from below.
+  const filterKey = [loading ? 'loading' : empty ? 'empty' : 'list', date, status, params.get('order')].join('|');
+  const resultKey = `${filterKey}|${page}`;
+  const [shown, setShown] = useState({ key: resultKey, filterKey, page, motion: '' });
+  if (!plans.isPlaceholderData && resultKey !== shown.key) {
+    const motion = filterKey !== shown.filterKey ? 'is-changed' : page > shown.page ? 'is-next' : 'is-prev';
+    setShown({ key: resultKey, filterKey, page, motion });
+  }
+  const clearPresence = useExit(filtered, 140);
 
   return (
     <section className="pw-page-section" aria-labelledby="plans-title">
-      <div className="pw-plans-head">
+      <div className="pw-list-head">
         <h1 id="plans-title" className="pw-page-title">
           {vi.plans.title}
         </h1>
-        {!empty && !readOnly ? (
-          <Link className={buttonClass('primary')} to="/plans/new">
-            {vi.plans.create}
+        {!readOnly ? (
+          <Link
+            className={wide ? buttonClass('primary') : 'pw-icon-button pw-list-add'}
+            to="/plans/new"
+            aria-label={wide ? undefined : vi.plans.create}
+            title={wide ? undefined : vi.plans.create}
+          >
+            <PlusIcon />
+            {wide ? vi.plans.create : null}
           </Link>
         ) : null}
       </div>
 
-      <form className="pw-plans-filter" aria-label={vi.plans.filterLabel} onSubmit={(event) => event.preventDefault()}>
-        <TextField
-          className="pw-plans-filter-date"
+      <div ref={filters} className="pw-list-filters" role="group" aria-label={vi.plans.filterLabel}>
+        <DatePickerFilter
           label={vi.plans.date}
-          type="date"
-          value={date ?? ''}
-          onChange={(event) => update({ date: event.target.value || undefined })}
+          value={date}
+          emptyText={vi.plans.allDates}
+          today={todayIn(timeZone)}
+          clearText={vi.plans.anyDate}
+          previousMonthText={vi.plans.previousMonth}
+          nextMonthText={vi.plans.nextMonth}
+          onChange={(value) => update({ date: value })}
         />
-        <SelectField
-          className="pw-plans-filter-status"
+        <PopUpFilter
           label={vi.plans.status}
-          placeholder={vi.plans.allStatuses}
+          value={status}
+          emptyText={vi.plans.allStatuses}
           options={vi.plans.statusOptions}
-          value={status ?? ''}
-          onChange={(event) => update({ status: event.target.value || undefined })}
+          onChange={(value) => update({ status: value })}
         />
-        <Button variant="quiet" disabled={!filtered} onClick={() => setParams({}, { replace: true })}>
-          {vi.plans.clearFilters}
-        </Button>
-      </form>
+        {clearPresence !== 'closed' ? (
+          <ClearFilters
+            text={vi.plans.clearFilters}
+            closing={clearPresence === 'closing'}
+            onClear={() => update({ date: undefined, status: undefined })}
+          />
+        ) : null}
+      </div>
 
       {plans.isError ? <ErrorBanner title={messageFor(plans.error)} /> : null}
 
-      {empty ? (
-        <section className="pw-plans-empty" aria-labelledby="empty-title">
-          <EmptyIllustration />
-          <h2 id="empty-title">
-            {date ? vi.plans.emptyTitleOn(shortDate(date)) : status ? vi.plans.emptyFiltered : vi.plans.emptyTitle}
-          </h2>
-          <p className="pw-muted">{vi.plans.emptyLead}</p>
-          {!readOnly ? (
-            <Link className={buttonClass('primary')} to="/plans/new">
-              {vi.plans.create}
-            </Link>
-          ) : null}
-        </section>
-      ) : (
-        <section className="pw-plans-list" aria-label={vi.plans.listLabel}>
-          <DataTable
-            caption={vi.plans.caption}
-            columns={columns}
-            rows={data?.items ?? []}
-            onRowClick={(row) => navigate(`/plans/${row.id}`)}
-            className="pw-plans-table"
-            empty={vi.pages.loading}
-          />
-          {data && data.totalElements > 0 ? (
-            <div className="pw-plans-pager">
-              <span>{vi.plans.range(from, to, data.totalElements)}</span>
-              <div className="pw-plans-pager-buttons">
-                <Button variant="secondary" disabled={page === 0} onClick={() => update({ page: String(page - 1) })}>
-                  {vi.plans.previous}
-                </Button>
-                <Button
-                  variant="secondary"
-                  disabled={page + 1 >= data.totalPages}
-                  onClick={() => update({ page: String(page + 1) })}
-                >
-                  {vi.plans.next}
-                </Button>
-              </div>
+      <div ref={probe} className="pw-fit-probe" aria-hidden="true" inert>
+        {wide ? (
+          <>
+            <div className="pw-list-group pw-table-wrap pw-plans-table">
+              <table className="pw-table">
+                <thead>
+                  <tr>
+                    <th>{vi.plans.name}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td className="pw-plans-col-name">
+                      <span className="pw-plans-link">
+                        {vi.plans.name}
+                        <br />
+                        {vi.plans.name}
+                      </span>
+                      <span className="pw-plans-more">
+                        <span className="pw-plans-more-routes">{vi.plans.routes}</span>
+                        <span className="pw-plans-more-distance">{vi.plans.distance}</span>
+                        <span className="pw-plans-more-duration">{vi.plans.duration}</span>
+                        <span className="pw-plans-more-optimized">{vi.plans.optimizedAt}</span>
+                      </span>
+                    </td>
+                    <td>
+                      <button type="button" className="pw-icon-button" tabIndex={-1}>
+                        <CopyIcon />
+                      </button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
-          ) : null}
-        </section>
-      )}
-      {copying ? (
-        <CopyDialog planId={copying.id} planName={copying.name} open onClose={() => setCopying(null)} />
+            <Pager label={vi.plans.pagerLabel} page={0} totalPages={2} onPage={() => {}} />
+          </>
+        ) : null}
+      </div>
+      {/* A phone: the pager above the list, pinned under the top bar (§8.17); before the list in reading and Tab order
+          too (WCAG 2.4.3). */}
+      {!wide && data !== undefined && !empty ? (
+        <Pager label={vi.plans.pagerLabel} page={page} totalPages={totalPages} onPage={goToPage} pinned />
       ) : null}
+      <div
+        ref={result}
+        key={shown.key}
+        className={cx('pw-list-result', shown.motion, plans.isPlaceholderData && 'is-stale')}
+        // A wide window keeps a full page's height, so the pager stays put on a short last page (HIG Page controls:
+        // "To ensure people always know where to find a page control… position it near the bottom of the view").
+        style={wide && fit && !empty ? { minHeight: fit.height } : undefined}
+        aria-busy={plans.isPlaceholderData || undefined}
+      >
+        {loading ? (
+          <div className="pw-list-group">
+            <PlaceholderRows rows={Math.min(size ?? 6, 12)} label={vi.plans.loading} />
+          </div>
+        ) : empty ? (
+          <section className="pw-list-empty" aria-labelledby="empty-title">
+            <span className="pw-list-empty-symbol" aria-hidden="true">
+              <RouteIcon />
+            </span>
+            <h2 id="empty-title">
+              {date ? vi.plans.emptyTitleOn(shortDate(date)) : status ? vi.plans.emptyFiltered : vi.plans.emptyTitle}
+            </h2>
+            <p>{vi.plans.emptyLead}</p>
+            {!readOnly ? (
+              <div className="pw-list-empty-actions">
+                <Link className={buttonClass('primary', 'lg')} to="/plans/new">
+                  {vi.plans.create}
+                </Link>
+              </div>
+            ) : null}
+          </section>
+        ) : (
+          <section className="pw-plans-list" aria-label={vi.plans.listLabel}>
+            {wide ? (
+              <DataTable
+                caption={vi.plans.caption}
+                columns={columns}
+                rows={items}
+                onRowClick={(row) => navigate(`/plans/${row.id}`)}
+                className="pw-list-group pw-plans-table"
+                sort={sort}
+                onSort={onSort}
+                onRowContextMenu={readOnly ? undefined : rowMenu.openAt}
+                resizable
+              />
+            ) : (
+              <ul className="pw-list-group pw-list-rows" aria-label={vi.plans.caption}>
+                {items.map((row) => (
+                  <li
+                    key={row.id}
+                    className={cx('pw-list-row', rowMenu.menu?.row.id === row.id && 'is-held')}
+                    {...(readOnly ? {} : rowMenu.holdHandlers(row))}
+                  >
+                    <Link to={`/plans/${row.id}`} className="pw-list-row-main" onClick={rowMenu.consumeHold}>
+                      <span className="pw-list-row-title">{row.name}</span>
+                      <span className="pw-list-row-sub">
+                        {formatDateShort(row.planDate)} · {vi.plans.stopCount(row.stopCount)}
+                      </span>
+                    </Link>
+                    <StatusPill kind="plan" status={row.status} />
+                    <span className="pw-list-row-chevron" aria-hidden="true">
+                      <ChevronRightIcon />
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        )}
+      </div>
+      {/* Outside the result, which is drawn again on each page: the pager keeps its focus while pages turn. */}
+      {wide && data !== undefined && !empty ? (
+        <Pager label={vi.plans.pagerLabel} page={page} totalPages={totalPages} onPage={goToPage} />
+      ) : null}
+      {rowMenu.menu ? (
+        <RowMenu
+          rect={rowMenu.menu.rect}
+          label={rowMenu.menu.row.name}
+          onClose={rowMenu.close}
+          items={[{ label: vi.planCopy.menuItem, icon: <CopyIcon />, onSelect: () => setCopying(rowMenu.menu!.row) }]}
+        />
+      ) : null}
+      {copying ? <CopySheet planId={copying.id} planName={copying.name} open onClose={() => setCopying(null)} /> : null}
     </section>
   );
 }
 
-/** Prototype empty state: a small map with a dashed route and a pin. */
-function EmptyIllustration() {
+/**
+ * The values of the columns a narrow table leaves out, as a secondary line under the name ("3 tuyến · 15,4 km ·
+ * 5 giờ 06 phút"), so no data disappears (HIG Lists and tables: a narrow table keeps content "recognizable and easy
+ * to read"; a row style "that fits the information you need to display"). Each part shows only while its column is
+ * hidden (plans.css), and only when it has a value.
+ */
+function HiddenColumns({ row, timeZone }: { row: PlanSummary; timeZone: string }) {
+  const parts: Array<[string, string | null]> = [
+    ['pw-plans-more-routes', row.routeCount > 0 ? vi.plans.routeCount(row.routeCount) : null],
+    ['pw-plans-more-distance', row.totalDistanceMeters !== null ? formatDistance(row.totalDistanceMeters) : null],
+    ['pw-plans-more-duration', row.totalDurationSeconds !== null ? formatDuration(row.totalDurationSeconds) : null],
+    [
+      'pw-plans-more-optimized',
+      row.optimizedAt ? vi.plans.optimizedOn(formatDayTime(row.optimizedAt, timeZone)) : null,
+    ],
+  ];
+  const shown = parts.filter((part): part is [string, string] => part[1] !== null);
+  if (shown.length === 0) return null;
   return (
-    <svg viewBox="0 0 240 150" width="240" height="150" aria-hidden="true" className="pw-plans-empty-art">
-      <rect x="8" y="14" width="224" height="128" rx="8" className="pw-art-tint" />
-      <path d="M8 62 H232 M8 104 H232 M70 14 V142 M150 14 V142" className="pw-art-street" strokeWidth="6" fill="none" />
-      <path
-        d="M40 120 C 70 120, 64 82, 100 80 S 150 52, 176 50"
-        className="pw-art-route"
-        strokeWidth="3"
-        strokeDasharray="7 6"
-        strokeLinecap="round"
-        fill="none"
-      />
-      <circle cx="40" cy="120" r="8" className="pw-art-ink" />
-      <circle cx="100" cy="80" r="7" className="pw-art-route-fill" />
-      <path d="M178 58 s-14 -12.5 -14 -23 a14 14 0 0 1 28 0 c0 10.5 -14 23 -14 23z" className="pw-art-route-fill" />
-      <circle cx="178" cy="35" r="5.5" className="pw-art-raised" />
-    </svg>
+    <span className="pw-plans-more">
+      {shown.map(([className, text]) => (
+        <span key={className} className={className}>
+          {text}
+        </span>
+      ))}
+    </span>
   );
 }

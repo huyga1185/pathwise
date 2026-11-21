@@ -1,4 +1,4 @@
-/* Prototype "Hồ sơ và bảo mật": centered column, two cards side by side, then the devices. */
+/* "Tài khoản" (OWNER_UI_REDESIGN §8.3): a centred column, two groups side by side, then the devices. */
 .pw-profile {
   width: 100%;
   max-width: 1100px;
@@ -6,13 +6,6 @@
   display: flex;
   flex-direction: column;
   gap: 24px;
-}
-.pw-profile-head {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 16px;
 }
 .pw-profile-cards {
   display: flex;
@@ -28,16 +21,19 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
-  padding: 16px;
+  padding: 20px;
   background: var(--surface-raised);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
 }
+/* Groups, not framed cards (D9), titled like the store's. */
 .pw-profile-card h2 {
   margin: 0;
-  font-size: 20px;
-  line-height: 28px;
+  font-size: 1.0625rem;
+  line-height: 1.375rem;
   font-weight: 600;
+}
+.pw-profile-more {
+  min-height: 1px;
 }
 .pw-profile-muted {
   margin: 0;
@@ -83,6 +79,10 @@
 .pw-profile-session:first-child {
   padding-top: 0;
   border-top: 0;
+}
+/* Like the first: the card's own padding is the space at the end (the last row looked taller than the others). */
+.pw-profile-session:last-child {
+  padding-bottom: 0;
 }
 .pw-profile-session-text {
   flex: 1 1 320px;

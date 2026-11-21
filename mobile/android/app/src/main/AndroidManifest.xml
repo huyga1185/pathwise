@@ -7,10 +7,16 @@
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
+    <!-- The foreground service holds a partial wake lock (enableWakeLock in platform/location.dart) so positions keep
+         coming with the screen off; without this permission geolocator's stream fails at once with a SecurityException
+         and no position ever arrives (D6, seen on the emulator). -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
     <application
         android:label="PathWise"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"
+        android:enableOnBackInvokedCallback="true">
+        <!-- Predictive back (P-77): Flutter's default Android page transition follows the back gesture. -->
         <activity
             android:name=".MainActivity"
             android:exported="true"

@@ -18,6 +18,8 @@ class PwTextField extends StatelessWidget {
     this.autofillHints,
     this.onSubmitted,
     this.suffix,
+    this.placeholder,
+    this.onChanged,
   });
 
   final String label;
@@ -31,6 +33,10 @@ class PwTextField extends StatelessWidget {
   final Iterable<String>? autofillHints;
   final ValueChanged<String>? onSubmitted;
   final Widget? suffix;
+
+  /// Hints the format only ("0905 123 456"), never replaces the label (DESIGN_SYSTEM TextField).
+  final String? placeholder;
+  final ValueChanged<String>? onChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -65,6 +71,7 @@ class PwTextField extends StatelessWidget {
             textInputAction: textInputAction,
             autofillHints: autofillHints,
             onSubmitted: onSubmitted,
+            onChanged: onChanged,
             style: PwTypeStyles.bodyTouch.copyWith(color: t.ink),
             decoration: InputDecoration(
               filled: true,
@@ -74,6 +81,8 @@ class PwTextField extends StatelessWidget {
               enabledBorder: border(error == null ? t.inkMuted : t.danger, error == null ? 1 : 2),
               focusedBorder: border(error == null ? t.route : t.danger, 2),
               suffixIcon: suffix,
+              hintText: placeholder,
+              hintStyle: PwTypeStyles.bodyTouch.copyWith(color: t.inkMuted),
             ),
           ),
         ),

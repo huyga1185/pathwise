@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta name="robots" content="noindex">
+<title>Không tìm thấy trang | PathWise</title>
+<link rel="icon" type="image/svg+xml" href="/app/favicon.svg">
+<link rel="icon" sizes="32x32" href="/app/favicon.ico">
+<style>
+/* The 404 page of the landing (W14): Caddy serves it with status 404 for any address that is not the landing, the web
+   app (/app/) or the API. Same tokens as index.html, system font only (nothing else to load). */
+:root { --surface: #f4f6f3; --raised: #ffffff; --ink: #18231f; --muted: #56635e; --line: #c9d1cd; --route: #0b6a5c; --on-accent: #ffffff;
+  --font: "Be Vietnam Pro", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+@media (prefers-color-scheme: dark) { :root { --surface: #0f1513; --raised: #18201d; --ink: #e4ebe8; --muted: #a2b0aa; --line: #33403b; --route: #4dbfa5; --on-accent: #0f1513; } }
+*, *::before, *::after { box-sizing: border-box; }
+body { margin: 0; min-height: 100vh; min-height: 100dvh; display: grid; place-items: center; padding: 24px 16px; background: var(--surface); color: var(--ink); font: 400 1rem/1.6 var(--font); }
+main { max-width: 30rem; text-align: center; }
+.brand { display: inline-flex; align-items: center; gap: 8px; color: var(--ink); text-decoration: none; font-weight: 800; font-size: 1.25rem; }
+.brand svg { width: 32px; height: 30px; }
+.brand b { color: var(--route); font-weight: 800; }
+.code { margin: 32px 0 0; color: var(--route); font-weight: 800; font-size: 0.875rem; letter-spacing: .08em; }
+h1 { margin: 4px 0 8px; font-size: 1.75rem; line-height: 1.25; text-wrap: balance; }
+p { margin: 0; color: var(--muted); }
+.actions { margin-top: 28px; display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; }
+.btn { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 0 20px; border-radius: 999px; font-weight: 600; font-size: .875rem; text-decoration: none; border: 1px solid transparent; }
+.btn-primary { background: var(--route); color: var(--on-accent); }
+.btn-quiet { background: var(--raised); color: var(--ink); border-color: var(--line); }
+.btn:focus-visible { outline: 3px solid var(--route); outline-offset: 3px; }
+</style>
+</head>
+<body>
+<main>
+  <a class="brand" href="/" aria-label="PathWise, trang chủ">
+    <svg viewBox="0 0 108 102" aria-hidden="true"><defs><linearGradient id="lg" gradientUnits="userSpaceOnUse" x1="40" y1="0" x2="62" y2="102"><stop offset="0" stop-color="#1fa189"/><stop offset="0.6" stop-color="#0b6a5c"/><stop offset="1" stop-color="#054a40"/></linearGradient></defs><path d="M15.6 66V22A22 22 0 0 1 37.6 0H72A36 36 0 0 1 72 72C62 72 53 76 46.6 81.5C41 86.5 38 93 36.5 102H0.5C2 86 8 75 15.6 70L50 57.5L46 52.5Z" fill="url(#lg)"/><path d="M49 64.5C40 67 32 73 27 81C24 87 22 94 21 102" fill="none" stroke="#ffffff" stroke-width="3" stroke-dasharray="10 7" stroke-linecap="round"/><path d="M61 69C61 69 41 51 41 35A20 20 0 0 1 81 35C81 51 61 69 61 69Z" fill="#ffffff"/><path d="M61 53C61 53 50.5 45.5 50.5 37.5A10.5 10.5 0 0 1 71.5 37.5C71.5 45.5 61 53 61 53Z" fill="#14876f"/></svg>
+    <span>Path<b>Wise</b></span>
+  </a>
+  <p class="code">404</p>
+  <h1>Không tìm thấy trang</h1>
+  <p>Địa chỉ này không có trên PathWise. Có thể đường dẫn bị gõ sai hoặc trang đã được chuyển đi.</p>
+  <div class="actions">
+    <a class="btn btn-primary" href="/">Về trang chủ</a>
+    <a class="btn btn-quiet" href="/app/">Mở PathWise</a>
+  </div>
+</main>
+</body>
+</html>

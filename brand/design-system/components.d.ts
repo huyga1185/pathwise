@@ -28,8 +28,22 @@ export interface TextFieldProps extends React.InputHTMLAttributes<HTMLInputEleme
   endAction?: React.ReactNode;
   /** Web client (W01): lg is 48px tall with 16px text (account screens). */
   size?: 'md' | 'lg';
+  /** Web client: clear button at the end while the field has text (HIG Text fields); one-line, no endAction. */
+  clearable?: boolean;
 }
 export declare function TextField(props: TextFieldProps): React.ReactElement;
+
+/** Web client: a one-time code, one input drawn as boxes (autocomplete one-time-code, numeric keyboard). */
+export interface CodeFieldProps {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  length?: number;
+  hint?: string;
+  error?: string;
+  disabled?: boolean;
+}
+export declare function CodeField(props: CodeFieldProps): React.ReactElement;
 
 export type StatusKind = 'plan' | 'route' | 'stop' | 'dropReason' | 'geocode' | 'processing' | 'invitation' | 'member' | 'vehicle' | 'job' | 'store';
 export interface StatusPillProps {

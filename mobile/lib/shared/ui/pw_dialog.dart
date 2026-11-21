@@ -18,16 +18,21 @@ Future<bool> showPwDialog(
     context: context,
     builder: (context) {
       final t = context.pw;
+      // Material 3 dialog: its own shape and colour from the theme, text buttons aligned to the end, 8 dp apart
+      // (developer.android.com, Compose AlertDialog sample; P-77). Labels too long for one row stack, still at the end.
       return AlertDialog(
-        backgroundColor: t.surfaceRaised,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(PwRadius.radiusLg)),
         title: Text(title, style: PwTypeStyles.title.copyWith(color: t.ink)),
         content: Text(body, style: PwTypeStyles.bodyTouch.copyWith(color: t.ink)),
+        actionsOverflowAlignment: OverflowBarAlignment.end,
         actions: [
-          PwButton(label: cancelLabel, onPressed: () => Navigator.of(context).pop(false)),
+          PwButton(
+            label: cancelLabel,
+            variant: PwButtonVariant.text,
+            onPressed: () => Navigator.of(context).pop(false),
+          ),
           PwButton(
             label: confirmLabel,
-            variant: danger ? PwButtonVariant.danger : PwButtonVariant.primary,
+            variant: danger ? PwButtonVariant.textDanger : PwButtonVariant.text,
             onPressed: () => Navigator.of(context).pop(true),
           ),
         ],

@@ -1,6 +1,6 @@
 /*
- * Maps (prototype "Cửa hàng", "Soạn plan"): always light, + / − in the top-right corner (".map-ctl"), attribution
- * bottom-right. Fixed colours here are the map's own (tiles are light in both themes, DESIGN_SYSTEM).
+ * Maps (prototype "Cửa hàng", "Soạn plan"): always light, + / − in the top-right corner on glass (OWNER_UI_REDESIGN
+ * §8, D15), attribution bottom-right. Fixed colours here are the map's own (tiles are light in both themes, DESIGN_SYSTEM).
  */
 .pw-map {
   position: relative;
@@ -9,7 +9,8 @@
   min-height: 240px;
   overflow: hidden;
   border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
+  /* In a group with 20px padding a concentric radius would be negative: the fallback radius (S2). */
+  border-radius: var(--radius-md);
   background: #f2efe9;
   isolation: isolate;
 }
@@ -22,20 +23,61 @@
 .pw-map-pick .pw-map-canvas {
   cursor: crosshair;
 }
+/* Controls float over the map on glass, with a thin stroke and a light shadow so they stand out from it (HIG Maps:
+   "Consider using a thin stroke or light drop shadow"; H5: glass for controls over content). Zoom is one group: + over
+   −, a hairline between. With a mouse rounded rectangles (S3); for touch 44px, the group a capsule. */
 .pw-map-zoom {
   position: absolute;
-  top: 8px;
-  right: 8px;
+  top: 10px;
+  right: 10px;
   z-index: 1000;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  overflow: hidden;
+  border: 1px solid rgba(24, 35, 31, 0.14);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.78);
+  box-shadow: 0 2px 8px rgba(24, 35, 31, 0.18);
+  -webkit-backdrop-filter: blur(16px) saturate(1.4);
+  backdrop-filter: blur(16px) saturate(1.4);
+}
+.pw-map-zoom .pw-map-ctl {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+.pw-map-zoom .pw-map-ctl + .pw-map-ctl {
+  border-top: 1px solid rgba(24, 35, 31, 0.14);
 }
 .pw-map-actions {
   position: absolute;
-  left: 8px;
-  top: 8px;
+  left: 10px;
+  top: 10px;
   z-index: 1000;
+}
+/* Controls on the trailing side, in one column: + / − then the pin button under them (§10.7). The column's right
+   edge follows the top bar's padding so it lines up with the account button above (on a map under the top bar). */
+.pw-map {
+  --map-edge: 10px;
+  --map-top: 10px;
+}
+.pw-map-zoom {
+  top: var(--map-top);
+  right: var(--map-edge);
+}
+.pw-map-pin-action {
+  position: absolute;
+  top: calc(var(--map-top) + 2 * 36px + 1px + 2px + 8px);
+  right: var(--map-edge);
+  z-index: 1000;
+}
+@media (pointer: coarse) {
+  .pw-map-pin-action {
+    top: calc(var(--map-top) + 2 * 44px + 1px + 2px + 8px);
+  }
 }
 .pw-map-ctl {
   box-sizing: border-box;
@@ -49,22 +91,50 @@
   line-height: 1;
   font-weight: 600;
   color: #18231f;
-  background: #ffffff;
-  border: 1px solid #56635e;
-  border-radius: 4px;
+  border: 1px solid rgba(24, 35, 31, 0.14);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.78);
+  box-shadow: 0 2px 8px rgba(24, 35, 31, 0.18);
+  -webkit-backdrop-filter: blur(16px) saturate(1.4);
+  backdrop-filter: blur(16px) saturate(1.4);
   cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color 0.15s ease;
+}
+.pw-map-ctl:active:not(:disabled) {
+  background: rgba(220, 235, 230, 0.95);
 }
 .pw-map-ctl-text {
   padding: 0 12px;
   font-size: 14px;
   line-height: 20px;
 }
-.pw-map-ctl:hover {
-  background: #dcebe6;
+@media (hover: hover) {
+  .pw-map-ctl:hover:not(:disabled) {
+    background: rgba(220, 235, 230, 0.9);
+  }
+}
+@media (pointer: coarse) {
+  .pw-map-ctl {
+    min-width: 44px;
+    height: 44px;
+  }
+  .pw-map-ctl-text,
+  .pw-map-zoom {
+    border-radius: 22px;
+  }
+}
+@media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
+  .pw-map-zoom,
+  .pw-map-ctl {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    background: #ffffff;
+  }
 }
 .pw-map-ctl:disabled {
   opacity: 0.4;
-  cursor: not-allowed;
+  cursor: default;
 }
 .pw-map-ctl:focus-visible {
   outline: 2px solid #0b6a5c;
@@ -193,4 +263,51 @@
   border: 2px solid #ffffff;
   border-radius: var(--radius-full);
   box-shadow: 0 0 0 1px var(--line);
+}
+/* Touch screens: map controls of at least 44×44 (HIG Accessibility; HIG Maps: controls with enough contrast and room). */
+@media (pointer: coarse) {
+  .pw-map-ctl {
+    min-width: 44px;
+    height: 44px;
+  }
+}
+/* The pin button as wide as the + / − group above it (36px and its 1px edge each side); a circle for touch (S3). */
+.pw-map-pin-action .pw-map-ctl {
+  width: 38px;
+  height: 38px;
+}
+@media (pointer: coarse) {
+  .pw-map-pin-action .pw-map-ctl {
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+  }
+}
+/* A stop as a pin (§10.15, fb_17): the body in the pin's colour (`color`), a white edge, a shadow; the number in the
+   white circle, in the same colour. Selected: larger (36px) with a dark edge. */
+.pw-pin-svg {
+  display: block;
+  overflow: visible;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.35));
+}
+.pw-pin-body {
+  fill: currentColor;
+  stroke: #ffffff;
+  stroke-width: 1.5;
+}
+.pw-pin-svg.is-selected .pw-pin-body {
+  stroke: var(--ink);
+  stroke-width: 2.2;
+}
+.pw-pin-number {
+  fill: currentColor;
+  font-family: var(--font-sans);
+  font-size: 10px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.pw-stop-pin {
+  background: none;
+  border: 0;
 }

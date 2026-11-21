@@ -15,14 +15,14 @@ import '../../shared/theme/theme.dart';
 import '../../shared/theme/tokens.g.dart';
 import '../../shared/ui/ui.dart';
 import 'directions.dart';
-import 'failure_reason_dialog.dart';
+import 'failure_reason_sheet.dart';
 import 'route_error.dart';
 import 'route_polling.dart';
 import 'routes_data.dart';
 
 /// "Tài xế — báo kết quả" (SCREENS §2): the stop, "Gọi khách" and "Chỉ đường", then the three results at the bottom
-/// (56 px, thumb reach), each confirmed first because none can be undone (P-34). A result goes straight to the server
-/// and the screen changes only on its answer (ARCHITECTURE §5); without network the driver waits and presses
+/// (56 px, thumb reach), each confirmed first because none can be undone (P-34). A result goes straight to the server;
+/// on its answer the driver is back on the route with a snackbar (D5) (ARCHITECTURE §5); without network the driver waits and presses
 /// "Gửi lại", which sends the same result (P-51). The route is read again on opening and every 30 s, so a cancelled
 /// plan shows before the goods are handed over.
 class StopReportScreen extends ConsumerStatefulWidget {
@@ -38,9 +38,6 @@ class StopReportScreen extends ConsumerStatefulWidget {
 class _StopReportScreenState extends ConsumerState<StopReportScreen> with RoutePolling {
   /// The result being sent (its button shows progress, the others wait).
   StopResult? _sending;
-
-  /// The result the server took, with its answer.
-  (StopResult, DriverStopUpdateResponse)? _sent;
 
   /// A result that did not reach the server: only this one can be sent again ("Gửi lại"), the same as before.
   (StopResult, String?)? _unsent;
@@ -92,7 +89,7 @@ class _StopReportScreenState extends ConsumerState<StopReportScreen> with RouteP
         );
         if (!confirmed) return;
       case StopResult.failed:
-        reason = await showFailureReasonDialog(context, label: stop.label);
+        reason = await showFailureReasonSheet(context, label: stop.label);
         if (reason == null) return;
     }
     if (mounted) await _send(result, reason);
@@ -108,11 +105,20 @@ class _StopReportScreenState extends ConsumerState<StopReportScreen> with RouteP
           .read(stopReporterProvider)
           .report(routeId: widget.routeId, stopId: widget.stopId, result: result, failureReason: reason);
       if (!mounted) return;
-      setState(() {
-        _sending = null;
-        _unsent = null;
-        _sent = (result, response);
-      });
+      // Back to the route, whose first card is now the next stop (or the end of the route), with a short note of what
+      // was recorded (§3 "Kết quả việc", Material 3: "a brief notification"; chủ dự án chọn, D5).
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            content: Text(switch (result) {
+              StopResult.delivered => Vi.reportedDelivered(response.stop.sequence),
+              StopResult.failed => Vi.reportedFailed(response.stop.sequence),
+              StopResult.skipped => Vi.reportedSkipped(response.stop.sequence),
+            }),
+          ),
+        );
+      _backToRoute();
     } on ApiError catch (error) {
       if (!mounted) return;
       setState(() {
@@ -153,11 +159,11 @@ class _StopReportScreenState extends ConsumerState<StopReportScreen> with RouteP
           .where((other) => other.id != stop.id && other.status == DriverStopResponseStatusEnum.PENDING)
           .firstOrNull;
       // The server's word wins: a send whose answer was lost shows as done once the route is read again.
-      if (_sent != null || stop.status != DriverStopResponseStatusEnum.PENDING) {
+      if (stop.status != DriverStopResponseStatusEnum.PENDING) {
         body = _result(detail, stop, next);
         footer = PwButton(
           label: next == null ? Vi.backToRoute : Vi.goNext,
-          variant: PwButtonVariant.primary,
+          variant: PwButtonVariant.filled,
           size: PwButtonSize.xl,
           block: true,
           onPressed: _backToRoute,
@@ -170,16 +176,27 @@ class _StopReportScreenState extends ConsumerState<StopReportScreen> with RouteP
 
     return Scaffold(
       backgroundColor: t.surface,
+      // Material 3 small top app bar, as on the route (D4); back goes to the route, also when the screen was opened
+      // straight from a link.
+      appBar: AppBar(
+        leading: IconButton(icon: const BackButtonIcon(), tooltip: Vi.backToRoute, onPressed: _backToRoute),
+        title: stop == null ? null : Text(Vi.stopOf(stop.sequence, detail!.stops.length)),
+      ),
+      // The footer's fill runs under the gesture bar, its buttons stay above it (edge-to-edge; a strip of the page
+      // colour showed under the footer, D5).
       body: SafeArea(
+        top: false,
+        bottom: footer == null,
         child: Column(
           children: [
-            _Header(title: stop == null ? null : Vi.stopOf(stop.sequence, detail!.stops.length), onBack: _backToRoute),
             Expanded(
               child: ListView(padding: const EdgeInsets.all(PwSpacing.space4), children: body),
             ),
             if (footer != null)
               Container(
-                padding: const EdgeInsets.all(PwSpacing.space4),
+                padding:
+                    const EdgeInsets.all(PwSpacing.space4) +
+                    EdgeInsets.only(bottom: MediaQuery.paddingOf(context).bottom),
                 decoration: BoxDecoration(
                   color: t.surfaceRaised,
                   border: Border(top: BorderSide(color: t.line)),
@@ -203,6 +220,7 @@ class _StopReportScreenState extends ConsumerState<StopReportScreen> with RouteP
     final phone = stop.recipientPhone;
     final directions = PwButton(
       label: Vi.directions,
+      variant: PwButtonVariant.tonal,
       block: true,
       onPressed: () => context.push('/routes/${route.routeId}/navigate?stopId=${stop.id}'),
     );
@@ -214,9 +232,12 @@ class _StopReportScreenState extends ConsumerState<StopReportScreen> with RouteP
           Semantics(
             label: 'Điểm số ${stop.sequence}',
             excludeSemantics: true,
-            child: CircleAvatar(
-              radius: 14,
-              backgroundColor: t.route,
+            // Grows with the system text, as on the route's card (D4).
+            child: Container(
+              width: scaledIconSize(context, 28),
+              height: scaledIconSize(context, 28),
+              alignment: Alignment.center,
+              decoration: BoxDecoration(color: t.route, shape: BoxShape.circle),
               child: Text('${stop.sequence}', style: PwTypeStyles.label.copyWith(color: t.onAccent)),
             ),
           ),
@@ -241,19 +262,17 @@ class _StopReportScreenState extends ConsumerState<StopReportScreen> with RouteP
       if (phone == null)
         directions
       else
-        Row(
-          children: [
-            Expanded(
-              child: PwButton(
-                label: Vi.callCustomer,
-                semanticLabel: Vi.callNumber(formatPhone(phone)),
-                block: true,
-                onPressed: () => unawaited(_open(callUri(phone))),
-              ),
-            ),
-            const SizedBox(width: PwSpacing.space2),
-            Expanded(child: directions),
-          ],
+        // Filled tonal, the second level: the results below are what the screen is for (§3 "Nút").
+        PwButtonPair(
+          first: PwButton(
+            label: Vi.callCustomer,
+            semanticLabel: Vi.callNumber(formatPhone(phone)),
+            variant: PwButtonVariant.tonal,
+            block: true,
+            onPressed: () => unawaited(_open(callUri(phone))),
+          ),
+          second: directions,
+          labels: const [Vi.callCustomer, Vi.directions],
         ),
       if (unsent != null && error != null) ...[
         const SizedBox(height: PwSpacing.space4),
@@ -305,16 +324,13 @@ class _StopReportScreenState extends ConsumerState<StopReportScreen> with RouteP
     );
   }
 
-  /// After the server took the result (or the stop was already finished): what was recorded, then the next stop or
-  /// the end of the route.
+  /// A stop that already has its result (opened again, or a send whose answer was lost shows as done once the route is
+  /// read again): what was recorded, then the next stop or the end of the route.
   List<Widget> _result(DriverRouteDetailResponse route, DriverStopResponse stop, DriverStopResponse? next) {
     final t = context.pw;
-    final sent = _sent;
-    final result = sent?.$1 ?? StopResult.of(stop.status.value)!;
-    final reason = sent != null ? sent.$2.stop.failureReason : stop.failureReason;
-    final routeDone = sent != null
-        ? sent.$2.routeStatus == DriverStopUpdateResponseRouteStatusEnum.COMPLETED
-        : route.status == DriverRouteDetailResponseStatusEnum.COMPLETED;
+    final result = StopResult.of(stop.status.value)!;
+    final reason = stop.failureReason;
+    final routeDone = route.status == DriverRouteDetailResponseStatusEnum.COMPLETED;
     final title = switch (result) {
       StopResult.delivered => Vi.sentDelivered(stop.label),
       StopResult.failed => Vi.sentFailed(stop.label),
@@ -352,7 +368,7 @@ class _StopReportScreenState extends ConsumerState<StopReportScreen> with RouteP
           decoration: BoxDecoration(
             color: t.surfaceRaised,
             border: Border.all(color: t.success),
-            borderRadius: BorderRadius.circular(PwRadius.radiusMd),
+            borderRadius: BorderRadius.circular(PwShapes.cornerMedium),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -374,7 +390,7 @@ class _StopReportScreenState extends ConsumerState<StopReportScreen> with RouteP
       else
         Container(
           padding: const EdgeInsets.all(PwSpacing.space4),
-          decoration: BoxDecoration(color: t.surfaceTint, borderRadius: BorderRadius.circular(PwRadius.radiusMd)),
+          decoration: BoxDecoration(color: t.surfaceTint, borderRadius: BorderRadius.circular(PwShapes.cornerMedium)),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -395,43 +411,5 @@ class _StopReportScreenState extends ConsumerState<StopReportScreen> with RouteP
           ),
         ),
     ];
-  }
-}
-
-class _Header extends StatelessWidget {
-  const _Header({required this.title, required this.onBack});
-
-  final String? title;
-  final VoidCallback onBack;
-
-  @override
-  Widget build(BuildContext context) {
-    final t = context.pw;
-    return Container(
-      padding: const EdgeInsets.all(PwSpacing.space2),
-      decoration: BoxDecoration(
-        color: t.surfaceRaised,
-        border: Border(bottom: BorderSide(color: t.line)),
-      ),
-      child: Row(
-        children: [
-          IconButton(
-            tooltip: Vi.backToRoute,
-            icon: Icon(Icons.chevron_left, color: t.ink),
-            constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
-            onPressed: onBack,
-          ),
-          const SizedBox(width: PwSpacing.space1),
-          Expanded(
-            child: title == null
-                ? const SizedBox.shrink()
-                : Semantics(
-                    header: true,
-                    child: Text(title!, style: PwTypeStyles.heading.copyWith(color: t.ink, fontSize: 18)),
-                  ),
-          ),
-        ],
-      ),
-    );
   }
 }

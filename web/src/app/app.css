@@ -23,6 +23,9 @@
   line-height: 34px;
   font-weight: 700;
   letter-spacing: -0.01em;
+  /* A long name without spaces breaks too instead of running off the screen (G2.11); in a flex row it may shrink. */
+  overflow-wrap: anywhere;
+  min-width: 0;
 }
 .pw-page-loading {
   padding: 24px;
@@ -44,4 +47,164 @@
   font-weight: 700;
   font-size: 24px;
   line-height: 32px;
+}
+
+/* Missing page (pages.tsx), laid out like Apple's ContentUnavailableView: one large monochrome symbol in the secondary
+   colour, a bold title, a secondary description, then the actions as capsules (WWDC25 356: large controls are
+   capsules). Centred, in the app's frame or in a card on the account screens' picture. */
+.pw-missing,
+.pw-missing-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+}
+/* In the app's frame: centred in the safe area, like ContentUnavailableView — HIG Layout: "A safe area defines the area
+   within a window that isn't covered… by a toolbar, tab bar"; "Respecting the safe area is essential". So: right of
+   the sidebar, below the top bar, above the tab bar on a phone. The content column fills the window's height and the
+   block takes its free space. */
+.pw-shell-main:has(.pw-missing) {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+}
+.pw-shell-main:has(.pw-missing) > .pw-page {
+  flex: 1 0 auto;
+}
+.pw-missing {
+  flex: 1 0 auto;
+  justify-content: center;
+  margin: 0 auto;
+  max-width: 420px;
+}
+.pw-missing-symbol {
+  margin-bottom: 8px;
+  color: var(--ink-muted);
+}
+.pw-missing h1,
+.pw-missing-card h1 {
+  margin: 0;
+  font-size: 1.375rem;
+  line-height: 1.75rem;
+  font-weight: 700;
+  /* Balanced lines: no single word left alone on the last line. */
+  text-wrap: balance;
+}
+.pw-missing p,
+.pw-missing-card p {
+  margin: 0;
+  color: var(--ink-muted);
+}
+.pw-missing-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  width: min(100%, 280px);
+  margin-top: 16px;
+}
+.pw-missing-actions .pw-btn {
+  height: 44px;
+  border-radius: var(--radius-full);
+}
+
+/* View Transitions, for every page change that uses them (account screens, app shell): what does not change between
+   the pages (the account screens' picture, the shell's sidebar and tab bar) is the root and shows the new state at
+   once, live, instead of a cross-fade between a frozen copy and a moving one; the parts that change have their own
+   names and animate (login.css, ui.css "pw-page"). */
+::view-transition-old(root) {
+  display: none;
+}
+::view-transition-new(root) {
+  animation: none;
+}
+
+/* Signed-in pages: keep the room of the scrollbar even on a short page, so moving between a short page and a long one
+   (Cửa hàng, with its map) does not shift and narrow the page by the scrollbar's width — during a page change that
+   showed as the page sliding sideways before rising. Only where scrollbars take room (Windows, Linux). */
+html:has(.pw-shell) {
+  scrollbar-gutter: stable;
+}
+/* A plan on the full map (G5, §10.6) never scrolls: no room kept for a scrollbar, so the map reaches the window's
+   right edge. */
+html:has(.pw-map-stage.is-wide) {
+  scrollbar-gutter: auto;
+}
+/* A plan on the full map never scrolls (§10.13). On a phone 100vh is the height with the browser's address bar hidden,
+   taller than what shows while it is there (Chrome on Android): the page was that much taller and scrolled, moving the
+   map under the top bar and a drag in the sheet could move the whole page. There: the visible height (100dvh), and no
+   page scrolling or overscroll. */
+html:has(.pw-map-stage),
+html:has(.pw-map-stage) body {
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+.pw-app:has(.pw-map-stage),
+.pw-shell:has(.pw-map-stage) {
+  min-height: 100dvh;
+}
+
+/* Signing in or out (features/auth/sceneTransition.ts): the old screen fades out, the new one fades in and rises a
+   little once drawn. CSS on the app's root, nothing frozen. */
+/* Smooth both ways: the old screen eases out and sinks back a touch, the new one eases in from a touch below; the
+   same gentle curve and small distances, so the two halves read as one movement. Only opacity on #root: a transform
+   there would make it the containing block of everything fixed inside (tab bar, sidebar, pause button), which then
+   left the screen until the change ended (the tab bar showed up late after signing in). The movement is on the content
+   parts only. */
+#root {
+  transition: opacity 0.26s cubic-bezier(0.4, 0, 0.2, 1);
+}
+html.pw-scene-leaving #root {
+  opacity: 0;
+}
+html.pw-scene-entering #root {
+  animation: pw-scene-fade-in 0.5s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+.pw-shell-main,
+.pw-auth {
+  transition: transform 0.26s cubic-bezier(0.4, 0, 0.2, 1);
+}
+html.pw-scene-leaving .pw-shell-main,
+html.pw-scene-leaving .pw-auth {
+  transform: scale(0.99);
+}
+html.pw-scene-entering .pw-shell-main,
+html.pw-scene-entering .pw-auth {
+  animation: pw-scene-rise 0.5s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+@keyframes pw-scene-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes pw-scene-rise {
+  from {
+    transform: translateY(6px) scale(0.99);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  #root,
+  .pw-shell-main,
+  .pw-auth {
+    transition: none;
+  }
+}
+/* The activity indicator between the two screens: Apple's small spinner, eight spokes turning in steps. */
+.pw-activity {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  color: var(--ink-muted);
+}
+.pw-activity svg {
+  animation: pw-activity-turn 0.8s steps(8) infinite;
+}
+@keyframes pw-activity-turn {
+  to {
+    transform: rotate(360deg);
+  }
 }

@@ -1,20 +1,20 @@
 # REQUIREMENTS — Yêu cầu và phạm vi sản phẩm
 
 > Nguồn: phỏng vấn chủ dự án 2026-10-21/22 (xem `DECISIONS.md`). Mỗi yêu cầu ghi nguồn quyết định.
-> Ký hiệu trạng thái: ✅ đã có và đã kiểm chứng · 🟡 đã có nhưng lỗi/chưa kiểm chứng · ❌ chưa có.
+> Cột "Task": task làm yêu cầu đó (đặc tả ở `IMPLEMENTATION_PLAN.md` và `docs/archive/`), kèm endpoint chính. Trạng thái endpoint ở `API_SPEC.md` (cột Hiện trạng), lỗi còn mở ở `CURRENT_STATE.md` §2.
 > Tầng ưu tiên: **Must** (thiếu thì không phải MVP) · **Should** (trong MVP nếu kịp) · **Could** (sau MVP) · **Idea** (chưa phê duyệt).
 
 ## 1. Mục tiêu sản phẩm
 
 PathWise giúp **cửa hàng có đội tài xế riêng** lập kế hoạch giao hàng trong ngày: dispatcher nhập danh sách điểm giao, hệ thống chia điểm cho các tài xế/xe và sắp thứ tự tối ưu có xét khung giờ nhận hàng, tải trọng xe và ca làm; tài xế xem tuyến trên điện thoại, dẫn đường tới từng điểm và báo trạng thái giao; cửa hàng theo dõi tiến độ và vị trí tài xế. (D-01, D-04, D-05, D-06)
 
-Phạm vi repo này: **backend** (REST API) phục vụ web dashboard và app Flutter (D-09).
+Phạm vi repo này: backend (REST API, D-09) cùng web dispatcher (`web/`) và app tài xế (`mobile/`) trong cùng repo (P-40).
 
 ## 2. Actor
 
 | Actor | Mô tả | Cách có tài khoản |
 |---|---|---|
-| ADMIN | Quản trị nền tảng PathWise. | Tạo thủ công (seed/SQL), không tự đăng ký. |
+| ADMIN | Quản trị nền tảng PathWise. | ADMIN đầu tiên tạo lúc khởi động từ biến `BOOTSTRAP_ADMIN_EMAIL` (FR-A15, T59), không tự đăng ký. |
 | OWNER | Chủ cửa hàng; toàn quyền trong store. | Tự đăng ký, store tạo cùng lúc (D-15). |
 | DISPATCHER | Nhân viên điều phối của cửa hàng. | Được OWNER mời qua email (D-16). |
 | DRIVER | Tài xế của cửa hàng. | Được OWNER mời qua email (D-16). |
@@ -25,68 +25,68 @@ Mỗi user thuộc tối đa 1 store và có đúng 1 role (D-02). OWNER hoặc 
 
 ### 3.1 Tài khoản & xác thực (D-11, D-14..D-17)
 
-| ID | Yêu cầu | Tầng | Hiện trạng |
+| ID | Yêu cầu | Tầng | Task (chi tiết ở API_SPEC, trạng thái ở CURRENT_STATE) |
 |---|---|---|---|
-| FR-A01 | OWNER đăng ký bằng email, mật khẩu (8–72 ký tự), tên cửa hàng; tạo user + store trong 1 giao dịch; tài khoản ở trạng thái chờ xác thực. | Must | ✅ (T13) |
-| FR-A02 | Xác thực email bằng OTP 6 số gửi qua email; gửi lại OTP có cooldown. Chưa xác thực thì không đăng nhập được. | Must | ✅ (T13) |
-| FR-A03 | Đăng nhập bằng email + mật khẩu → access token (JWT, 14 phút) + refresh token (14 ngày). Web: refresh token trong HttpOnly cookie; mobile: trong body. | Must | ✅ (T10): web cookie `Path=/api/v1/auth`, mobile body |
-| FR-A04 | Refresh: xoay vòng refresh token, phát hiện tái sử dụng (revoke cả family), từ chối token hết hạn, từ chối user bị vô hiệu hoá. | Must | ✅ (T10, T13) |
-| FR-A05 | Đăng xuất thiết bị hiện tại. | Must | ✅ (T10): `/log-out` public, cookie hoặc body |
-| FR-A06 | Xem danh sách session (thiết bị) đang hoạt động; đăng xuất từng session; đăng xuất mọi session khác. | Must | ✅ (T11) |
-| FR-A07 | Quên mật khẩu: OTP qua email → đặt mật khẩu mới → thu hồi mọi session. Không tiết lộ email có tồn tại hay không. | Must | ✅ (T14) |
-| FR-A08 | Đổi mật khẩu khi đã đăng nhập: mật khẩu cũ + OTP qua email; thu hồi mọi session khác. | Must | ✅ (T15) |
-| FR-A09 | Xem/cập nhật hồ sơ của chính mình (họ tên, số điện thoại VN). | Must | ✅ (`GET/PATCH /users/me`, T44) |
-| FR-A10 | ADMIN xem danh sách user (phân trang, sort whitelist). | Should | ✅ (lọc theo store/vai trò/trạng thái, đủ `storeId`, `status` từ T55) |
-| FR-A11 | ADMIN xem danh sách và chi tiết cửa hàng (số tổng, không nội dung plan/xe/điểm giao). | Should (M5, P-59) | ✅ T55 |
-| FR-A12 | ADMIN khoá cửa hàng ở chế độ chỉ đọc (tài xế vẫn giao nốt), mở khoá; khoá/mở user; buộc đăng xuất. | Should (M5) | ✅ T56 (băng trên web/app làm ở W11) |
-| FR-A13 | ADMIN hỗ trợ tài khoản: gửi lại email xác thực, email đặt lại mật khẩu, chuyển chủ cửa hàng. | Should (M5) | ✅ T57 (màn ở W11) |
-| FR-A14 | Audit log: hành động của ADMIN và hành động nhạy cảm trong cửa hàng; ADMIN xem toàn bộ, OWNER xem của cửa hàng mình. | Should (M5) | ✅ T58 (hành động ADMIN của T56, T57 thêm khi làm các task đó) |
-| FR-A15 | Tạo ADMIN đầu tiên bằng biến môi trường lúc khởi động, không qua SQL. | Should (M5) | ✅ T59 |
-| FR-A16 | ADMIN xem thông số nền tảng: nghiệp vụ (cửa hàng, user, plan, điểm giao, tối ưu) và kỹ thuật (request, lỗi, thời gian phản hồi, job, provider, JVM, DB, backup). | Should (M5) | ✅ T60 (trừ backup: theo dõi bằng script T54, P-64; màn ở W11) |
+| FR-A01 | OWNER đăng ký bằng email, mật khẩu (8–72 ký tự), tên cửa hàng; tạo user + store trong 1 giao dịch; tài khoản ở trạng thái chờ xác thực. | Must | T13 |
+| FR-A02 | Xác thực email bằng OTP 6 số gửi qua email; gửi lại OTP có cooldown. Chưa xác thực thì không đăng nhập được. | Must | T13 |
+| FR-A03 | Đăng nhập bằng email + mật khẩu → access token (JWT, 14 phút) + refresh token (14 ngày). Web: refresh token trong HttpOnly cookie; mobile: trong body. | Must | T10: web cookie `Path=/api/v1/auth`, mobile body |
+| FR-A04 | Refresh: xoay vòng refresh token, phát hiện tái sử dụng (revoke cả family), từ chối token hết hạn, từ chối user bị vô hiệu hoá. | Must | T10, T13 |
+| FR-A05 | Đăng xuất thiết bị hiện tại. | Must | T10: `/log-out` public, cookie hoặc body |
+| FR-A06 | Xem danh sách session (thiết bị) đang hoạt động; đăng xuất từng session; đăng xuất mọi session khác. | Must | T11 |
+| FR-A07 | Quên mật khẩu: OTP qua email → đặt mật khẩu mới → thu hồi mọi session. Không tiết lộ email có tồn tại hay không. | Must | T14 |
+| FR-A08 | Đổi mật khẩu khi đã đăng nhập: mật khẩu cũ + OTP qua email; thu hồi mọi session khác. | Must | T15 |
+| FR-A09 | Xem/cập nhật hồ sơ của chính mình (họ tên, số điện thoại VN). | Must | `GET/PATCH /users/me`, T44 |
+| FR-A10 | ADMIN xem danh sách user (phân trang, sort whitelist). | Should | lọc theo store/vai trò/trạng thái, đủ `storeId`, `status` từ T55 |
+| FR-A11 | ADMIN xem danh sách và chi tiết cửa hàng (số tổng, không nội dung plan/xe/điểm giao). | Should (M5, P-59) | T55 |
+| FR-A12 | ADMIN khoá cửa hàng ở chế độ chỉ đọc (tài xế vẫn giao nốt), mở khoá; khoá/mở user; buộc đăng xuất. | Should (M5) | T56 (băng trên web/app làm ở W11) |
+| FR-A13 | ADMIN hỗ trợ tài khoản: gửi lại email xác thực, email đặt lại mật khẩu, chuyển chủ cửa hàng. | Should (M5) | T57 (màn ở W11) |
+| FR-A14 | Audit log: hành động của ADMIN và hành động nhạy cảm trong cửa hàng; ADMIN xem toàn bộ, OWNER xem của cửa hàng mình. | Should (M5) | T58 (hành động ADMIN của T56, T57 thêm khi làm các task đó) |
+| FR-A15 | Tạo ADMIN đầu tiên bằng biến môi trường lúc khởi động, không qua SQL. | Should (M5) | T59 |
+| FR-A16 | ADMIN xem thông số nền tảng: nghiệp vụ (cửa hàng, user, plan, điểm giao, tối ưu) và kỹ thuật (request, lỗi, thời gian phản hồi, job, provider, JVM, DB, backup). | Should (M5) | T60 (trừ backup: theo dõi bằng script T54, P-64; màn ở W11) |
 
 ### 3.2 Cửa hàng & thành viên (D-02, D-03, D-16)
 
-| ID | Yêu cầu | Tầng | Hiện trạng |
+| ID | Yêu cầu | Tầng | Task (chi tiết ở API_SPEC, trạng thái ở CURRENT_STATE) |
 |---|---|---|---|
-| FR-S01 | OWNER xem/cập nhật thông tin store: tên, depot (địa chỉ + toạ độ), timezone. | Must | ✅ (T13, quyền theo role ở T17) |
-| FR-S02 | OWNER mời thành viên (email + role DISPATCHER/DRIVER); email chứa mã mời; xem/huỷ lời mời đang chờ. | Must | ✅ (T16) |
-| FR-S03 | Người được mời chấp nhận bằng mã mời + đặt mật khẩu + tên → tài khoản ACTIVE (email coi như đã xác thực). | Must | ✅ (T16) |
-| FR-S04 | OWNER xem danh sách thành viên; vô hiệu hoá / kích hoạt lại thành viên (vô hiệu hoá → thu hồi mọi session). | Must | ✅ (T16) |
-| FR-S05 | OWNER đổi role DISPATCHER ↔ DRIVER của thành viên. | Should | ✅ (T16) |
-| FR-S06 | OWNER bật hoặc tắt `canDrive` cho chính mình và cho DISPATCHER; người có `canDrive` được gán route và dùng API tài xế (D-21). | Must | ✅ (T16) |
+| FR-S01 | OWNER xem/cập nhật thông tin store: tên, depot (địa chỉ + toạ độ), timezone. | Must | T13, quyền theo role ở T17 |
+| FR-S02 | OWNER mời thành viên (email + role DISPATCHER/DRIVER); email chứa mã mời; xem/huỷ lời mời đang chờ. | Must | T16 |
+| FR-S03 | Người được mời chấp nhận bằng mã mời + đặt mật khẩu + tên → tài khoản ACTIVE (email coi như đã xác thực). | Must | T16 |
+| FR-S04 | OWNER xem danh sách thành viên; vô hiệu hoá / kích hoạt lại thành viên (vô hiệu hoá → thu hồi mọi session). | Must | T16 |
+| FR-S05 | OWNER đổi role DISPATCHER ↔ DRIVER của thành viên. | Should | T16 |
+| FR-S06 | OWNER bật hoặc tắt `canDrive` cho chính mình và cho DISPATCHER; người có `canDrive` được gán route và dùng API tài xế (D-21). | Must | T16 |
 
 ### 3.3 Xe (D-05)
 
-| ID | Yêu cầu | Tầng | Hiện trạng |
+| ID | Yêu cầu | Tầng | Task (chi tiết ở API_SPEC, trạng thái ở CURRENT_STATE) |
 |---|---|---|---|
-| FR-V01 | OWNER/DISPATCHER tạo, sửa, vô hiệu hoá xe: tên/biển số, capacity (số nguyên > 0) và loại capacity (`KG`, `BOX`, `PACKAGE`, `ORDER`, D-36). | Must | ✅ (T20) |
+| FR-V01 | OWNER/DISPATCHER tạo, sửa, vô hiệu hoá xe: tên/biển số, capacity (số nguyên > 0) và loại capacity (`KG`, `BOX`, `PACKAGE`, `ORDER`, D-36). | Must | T20 |
 
 ### 3.4 Kế hoạch giao hàng (D-04, D-05, D-18, D-19, D-20, D-23, D-24, P-13, P-14)
 
-| ID | Yêu cầu | Tầng | Hiện trạng |
+| ID | Yêu cầu | Tầng | Task (chi tiết ở API_SPEC, trạng thái ở CURRENT_STATE) |
 |---|---|---|---|
-| FR-P01 | Tìm địa chỉ → danh sách ứng viên có toạ độ (geocoding search, dùng cho autocomplete hoặc sửa stop lỗi). | Should | ✅ (T21) |
-| FR-P02 | Tạo plan nháp (DRAFT) cho một ngày: depot, danh sách stop (nhãn, tên/số điện thoại người nhận, địa chỉ hiển thị, **địa chỉ và/hoặc toạ độ** (phải có ít nhất một trong hai), demand theo từng loại capacity (D-36), thời gian phục vụ, time window tuỳ chọn, ghi chú) và danh sách phân công (tài xế + xe + giờ bắt đầu/kết thúc ca + quãng đường tối đa tuỳ chọn). | Must | ✅ (T24) |
-| FR-P03 | Sửa plan DRAFT (thêm/sửa/xoá stop, phân công). Mọi chỉnh sửa xoá kết quả tối ưu cũ; stop không đổi địa chỉ thì giữ kết quả geocode. | Must | ✅ (T24): `PUT /plans/{id}`, `PATCH /plans/{id}/stops/{stopId}` |
-| FR-P09 | Server geocode **chạy nền** các stop chỉ có địa chỉ ngay khi lưu plan. Dispatcher thấy tiến độ và từng stop thất bại kèm lý do, sửa được bằng địa chỉ mới hoặc toạ độ, và chạy lại được. Plan chỉ optimize khi mọi stop đã có toạ độ. | Must | ✅ (T29): job `GEOCODE_PLAN` nền, `POST /plans/{id}/geocode`; điều kiện optimize kiểm ở T25 |
-| FR-P04 | Tối ưu plan: chia stop cho các route và sắp thứ tự, tôn trọng time window, capacity, ca làm, quãng đường tối đa; trả ETA từng stop, tổng quãng đường/thời gian mỗi route, và danh sách stop **không xếp được**. API dạng job, MVP chạy ngay trong request nhưng chuyển sang chạy nền được bằng cấu hình (D-19). | Must | ✅ (T25): `POST /plans/{id}/optimize` (job, mặc định inline), solver VRPTW của T23; `/route/optimize` cũ đã xoá (T27) |
-| FR-P05 | Publish plan đã tối ưu → tài xế thấy route của mình; sau publish không sửa stop/phân công được. Từ chối publish nếu ca của một tài xế hoặc xe chồng giờ với plan đã publish khác cùng ngày (D-23). | Must | ✅ (T26): route không có stop không tính (P-34) |
-| FR-P06 | Huỷ plan (DRAFT hoặc PUBLISHED). | Must | ✅ (T26) |
-| FR-P07 | Xem danh sách plan theo ngày/trạng thái và chi tiết plan với tiến độ từng stop. | Must | ✅ (T24): `GET /plans`, `GET /plans/{id}`; trạng thái stop đổi từ T26/T31 |
-| FR-P08 | Chỉnh tay sau tối ưu: chuyển stop giữa route, đổi thứ tự; hệ thống tính lại ETA/quãng đường và cảnh báo vi phạm ràng buộc. Endpoint có sẵn trong API contract (D-24). | Should | ❌ |
-| FR-P10 | Nhập điểm giao cho một plan từ file Excel (`.xlsx`) hoặc CSV theo file mẫu: server đọc file, trả từng dòng kèm lỗi theo cột, không lưu; dispatcher xem trước rồi thêm dòng hợp lệ vào plan. Không phải danh mục đơn hàng (D-04). | Should (M5 C, P-67) | ❌ T61, W12 |
-| FR-P11 | Sao chép plan sang ngày khác: tất cả điểm giao hoặc chỉ điểm chưa giao được, giữ toạ độ, chép phân công còn hợp lệ; plan mới là DRAFT. | Should (M5 C, P-67) | ❌ T62, W12 |
-| FR-P12 | Báo cáo của cửa hàng theo ngày hoặc khoảng ≤ 31 ngày (kế hoạch, kết quả điểm giao, theo tài xế, lý do thất bại) và xuất CSV từng điểm giao. | Should (M5 C, P-67) | ❌ T63, W12 |
+| FR-P01 | Tìm địa chỉ → danh sách ứng viên có toạ độ (geocoding search, dùng cho autocomplete hoặc sửa stop lỗi). | Should | T21 |
+| FR-P02 | Tạo plan nháp (DRAFT) cho một ngày: depot, danh sách stop (nhãn, tên/số điện thoại người nhận, địa chỉ hiển thị, **địa chỉ và/hoặc toạ độ** (phải có ít nhất một trong hai), demand theo từng loại capacity (D-36), thời gian phục vụ, time window tuỳ chọn, ghi chú) và danh sách phân công (tài xế + xe + giờ bắt đầu/kết thúc ca + quãng đường tối đa tuỳ chọn). | Must | T24 |
+| FR-P03 | Sửa plan DRAFT (thêm/sửa/xoá stop, phân công). Mọi chỉnh sửa xoá kết quả tối ưu cũ; stop không đổi địa chỉ thì giữ kết quả geocode. | Must | T24: `PUT /plans/{id}`, `PATCH /plans/{id}/stops/{stopId}` |
+| FR-P09 | Server geocode **chạy nền** các stop chỉ có địa chỉ ngay khi lưu plan. Dispatcher thấy tiến độ và từng stop thất bại kèm lý do, sửa được bằng địa chỉ mới hoặc toạ độ, và chạy lại được. Plan chỉ optimize khi mọi stop đã có toạ độ. | Must | T29: job `GEOCODE_PLAN` nền, `POST /plans/{id}/geocode`; điều kiện optimize kiểm ở T25 |
+| FR-P04 | Tối ưu plan: chia stop cho các route và sắp thứ tự, tôn trọng time window, capacity, ca làm, quãng đường tối đa; trả ETA từng stop, tổng quãng đường/thời gian mỗi route, và danh sách stop **không xếp được**. API dạng job, MVP chạy ngay trong request nhưng chuyển sang chạy nền được bằng cấu hình (D-19). | Must | T25: `POST /plans/{id}/optimize` (job, mặc định inline), solver VRPTW của T23; `/route/optimize` cũ đã xoá (T27) |
+| FR-P05 | Publish plan đã tối ưu → tài xế thấy route của mình; sau publish không sửa stop/phân công được. Từ chối publish nếu ca của một tài xế hoặc xe chồng giờ với plan đã publish khác cùng ngày (D-23). | Must | T26: route không có stop không tính (P-34) |
+| FR-P06 | Huỷ plan (DRAFT hoặc PUBLISHED). | Must | T26 |
+| FR-P07 | Xem danh sách plan theo ngày/trạng thái và chi tiết plan với tiến độ từng stop. | Must | T24: `GET /plans`, `GET /plans/{id}`; trạng thái stop đổi từ T26/T31 |
+| FR-P08 | Chỉnh tay sau tối ưu: chuyển stop giữa route, đổi thứ tự; hệ thống tính lại ETA/quãng đường và cảnh báo vi phạm ràng buộc. Endpoint có sẵn trong API contract (D-24). | Should | T28, W10, P-58: `PUT /plans/{id}/routes`, `PlanDetail.violations` |
+| FR-P10 | Nhập điểm giao cho một plan từ file Excel (`.xlsx`) hoặc CSV theo file mẫu: server đọc file, trả từng dòng kèm lỗi theo cột, không lưu; dispatcher xem trước rồi thêm dòng hợp lệ vào plan. Không phải danh mục đơn hàng (D-04). | Should (M5 C, P-67) | T61, W12: `POST /plans/import` |
+| FR-P11 | Sao chép plan sang ngày khác: tất cả điểm giao hoặc chỉ điểm chưa giao được, giữ toạ độ, chép phân công còn hợp lệ; plan mới là DRAFT. | Should (M5 C, P-67) | T62, W12: `POST /plans/{id}/copy` |
+| FR-P12 | Báo cáo của cửa hàng theo ngày hoặc khoảng ≤ 31 ngày (kế hoạch, kết quả điểm giao, theo tài xế, lý do thất bại) và xuất CSV từng điểm giao. | Should (M5 C, P-67) | T63, W12: `GET /reports/summary`, `GET /reports/stops.csv` |
 
 ### 3.5 Tài xế (D-06, D-07, D-08)
 
-| ID | Yêu cầu | Tầng | Hiện trạng |
+| ID | Yêu cầu | Tầng | Task (chi tiết ở API_SPEC, trạng thái ở CURRENT_STATE) |
 |---|---|---|---|
-| FR-D01 | Tài xế xem các route được giao (theo ngày) và chi tiết route: stop theo thứ tự, toạ độ, ETA, time window, liên hệ, ghi chú. | Must | ✅ (T30): `GET /driver/routes`, `GET /driver/routes/{routeId}`; trạng thái stop đổi bằng API của T31 |
-| FR-D02 | Dữ liệu đủ để app mở Google/Apple Maps dẫn đường tới stop kế tiếp (deep link). | Must | ✅ (T30): stop có `lat`/`lon`, app tự dựng deep link (P-32) |
-| FR-D03 | Cập nhật trạng thái stop: DELIVERED / FAILED (bắt buộc lý do) / SKIPPED; dispatcher thấy ngay khi tải lại. | Must | ✅ (T31): `PATCH /driver/routes/{routeId}/stops/{stopId}/status`; plan tự chuyển IN_PROGRESS/COMPLETED (BR-11) |
-| FR-D04 | Gửi vị trí định kỳ (15–30 s) theo **lô điểm** (gom được các điểm bị mất mạng); dispatcher xem vị trí cuối của các tài xế đang chạy plan. Thiết kế mở rộng được sang lưu lịch sử (D-26). | Should¹ | ✅ (T32, W09, M04): `POST /driver/location`, `GET /plans/{id}/driver-locations`, thêm trạng thái chia sẻ `PUT /driver/location/sharing` (P-53); app gửi cả khi chạy nền (P-54) |
-| FR-D05 | Turn-by-turn trong app: backend trả geometry + chỉ dẫn từng bước cho route. | Should (fallback FR-D02) | ❌ |
+| FR-D01 | Tài xế xem các route được giao (theo ngày) và chi tiết route: stop theo thứ tự, toạ độ, ETA, time window, liên hệ, ghi chú. | Must | T30: `GET /driver/routes`, `GET /driver/routes/{routeId}`; trạng thái stop đổi bằng API của T31 |
+| FR-D02 | Dữ liệu đủ để app mở Google/Apple Maps dẫn đường tới stop kế tiếp (deep link). | Must | T30: stop có `lat`/`lon`, app tự dựng deep link (P-32) |
+| FR-D03 | Cập nhật trạng thái stop: DELIVERED / FAILED (bắt buộc lý do) / SKIPPED; dispatcher thấy ngay khi tải lại. | Must | T31: `PATCH /driver/routes/{routeId}/stops/{stopId}/status`; plan tự chuyển IN_PROGRESS/COMPLETED (BR-11) |
+| FR-D04 | Gửi vị trí định kỳ (15–30 s) theo **lô điểm** (gom được các điểm bị mất mạng); dispatcher xem vị trí cuối của các tài xế đang chạy plan. Thiết kế mở rộng được sang lưu lịch sử (D-26). | Should¹ | T32, W09, M04: `POST /driver/location`, `GET /plans/{id}/driver-locations`, thêm trạng thái chia sẻ `PUT /driver/location/sharing` (P-53); app gửi cả khi chạy nền (P-54) |
+| FR-D05 | Turn-by-turn trong app: backend trả geometry + chỉ dẫn từng bước cho route. | Should (fallback FR-D02) | T33, M05, P-57: `GET /driver/routes/{routeId}/directions` tính từ vị trí hiện tại |
 
 ¹ Chủ dự án muốn làm polling ngay sau core (D-08); xếp Should vì phụ thuộc toàn bộ phần plan/driver.
 
@@ -128,7 +128,7 @@ Mỗi user thuộc tối đa 1 store và có đúng 1 role (D-02). OWNER hoặc 
 | NFR-05 Vận hành | Chạy toàn bộ stack bằng `docker compose --profile app up` (image multi-stage); dev chạy hạ tầng bằng compose và app từ IDE; cấu hình qua biến môi trường; CI build, test, quét chất lượng và push image lên GHCR; deploy thủ công theo runbook (D-30 → D-34). | Bắt buộc |
 | NFR-08 Vận hành tối thiểu (M5, P-59) | Log Docker có giới hạn dung lượng; backup DB tự động hằng đêm, giữ 7 ngày + 4 tuần, có bản ngoài VPS (S3 tương thích) và đã tập khôi phục; dữ liệu hết hạn được dọn theo lịch; cảnh báo qua email khi app không phản hồi, đĩa > 85 %, RAM thấp, container lỗi, backup thất bại. Đã làm: T51 (log), T52 (backup), T53 (dọn dữ liệu), T54 (giám sát). | Should (M5) |
 | NFR-06 Quan sát | Log có cấu trúc tối thiểu (userId, storeId, requestId); không log secret/OTP/token. | Should |
-| NFR-07 Ngôn ngữ | Email gửi người dùng bằng tiếng Việt. | Should (đề xuất, chưa phê duyệt) |
+| NFR-07 Ngôn ngữ | Email gửi người dùng bằng tiếng Việt. | Should (D-28, đã duyệt) |
 
 ## 6. Tiêu chí MVP hoàn thành
 

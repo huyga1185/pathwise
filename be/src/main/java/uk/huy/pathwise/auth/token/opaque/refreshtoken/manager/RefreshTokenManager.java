@@ -92,7 +92,8 @@ public class RefreshTokenManager {
             return new Rejected(RejectReason.USED_REUSED);
         }
 
-        List<RefreshToken> actives = refreshTokenRepository.findByFamilyIdAndState(token.getFamilyId(), RefreshTokenState.ACTIVE);
+        List<RefreshToken> actives = refreshTokenRepository.findByFamilyIdAndStateForUpdate(token.getFamilyId(),
+                RefreshTokenState.ACTIVE);
 
         if (actives.size() != 1) {
             log.error("Refresh token family within grace must have exactly one active token. familyId={}, actives={}",
@@ -183,15 +184,18 @@ public class RefreshTokenManager {
     @Transactional
     public boolean revokeSession(long userId, String sessionId) {
         if (sessionId == null || sessionId.isBlank()) return false;
-        if (!refreshTokenRepository.existsByUserIdAndFamilyIdAndStateAndExpiresAtAfter(userId, sessionId,
-                RefreshTokenState.ACTIVE, Instant.now())) return false;
+        Instant now = Instant.now();
+        boolean active = refreshTokenRepository.findByUserIdAndFamilyIdForUpdate(userId, sessionId).stream()
+                .anyMatch(token -> token.getState() == RefreshTokenState.ACTIVE && token.getExpiresAt().isAfter(now));
+        if (!active) return false;
         refreshTokenRepository.revokeFamily(sessionId);
         return true;
     }
 
     /**
      * Revokes every session of the user except {@code exceptSessionId} (null: all sessions). Reused by password
-     * reset/change and member removal (T14, T15, T16).
+     * reset/change and member removal (T14, T15, T16). Call it before any plain read in the caller's transaction:
+     * otherwise a refresh of the user committing meanwhile fails it with MariaDB error 1020 (F-44).
      */
     @Transactional
     public void revokeAllForUser(long userId, String exceptSessionId) {

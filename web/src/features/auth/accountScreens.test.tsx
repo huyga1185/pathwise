@@ -2,14 +2,15 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { describe, expect, it } from 'vitest';
+import { vi } from '@/shared/i18n/vi';
 import { renderApp } from '@/test/renderApp';
 import { anonymousHandlers, API, fail, ok, server } from '@/test/server';
 
 const noContent = () => new HttpResponse(null, { status: 204 });
 
-/** Fills the six OTP boxes by pasting into the first one, as a code copied from the email. */
+/** Pastes the code into the one code field (drawn as six boxes), as a code copied from the email. */
 async function pasteCode(user: ReturnType<typeof userEvent.setup>, code: string) {
-  await user.click(screen.getByLabelText('Chữ số 1 trên 6'));
+  await user.click(screen.getByLabelText('Mã xác thực'));
   await user.paste(code);
 }
 
@@ -36,6 +37,25 @@ describe('Đăng ký cửa hàng', () => {
     expect(body).toEqual({ storeName: 'Tiệm bánh Cô Lan', email: 'lan@example.com', password: 'matkhau123' });
     expect(screen.getByText('lan@example.com')).toBeInTheDocument();
     expect(await screen.findByRole('button', { name: /Gửi lại mã sau (1:00|0:5\d)/ })).toBeDisabled();
+  });
+
+  it('email sai báo khi rời ô; mật khẩu quá ngắn báo ngay khi gõ', async () => {
+    server.use(...anonymousHandlers());
+    renderApp('/register');
+    const user = userEvent.setup();
+
+    await user.type(await screen.findByLabelText(/^Email/), 'lan@');
+
+    expect(screen.getByLabelText(/^Email/)).not.toHaveAttribute('aria-invalid', 'true');
+
+    await user.click(screen.getByLabelText(/^Mật khẩu/));
+
+    expect(screen.getByLabelText(/^Email/)).toHaveAttribute('aria-invalid', 'true');
+
+    await user.type(screen.getByLabelText(/^Mật khẩu/), 'ngan');
+
+    expect(screen.getByLabelText(/^Mật khẩu/)).toHaveFocus();
+    expect(screen.getByLabelText(/^Mật khẩu/)).toHaveAttribute('aria-invalid', 'true');
   });
 
   it('báo lỗi ngay dưới ô khi bỏ trống và không gửi request', async () => {
@@ -129,7 +149,7 @@ describe('Xác thực email', () => {
 
     await screen.findByRole('heading', { name: 'Xác thực email' });
     await pasteCode(user, '482913');
-    expect(screen.getByLabelText('Chữ số 6 trên 6')).toHaveValue('3');
+    expect(screen.getByLabelText('Mã xác thực')).toHaveValue('482913');
     await user.click(screen.getByRole('button', { name: 'Xác thực' }));
 
     expect(await screen.findByText('Email đã được xác thực.')).toBeInTheDocument();
@@ -155,7 +175,7 @@ describe('Xác thực email', () => {
     await pasteCode(user, '111111');
     await user.click(verify);
     expect(await screen.findByText('Mã OTP không đúng hoặc đã hết hạn.')).toBeInTheDocument();
-    expect(screen.getByLabelText('Chữ số 1 trên 6')).toHaveAttribute('aria-invalid', 'true');
+    expect(screen.getByLabelText('Mã xác thực')).toHaveAttribute('aria-invalid', 'true');
     await user.click(verify);
     await waitFor(() => expect(verify).toBeEnabled());
     await user.click(verify);
@@ -166,7 +186,7 @@ describe('Xác thực email', () => {
     await user.click(screen.getByRole('button', { name: 'Gửi lại mã' }));
     expect(await screen.findByText('Đã gửi mã mới.')).toBeInTheDocument();
     expect(resent).toBe(1);
-    expect(screen.getByLabelText('Chữ số 1 trên 6')).toHaveValue('');
+    expect(screen.getByLabelText('Mã xác thực')).toHaveValue('');
     expect(screen.getByRole('button', { name: /Gửi lại mã sau/ })).toBeDisabled();
     await pasteCode(user, '222222');
     expect(verify).toBeEnabled();
@@ -223,6 +243,38 @@ describe('Xác thực email', () => {
 });
 
 describe('Quên mật khẩu', () => {
+  it('email sai báo khi rời ô; qua bước mới thì focus về tiêu đề; mật khẩu mới báo ngay khi gõ', async () => {
+    server.use(
+      http.post(`${API}/auth/password/forgot`, () => noContent()),
+      http.post(`${API}/auth/password/reset/verify`, () =>
+        ok({ resetToken: 'reset-1', expiresAt: '2026-11-04T10:10:00Z' }),
+      ),
+      ...anonymousHandlers(),
+    );
+    renderApp('/forgot-password');
+    const user = userEvent.setup();
+    const email = await screen.findByLabelText(/^Email/);
+
+    await user.type(email, 'lan@');
+    expect(email).not.toHaveAttribute('aria-invalid', 'true');
+    await user.tab();
+    expect(email).toHaveAttribute('aria-invalid', 'true');
+
+    await user.clear(email);
+    await user.type(email, 'lan@example.com');
+    await user.click(screen.getByRole('button', { name: 'Gửi mã' }));
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'Nhập mã xác thực' })).toHaveFocus());
+    expect(screen.getByRole('progressbar', { name: 'Tiến độ đặt lại mật khẩu' })).toHaveAttribute('aria-valuenow', '1');
+
+    await user.type(screen.getByLabelText(/^Mã xác thực/), '123456');
+    await user.click(screen.getByRole('button', { name: 'Tiếp tục' }));
+    const password = await screen.findByLabelText(/^Mật khẩu mới/);
+    await user.type(password, 'ngan');
+
+    expect(password).toHaveFocus();
+    expect(password).toHaveAttribute('aria-invalid', 'true');
+  });
+
   it('đi đủ 3 bước: email, mã, mật khẩu mới', async () => {
     const calls: Array<[string, unknown]> = [];
     const record =
@@ -349,6 +401,33 @@ describe('Nhận lời mời', () => {
   };
   const CODE = 'a'.repeat(43);
 
+  it('mở từ link trong email: mã điền sẵn và kiểm tra luôn, không phải bấm', async () => {
+    const asked: string[] = [];
+    server.use(
+      http.get(`${API}/invitations/:code`, ({ params }) => {
+        asked.push(String(params.code));
+        return params.code === CODE ? ok(preview) : fail(404, 'INVITATION_INVALID');
+      }),
+      ...anonymousHandlers(),
+    );
+    renderApp(`/invite?code=${CODE}`);
+
+    expect(await screen.findByRole('heading', { name: 'Tạo tài khoản' })).toBeInTheDocument();
+    expect(screen.getByText('Tiệm bánh Cô Lan')).toBeInTheDocument();
+    expect(asked).toEqual([CODE]);
+  });
+
+  it('link có mã không còn dùng được thì báo dưới ô mã, mã vẫn điền sẵn để kiểm tra lại', async () => {
+    server.use(
+      http.get(`${API}/invitations/:code`, () => fail(404, 'INVITATION_INVALID')),
+      ...anonymousHandlers(),
+    );
+    renderApp(`/invite?code=${CODE}`);
+
+    expect(await screen.findByText(vi.invite.invalid)).toBeInTheDocument();
+    expect(screen.getByLabelText(/^Mã mời/)).toHaveValue(CODE);
+  });
+
   it('kiểm tra mã, tạo tài khoản, tài xế được hướng dẫn mở app', async () => {
     let body: unknown;
     server.use(
@@ -385,6 +464,39 @@ describe('Nhận lời mời', () => {
     expect(body).toEqual({ code: CODE, fullName: 'Tài xế B', password: 'matkhau123' });
   });
 
+  it('qua bước mới thì focus về tiêu đề thẻ, để trình đọc màn hình báo thay đổi', async () => {
+    server.use(
+      http.get(`${API}/invitations/:code`, () => ok(preview)),
+      ...anonymousHandlers(),
+    );
+    renderApp('/invite');
+    const user = userEvent.setup();
+
+    await user.type(await screen.findByLabelText(/^Mã mời/), CODE);
+    await user.click(screen.getByRole('button', { name: 'Kiểm tra mã' }));
+
+    const title = await screen.findByRole('heading', { name: 'Tạo tài khoản' });
+    await waitFor(() => expect(title).toHaveFocus());
+  });
+
+  it('mật khẩu quá ngắn báo lỗi ngay khi gõ, trước khi rời ô', async () => {
+    server.use(
+      http.get(`${API}/invitations/:code`, () => ok(preview)),
+      ...anonymousHandlers(),
+    );
+    renderApp(`/invite?code=${CODE}`);
+    const user = userEvent.setup();
+
+    await user.type(await screen.findByLabelText(/^Mật khẩu/), 'ngan');
+
+    expect(screen.getByLabelText(/^Mật khẩu/)).toHaveFocus();
+    expect(screen.getByLabelText(/^Mật khẩu/)).toHaveAttribute('aria-invalid', 'true');
+
+    await user.type(screen.getByLabelText(/^Mật khẩu/), 'hon8kytu');
+
+    expect(screen.getByLabelText(/^Mật khẩu/)).not.toHaveAttribute('aria-invalid', 'true');
+  });
+
   it('điều phối viên nhận lời mời xong thì được mời đăng nhập web', async () => {
     server.use(
       http.get(`${API}/invitations/:code`, () => ok({ ...preview, role: 'DISPATCHER' })),
@@ -417,22 +529,15 @@ describe('Nhận lời mời', () => {
     expect(screen.getByLabelText(/^Mã mời/)).toHaveAttribute('aria-invalid', 'true');
   });
 
-  it('số điện thoại sai thì báo dưới ô số điện thoại', async () => {
+  it('form tạo tài khoản chỉ có họ tên và mật khẩu, không có số điện thoại (M06)', async () => {
     server.use(
       http.get(`${API}/invitations/:code`, () => ok(preview)),
-      http.post(`${API}/invitations/accept`, () => fail(400, 'INVALID_PHONE_NUMBER')),
       ...anonymousHandlers(),
     );
-    renderApp('/invite');
-    const user = userEvent.setup();
-    await user.type(await screen.findByLabelText(/^Mã mời/), CODE);
-    await user.click(screen.getByRole('button', { name: 'Kiểm tra mã' }));
-    await user.type(await screen.findByLabelText(/^Họ tên/), 'Tài xế B');
-    await user.type(screen.getByLabelText(/^Số điện thoại/), '12345');
-    await user.type(screen.getByLabelText(/^Mật khẩu/), 'matkhau123');
-    await user.click(screen.getByRole('button', { name: 'Tham gia cửa hàng' }));
+    renderApp(`/invite?code=${CODE}`);
 
-    expect(await screen.findByText('Số điện thoại không hợp lệ.')).toBeInTheDocument();
-    expect(screen.getByLabelText(/^Số điện thoại/)).toHaveAttribute('aria-invalid', 'true');
+    expect(await screen.findByLabelText(/^Họ tên/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/^Mật khẩu/)).toBeInTheDocument();
+    expect(screen.queryByLabelText(/^Số điện thoại/)).not.toBeInTheDocument();
   });
 });

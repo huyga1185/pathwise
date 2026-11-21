@@ -1,5 +1,5 @@
 import { useStoreReadOnly } from '@/data/meQuery';
-import { useRef, useState, type KeyboardEvent } from 'react';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useSearchParams } from 'react-router';
 import { ApiError } from '@/data/apiError';
@@ -10,18 +10,33 @@ import { emailRules } from '@/shared/forms/rules';
 import { applyServerErrors, errorCode } from '@/shared/forms/serverErrors';
 import { formatDate } from '@/shared/format';
 import { useCountdown } from '@/shared/hooks/useCountdown';
+import { useMediaQuery, WIDE_QUERY } from '@/shared/hooks/useMediaQuery';
 import { vi } from '@/shared/i18n/vi';
 import {
+  Alert,
   Button,
+  buttonClass,
   Checkbox,
+  ChevronRightIcon,
+  ChevronUpDownIcon,
   DataTable,
-  Dialog,
   ErrorBanner,
+  PlaceholderRows,
+  PopUpButton,
+  RowMenu,
+  SegmentedControl,
   SelectField,
+  Sheet,
   StatusPill,
+  SwitchRow,
   TextField,
+  Toast,
+  ToastDock,
+  UserPlusIcon,
+  useRowMenu,
   type DataTableColumn,
 } from '@/shared/ui';
+import { cx } from '@/shared/ui/cx';
 import {
   useInvitations,
   useMemberApi,
@@ -37,133 +52,168 @@ const ROLE_OPTIONS = [
   { value: 'DISPATCHER', label: vi.roles.DISPATCHER ?? 'DISPATCHER' },
 ] as const;
 const DEVICE_TIME_ZONE = Intl.DateTimeFormat().resolvedOptions().timeZone;
+const m = vi.members;
 
 type Tab = 'members' | 'invitations';
 
+function memberName(member: Member, meId: number | null) {
+  return `${member.fullName ?? m.noName}${member.id === meId ? m.you : ''}`;
+}
+
 /**
- * Prototype "Thành viên và lời mời" (SCREENS §1.1). The OWNER changes roles, "Đi giao" and status of the others (only
- * "Đi giao" of themselves) and manages invitations; a DISPATCHER sees the members read-only and no invitations.
+ * "Thành viên và lời mời" (SCREENS §1.1, OWNER_UI_REDESIGN §8.3). The OWNER invites from the title row (a sheet),
+ * changes roles, "Đi giao" and status of the others (only "Đi giao" of themselves) and manages invitations; a
+ * DISPATCHER sees the members read-only and no invitations. Members / invitations: a tabbed control, centred, on every width
+ * (owner's choice 2026-11-18, §8.9: the macOS tab view's control; a segmented control on a phone). Wide: tables with the role as a pop-up button in the row; phone:
+ * rows that open a sheet with the role, an "Đi giao" switch and "Vô hiệu hoá" (HIG Toggles: a switch only in a list
+ * row). Disabling asks first in an alert (people are signed out at once). Touch and hold or right click a row for its
+ * commands.
  */
 export function MembersPage() {
   const { session } = useSession();
   const me = session.status === 'authenticated' ? session.user : null;
   const isOwner = me?.role === 'OWNER';
   const { readOnly } = useStoreReadOnly();
+  const wide = useMediaQuery(WIDE_QUERY);
   const [params, setParams] = useSearchParams();
   const tab: Tab = isOwner && params.get('tab') === 'invitations' ? 'invitations' : 'members';
   const members = useMembers();
   const invitations = useInvitations(isOwner);
   const store = useStoreQuery();
   const timeZone = store.data?.timezone ?? DEVICE_TIME_ZONE;
-  const tabRefs = useRef<Record<Tab, HTMLButtonElement | null>>({ members: null, invitations: null });
+  const [inviting, setInviting] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
 
-  const select = (next: Tab) => {
-    setParams(next === 'invitations' ? { tab: 'invitations' } : {}, { replace: true });
-    tabRefs.current[next]?.focus();
-  };
-  const onTabKey = (event: KeyboardEvent<HTMLButtonElement>) => {
-    if (!isOwner || (event.key !== 'ArrowRight' && event.key !== 'ArrowLeft')) return;
-    event.preventDefault();
-    select(tab === 'members' ? 'invitations' : 'members');
-  };
+  const select = (next: Tab) => setParams(next === 'invitations' ? { tab: 'invitations' } : {}, { replace: true });
+  // The other part slides in from the side its tab is on (members on the left, invitations on the right).
+  const [shownTab, setShownTab] = useState({ tab, motion: '' });
+  if (tab !== shownTab.tab) setShownTab({ tab, motion: tab === 'invitations' ? 'is-next' : 'is-prev' });
+  const tabs = [
+    { value: 'members' as const, label: m.tabMembers(members.data?.length ?? 0), panelId: 'panel-members' },
+    ...(isOwner
+      ? [
+          {
+            value: 'invitations' as const,
+            label: m.tabInvitations(invitations.data?.length ?? 0),
+            panelId: 'panel-invitations',
+          },
+        ]
+      : []),
+  ];
 
   return (
     <section className="pw-page-section" aria-labelledby="members-title">
-      <div className="pw-members-intro">
+      <div className="pw-list-head">
         <h1 id="members-title" className="pw-page-title">
-          {vi.members.title}
+          {m.title}
         </h1>
-        <p className="pw-muted">{isOwner ? vi.members.leadOwner : vi.members.leadDispatcher}</p>
-      </div>
-
-      <div className="pw-tabs" role="tablist" aria-label={vi.members.tabsLabel}>
-        <button
-          ref={(element) => {
-            tabRefs.current.members = element;
-          }}
-          type="button"
-          role="tab"
-          id="tab-members"
-          className="pw-tab"
-          aria-selected={tab === 'members'}
-          aria-controls="panel-members"
-          tabIndex={tab === 'members' ? 0 : -1}
-          onClick={() => select('members')}
-          onKeyDown={onTabKey}
-        >
-          {vi.members.tabMembers(members.data?.length ?? 0)}
-        </button>
-        {isOwner ? (
+        {isOwner && !readOnly ? (
           <button
-            ref={(element) => {
-              tabRefs.current.invitations = element;
-            }}
             type="button"
-            role="tab"
-            id="tab-invitations"
-            className="pw-tab"
-            aria-selected={tab === 'invitations'}
-            aria-controls="panel-invitations"
-            tabIndex={tab === 'invitations' ? 0 : -1}
-            onClick={() => select('invitations')}
-            onKeyDown={onTabKey}
+            className={wide ? buttonClass('primary') : 'pw-icon-button pw-list-add'}
+            aria-label={wide ? undefined : m.inviteTitle}
+            title={wide ? undefined : m.inviteTitle}
+            onClick={() => setInviting(true)}
           >
-            {vi.members.tabInvitations(invitations.data?.length ?? 0)}
+            <UserPlusIcon />
+            {wide ? m.inviteShort : null}
           </button>
         ) : null}
       </div>
+      <p className="pw-muted pw-list-lead">{isOwner ? m.leadOwner : m.leadDispatcher}</p>
+
+      {/* One tabbed control on every width: on a Mac a tab view's control looks like a segmented control centred on
+          the top edge of the content (HIG Tab views, Anatomy; Segmented controls, macOS); on a phone a segmented
+          control (iOS). */}
+      {tabs.length > 1 ? (
+        <SegmentedControl label={m.tabsLabel} value={tab} options={tabs} onChange={select} idPrefix="tab" />
+      ) : null}
 
       {tab === 'members' ? (
-        <div id="panel-members" role="tabpanel" aria-labelledby="tab-members" className="pw-members-panel">
+        <div
+          key="members"
+          id="panel-members"
+          role="tabpanel"
+          aria-labelledby="tab-members"
+          className={cx('pw-members-panel', shownTab.motion)}
+        >
           {members.isError ? <ErrorBanner title={messageFor(members.error)} /> : null}
-          <MembersTable
+          <MembersList
             members={members.data ?? []}
             loading={members.isPending}
             meId={me?.id ?? null}
             isOwner={isOwner && !readOnly}
+            wide={wide}
+            onDone={setToast}
           />
           <p id="drive-hint" className="pw-muted">
-            {vi.members.driveHint}
+            {m.driveHint}
           </p>
         </div>
       ) : (
-        <div id="panel-invitations" role="tabpanel" aria-labelledby="tab-invitations" className="pw-members-invite">
-          <InviteForm />
-          <section className="pw-members-invitations" aria-label={vi.members.sentLabel}>
-            {invitations.isError ? <ErrorBanner title={messageFor(invitations.error)} /> : null}
-            <InvitationsTable
-              invitations={invitations.data ?? []}
-              loading={invitations.isPending}
-              timeZone={timeZone}
-            />
-          </section>
+        <div
+          key="invitations"
+          id="panel-invitations"
+          role="tabpanel"
+          aria-labelledby="tab-invitations"
+          className={cx('pw-members-panel', shownTab.motion)}
+        >
+          {invitations.isError ? <ErrorBanner title={messageFor(invitations.error)} /> : null}
+          <InvitationsList
+            invitations={invitations.data ?? []}
+            loading={invitations.isPending}
+            timeZone={timeZone}
+            wide={wide}
+            onDone={setToast}
+          />
         </div>
       )}
+
+      <InviteSheet
+        open={inviting}
+        onClose={() => setInviting(false)}
+        onSent={(email) => {
+          setInviting(false);
+          setToast(m.invited(email));
+          select('invitations');
+        }}
+      />
+      {toast ? (
+        <ToastDock>
+          <Toast tone="success" onClose={() => setToast(null)}>
+            {toast}
+          </Toast>
+        </ToastDock>
+      ) : null}
     </section>
   );
 }
 
-function memberName(member: Member, meId: number | null) {
-  return `${member.fullName ?? vi.members.noName}${member.id === meId ? vi.members.you : ''}`;
-}
-
-function MembersTable({
+function MembersList({
   members,
   loading,
   meId,
   isOwner,
+  wide,
+  onDone,
 }: {
   members: Member[];
   loading: boolean;
   meId: number | null;
   isOwner: boolean;
+  wide: boolean;
+  onDone: (message: string) => void;
 }) {
   const memberApi = useMemberApi();
+  const rowMenu = useRowMenu<Member>();
   const [pending, setPending] = useState<number | null>(null);
   const [failure, setFailure] = useState<unknown>(null);
   const [confirm, setConfirm] = useState<Member | null>(null);
-  const [dialogFailure, setDialogFailure] = useState<unknown>(null);
+  // Phone: the member whose sheet is open (its data read again from the list as it changes).
+  const [openId, setOpenId] = useState<number | null>(null);
+  const opened = members.find((member) => member.id === openId) ?? null;
 
+  // A change waits for the server, then the row shows it; an error goes to the top of the list.
   const act = async (member: Member, action: () => Promise<void>) => {
     setFailure(null);
     setPending(member.id);
@@ -175,108 +225,128 @@ function MembersTable({
       setPending(null);
     }
   };
-
+  const setRole = (member: Member, role: InvitableRole) =>
+    void act(member, () => memberApi.updateMember(member.id, { role }));
+  // A DRIVER always drives (D-21); only the OWNER changes it, their own included.
+  const setDrive = (member: Member, canDrive: boolean) =>
+    void act(member, () =>
+      member.role === 'OWNER' ? memberApi.updateOwnCanDrive(canDrive) : memberApi.updateMember(member.id, { canDrive }),
+    );
+  const enable = (member: Member) =>
+    void act(member, async () => {
+      await memberApi.updateMember(member.id, { status: 'ACTIVE' });
+      onDone(m.enabled(memberName(member, meId)));
+    });
   const disable = async () => {
     if (!confirm) return;
-    setDialogFailure(null);
-    setPending(confirm.id);
-    try {
-      await memberApi.updateMember(confirm.id, { status: 'DISABLED' });
-      setConfirm(null);
-    } catch (error) {
-      setDialogFailure(error);
-    } finally {
-      setPending(null);
-    }
+    const member = confirm;
+    setConfirm(null);
+    await act(member, async () => {
+      await memberApi.updateMember(member.id, { status: 'DISABLED' });
+      onDone(m.disabled(memberName(member, meId)));
+    });
   };
+  const manageable = (member: Member) => isOwner && member.role !== 'OWNER';
+  const menuItems = (member: Member) => [
+    ...(manageable(member)
+      ? [
+          {
+            label: member.role === 'DRIVER' ? m.makeDispatcher : m.makeDriver,
+            onSelect: () => setRole(member, member.role === 'DRIVER' ? 'DISPATCHER' : 'DRIVER'),
+          },
+        ]
+      : []),
+    ...(isOwner && member.role !== 'DRIVER'
+      ? [{ label: member.canDrive ? m.driveOff : m.driveOn, onSelect: () => setDrive(member, !member.canDrive) }]
+      : []),
+    ...(manageable(member)
+      ? member.status === 'DISABLED'
+        ? [{ label: m.enable, onSelect: () => enable(member) }]
+        : [{ label: m.disableMenu, destructive: true, onSelect: () => setConfirm(member) }]
+      : []),
+  ];
 
   const columns: DataTableColumn<Member>[] = [
     {
       key: 'member',
-      header: vi.members.member,
+      header: m.member,
+      className: 'pw-cell-main',
       render: (row) => (
         <div>
-          <div className="pw-members-name">{memberName(row, meId)}</div>
-          <div className="pw-members-email">{row.email}</div>
+          <div className="pw-cell-title" title={memberName(row, meId)}>
+            {memberName(row, meId)}
+          </div>
+          <div className="pw-cell-sub" title={row.email}>
+            {row.email}
+          </div>
+          {/* The status column's value, shown here when the table is too narrow for that column (members.css). */}
+          <div className="pw-cell-fold">
+            <StatusPill kind="member" status={row.status} />
+          </div>
         </div>
       ),
     },
     {
       key: 'role',
-      header: vi.members.role,
+      header: m.role,
+      className: 'pw-nowrap',
       render: (row) =>
-        isOwner && row.role !== 'OWNER' ? (
-          <select
-            className="pw-field-input pw-members-role"
-            aria-label={vi.members.roleOf(memberName(row, meId))}
+        manageable(row) ? (
+          <PopUpButton
+            menuLabel={m.roleOf(memberName(row, meId))}
+            buttonLabel={`${m.roleOf(memberName(row, meId))}: ${vi.roles[row.role] ?? row.role}`}
+            className="pw-inline-popup"
             value={row.role}
-            disabled={pending === row.id}
-            onChange={(event) =>
-              void act(row, () => memberApi.updateMember(row.id, { role: event.target.value as InvitableRole }))
-            }
+            choices={ROLE_OPTIONS}
+            onChange={(role) => setRole(row, role as InvitableRole)}
           >
-            {ROLE_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
+            {vi.roles[row.role] ?? row.role}
+            <ChevronUpDownIcon />
+          </PopUpButton>
         ) : (
           (vi.roles[row.role] ?? row.role)
         ),
     },
-    { key: 'status', header: vi.members.status, render: (row) => <StatusPill kind="member" status={row.status} /> },
+    {
+      key: 'status',
+      header: m.status,
+      className: 'pw-col-fold',
+      render: (row) => <StatusPill kind="member" status={row.status} />,
+    },
     {
       key: 'drive',
-      header: vi.members.drive,
-      render: (row) => {
-        // A DRIVER always drives (D-21); only the OWNER changes it, their own included.
-        const locked = !isOwner || row.role === 'DRIVER' || pending === row.id;
-        return (
-          <Checkbox
-            label={row.canDrive ? vi.members.yes : vi.members.no}
-            aria-label={vi.members.driveOf(memberName(row, meId))}
-            aria-describedby="drive-hint"
-            checked={row.canDrive}
-            disabled={locked}
-            onChange={(event) => {
-              const canDrive = event.target.checked;
-              void act(row, () =>
-                row.role === 'OWNER'
-                  ? memberApi.updateOwnCanDrive(canDrive)
-                  : memberApi.updateMember(row.id, { canDrive }),
-              );
-            }}
-          />
-        );
-      },
+      header: m.drive,
+      render: (row) => (
+        // No "Có/Không" beside it: the tick shows the state and the heading "Đi giao" what it is (HIG Toggles); a
+        // label that changed with the state also made the column change width.
+        <Checkbox
+          aria-label={m.driveOf(memberName(row, meId))}
+          aria-describedby="drive-hint"
+          checked={row.canDrive}
+          disabled={!isOwner || row.role === 'DRIVER' || pending === row.id}
+          onChange={(event) => setDrive(row, event.target.checked)}
+        />
+      ),
     },
     {
       key: 'actions',
-      header: <span className="pw-visually-hidden">{vi.members.actions}</span>,
+      header: <span className="pw-visually-hidden">{m.actions}</span>,
       align: 'end',
       render: (row) => {
-        if (!isOwner || row.role === 'OWNER') return null;
+        if (!manageable(row)) return null;
         const name = memberName(row, meId);
         return row.status === 'DISABLED' ? (
           <Button
             variant="quiet"
             busy={pending === row.id}
-            aria-label={vi.members.enableLabel(name)}
-            onClick={() => void act(row, () => memberApi.updateMember(row.id, { status: 'ACTIVE' }))}
+            aria-label={m.enableLabel(name)}
+            onClick={() => enable(row)}
           >
-            {vi.members.enable}
+            {m.enable}
           </Button>
         ) : (
-          <Button
-            variant="quiet"
-            aria-label={vi.members.disableLabel(name)}
-            onClick={() => {
-              setDialogFailure(null);
-              setConfirm(row);
-            }}
-          >
-            {vi.members.disable}
+          <Button variant="quiet" aria-label={m.disableLabel(name)} onClick={() => setConfirm(row)}>
+            {m.disable}
           </Button>
         );
       },
@@ -286,28 +356,136 @@ function MembersTable({
   return (
     <>
       {failure ? <ErrorBanner title={messageFor(failure)} /> : null}
-      <DataTable
-        caption={vi.members.caption}
-        columns={columns}
-        rows={members}
-        className="pw-members-table"
-        empty={loading ? vi.pages.loading : undefined}
-      />
-      <Dialog
-        open={confirm !== null}
-        tone="danger"
-        title={confirm ? vi.members.disableTitle(memberName(confirm, meId)) : ''}
-        confirmLabel={vi.members.disable}
-        cancelLabel={vi.members.back}
-        busy={confirm !== null && pending === confirm.id}
-        onConfirm={() => void disable()}
-        onClose={() => setConfirm(null)}
+      {loading ? (
+        <div className="pw-list-group">
+          <PlaceholderRows rows={4} label={m.loading} />
+        </div>
+      ) : wide ? (
+        <DataTable
+          caption={m.caption}
+          columns={columns}
+          rows={members}
+          resizable
+          className="pw-list-group pw-members-table"
+          onRowContextMenu={
+            isOwner ? (row, point) => menuItems(row).length > 0 && rowMenu.openAt(row, point) : undefined
+          }
+        />
+      ) : (
+        <ul className="pw-list-group pw-list-rows" aria-label={m.caption}>
+          {members.map((row) => {
+            const name = memberName(row, meId);
+            return (
+              <li
+                key={row.id}
+                className={cx('pw-list-row', rowMenu.menu?.row.id === row.id && 'is-held')}
+                {...(isOwner && menuItems(row).length > 0 ? rowMenu.holdHandlers(row) : {})}
+              >
+                <button
+                  type="button"
+                  className="pw-list-row-main"
+                  disabled={!isOwner}
+                  aria-label={isOwner ? m.openLabel(name) : undefined}
+                  onClick={(event) => {
+                    rowMenu.consumeHold(event);
+                    if (!event.defaultPrevented) setOpenId(row.id);
+                  }}
+                >
+                  <span className="pw-list-row-title">{name}</span>
+                  {/* The role, then the email cut with "…" rather than broken mid-word (the sheet shows it whole). */}
+                  <span className="pw-list-row-sub pw-members-sub">
+                    <span>{vi.roles[row.role] ?? row.role}</span>
+                    <span className="pw-members-sub-email">{row.email}</span>
+                  </span>
+                </button>
+                <StatusPill kind="member" status={row.status} />
+                {isOwner ? (
+                  <span className="pw-list-row-chevron" aria-hidden="true">
+                    <ChevronRightIcon />
+                  </span>
+                ) : null}
+              </li>
+            );
+          })}
+        </ul>
+      )}
+
+      {rowMenu.menu ? (
+        <RowMenu
+          rect={rowMenu.menu.rect}
+          label={memberName(rowMenu.menu.row, meId)}
+          onClose={rowMenu.close}
+          items={menuItems(rowMenu.menu.row)}
+        />
+      ) : null}
+
+      <Sheet
+        open={opened !== null}
+        // A short title (HIG Toolbars: under 15 characters); the person's name and email lead the sheet.
+        title={m.member}
+        cancelLabel={m.close}
+        onClose={() => setOpenId(null)}
       >
-        {dialogFailure ? <ErrorBanner title={messageFor(dialogFailure)} /> : null}
-        {vi.members.disableBody.map((line) => (
-          <p key={line}>{line}</p>
-        ))}
-      </Dialog>
+        {opened ? (
+          <>
+            <div className="pw-members-sheet-who">
+              <p className="pw-members-sheet-name">{memberName(opened, meId)}</p>
+              <p className="pw-muted pw-members-sheet-email">{opened.email}</p>
+            </div>
+            {manageable(opened) ? (
+              <SelectField
+                label={m.role}
+                options={ROLE_OPTIONS}
+                value={opened.role}
+                disabled={pending === opened.id}
+                onChange={(event) => setRole(opened, event.target.value as InvitableRole)}
+              />
+            ) : (
+              <p>
+                <strong>{m.role}:</strong> {vi.roles[opened.role] ?? opened.role}
+              </p>
+            )}
+            <div className="pw-members-sheet-group">
+              <SwitchRow
+                label={m.drive}
+                hint={opened.role === 'DRIVER' ? m.driverAlwaysDrives : undefined}
+                checked={opened.canDrive}
+                disabled={opened.role === 'DRIVER' || pending === opened.id}
+                onChange={(canDrive) => setDrive(opened, canDrive)}
+              />
+            </div>
+            <p className="pw-muted">{m.driveHint}</p>
+            {manageable(opened) ? (
+              opened.status === 'DISABLED' ? (
+                <Button variant="secondary" busy={pending === opened.id} onClick={() => enable(opened)}>
+                  {m.enable}
+                </Button>
+              ) : (
+                <Button
+                  variant="secondary"
+                  className="pw-members-disable"
+                  onClick={() => {
+                    setOpenId(null);
+                    setConfirm(opened);
+                  }}
+                >
+                  {m.disable}
+                </Button>
+              )
+            ) : null}
+          </>
+        ) : null}
+      </Sheet>
+
+      <Alert
+        open={confirm !== null}
+        title={confirm ? m.disableTitle(memberName(confirm, meId)) : ''}
+        message={m.disableMessage}
+        actionLabel={m.disable}
+        busy={confirm !== null && pending === confirm.id}
+        onAction={() => void disable()}
+        onCancel={() => setConfirm(null)}
+      />
     </>
   );
 }
@@ -317,34 +495,45 @@ interface InviteFormValues {
   role: InvitableRole;
 }
 
-function InviteForm() {
+/** Inviting someone: a sheet with the email and the role (HIG Sheets); "Gửi" sends. */
+function InviteSheet({
+  open,
+  onClose,
+  onSent,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onSent: (email: string) => void;
+}) {
   const memberApi = useMemberApi();
-  const { readOnly } = useStoreReadOnly();
   const lock = useCountdown();
-  const [sent, setSent] = useState<string | null>(null);
   const [failure, setFailure] = useState<unknown>(null);
   const {
     register,
     handleSubmit,
     reset,
     setError,
-    formState: { errors, isSubmitting },
+    formState: { errors, isSubmitting, isDirty },
   } = useForm<InviteFormValues>({ defaultValues: { email: '', role: 'DRIVER' } });
+  const [shown, setShown] = useState(open);
+  if (open !== shown) {
+    setShown(open);
+    if (open) {
+      setFailure(null);
+      reset({ email: '', role: 'DRIVER' });
+    }
+  }
 
   const onInvite = handleSubmit(async (form) => {
-    setSent(null);
     setFailure(null);
     const email = form.email.trim();
     try {
       await memberApi.invite({ email, role: form.role });
-      setSent(vi.members.invited(email));
-      reset({ email: '', role: form.role });
+      onSent(email);
     } catch (error) {
       if (errorCode(error) === 'EMAIL_EXISTED') {
         setError('email', { type: 'server', message: errorMessages.EMAIL_EXISTED }, { shouldFocus: true });
-      } else if (
-        !applyServerErrors(error, setError, ['email', 'role'], { email: vi.members.email, role: vi.members.role })
-      ) {
+      } else if (!applyServerErrors(error, setError, ['email', 'role'], { email: m.email, role: m.role })) {
         if (error instanceof ApiError && error.code === 'RATE_LIMITED' && error.retryAfter !== null) {
           lock.start(error.retryAfter);
         }
@@ -354,105 +543,164 @@ function InviteForm() {
   });
 
   return (
-    <form className="pw-card pw-members-invite-form" aria-labelledby="inv-title" onSubmit={onInvite} noValidate>
-      <h2 id="inv-title">{vi.members.inviteTitle}</h2>
-      {sent ? (
-        <div role="status" className="pw-status-ok">
-          {sent}
-        </div>
-      ) : null}
+    <Sheet
+      open={open}
+      title={m.inviteTitle}
+      doneLabel={lock.remaining > 0 ? vi.auth.retryIn(formatWait(lock.remaining)) : m.send}
+      doneDisabled={lock.remaining > 0}
+      busy={isSubmitting}
+      dirty={isDirty}
+      onSubmit={onInvite}
+      onClose={onClose}
+    >
       {failure ? <ErrorBanner title={messageFor(failure)} /> : null}
       <TextField
-        label={vi.members.email}
+        label={m.email}
         type="email"
         inputMode="email"
         autoComplete="off"
         required
         placeholder="ten@example.com"
         error={errors.email?.message}
-        {...register('email', emailRules(vi.members.email))}
+        {...register('email', emailRules(m.email))}
       />
-      <SelectField
-        label={vi.members.role}
-        required
-        options={ROLE_OPTIONS}
-        error={errors.role?.message}
-        {...register('role')}
-      />
-      <p className="pw-muted">{vi.members.inviteNote}</p>
-      <div>
-        <Button type="submit" variant="primary" busy={isSubmitting} disabled={lock.remaining > 0 || readOnly}>
-          {lock.remaining > 0 ? vi.auth.retryIn(formatWait(lock.remaining)) : vi.members.inviteSubmit}
-        </Button>
-      </div>
-    </form>
+      <SelectField label={m.role} required options={ROLE_OPTIONS} error={errors.role?.message} {...register('role')} />
+      <p className="pw-muted">{m.inviteNote}</p>
+    </Sheet>
   );
 }
 
-function InvitationsTable({
+function InvitationsList({
   invitations,
   loading,
   timeZone,
+  wide,
+  onDone,
 }: {
   invitations: Invitation[];
   loading: boolean;
   timeZone: string;
+  wide: boolean;
+  onDone: (message: string) => void;
 }) {
   const memberApi = useMemberApi();
   const { readOnly } = useStoreReadOnly();
+  const rowMenu = useRowMenu<Invitation>();
   const [pending, setPending] = useState<number | null>(null);
   const [failure, setFailure] = useState<unknown>(null);
 
+  // No alert: people can invite again (HIG Alerts: not "for common, undoable actions").
   const revoke = async (invitation: Invitation) => {
     setFailure(null);
     setPending(invitation.id);
     try {
       await memberApi.revokeInvitation(invitation.id);
+      onDone(m.revoked(invitation.email));
     } catch (error) {
       setFailure(error);
     } finally {
       setPending(null);
     }
   };
+  const canRevoke = (invitation: Invitation) => !readOnly && invitation.status === 'PENDING';
+  const revokeButton = (row: Invitation) =>
+    canRevoke(row) ? (
+      <Button
+        variant="quiet"
+        busy={pending === row.id}
+        aria-label={m.revokeLabel(row.email)}
+        onClick={() => void revoke(row)}
+      >
+        {m.revoke}
+      </Button>
+    ) : null;
 
   const columns: DataTableColumn<Invitation>[] = [
-    { key: 'email', header: vi.members.email, render: (row) => row.email },
-    { key: 'role', header: vi.members.role, render: (row) => vi.roles[row.role] ?? row.role },
-    { key: 'status', header: vi.members.status, render: (row) => <StatusPill kind="invitation" status={row.status} /> },
+    {
+      key: 'email',
+      header: m.email,
+      className: 'pw-cell-main',
+      render: (row) => (
+        <>
+          <span className="pw-cell-title pw-cell-plain" title={row.email}>
+            {row.email}
+          </span>
+          {/* The expiry column's value when the table is too narrow for it (members.css). */}
+          <span className="pw-cell-fold pw-cell-sub">{`${m.expires} ${formatDate(row.expiresAt, timeZone)}`}</span>
+        </>
+      ),
+    },
+    { key: 'role', header: m.role, className: 'pw-nowrap', render: (row) => vi.roles[row.role] ?? row.role },
+    { key: 'status', header: m.status, render: (row) => <StatusPill kind="invitation" status={row.status} /> },
     {
       key: 'expires',
-      header: vi.members.expires,
+      header: m.expires,
+      className: 'pw-col-fold',
       render: (row) => <span className="pw-members-date">{formatDate(row.expiresAt, timeZone)}</span>,
     },
     {
       key: 'actions',
-      header: <span className="pw-visually-hidden">{vi.members.actions}</span>,
+      header: <span className="pw-visually-hidden">{m.actions}</span>,
       align: 'end',
-      render: (row) =>
-        row.status === 'PENDING' ? (
-          <Button
-            variant="quiet"
-            busy={pending === row.id}
-            disabled={readOnly}
-            aria-label={vi.members.revokeLabel(row.email)}
-            onClick={() => void revoke(row)}
-          >
-            {vi.members.revoke}
-          </Button>
-        ) : null,
+      render: revokeButton,
     },
   ];
 
+  if (loading) {
+    return (
+      <div className="pw-list-group">
+        <PlaceholderRows rows={3} label={m.loadingInvitations} />
+      </div>
+    );
+  }
+  if (invitations.length === 0) return <p className="pw-muted">{m.noInvitations}</p>;
   return (
     <>
       {failure ? <ErrorBanner title={messageFor(failure)} /> : null}
-      <DataTable
-        caption={vi.members.invitationsCaption}
-        columns={columns}
-        rows={invitations}
-        className="pw-members-invitations-table"
-        empty={loading ? vi.pages.loading : vi.members.noInvitations}
-      />
+      {wide ? (
+        <DataTable
+          caption={m.invitationsCaption}
+          columns={columns}
+          rows={invitations}
+          resizable
+          className="pw-list-group pw-invitations-table"
+          onRowContextMenu={(row, point) => canRevoke(row) && rowMenu.openAt(row, point)}
+        />
+      ) : (
+        <ul className="pw-list-group pw-list-rows" aria-label={m.invitationsCaption}>
+          {invitations.map((row) => (
+            <li
+              key={row.id}
+              className={cx('pw-list-row', rowMenu.menu?.row.id === row.id && 'is-held')}
+              {...(canRevoke(row) ? rowMenu.holdHandlers(row) : {})}
+            >
+              {/* The status under the text, so the email has the room (HIG Typography: a stacked layout); an email
+                  wraps only after its "@", never mid-word. */}
+              <span className="pw-list-row-main">
+                <span className="pw-list-row-title pw-email-title">
+                  {row.email.split('@')[0]}@<wbr />
+                  {row.email.split('@').slice(1).join('@')}
+                </span>
+                <span className="pw-list-row-sub">
+                  {vi.roles[row.role] ?? row.role} · {m.expiresOn(formatDate(row.expiresAt, timeZone))}
+                </span>
+                <span className="pw-members-row-status">
+                  <StatusPill kind="invitation" status={row.status} />
+                </span>
+              </span>
+              {revokeButton(row)}
+            </li>
+          ))}
+        </ul>
+      )}
+      {rowMenu.menu ? (
+        <RowMenu
+          rect={rowMenu.menu.rect}
+          label={rowMenu.menu.row.email}
+          onClose={rowMenu.close}
+          items={[{ label: m.revokeMenu, destructive: true, onSelect: () => void revoke(rowMenu.menu!.row) }]}
+        />
+      ) : null}
     </>
   );
 }

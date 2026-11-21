@@ -46,10 +46,10 @@ docker compose --profile app up -d --build    # chạy toàn bộ stack trong co
 Áp dụng cho **mọi** thay đổi code (kể cả fix nhỏ hoặc việc được yêu cầu ngoài plan). Docs phải được cập nhật **trong cùng commit/PR** với code. Đối chiếu bằng cách **đọc code thật** (grep mapping, xem DTO và migration), không dựa vào trí nhớ hay mô tả task.
 
 1. **`docs/CURRENT_STATE.md`**
-   - Đổi cột Trạng thái của mọi F-xx đã sửa hoặc thay đổi, kèm task ID. Không xoá dòng.
+   - F-xx đã sửa: ghi Trạng thái (task/PR, cách sửa), rồi chuyển nguyên dòng sang `docs/archive/CURRENT_STATE.md` §2; §2 ở file đang dùng chỉ giữ F-xx đang mở hoặc đã chấp nhận. Không xoá dòng nào. Số F mới = số lớn nhất ở cả hai file + 1.
    - Thêm lỗi mới phát hiện thành F-xx mới, ghi mức bằng chứng (`[Verified-run]`, `[Verified-code]`, `[Risk]`).
    - Nếu build hoặc kết quả test thay đổi thì sửa §1 (dòng Build, Test, mô tả module bị ảnh hưởng).
-   - Thêm một dòng vào §5 "Lịch sử cập nhật" (ngày, commit, task, thay đổi).
+   - Mỗi PR thêm **một** dòng vào §5 "Lịch sử cập nhật" (ngày, PR/branch, task, một câu tóm tắt). Chi tiết (vì sao, đo đạc, kết quả test) ghi trong commit và mô tả PR, không chép vào §5.
 2. **`docs/API_SPEC.md`**: nếu đụng controller, DTO, `SecurityConfig`, `ErrorCode` hoặc handler lỗi.
    - Chạy `grep -rnE "@(Request|Get|Post|Put|Patch|Delete)Mapping" be/src/main/java` và so với spec.
    - Cập nhật cột Hiện trạng (✅ chỉ khi khớp spec **và** có test; còn lệch thì 🟡 kèm mô tả khác biệt cụ thể).
@@ -57,7 +57,7 @@ docker compose --profile app up -d --build    # chạy toàn bộ stack trong co
    - Khác spec có chủ đích thì sửa spec trong cùng PR và ghi lý do.
 3. **`docs/DATA_MODEL.md`**: nếu có migration hoặc đổi entity/Redis key. Bảng hoặc cột phải khớp file migration; cập nhật bảng version ở §4.
 4. **`docs/DECISIONS.md`**: nếu phát sinh quyết định mới. Ghi Proposed và hỏi chủ dự án; không tự đánh Approved.
-5. **`docs/IMPLEMENTATION_PLAN.md`**: nếu phạm vi, dependency hoặc ước lượng của task thay đổi.
+5. **`docs/IMPLEMENTATION_PLAN.md`**: nếu phạm vi, dependency hoặc ước lượng của task thay đổi. Task xong: chuyển nguyên mục sang `docs/archive/IMPLEMENTATION_PLAN.md`, thêm một dòng vào §1.
 6. **Báo cáo cuối task** phải liệt kê từng file ở mục 1–5: đã cập nhật gì, hoặc "không cần vì …". Không được bỏ qua im lặng.
 
 ## Commit
@@ -66,6 +66,28 @@ docker compose --profile app up -d --build    # chạy toàn bộ stack trong co
 - Index có thể đang chứa thay đổi do người khác stage sẵn. Commit bằng `git commit -- <danh sách file>` hoặc kiểm tra `git diff --cached --name-only` trước khi commit. Không commit file không thuộc task.
 - Không push khi chủ dự án chưa yêu cầu.
 
+## Chia việc cho sub-agent
+
+Áp dụng cho cả backend và client.
+
+- Sub-agent chỉ tìm, đo, soạn nháp; **không quyết, không commit, không push**. Quy tắc "không tự suy, tự quyết" áp cho cả sub-agent: chỗ chưa rõ ghi thành câu hỏi trong báo cáo; chỉ phiên chính hỏi chủ dự án.
+- Báo cáo phải có bằng chứng (`file:dòng`, trích nguyên văn, lệnh đã chạy và kết quả) và mức `[Verified-code]` / `[Verified-run]` / `[Risk]`. Phiên chính đối chiếu lại trước khi dùng, nhất là báo cáo của model nhỏ.
+- Chỉ giao khi có lợi: phải đọc nhiều file (khoảng hơn 10) hoặc chạy song song được. Thứ phiên chính đã có trong ngữ cảnh thì tự làm.
+- Sub-agent sửa code thì chạy trong worktree riêng; phiên chính xem diff rồi mới đưa vào branch.
+
+| Việc | Ai |
+|---|---|
+| Dò câu chữ trong docs dài hoặc code (vd rà docs lỗi thời) | Explore / Haiku: trả danh sách chỗ kèm trích dẫn, phiên chính kết luận |
+| So docs với code (endpoint, DTO, migration, `ErrorCode` với `API_SPEC.md`/`DATA_MODEL.md`) | Haiku (so khớp máy móc, checklist mục 2–3) |
+| Tra hướng dẫn Apple HIG, WCAG, tài liệu thư viện | web-fetch / Sonnet: trích nguyên văn kèm URL, không tự diễn giải thành quy tắc |
+| Kiểm mục "Nâng cấp" khi phát hành (diff `db/migration`, `.env*.example`, `compose*` từ tag trước) | Haiku |
+| Soạn nháp ghi chú phát hành từ các PR đã merge | Sonnet, theo khung release trước; chủ dự án duyệt |
+| Điều tra test chập chờn | Sonnet trong worktree: nguyên nhân kèm bằng chứng và bản vá đề xuất |
+| Rà diff trước khi mở PR | skill `/code-review` |
+| Thiết kế UI, áp HIG, đo và đọc ảnh chụp, mọi quyết định có chủ đích | Phiên chính |
+| Sửa file nóng (danh sách ở "Quy tắc cứng") | Phiên chính |
+| Commit, mô tả PR, push, tag, GitHub Release | Phiên chính, chỉ khi chủ dự án yêu cầu |
+
 ## Quy ước code
 
 - Code theo phong cách code xung quanh: Lombok (`@RequiredArgsConstructor`), record cho DTO, MapStruct cho mapping, Bean Validation với message là mã UPPER_SNAKE.
@@ -73,4 +95,4 @@ docker compose --profile app up -d --build    # chạy toàn bộ stack trong co
 - `Optional` chỉ cho tra cứu có thể không có dữ liệu; verify/rotate/authenticate trả kiểu kết quả `sealed interface`; `AppException` chỉ ném từ service; chỉ thêm `ErrorCode` khi client phải xử lý khác đi (P-24, bảng ở `ARCHITECTURE.md` §3).
 - Null trong API (P-48): component của record `*Response` luôn có mặt và không `null`, trừ khi đánh `org.jspecify.annotations.Nullable` (record `@JsonInclude(NON_NULL)` thì field `@Nullable` bị bỏ khỏi JSON); field xoá được của class merge patch cũng đánh `@Nullable`. Thêm field response có thể `null` mà quên đánh dấu thì OpenAPI sai và `OpenApiNullabilityIntegrationTest` báo lỗi. Endpoint trả 201/202/204 đánh `@ResponseStatus` để OpenAPI ghi đúng mã.
 - Đơn vị: mét, giây, capacity là số nguyên. Timestamp dùng `Instant` UTC. Time window dùng `LocalTime` theo timezone của store.
-- Git: mỗi task một branch `task/Txx-...` từ `develop`. Commit theo dạng `feat(module): ...`, `fix(module): ...`.
+- Git: mỗi việc một branch tạo từ `develop`, đặt tên theo loại việc: `task/Txx-...` hoặc `task/Wxx-...` cho task trong plan, `feat/...` (tính năng, vd `feat/owner-ui-g7`), `fix/...`, `docs/...`, `chore/release-x.y.z` (`docs/CONTRIBUTING.md` §1). Commit theo dạng `feat(module): ...`, `fix(module): ...`.

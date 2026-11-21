@@ -7,10 +7,11 @@
 1. Task của bạn trong `docs/client/PLAN.md`: phạm vi, ngoài phạm vi, acceptance, phụ thuộc.
 2. `docs/client/ARCHITECTURE.md`: lớp, quy tắc phụ thuộc, port, auth, polling, lỗi, bản đồ.
 3. Màn hình của task trong `docs/client/SCREENS.md`, rồi mở artboard tương ứng trong prototype (`https://claude.ai/artifact/JPW7uzXLFrpqfgFmQVjs5N`, xem bằng Artifact tool `read` nếu cần mã nguồn của artboard).
-4. `docs/client/DESIGN_SYSTEM.md` và `brand/design-system/` (token, props component).
+4. `docs/client/DESIGN_SYSTEM.md` và `brand/design-system/` (token, props component). Làm giao diện: hướng dẫn Apple đứng trước (P-71), quy tắc và danh sách kiểm ở `docs/client/UI_GUIDELINES.md` (học từ Apple, chỗ lệch ghi kèm lý do). Thiết kế lại khu đã đăng nhập (G1–G7, P-74) đã xong; lý do, câu trả lời của chủ dự án và số đo ở `docs/archive/client/OWNER_UI_REDESIGN.md` (lưu trữ, số mục giữ nguyên), quy tắc rút ra đã ở `DESIGN_SYSTEM.md` và `SCREENS.md`.
+   App tài xế theo Material 3 (P-77): kế hoạch và cách kiểm trên máy ảo ở `docs/client/DRIVER_UI_REDESIGN.md`.
 5. Endpoint dùng tới trong `docs/API_SPEC.md`, thông điệp và trạng thái trong `docs/ux/UX_BRIEF.md`, dữ liệu mẫu trong `docs/ux/samples/`.
 6. `docs/DECISIONS.md`: P-40 → P-47 (client) cùng các quyết định backend mà màn hình dựa vào (P-34 không hoàn tác, P-35/P-39 trạng thái route, P-36 idempotent…); khu quản trị W11: P-59 → P-66 (P-66: Recharts); nhập file, sao chép, báo cáo W12: P-67, P-68.
-7. `docs/CURRENT_STATE.md` §5: task client nào đã xong.
+7. `docs/client/PLAN.md` §1: task client nào đã xong; `docs/CURRENT_STATE.md` §2: lỗi còn mở.
 
 ## 2. Quy tắc cứng
 
@@ -29,14 +30,15 @@
 1. Web: `pnpm lint && pnpm typecheck && pnpm test && pnpm build` xanh. Mobile: `flutter analyze && flutter test` xanh. CI xanh trên PR.
 2. Acceptance của task được kiểm bằng test hoặc ghi cách kiểm tay (kèm ảnh chụp màn hình nếu là giao diện, đặt trong mô tả PR, không commit ảnh).
 3. Giao diện khớp prototype và DESIGN_SYSTEM; chỗ cố ý khác prototype ghi lý do trong báo cáo.
+   Thay đổi giao diện: kiểm theo `docs/client/UI_GUIDELINES.md` (§1 và mục của từng thành phần bị đụng), báo cáo ✅/❌/— từng mục.
 4. Làm đủ checklist docs §4 trong cùng PR.
 
 ## 4. Checklist docs (bắt buộc, trước khi commit)
 
 Đọc code thật để đối chiếu, không dựa trí nhớ. Báo cáo cuối task liệt kê từng mục: đã cập nhật gì, hoặc "không cần vì …".
 
-1. **`docs/CURRENT_STATE.md`**: §5 thêm dòng (ngày, branch, task, thay đổi, kết quả test web/mobile). §1 cập nhật dòng "Cấu trúc repo"/"Client" khi thêm thư mục hoặc lệnh build mới. Lỗi phát hiện mà chưa sửa → F-xx mới kèm mức bằng chứng.
-2. **`docs/client/PLAN.md`**: thêm mục "Phát sinh khi làm (ngày)" vào task nếu phạm vi, quyết định nhỏ hay ước lượng thay đổi; không xoá phạm vi cũ.
+1. **`docs/CURRENT_STATE.md`**: §5 mỗi PR một dòng (ngày, PR/branch, task, một câu tóm tắt); chi tiết và kết quả test web/mobile ghi trong commit và mô tả PR. §1 cập nhật dòng "Cấu trúc repo"/"Client" khi thêm thư mục hoặc lệnh build mới. Lỗi phát hiện mà chưa sửa → F-xx mới kèm mức bằng chứng; F-xx sửa xong thì chuyển dòng sang `docs/archive/CURRENT_STATE.md` §2.
+2. **`docs/client/PLAN.md`**: thêm mục "Phát sinh khi làm (ngày)" vào task đang mở (§2) nếu phạm vi, quyết định nhỏ hay ước lượng thay đổi; không xoá phạm vi cũ. Task xong: chuyển nguyên mục sang `docs/archive/client/PLAN.md`, thêm một dòng vào §1.
 3. **`docs/client/ARCHITECTURE.md`**: khi thêm port, đổi cấu trúc thư mục, đổi cách xử lý lỗi/auth/polling.
 4. **`docs/client/SCREENS.md`**: khi thêm/đổi route, màn hình hay hành vi bắt buộc.
 5. **`docs/client/DESIGN_SYSTEM.md` + `brand/design-system/`**: khi đổi token hay quy tắc giao diện. Đồng thời cập nhật design system trong artifact (Claude Design) để chủ dự án xem được; nếu phiên không truy cập được artifact thì ghi "chưa đồng bộ artifact" vào báo cáo.
@@ -48,7 +50,7 @@
 
 - Design system: `https://claude.ai/artifact/CBQwFPSiBSH6JavBwHgutU`. Prototype: `https://claude.ai/artifact/JPW7uzXLFrpqfgFmQVjs5N`.
 - Repo là nguồn đúng cho code; artifact để chủ dự án xem và góp ý. Đổi token/quy tắc → sửa repo trước, rồi đồng bộ artifact.
-- Chủ dự án thường góp ý bằng ảnh chụp đặt trong `docs/ux/samples/` (tên tự do, ví dụ `feedback1.png`): đọc ảnh, sửa, rồi xoá ảnh khi được yêu cầu. Không commit ảnh góp ý hay ảnh bản đồ chụp từ dịch vụ ngoài.
+- Chủ dự án thường góp ý bằng ảnh chụp đặt trong `docs/ux/samples/` (tên tự do, ví dụ `feedback1.png`): đọc ảnh, sửa, rồi xoá ảnh khi được yêu cầu. Không commit ảnh góp ý hay ảnh bản đồ chụp từ dịch vụ ngoài (`.gitignore` chặn `docs/ux/samples/*.png`, `*.jpg`). Các ảnh `fb_N.png` được trích trong docs chỉ còn ở máy chủ dự án (gỡ khỏi git 2026-11-20).
 - Không đưa thêm màn hình hay luồng không có trong SCREENS/prototype mà không hỏi.
 
 ## 6. Báo cáo cuối task

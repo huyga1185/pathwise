@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<!--/* Frame of every email (W13, P-70): header band with the logo, white card, footer. Parameters: title, tag (top
+       right of the band), content (the card's fragment). Variables: appUrl, companyName, companyUrl, companyAddress
+       (added by EmailNotificationService). Tables and inline styles because email clients drop <style> and flexbox;
+       the logo is the inline image cid:logo; the band falls back to bgcolor where gradients are not drawn (Outlook).
+       Light colours only: most clients ignore dark mode styles. */-->
+<html lang="vi" xmlns:th="http://www.thymeleaf.org" th:fragment="email(title, tag, content)">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light" />
+    <title th:text="${title}">PathWise</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #f4f6f3;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#f4f6f3" style="background-color: #f4f6f3;">
+    <tr>
+        <td style="padding: 32px 16px;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" align="center"
+                   style="max-width: 600px; margin: 0 auto; border-collapse: separate; font-family: 'Be Vietnam Pro', 'Segoe UI', Helvetica, Arial, sans-serif; color: #18231f;">
+                <tr>
+                    <td bgcolor="#0b6a5c"
+                        style="background-color: #0b6a5c; background-image: linear-gradient(165deg, #1fa189 0%, #14876f 32%, #0b6a5c 62%, #085a4e 100%); border-radius: 12px 12px 0 0; padding: 24px 32px;">
+                        <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                            <tr>
+                                <td style="vertical-align: middle;">
+                                    <a th:href="${appUrl}" href="#" style="text-decoration: none; color: #ffffff;">
+                                        <img src="cid:logo" width="36" height="34" alt=""
+                                             style="display: inline-block; vertical-align: middle; border: 0;" />
+                                        <!--/* Wordmark: "Wise" in the brand mint (chủ dự án, 2026-11-16); another company name stays plain. */-->
+                                        <span style="display: inline-block; vertical-align: middle; margin-left: 10px; font-size: 22px; line-height: 28px; font-weight: 700; letter-spacing: -0.01em; color: #ffffff;"><th:block th:if="${companyName == 'PathWise'}">Path<span style="color: #9ff0d3;">Wise</span></th:block><th:block th:unless="${companyName == 'PathWise'}" th:text="${companyName}">PathWise</th:block></span>
+                                    </a>
+                                </td>
+                                <td th:text="${tag}"
+                                    style="vertical-align: middle; text-align: right; font-size: 12px; line-height: 16px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #dcebe6;">Tài khoản</td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+                <tr>
+                    <td bgcolor="#ffffff"
+                        style="background-color: #ffffff; border: 1px solid #c9d1cd; border-top: 0; border-radius: 0 0 12px 12px; padding: 32px; font-size: 15px; line-height: 24px; color: #18231f;">
+                        <th:block th:replace="${content}">Nội dung</th:block>
+                        <p style="margin: 24px 0 0;">Trân trọng,<br /><strong>Đội ngũ <span th:text="${companyName}">PathWise</span></strong></p>
+                    </td>
+                </tr>
+                <tr>
+                    <td style="padding: 24px 32px 0; text-align: center; font-size: 12px; line-height: 18px; color: #56635e;">
+                        <p style="margin: 0 0 4px;">Email này được gửi tự động từ <span th:text="${companyName}">PathWise</span>, vui lòng không trả lời.</p>
+                        <p style="margin: 0;"><span th:text="${companyName}">PathWise</span> · <span th:text="${companyAddress}">Địa chỉ</span> ·
+                            <a th:href="${companyUrl}" th:text="${companyUrl}" href="#" style="color: #0b6a5c;">https://example.com</a></p>
+                    </td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+</table>
+</body>
+</html>

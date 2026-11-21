@@ -1,22 +1,26 @@
-import type { ReactNode } from 'react';
+import { Children, type ReactNode } from 'react';
 
 /** Error box at the top of a form or section (role="alert"). Field errors go under the field instead. */
 export function ErrorBanner({
   title,
   children,
   tone = 'danger',
+  repeat = false,
 }: {
   title: ReactNode;
   children?: ReactNode;
   tone?: 'danger' | 'info';
+  /** The same place said again after another try: it does not move in again (that read as a flash). */
+  repeat?: boolean;
 }) {
   return (
     <div
-      className={tone === 'info' ? 'pw-banner pw-banner-info' : 'pw-banner'}
+      className={['pw-banner', tone === 'info' && 'pw-banner-info', repeat && 'is-repeat'].filter(Boolean).join(' ')}
       role={tone === 'danger' ? 'alert' : 'status'}
     >
       <span className="pw-banner-title">{title}</span>
-      {children ? (
+      {/* Children.toArray drops null and false: a page passing only empty parts gets no empty second row. */}
+      {Children.toArray(children).length > 0 ? (
         <>
           {' '}
           <span>{children}</span>

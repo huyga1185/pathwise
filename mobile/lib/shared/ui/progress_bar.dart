@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../i18n/vi.dart';
 import '../theme/theme.dart';
 import '../theme/tokens.g.dart';
 
@@ -15,9 +16,12 @@ class PwProgressBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = context.pw;
     final known = value != null && max != null && max! > 0;
+    // Read as one sentence, "2 trên 6 điểm đã xong": "2/6" and the bar's own percentage were read as "33" (H5,
+    // DRIVER_UI_REDESIGN §3 "Thanh tiến độ", WCAG 1.1.1).
     return Semantics(
-      label: label,
-      value: known ? '$value/$max' : null,
+      container: true,
+      label: known ? Vi.progressOf(value!, max!, label) : label,
+      excludeSemantics: true,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [

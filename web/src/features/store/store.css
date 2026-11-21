@@ -1,32 +1,30 @@
-/* Prototype "Cửa hàng": information card beside the map card (2:1), banners above. */
+/* "Cửa hàng" (OWNER_UI_REDESIGN §8.3): the information group beside the map group (2:1), a warning above. */
 .pw-store {
   display: flex;
   flex-direction: column;
   gap: 24px;
 }
-.pw-store-head {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 16px;
-}
-.pw-store-intro {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.pw-store-warning,
-.pw-store-saved {
+.pw-store-warning {
   padding: 16px;
   background: var(--surface-raised);
   border: 1px solid var(--signal);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
   font-weight: 600;
 }
-.pw-store-saved {
-  border-color: var(--success);
-  font-weight: 400;
+/* Groups on their own surface, no frame (D9; HIG Layout: grouping), like the lists. */
+.pw-store-group {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px;
+  border-radius: var(--radius-lg);
+  background: var(--surface-raised);
+}
+.pw-store-group h2 {
+  margin: 0;
+  font-size: 1.0625rem;
+  line-height: 1.375rem;
+  font-weight: 600;
 }
 .pw-store-layout {
   display: flex;
@@ -45,45 +43,50 @@
 .pw-store-coords {
   font-variant-numeric: tabular-nums;
 }
-/* OWNER sub-pages and the store's audit log (W11). */
-.pw-store-tabs {
-  display: flex;
-  gap: var(--space-6);
-  border-bottom: 1px solid var(--line);
-}
-.pw-store-tab {
-  margin-bottom: -1px;
-  padding: var(--space-2) 0;
-  border-bottom: 2px solid transparent;
-  font-weight: 600;
-  color: var(--ink-muted);
-  text-decoration: none;
-}
-.pw-store-tab.is-active {
-  color: var(--route);
-  border-bottom-color: var(--route);
-}
-.pw-store-tab:focus-visible {
-  outline: 2px solid var(--route);
-  outline-offset: 2px;
-}
-.pw-store-audit-filters {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-4);
-}
-.pw-store-audit-filters > * {
-  flex: 1 1 180px;
-  min-width: 0;
-}
+/* The store's audit log (W11). */
 .pw-store-audit-actor {
   font-weight: 600;
+  color: var(--ink);
 }
-.pw-store-audit-pager,
-.pw-store-audit-pager-buttons {
+.pw-store-audit-col-actor {
+  min-width: 10rem;
+  max-width: 18rem;
+}
+/* A row's sheet: label over value, everything in full. */
+.pw-store-audit-detail {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-2);
+  flex-direction: column;
+  gap: 16px;
+  margin: 0;
+}
+.pw-store-audit-detail dt {
+  font-size: 0.8125rem;
+  line-height: 1.125rem;
+  color: var(--ink-muted);
+}
+.pw-store-audit-detail dd {
+  margin: 2px 0 0;
+  overflow-wrap: anywhere;
+}
+/* A phone row of the log: the sentence may take two lines. */
+.pw-store-audit-sentence {
+  font-weight: 500;
+}
+.pw-list-lead-tight {
+  margin: 0;
+}
+
+/* Both tabs share one header: the title row keeps the save button's height when the log tab has none. */
+.pw-store-head {
+  min-height: 36px;
+}
+@media (max-width: 959.98px) {
+  .pw-store-head {
+    min-height: 40px;
+  }
+}
+@media (max-width: 959.98px) and (pointer: coarse) {
+  .pw-store-head {
+    min-height: 44px;
+  }
 }

@@ -79,6 +79,10 @@ void main() {
 
     expect(find.text('Chia sẻ vị trí cho tuyến này?'), findsOneWidget);
     expect(find.textContaining('Trong lúc giao tuyến Giao sáng 01/12'), findsOneWidget);
+    // In-app directions since M05: the question no longer mentions Google Maps (H1).
+    expect(find.textContaining('Google Maps'), findsNothing);
+    // Material 3 dialog: both answers are text buttons (D4).
+    expect(find.descendant(of: find.byType(AlertDialog), matching: find.byType(TextButton)), findsNWidgets(2));
     await tester.tap(find.text('Chia sẻ vị trí'));
     await tester.pumpAndSettle();
 

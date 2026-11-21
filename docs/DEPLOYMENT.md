@@ -255,15 +255,17 @@ Tên volume có tiền tố là tên thư mục/project (xem `docker volume ls`)
 
 ## 8. Web dispatcher và HTTPS (Caddy, W08, P-56)
 
-Caddy phục vụ web dispatcher ở `https://<domain>/app/`, chuyển `/api/` (và Swagger ở staging) về app, tự lấy chứng chỉ Let's Encrypt cho `PATHWISE_DOMAIN`. `/` chuyển sang `/app/` cho tới khi có trang landing (P-47); `/actuator` không mở ra ngoài. Cấu hình chung ở `deploy/caddy/Caddyfile`, dùng cho cả hai cách dưới.
+Caddy phục vụ trang landing ở `https://<domain>/` (`landing/` của repo, W14, P-79) cùng `robots.txt`, `sitemap.xml`, `og.png`; web dispatcher ở `https://<domain>/app/` (gửi kèm `X-Robots-Tag: noindex` để không lên kết quả tìm kiếm); chuyển `/api/` (và Swagger ở staging) về app, tự lấy chứng chỉ Let's Encrypt cho `PATHWISE_DOMAIN`. Địa chỉ khác ngoài landing, `/app/` và API (ví dụ `/abc`) trả **404** kèm trang "Không tìm thấy trang" của landing (`404.html`); `/favicon.ico` và `/apple-touch-icon.png` lấy icon của web; `/actuator` không mở ra ngoài (trừ `/actuator/health`). Cấu hình chung ở `deploy/caddy/Caddyfile`, dùng cho cả hai cách dưới.
 
 Trước khi bắt đầu: bản ghi DNS `A` của domain trỏ về IP của VPS, cổng 80 và 443 (TCP, thêm 443/UDP cho HTTP/3) mở từ internet. Let's Encrypt kiểm tra domain qua cổng 80/443, nên chứng chỉ chỉ cấp được khi DNS đã trỏ đúng.
+
+Nút "Tải app tài xế cho Android" trên landing chỉ hiện khi đặt link APK: `APK_URL` trong `.env` (container) hoặc `PATHWISE_APK_URL` của service Caddy (host). Workflow `release` đính APK vào mỗi GitHub Release (W15, cài đặt secret ở `mobile/README.md`), nên link thường là `https://github.com/huyga1185/pathwise/releases/latest/download/pathwise-driver.apk`. Caddy điền link vào trang lúc phục vụ (`templates`), đổi link chỉ cần khởi động lại Caddy hoặc container `web`.
 
 Bản đồ nền của web cần key MapTiler (`MAPTILER_KEY`), đọc lúc chạy từ `/app/config.js` nên đổi key không cần build lại. Key nằm trong trình duyệt của người dùng, nên ở trang quản lý MapTiler phải giới hạn key theo domain. Không có key thì bản đồ không có nền, điểm giao vẫn hiện.
 
 ### 8.1 Caddy trong container (`compose.web.yaml`)
 
-1. Copy `compose.web.yaml` vào thư mục của môi trường. Trong `.env`: `PATHWISE_DOMAIN`, `MAPTILER_KEY` (và `WEB_BASEMAP` nếu khác `maptiler`). Image web lấy cùng `APP_IMAGE_TAG` với app.
+1. Copy `compose.web.yaml` vào thư mục của môi trường. Trong `.env`: `PATHWISE_DOMAIN`, `MAPTILER_KEY` (và `WEB_BASEMAP` nếu khác `maptiler`), tuỳ chọn `APK_URL`. Image web lấy cùng `APP_IMAGE_TAG` với app.
 2. Mở cổng cho container. Với `ufw-docker`, `ufw allow` thường không áp cho container; sau lần `up -d` đầu:
    ```bash
    ufw-docker allow pathwise-prod-web-1 80/tcp
@@ -277,12 +279,13 @@ Bản đồ nền của web cần key MapTiler (`MAPTILER_KEY`), đọc lúc ch�
    docker compose -f compose.prod.yaml -f compose.web.yaml up -d
    docker compose -f compose.prod.yaml -f compose.web.yaml logs -f web   # "certificate obtained successfully"
    curl -sI https://<domain>/app/ | head -1                               # HTTP/2 200
+   curl -sI https://<domain>/ | head -1                                   # HTTP/2 200 (landing)
    ```
 4. Chứng chỉ nằm trong volume `caddy-data`: không xoá volume này, nếu không mỗi lần tạo lại container sẽ xin chứng chỉ mới và dễ chạm giới hạn của Let's Encrypt.
 
 ### 8.2 Caddy cài trên host
 
-Dùng khi VPS đã có Caddy (nhiều site). Web lấy từ tarball đính kèm GitHub Release (`pathwise-web-<tag>.tar.gz`, workflow `release` tạo khi publish release), gồm `app/` và `Caddyfile`.
+Dùng khi VPS đã có Caddy (nhiều site). Web lấy từ tarball đính kèm GitHub Release (`pathwise-web-<tag>.tar.gz`, workflow `release` tạo khi publish release), gồm `app/`, các file của landing ở gốc (`index.html`, `404.html`, `robots.txt`, `sitemap.xml`, `og.png`, `web/`, `mweb/`, `phone/`, `img/`) và `Caddyfile`. Caddy chỉ phục vụ đúng các file của landing, nên `Caddyfile` nằm cùng thư mục không bị lộ.
 
 1. Cài Caddy theo https://caddyserver.com/docs/install. Giải nén tarball: `mkdir -p /var/www/pathwise && tar -xzf pathwise-web-<tag>.tar.gz --strip-components=1 -C /var/www/pathwise` (có `/var/www/pathwise/app/index.html`).
 2. Sửa `/var/www/pathwise/app/config.js` để có key bản đồ:
@@ -294,6 +297,7 @@ Dùng khi VPS đã có Caddy (nhiều site). Web lấy từ tarball đính kèm 
    systemctl edit caddy
    # [Service]
    # Environment=PATHWISE_DOMAIN=pathwise.example.com PATHWISE_UPSTREAM=127.0.0.1:8080 PATHWISE_WEB_ROOT=/var/www/pathwise
+   # Environment=PATHWISE_APK_URL=<link APK>   (tuỳ chọn: nút tải app trên landing)
    systemctl restart caddy
    ```
 4. Mở cổng: `ufw allow 80/tcp`, `ufw allow 443/tcp`, `ufw allow 443/udp` (Caddy trên host không qua Docker nên dùng `ufw` thường).
@@ -304,6 +308,7 @@ Dùng khi VPS đã có Caddy (nhiều site). Web lấy từ tarball đính kèm 
    tar -xzf pathwise-web-<tag>.tar.gz --strip-components=1 -C /var/www/pathwise
    cp /tmp/pathwise-config.js /var/www/pathwise/app/config.js
    ```
+   Bản phát hành có `Caddyfile` mới (ví dụ lần đầu có landing, W14) thì copy lại `Caddyfile` của tarball vào `/etc/caddy/Caddyfile` rồi `systemctl reload caddy`.
 
 ### 8.3 Domain đi qua Cloudflare (proxy, đám mây cam)
 

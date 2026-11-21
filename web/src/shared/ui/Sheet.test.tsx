@@ -1,0 +1,111 @@
+import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { describe, expect, it, vi } from 'vitest';
+import { Alert, Sheet } from './Sheet';
+
+describe('Sheet', () => {
+  it('Huỷ ở đầu thanh trên, nút xong ở cuối gửi form; Escape đóng; focus vào ô đầu', async () => {
+    const onSubmit = vi.fn((event: { preventDefault: () => void }) => event.preventDefault());
+    const onClose = vi.fn();
+    render(
+      <Sheet open title="Thêm xe" doneLabel="Thêm" onSubmit={onSubmit} onClose={onClose}>
+        <label>
+          Tên xe
+          <input name="name" />
+        </label>
+      </Sheet>,
+    );
+    const user = userEvent.setup();
+    const sheet = screen.getByRole('dialog', { name: 'Thêm xe' });
+    expect(sheet).toHaveAttribute('aria-modal', 'true');
+    const buttons = sheet.querySelectorAll('.pw-sheet-bar button');
+    expect(buttons[0]).toHaveTextContent('Huỷ');
+    expect(buttons[1]).toHaveTextContent('Thêm');
+    expect(screen.getByLabelText('Tên xe')).toHaveFocus();
+
+    await user.click(screen.getByRole('button', { name: 'Thêm' }));
+    expect(onSubmit).toHaveBeenCalledTimes(1);
+    await user.keyboard('{Escape}');
+    expect(onClose).toHaveBeenCalledTimes(1);
+    await user.click(screen.getByRole('button', { name: 'Huỷ' }));
+    expect(onClose).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('Sheet trong một form khác', () => {
+  // F-83: the sheet is a portal, so React bubbled its submit up to the page's form (the plan form saved the whole plan
+  // when "Xong" closed a stop's sheet on a phone).
+  it('nút xong chỉ gửi form của sheet, không gửi form của trang chứa nó', async () => {
+    const inner = vi.fn();
+    const outer = vi.fn((event: { preventDefault: () => void }) => event.preventDefault());
+    render(
+      <form onSubmit={outer}>
+        <Sheet open title="Điểm giao" doneLabel="Xong" onSubmit={inner} onClose={() => {}}>
+          <label>
+            Mã đơn
+            <input name="code" />
+          </label>
+        </Sheet>
+      </form>,
+    );
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Xong' }));
+    expect(inner).toHaveBeenCalledTimes(1);
+    expect(inner.mock.calls[0]?.[0].defaultPrevented).toBe(true);
+    expect(outer).not.toHaveBeenCalled();
+  });
+});
+
+describe('Sheet và popover bên trong', () => {
+  it('Escape mà popover bên trong đã xử lý (preventDefault) chỉ đóng popover, không đóng sheet', async () => {
+    const onClose = vi.fn();
+    render(
+      <Sheet open title="Sao chép" onClose={onClose}>
+        <button
+          type="button"
+          onKeyDown={(event) => {
+            if (event.key === 'Escape') event.preventDefault();
+          }}
+        >
+          Lịch
+        </button>
+      </Sheet>,
+    );
+    const user = userEvent.setup();
+    screen.getByRole('button', { name: 'Lịch' }).focus();
+    await user.keyboard('{Escape}');
+    expect(onClose).not.toHaveBeenCalled();
+    screen.getByRole('button', { name: 'Huỷ' }).focus();
+    await user.keyboard('{Escape}');
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('Alert', () => {
+  it('Huỷ bên trái là nút được focus; hành động bên phải; Escape huỷ; chỉ tô đỏ khi destructive', async () => {
+    const onAction = vi.fn();
+    const onCancel = vi.fn();
+    const { rerender } = render(
+      <Alert
+        open
+        title="Vô hiệu hoá Anh Hải?"
+        message="Người này bị đăng xuất ngay."
+        actionLabel="Vô hiệu hoá"
+        onAction={onAction}
+        onCancel={onCancel}
+      />,
+    );
+    const user = userEvent.setup();
+    const alert = screen.getByRole('alertdialog', { name: 'Vô hiệu hoá Anh Hải?' });
+    expect(alert).toHaveAccessibleDescription('Người này bị đăng xuất ngay.');
+    expect(screen.getByRole('button', { name: 'Huỷ' })).toHaveFocus();
+    expect(screen.getByRole('button', { name: 'Vô hiệu hoá' })).not.toHaveClass('is-destructive');
+    await user.click(screen.getByRole('button', { name: 'Vô hiệu hoá' }));
+    expect(onAction).toHaveBeenCalledTimes(1);
+    await user.keyboard('{Escape}');
+    expect(onCancel).toHaveBeenCalledTimes(1);
+
+    rerender(<Alert open title="Xoá?" actionLabel="Xoá" destructive onAction={onAction} onCancel={onCancel} />);
+    expect(screen.getByRole('button', { name: 'Xoá' })).toHaveClass('is-destructive');
+  });
+});

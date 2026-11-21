@@ -1,0 +1,977 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>Phần mềm quản lý giao hàng cho đội xe tại Đà Nẵng | PathWise</title>
+<link rel="icon" type="image/svg+xml" href="/app/favicon.svg">
+<link rel="icon" sizes="32x32" href="/app/favicon.ico">
+<link rel="apple-touch-icon" href="/app/apple-touch-icon.png">
+<meta name="description" content="Phần mềm giao hàng cho cửa hàng ở Đà Nẵng và Hội An: chia đơn cho từng xe, tối ưu tuyến đường theo khung giờ và tải trọng, tài xế nhận tuyến trên app Android.">
+<link rel="canonical" href="https://pathwise.huy-vu.uk/">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="vi_VN">
+<meta property="og:site_name" content="PathWise">
+<meta property="og:title" content="Phần mềm quản lý giao hàng cho đội xe tại Đà Nẵng | PathWise">
+<meta property="og:description" content="Phần mềm giao hàng cho cửa hàng ở Đà Nẵng và Hội An: chia đơn cho từng xe, tối ưu tuyến đường theo khung giờ và tải trọng, tài xế nhận tuyến trên app Android.">
+<meta property="og:url" content="https://pathwise.huy-vu.uk/">
+<meta property="og:image" content="https://pathwise.huy-vu.uk/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@graph":[
+{"@type":"Organization","@id":"https://pathwise.huy-vu.uk/#org","name":"PathWise","url":"https://pathwise.huy-vu.uk/","logo":"https://pathwise.huy-vu.uk/app/favicon-512.png",
+ "areaServed":[{"@type":"City","name":"Đà Nẵng"},{"@type":"City","name":"Hội An"}]},
+{"@type":"WebSite","@id":"https://pathwise.huy-vu.uk/#site","name":"PathWise","url":"https://pathwise.huy-vu.uk/","inLanguage":"vi","publisher":{"@id":"https://pathwise.huy-vu.uk/#org"}}
+]}
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<!-- The font's stylesheet does not block the first paint: text shows in the system font, then swaps (display=swap). -->
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap"></noscript>
+<style>
+/* Layout: one "bản đồ điều phối" hero (the dispatcher's own map, three routes out of a depot), then a quiet single
+   column of sections on a 1120px grid; the brand green is spent on the routes and the two calls to action only. */
+:root {
+  --surface: #f4f6f3;
+  --raised: #ffffff;
+  --tint: #dcebe6;
+  --ink: #18231f;
+  --muted: #56635e;
+  --line: #c9d1cd;
+  --route: #0b6a5c;
+  --on-accent: #ffffff;
+  --signal: #9a5200;
+  --danger: #b02a22;
+  --success: #2e6b2f;
+  --map-bg: #e9efeb;
+  --map-street: #ffffff;
+  --map-block: #dde6e1;
+  --water: #c6dfe6; --water-ink: #3f6f7d;
+  --r1: #0b6a5c; --r2: #5b3fa8; --r3: #1f5f8b;
+  --shadow: 0 12px 32px rgba(11, 106, 92, 0.10);
+  --shadow-overlay: 0 24px 48px rgba(15, 21, 19, 0.22);
+  --gradient: linear-gradient(165deg, #1fa189 0%, #14876f 32%, #0b6a5c 62%, #085a4e 100%);
+  --font: "Be Vietnam Pro", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --step--1: 0.875rem; --step-0: 1rem; --step-1: 1.25rem; --step-2: 1.75rem; --step-3: clamp(2rem, 1.4rem + 2.6vw, 3.25rem);
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --surface: #0f1513; --raised: #18201d; --tint: #1d3a33; --ink: #e4ebe8; --muted: #a2b0aa; --line: #33403b;
+  --route: #4dbfa5; --on-accent: #0f1513; --signal: #eda457; --danger: #f28b80; --success: #7fc681;
+  --map-bg: #152320; --map-street: #22322d; --map-block: #1a2925; --water: #123742; --water-ink: #7fb2c0;
+  --r1: #4dbfa5; --r2: #a893e6; --r3: #79b0dd;
+  --shadow: 0 12px 32px rgba(0, 0, 0, 0.45); --shadow-overlay: 0 24px 48px rgba(0, 0, 0, 0.6);
+  color-scheme: dark;
+} }
+:root[data-theme="dark"] {
+  --surface: #0f1513; --raised: #18201d; --tint: #1d3a33; --ink: #e4ebe8; --muted: #a2b0aa; --line: #33403b;
+  --route: #4dbfa5; --on-accent: #0f1513; --signal: #eda457; --danger: #f28b80; --success: #7fc681;
+  --map-bg: #152320; --map-street: #22322d; --map-block: #1a2925; --water: #123742; --water-ink: #7fb2c0;
+  --r1: #4dbfa5; --r2: #a893e6; --r3: #79b0dd;
+  --shadow: 0 12px 32px rgba(0, 0, 0, 0.45); --shadow-overlay: 0 24px 48px rgba(0, 0, 0, 0.6);
+  color-scheme: dark;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+body { background: var(--surface); color: var(--ink); font: 400 var(--step-0)/1.6 var(--font); -webkit-font-smoothing: antialiased; }
+h1, h2, h3 { margin: 0; text-wrap: balance; letter-spacing: -0.01em; }
+p { margin: 0; }
+a { color: inherit; }
+:focus-visible { outline: 3px solid var(--route); outline-offset: 3px; border-radius: 4px; }
+.wrap { max-width: 1120px; margin-inline: auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.num { font-variant-numeric: tabular-nums; }
+.skip { position: absolute; left: -999px; }
+.skip:focus { left: 16px; top: 16px; z-index: 30; background: var(--raised); padding: 8px 12px; }
+
+/* Header */
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--surface); }
+/* In-page links ("Xem cách hoạt động", header nav): glide to the section and stop below the sticky header.
+   Smooth only when the visitor has not asked for reduced motion (WCAG 2.3.3). */
+html { scroll-padding-top: calc(env(safe-area-inset-top, 0px) + 64px); }
+#hoi-dap { scroll-margin-top: 32px; }
+@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+.site-head { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 9; background: color-mix(in srgb, var(--surface) 88%, transparent); backdrop-filter: blur(12px); border-bottom: 1px solid color-mix(in srgb, var(--line) 60%, transparent); }
+.site-head .wrap { display: flex; align-items: center; gap: 24px; min-height: 64px; }
+.brand { display: flex; align-items: center; gap: 10px; text-decoration: none; font-weight: 800; font-size: 1.2rem; }
+.brand svg { width: 30px; height: auto; }
+.brand b { color: var(--route); font-weight: 800; }
+.nav { display: flex; gap: 22px; margin-left: auto; font-size: var(--step--1); color: var(--muted); }
+.nav a { text-decoration: none; white-space: nowrap; }
+.nav a:hover { color: var(--ink); }
+.head-actions { display: flex; gap: 8px; }
+@media (max-width: 1100px) { .nav { display: none; } .head-actions { margin-left: auto; } }
+/* Below 1100 px the section links and "Đăng nhập" move into a menu under the header. */
+.menu-btn { display: none; width: 44px; height: 44px; margin-left: -8px; border: 1px solid var(--line); border-radius: 50%; background: var(--raised); color: var(--ink); cursor: pointer; place-items: center; }
+.menu-btn svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+.menu-btn path { transition: transform .2s ease, opacity .2s ease; transform-origin: 12px 12px; }
+.menu-btn[aria-expanded="true"] .l1 { transform: translateY(5px) rotate(45deg); }
+.menu-btn[aria-expanded="true"] .l2 { opacity: 0; }
+.menu-btn[aria-expanded="true"] .l3 { transform: translateY(-5px) rotate(-45deg); }
+.menu-btn:hover, .menu-btn[aria-expanded="true"] { background: var(--tint); border-color: transparent; }
+.menu-btn:focus-visible { outline: 3px solid var(--route); outline-offset: 2px; }
+.menu-panel { position: absolute; left: 0; right: 0; top: 100%; background: var(--raised); border-bottom: 1px solid var(--line); box-shadow: var(--shadow); padding: 8px 16px 20px; display: grid; gap: 12px; }
+.menu-panel[hidden] { display: none; }
+/* With script: the panel slides down and fades in, its links follow one after another; closing reverses it. */
+.menu-panel.ready { transform-origin: top; transition: opacity .2s ease, transform .24s cubic-bezier(.2,.7,.2,1), visibility 0s linear .24s; }
+.menu-panel.ready:not(.is-open) { opacity: 0; transform: translateY(-8px); visibility: hidden; pointer-events: none; }
+.menu-panel.ready.is-open { transition-delay: 0s; }
+.menu-panel.ready > * { transition: opacity .2s ease, transform .24s cubic-bezier(.2,.7,.2,1); }
+.menu-panel.ready:not(.is-open) > *, .menu-panel.ready:not(.is-open) nav a { opacity: 0; transform: translateY(-4px); }
+.menu-panel.ready nav a { transition: opacity .2s ease, transform .24s cubic-bezier(.2,.7,.2,1), color .2s ease; }
+.menu-panel.ready.is-open nav a:nth-child(2) { transition-delay: .03s; } .menu-panel.ready.is-open nav a:nth-child(3) { transition-delay: .06s; }
+.menu-panel.ready.is-open nav a:nth-child(4) { transition-delay: .09s; } .menu-panel.ready.is-open nav a:nth-child(5) { transition-delay: .12s; }
+.menu-panel.ready.is-open nav a:nth-child(6) { transition-delay: .15s; } .menu-panel.ready.is-open > .btn { transition-delay: .18s; }
+@media (prefers-reduced-motion: reduce) { .menu-panel.ready, .menu-panel.ready > *, .menu-panel.ready nav a { transition: none !important; transform: none !important; } }
+.menu-panel nav { display: grid; }
+.menu-panel nav a { display: flex; align-items: center; min-height: 48px; padding: 0 8px; border-bottom: 1px solid var(--line); text-decoration: none; font-weight: 600; }
+.menu-panel nav a:hover { color: var(--route); }
+@media (max-width: 1100px) { .menu-btn { display: grid; } }
+.menu-btn { flex-shrink: 0; }
+.head-actions .btn-primary { gap: 0; }
+@media (max-width: 400px) { .head-actions .long { display: none; } }
+@media (max-width: 480px) { .site-head .wrap { gap: 8px; } .head-actions .btn-primary { padding-inline: 16px; } .menu-btn { margin-left: 0; margin-right: -6px; } }
+@media (min-width: 1101px) { .menu-panel { display: none !important; } }
+@media (prefers-reduced-motion: reduce) { .menu-btn path { transition: none; } }
+
+/* Buttons: pill, 44px touch target */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 0 20px; border-radius: 999px; font-weight: 600; font-size: var(--step--1); text-decoration: none; border: 1px solid transparent; transition: transform .15s ease, background-color .15s ease; white-space: nowrap; }
+.btn { cursor: pointer; }
+.btn:active { transform: scale(.97); }
+.try-actions { display: flex; flex-wrap: wrap; gap: 12px; }
+.btn svg { flex: none; }
+.btn-primary { background: var(--route); color: var(--on-accent); }
+.btn-primary:hover { background: color-mix(in srgb, var(--route) 88%, var(--ink)); }
+.btn-quiet { border-color: var(--line); background: var(--raised); }
+.btn-lg { min-height: 52px; padding: 0 26px; font-size: var(--step-0); }
+@media (max-width: 420px) { .head-actions .btn-quiet { display: none; } }
+
+/* Hero */
+.hero { padding-block: clamp(32px, 5vw, 64px) clamp(24px, 3vw, 40px); }
+.hero .wrap { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: clamp(32px, 5vw, 64px); align-items: center; }
+.eyebrow { display: inline-flex; align-items: center; gap: 8px; font-size: var(--step--1); font-weight: 600; color: var(--route); background: var(--tint); padding: 4px 12px 4px 8px; border-radius: 999px; }
+.eyebrow::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--route); box-shadow: 0 0 0 4px color-mix(in srgb, var(--route) 25%, transparent); }
+.hero h1 { font-size: clamp(2rem, 1.4rem + 2.2vw, 3rem); line-height: 1.15; font-weight: 800; }
+.hero h1 em { font-style: normal; color: var(--route); }
+.hero h1 .nb { white-space: nowrap; }
+.lede + .lede { margin-top: 12px; }
+/* Phone: the first paragraph says it; the CTA and the map come up into the first screen. */
+@media (max-width: 760px) { .hero .lede + .lede { display: none; } .hero .lede { font-size: 1.0625rem; margin-top: 14px; } }
+@media (max-width: 640px) { .hero .cta-row { display: grid; grid-template-columns: minmax(0, 1fr); margin-top: 22px; } .hero .cta-row .btn { width: 100%; justify-content: center; } }
+.lede { margin-top: 18px; font-size: 1.125rem; color: var(--muted); max-width: 34em; }
+.cta-row { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 28px; }
+.hero-note { margin-top: 14px; font-size: var(--step--1); color: var(--muted); }
+@media (max-width: 900px) { .hero .wrap { grid-template-columns: minmax(0, 1fr); } }
+
+/* The map */
+.map { position: relative; border-radius: 20px; background: var(--map-bg); box-shadow: var(--shadow-overlay); overflow: hidden; aspect-ratio: 560 / 500; max-width: 100%; }
+.map svg { display: block; width: 100%; height: 100%; }
+.map .street { stroke: var(--map-street); fill: none; stroke-linecap: round; }
+.map .block { fill: var(--map-block); }
+.map .r { fill: none; stroke-width: 5; stroke-linecap: round; stroke-linejoin: round; }
+.map .r1 { stroke: var(--r1); } .map .r2 { stroke: var(--r2); } .map .r3 { stroke: var(--r3); }
+.map .stop { filter: drop-shadow(0 2px 2px rgba(0, 0, 0, .28)); }
+.map .stop .head { fill: var(--raised); }
+.map .stop text { font: 800 11px var(--font); text-anchor: middle; dominant-baseline: central; }
+.map .s1 .pin { fill: var(--r1); } .map .s1 text { fill: var(--r1); }
+.map .s2 .pin { fill: var(--r2); } .map .s2 text { fill: var(--r2); }
+.map .s3 .pin { fill: var(--r3); } .map .s3 text { fill: var(--r3); }
+.map .water { fill: var(--water); }
+.map .river { fill: none; stroke: var(--water); stroke-width: 26; stroke-linecap: butt; }
+.map .place text { font: 700 9.5px var(--font); letter-spacing: .14em; fill: var(--muted); }
+.map .place .bridge { font: 600 9px var(--font); letter-spacing: 0; font-style: italic; }
+.map .place .riv { font: 600 10px var(--font); letter-spacing: .04em; font-style: italic; fill: var(--water-ink); }
+.map .place .sea { fill: var(--water-ink); }
+.map .depot rect { fill: var(--ink); }
+.map .depot path { fill: var(--surface); }
+.draw { stroke-dasharray: 900; stroke-dashoffset: 0; animation: draw 1.6s cubic-bezier(.4,0,.2,1) both; }
+.r2.draw { animation-delay: .2s; } .r3.draw { animation-delay: .4s; }
+@keyframes draw { from { stroke-dashoffset: 900; } to { stroke-dashoffset: 0; } }
+/* Pins drop onto the route one by one after it is drawn; the driver's next stop hops once. Everything stops within
+   5 s of the page opening (WCAG 2.2.2 Pause, Stop, Hide: moving content over 5 s needs a pause control). */
+.map .bob { transform-box: fill-box; transform-origin: 50% 100%; animation: drop .6s cubic-bezier(.3,1.4,.5,1) var(--d) both; }
+.map .bob.next { animation: drop .6s cubic-bezier(.3,1.4,.5,1) var(--d) both, hop 2.4s ease-in-out calc(var(--d) + 1.2s) 1; }
+.map .ring { fill: none; stroke: var(--r1); stroke-width: 2; transform-box: fill-box; transform-origin: center; animation: ring 2.4s ease-out 2.5s 1; opacity: 0; }
+@keyframes drop { 0% { transform: translateY(-36px); opacity: 0; } 55% { transform: translateY(0) scale(1.1, .88); opacity: 1; } 75% { transform: translateY(-5px) scale(.97, 1.04); } 100% { transform: none; opacity: 1; } }
+@keyframes hop { 0%, 62%, 100% { transform: none; } 74% { transform: translateY(-10px) scale(.96, 1.05); } 86% { transform: translateY(0) scale(1.08, .9); } 93% { transform: translateY(-2px); } }
+@keyframes ring { 0%, 70% { transform: scale(.4); opacity: 0; } 80% { opacity: .7; } 100% { transform: scale(2.4); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .map .bob, .map .bob.next, .map .ring { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .draw { animation: none; } .btn { transition: none; } }
+
+.hero-visual { position: relative; margin-bottom: 84px; min-width: 0; }
+.plan-card { position: absolute; left: -28px; bottom: -84px; z-index: 2; width: min(270px, calc(100% - 32px)); background: var(--raised); border-radius: 16px; padding: 14px 16px; box-shadow: var(--shadow); font-size: 0.8125rem; }
+.plan-card .plan-title { font-size: 0.9375rem; font-weight: 700; display: flex; justify-content: space-between; gap: 8px; }
+.pill { font-size: 0.6875rem; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: var(--tint); color: var(--route); white-space: nowrap; align-self: center; }
+.plan-card ul { list-style: none; padding: 0; margin: 10px 0 0; display: grid; gap: 7px; }
+.plan-card li { display: grid; grid-template-columns: 10px minmax(0, 1fr) auto; gap: 8px; align-items: center; }
+.plan-card li i { width: 10px; height: 10px; border-radius: 3px; }
+.plan-card li span:last-child { color: var(--muted); }
+.eta-chip { position: absolute; left: 50%; transform: translateX(-50%); white-space: nowrap; top: 16px; background: var(--raised); border-radius: 12px; padding: 8px 12px; box-shadow: var(--shadow); font-size: 0.75rem; line-height: 1.4; }
+.eta-chip strong { display: block; font-size: 0.8125rem; }
+.eta-chip .ok { color: var(--success); font-weight: 600; }
+.example { position: absolute; right: 16px; bottom: 12px; font-size: 0.6875rem; color: var(--muted); }
+@media (max-width: 480px) { .example { display: none; } }
+/* Phone: a shorter map (the bay and the sea at the edges are cropped, every stop stays in), fewer and larger labels,
+   the ETA as a small pill in the empty lower-left corner, and the plan card under the map instead of over it. */
+@media (max-width: 760px) {
+  .map { aspect-ratio: 560 / 427; }
+  .map .place .minor { display: none; }
+  .map .place text { font-size: 15px; }
+  .map .place .bridge { font-size: 13px; }
+  .map .place .hc { transform: translateX(-58px); }
+  .map .place .ttl { transform: translateX(-52px); }
+  .eta-chip { top: auto; bottom: 10px; left: 10px; transform: none; padding: 5px 10px; border-radius: 999px; font-size: 0.75rem; display: flex; gap: 6px; align-items: baseline; }
+  .eta-chip strong { display: inline; font-size: 0.75rem; }
+  .eta-chip strong::after { content: " ·"; font-weight: 400; }
+  .eta-chip .eta-more { display: none; }
+}
+@media (max-width: 900px) { .hero-visual { margin-bottom: 0; } .plan-card { position: relative; left: auto; bottom: auto; width: auto; margin: 12px 0 0; box-shadow: var(--shadow); } }
+
+/* Sections */
+section { padding-block: clamp(48px, 6vw, 72px); }
+.sec-head { max-width: 40em; }
+.sec-head h2 { font-size: var(--step-2); line-height: 1.25; font-weight: 800; }
+.sec-head p { margin-top: 12px; color: var(--muted); font-size: 1.0625rem; }
+
+/* Constraints band */
+.constraints { padding-top: 0; }
+.constraints .grid { margin-top: 28px; }
+.constraints .grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.constraint { padding: 24px 20px 24px 0; display: grid; gap: 6px; align-content: start; grid-row: span 3; grid-template-rows: subgrid; }
+.constraint + .constraint { padding-left: 20px; border-left: 1px solid var(--line); }
+.constraint .k { margin: 0; line-height: 1.4; font-size: 0.75rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--route); }
+.constraint .v { font-size: 1.125rem; font-weight: 700; }
+.constraint p { font-size: var(--step--1); color: var(--muted); }
+@media (max-width: 860px) { .constraints .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .constraint:nth-child(3) { padding-left: 0; border-left: 0; } .constraint:nth-child(n+3) { border-top: 1px solid var(--line); } }
+@media (max-width: 480px) { .constraints .grid { grid-template-columns: minmax(0, 1fr); }
+  .constraint, .constraint + .constraint { padding-left: 0; border-left: 0; } .constraint + .constraint { border-top: 1px solid var(--line); } }
+
+/* Steps: a real sequence, drawn as one route */
+.steps { list-style: none; padding: 0; margin: 40px 0 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 24px; position: relative; }
+.steps::before { content: ""; position: absolute; top: 41px; left: 40px; right: 40px; border-top: 3px dashed color-mix(in srgb, var(--route) 45%, transparent); }
+.steps li { position: relative; display: grid; gap: 10px; align-content: start; grid-row: span 4; grid-template-rows: subgrid; row-gap: 10px; background: var(--raised); border-radius: 16px; padding: 22px 18px 20px; box-shadow: 0 1px 2px rgba(15, 21, 19, .06); }
+.steps .tag { justify-self: start; margin-top: 6px; font-size: 0.75rem; font-weight: 700; padding: 3px 10px; border-radius: 999px; background: var(--tint); color: var(--route); }
+.steps .n { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; background: var(--route); color: var(--on-accent); font-weight: 800; font-size: 0.875rem; font-variant-numeric: tabular-nums; box-shadow: 0 0 0 6px var(--raised); }
+.steps h3 { font-size: 1.0625rem; font-weight: 700; margin-top: 6px; }
+.steps p { color: var(--muted); font-size: 0.9375rem; }
+@media (max-width: 1100px) { .steps { grid-template-columns: repeat(2, minmax(0, 1fr)); } .steps::before { display: none; } }
+@media (max-width: 860px) { .steps { grid-template-columns: minmax(0, 1fr); gap: 16px; } .steps::before { display: block; }
+  .steps::before { top: 40px; bottom: 40px; left: 39px; right: auto; border-top: 0; border-left: 3px dashed color-mix(in srgb, var(--route) 45%, transparent); }
+  .steps li { grid-template-columns: 40px minmax(0, 1fr); column-gap: 16px; } .steps li > :not(.n) { grid-column: 2; } .steps h3 { margin-top: 6px; grid-row: 1; } .steps .n { grid-row: 1 / span 2; } .steps li { grid-row: auto; grid-template-rows: none; } }
+
+/* Two audiences */
+.duo { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px; margin-top: 40px; }
+.panel { background: var(--raised); border-radius: 20px; padding: clamp(24px, 3.5vw, 36px); display: grid; gap: 20px; align-content: start; min-width: 0; }
+.panel h3 { font-size: var(--step-1); font-weight: 700; }
+.panel .who { font-size: 0.75rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--route); }
+.feat { list-style: none; padding: 0; margin: 0; display: grid; gap: 14px; }
+.feat li { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 12px; }
+.feat svg { width: 22px; height: 22px; color: var(--route); margin-top: 2px; }
+.feat strong { display: block; font-weight: 600; }
+.feat span { color: var(--muted); font-size: 0.9375rem; }
+@media (max-width: 860px) { .duo { grid-template-columns: minmax(0, 1fr); } }
+
+/* Phone: the driver's next stop, as the app shows it */
+.phone { justify-self: center; width: min(300px, 100%); border-radius: 36px; padding: 10px; background: var(--ink); box-shadow: var(--shadow-overlay); }
+.screen { border-radius: 28px; background: var(--surface); padding: 18px 14px 14px; display: grid; gap: 12px; font-size: 0.8125rem; }
+.screen .bar { display: flex; justify-content: space-between; font-weight: 600; font-size: 0.75rem; color: var(--muted); }
+.screen .title { font-size: 1rem; font-weight: 700; }
+.next { background: var(--raised); border-radius: 12px; padding: 14px; display: grid; gap: 8px; }
+.next .row { display: flex; align-items: center; gap: 10px; }
+.next .badge { width: 28px; height: 28px; flex: none; border-radius: 50%; background: var(--route); color: var(--on-accent); display: grid; place-items: center; font-weight: 800; font-size: 0.8125rem; }
+.next .name { font-weight: 700; font-size: 0.9375rem; line-height: 1.3; }
+.next .meta { color: var(--muted); }
+.next .win { color: var(--signal); font-weight: 600; }
+.pbtns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.pbtn { min-height: 40px; border-radius: 999px; display: grid; place-items: center; font-weight: 600; font-size: 0.8125rem; background: var(--tint); color: var(--route); }
+.pbtn.fill { background: var(--route); color: var(--on-accent); }
+.done-row { display: flex; align-items: center; gap: 10px; color: var(--muted); padding: 0 4px; }
+.done-row i { font-style: normal; font-size: 0.6875rem; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: color-mix(in srgb, var(--success) 16%, transparent); color: var(--success); }
+.done-row i.f { background: color-mix(in srgb, var(--danger) 14%, transparent); color: var(--danger); }
+
+/* FAQ */
+/* Two columns: the title stays in view on the left while the questions fill the width on the right. */
+.faq-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); gap: clamp(24px, 5vw, 64px); align-items: start; }
+.faq-head { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 96px); }
+.faq { display: grid; gap: 10px; min-width: 0; }
+@media (max-width: 860px) { .faq-layout { grid-template-columns: minmax(0, 1fr); } .faq-head { position: static; } }
+.faq details { background: var(--raised); border-radius: 14px; padding: 4px 20px; }
+.faq summary { cursor: pointer; list-style: none; padding: 14px 0; font-weight: 600; display: flex; justify-content: space-between; gap: 16px; }
+.faq summary::-webkit-details-marker { display: none; }
+.faq summary::after { content: "+"; flex: none; width: 28px; height: 28px; margin: -4px -6px -4px 0; border-radius: 50%; display: grid; place-items: center; color: var(--route); font-weight: 500; font-size: 1.375rem; line-height: 1; transition: transform .25s cubic-bezier(.2,.7,.2,1), background-color .2s ease; }
+.faq details[open] summary::after { transform: rotate(45deg); background: var(--tint); }
+.faq summary:hover::after { background: var(--tint); }
+.faq summary { transition: color .2s ease; } .faq summary:hover { color: var(--route); }
+.faq .ans { overflow: hidden; }
+.faq details p { padding-bottom: 16px; color: var(--muted); }
+
+/* Closing band */
+.close-band { padding-block: 0 clamp(48px, 6vw, 72px); }
+.close-card { background: var(--gradient); color: #ffffff; border-radius: 24px; padding: clamp(32px, 5vw, 56px); display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 24px; position: relative; overflow: hidden; }
+.close-card h2 { font-size: var(--step-2); font-weight: 800; line-height: 1.25; max-width: 18em; }
+.close-card p { margin-top: 8px; opacity: .9; }
+.close-card .btn-primary { background: #ffffff; color: #0b6a5c; }
+.close-card .btn-primary:hover { background: #e6f5f0; }
+.close-card > * { position: relative; }
+.close-card::after { pointer-events: none; content: ""; position: absolute; right: -40px; top: -60px; width: 320px; height: 320px; border: 3px dashed rgba(255,255,255,.22); border-radius: 50%; }
+
+
+/* Screenshots: the real product, framed as a browser window and as phones */
+.shot-sec { padding-top: clamp(48px, 6vw, 72px); }
+.browser { margin: 40px 0 0; border-radius: 16px; background: var(--raised); box-shadow: var(--shadow-overlay); overflow: hidden; border: 1px solid var(--line); }
+.browser .chrome { display: flex; align-items: center; gap: 8px; height: 36px; padding: 0 14px; border-bottom: 1px solid var(--line); }
+.browser .chrome i { width: 10px; height: 10px; border-radius: 50%; background: var(--line); }
+.browser .chrome span { margin-left: 12px; font-size: 0.75rem; color: var(--muted); background: var(--surface); border-radius: 999px; padding: 2px 12px; }
+.browser img, .phone-shot img, .report-shot img { display: block; width: 100%; height: auto; }
+.caption { margin-top: 14px; font-size: var(--step--1); color: var(--muted); }
+.report-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr); gap: clamp(24px, 4vw, 48px); align-items: center; margin-top: clamp(48px, 6vw, 72px); }
+.report-row h2 { font-size: var(--step-1); font-weight: 700; }
+.report-row p { margin-top: 10px; color: var(--muted); }
+.report-shot { margin: 0; border-radius: 16px; overflow: hidden; border: 1px solid var(--line); box-shadow: var(--shadow); }
+@media (max-width: 860px) { .report-row { grid-template-columns: minmax(0, 1fr); } }
+.phones-scroll { overflow-x: auto; margin-top: 40px; padding-bottom: 12px; scroll-snap-type: x mandatory; }
+.phones { display: grid; grid-template-columns: repeat(4, minmax(200px, 1fr)); gap: 20px; }
+.phone-shot { margin: 0; scroll-snap-align: start; display: grid; gap: 12px; align-content: start; }
+.phone-shot .frame { border-radius: 28px; padding: 7px; background: var(--ink); box-shadow: var(--shadow); }
+.phone-shot .frame img { border-radius: 22px; }
+.phone-shot figcaption strong { display: block; font-weight: 600; }
+.phone-shot figcaption span { color: var(--muted); font-size: var(--step--1); }
+
+/* "Bấm thử màn điều phối": real screenshots of the web app, tap targets measured from the page itself. */
+.try-web { margin-top: 32px; }
+.web-browser { margin-top: 12px; }
+/* Same step list as the driver app's, laid out in a row above the browser. */
+.try-steps.web-steps { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin: 0 0 12px; }
+@media (max-width: 760px) {
+  .try-web { display: flex; flex-direction: column; gap: 14px; }
+  .try-web #web-hint { order: 1; } .try-web .web-browser { order: 2; margin-top: 0; } .try-web .web-steps { order: 3; margin: 6px 0 0; gap: 6px; } .try-web .web-foot { order: 4; margin-top: 0; }
+  .try-steps.web-steps li { grid-template-columns: minmax(0, 1fr); justify-items: center; text-align: center; padding: 8px 4px; row-gap: 6px; }
+  .try-steps.web-steps li::before { grid-row: auto; }
+  .try-steps.web-steps li strong { font-size: 0.75rem; line-height: 1.3; }
+  .try-steps.web-steps li span { display: none; }
+}
+.web-screen { position: relative; aspect-ratio: 1440 / 900; background: var(--surface); }
+.web-screen img { display: block; width: 100%; height: 100%; transition: opacity .18s ease; }
+.web-screen img.swap { opacity: .3; }
+.web-screen .hot { min-width: 28px; min-height: 22px; }
+.web-browser.is-phone { width: min(300px, 82vw); margin-inline: auto; border-radius: 36px; padding: 9px; background: var(--ink); box-shadow: var(--shadow-overlay); overflow: hidden; }
+.web-browser.is-phone .chrome { display: none; }
+@media (max-width: 760px) { #web-hint { min-height: 2.9em; display: grid; place-items: center; } .web-foot { justify-content: center; text-align: center; } }
+.web-browser.is-phone .web-screen { aspect-ratio: 540 / 1169; border-radius: 28px; overflow: hidden; }
+.web-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; margin-top: 16px; }
+.web-foot .caption { margin: 0; }
+@media (prefers-reduced-motion: reduce) { .web-screen img { transition: none; } }
+
+/* "Bấm thử app tài xế": real screenshots with tap targets placed over the app's own buttons. */
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.try-app { display: grid; grid-template-columns: minmax(0, 340px) minmax(0, 1fr); gap: clamp(28px, 5vw, 64px); align-items: center; margin-top: 40px; }
+.try-phone .frame { border-radius: 36px; padding: 9px; background: var(--ink); box-shadow: var(--shadow-overlay); }
+.try-screen { position: relative; border-radius: 28px; overflow: hidden; aspect-ratio: 540 / 1200; background: #ffffff; }
+.try-screen img { display: block; width: 100%; height: 100%; object-fit: cover; transition: opacity .18s ease; }
+.try-screen img.swap { opacity: .25; }
+.hot { position: absolute; transform: translate(-50%, -50%); border: 0; background: transparent; border-radius: 999px; cursor: pointer; padding: 0; }
+.hot.go { box-shadow: 0 0 0 3px var(--signal); animation: tap 1.2s ease-out 3; }
+.hot:focus-visible { outline: 3px solid var(--signal); outline-offset: 2px; }
+@keyframes tap { 0% { box-shadow: 0 0 0 3px var(--signal), 0 0 0 0 color-mix(in srgb, var(--signal) 55%, transparent); } 100% { box-shadow: 0 0 0 3px var(--signal), 0 0 0 16px transparent; } }
+.fill-text { position: absolute; left: 5.2%; top: 61.6%; font: 400 clamp(11px, 3.6vw, 15px) var(--font); color: #18231f; pointer-events: none; }
+.snack { position: absolute; left: 3.6%; right: 3.7%; top: 91.04%; height: 5.21%; border-radius: 4px; background: rgb(24, 35, 31); color: #e4ebe8; display: flex; align-items: center; padding-left: 4.4%; font: 400 clamp(10px, 3.3vw, 14px) var(--font); pointer-events: none; }
+.fake-send { position: absolute; left: 79.8%; top: 93%; transform: translate(-50%, -50%); width: 32%; height: 5.6%; border-radius: 999px; background: #b02a22; color: #ffffff; display: grid; place-items: center; font: 600 clamp(10px, 3.2vw, 14px) var(--font); pointer-events: none; }
+.try-hint { font-weight: 700; font-size: var(--step-1); min-height: 2.6em; }
+.try-hint b { color: var(--signal); }
+.try-steps { list-style: none; counter-reset: s; padding: 0; margin: 16px 0 24px; display: grid; gap: 4px; }
+.try-steps li { counter-increment: s; display: grid; grid-template-columns: 32px minmax(0, 1fr); column-gap: 12px; padding: 10px 12px; border-radius: 12px; color: var(--muted); transition: background-color .2s ease; }
+.try-steps li::before { content: counter(s); grid-row: 1 / span 2; width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; font-size: 0.8125rem; border: 2px solid var(--line); }
+.try-steps li strong { color: var(--ink); font-weight: 600; }
+.try-steps li span { font-size: 0.9375rem; }
+.try-steps li.now { background: var(--raised); }
+.try-steps li.now::before { background: var(--route); border-color: var(--route); color: var(--on-accent); }
+.try-steps li.done::before { content: "✓"; border-color: var(--route); color: var(--route); }
+@media (max-width: 760px) { .try-app { grid-template-columns: minmax(0, 1fr); } .try-phone { width: min(320px, 100%); justify-self: center; } }
+@media (prefers-reduced-motion: reduce) { .hot.go { animation: none; } .try-screen img { transition: none; } }
+
+/* Đà Nẵng section */
+.dn-points { list-style: none; padding: 0; margin: 32px 0 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; }
+.dn-points li { display: grid; gap: 6px; align-content: start; }
+.dn-ic { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+.dn-ic svg { width: 44px; height: 44px; padding: 10px; border-radius: 12px; background: var(--tint); fill: none; stroke: var(--route); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.dn-ic span { font-size: 0.8125rem; font-weight: 700; letter-spacing: .06em; color: var(--muted); }
+.dn-head { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 360px); gap: clamp(24px, 5vw, 64px); align-items: center; }
+.dn-visual { margin: 0; position: relative; }
+.dn-visual svg { display: block; width: 100%; height: auto; border-radius: 16px; box-shadow: var(--shadow-overlay); }
+.dn-visual .bg { fill: var(--map-bg); }
+.dn-visual .st { stroke: var(--map-street); fill: none; }
+.dn-visual .rv { stroke: var(--water); fill: none; }
+.dn-visual .rt { fill: none; stroke: var(--r1); stroke-width: 5; stroke-linecap: round; stroke-linejoin: round; }
+.dn-visual .dp { fill: var(--ink); } .dn-visual .dpi { fill: var(--surface); }
+.dn-visual .pinm path { fill: var(--r1); } .dn-visual .pinm circle { fill: var(--raised); }
+.dn-visual .pinm { filter: drop-shadow(0 2px 2px rgba(0, 0, 0, .28)); }
+.dn-visual text { font-family: var(--font); }
+.dn-visual .lb { font-size: 10px; font-weight: 600; font-style: italic; fill: var(--muted); }
+.dn-visual .rvl { font-size: 10px; font-weight: 600; font-style: italic; fill: var(--water-ink); }
+.dn-visual .pl { font-size: 9.5px; font-weight: 700; letter-spacing: .14em; fill: var(--muted); }
+.dn-chip { position: absolute; right: 12px; bottom: -18px; display: grid; gap: 2px; background: var(--raised); border-radius: 12px; padding: 8px 12px; box-shadow: var(--shadow-overlay); font-size: 0.8125rem; }
+.dn-chip span { color: var(--muted); }
+@media (max-width: 760px) { .dn-head { grid-template-columns: minmax(0, 1fr); } .dn-visual { display: none; } }
+.dn-points h3 { font-weight: 700; font-size: 1.0625rem; line-height: 1.4; }
+.dn-points span { color: var(--muted); font-size: 0.9375rem; }
+.dn-area { margin-top: 32px; display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px; padding: 18px 20px; border-radius: 16px; background: var(--tint); }
+.dn-area .k { font-size: 0.75rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--route); }
+.dn-area .chips { list-style: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.dn-area .chips li { padding: 4px 12px; border-radius: 999px; background: var(--raised); font-weight: 600; font-size: var(--step--1); }
+.dn-area p { font-size: var(--step--1); color: var(--muted); flex-basis: 100%; }
+@media (max-width: 860px) { .dn-points { grid-template-columns: minmax(0, 1fr); } }
+/* Phone width: the web walkthrough needs a mouse-sized screen; phones get the plan screenshot instead, and the driver
+   app's hint sits above the phone so the next tap and the screen are seen together. */
+.only-narrow { display: none; }
+@media (max-width: 760px) {
+  .only-wide { display: none; }
+  .only-narrow { display: block; }
+  .try-app { display: flex; flex-direction: column; align-items: stretch; gap: 14px; margin-top: 24px; }
+  .try-side { display: contents; }
+  .try-hint { order: 1; min-height: 0; font-size: 1.0625rem; text-align: center; }
+  .try-phone { order: 2; width: min(270px, 76vw); align-self: center; }
+  .try-steps { order: 3; margin: 6px 0 0; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+  .try-steps li { grid-template-columns: minmax(0, 1fr); justify-items: center; text-align: center; padding: 8px 4px; row-gap: 6px; }
+  .try-steps li::before { grid-row: auto; }
+  .try-steps li strong { font-size: 0.75rem; line-height: 1.3; }
+  .try-steps li span { display: none; }
+  #try-reset { order: 4; align-self: center; }
+  .try-side .caption { order: 5; text-align: center; }
+  .dieu-phoi-gap { margin-top: 32px; }
+}
+@media (max-width: 480px) {
+  .constraints .grid { grid-template-columns: minmax(0, 1fr); }
+  .constraint, .constraint + .constraint { padding: 18px 0; border-left: 0; grid-row: auto; grid-template-rows: none; }
+  .constraint + .constraint { border-top: 1px solid var(--line); }
+  section { padding-block: 48px; }
+}
+
+footer { border-top: 1px solid var(--line); padding-block: 28px; font-size: var(--step--1); color: var(--muted); }
+footer .wrap { display: flex; flex-wrap: wrap; gap: 12px 24px; justify-content: space-between; align-items: center; }
+footer nav { display: flex; flex-wrap: wrap; gap: 20px; }
+footer a { text-decoration: none; } footer a:hover { color: var(--ink); }
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Bỏ qua tới nội dung</a>
+
+<header class="site-head">
+  <div class="wrap">
+    <a class="brand" href="/" aria-label="PathWise, trang chủ">
+      <svg viewBox="0 0 108 102" aria-hidden="true"><defs><linearGradient id="lg" gradientUnits="userSpaceOnUse" x1="40" y1="0" x2="62" y2="102"><stop offset="0" stop-color="#1fa189"/><stop offset="0.6" stop-color="#0b6a5c"/><stop offset="1" stop-color="#054a40"/></linearGradient></defs><path d="M15.6 66V22A22 22 0 0 1 37.6 0H72A36 36 0 0 1 72 72C62 72 53 76 46.6 81.5C41 86.5 38 93 36.5 102H0.5C2 86 8 75 15.6 70L50 57.5L46 52.5Z" fill="url(#lg)"/><path d="M49 64.5C40 67 32 73 27 81C24 87 22 94 21 102" fill="none" stroke="#ffffff" stroke-width="3" stroke-dasharray="10 7" stroke-linecap="round"/><path d="M61 69C61 69 41 51 41 35A20 20 0 0 1 81 35C81 51 61 69 61 69Z" fill="#ffffff"/><path d="M61 53C61 53 50.5 45.5 50.5 37.5A10.5 10.5 0 0 1 71.5 37.5C71.5 45.5 61 53 61 53Z" fill="#14876f"/></svg>
+      <span>Path<b>Wise</b></span>
+    </a>
+    <nav class="nav" aria-label="Mục chính">
+      <a href="#da-nang">Khu vực phục vụ</a>
+      <a href="#cach-hoat-dong">Cách hoạt động</a>
+      <a href="#xem-thu">Trải nghiệm</a>
+      <a href="#dieu-phoi">Báo cáo</a>
+      <a href="#app-tai-xe">App tài xế</a>
+      <a href="#hoi-dap">Hỏi đáp</a>
+    </nav>
+    <div class="head-actions">
+      <a class="btn btn-quiet" href="/app/login">Đăng nhập</a>
+      <a class="btn btn-primary" href="/app/register">Đăng ký<span class="long">&nbsp;cửa hàng</span></a>
+    </div>
+    <button class="menu-btn" type="button" id="menu-btn" aria-expanded="false" aria-controls="menu-panel" aria-label="Mở menu">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path class="l1" d="M4 7h16"/><path class="l2" d="M4 12h16"/><path class="l3" d="M4 17h16"/></svg>
+    </button>
+  </div>
+  <div class="menu-panel" id="menu-panel" hidden>
+    <nav aria-label="Mục chính trên điện thoại">
+      <a href="#da-nang">Khu vực phục vụ</a>
+      <a href="#cach-hoat-dong">Cách hoạt động</a>
+      <a href="#xem-thu">Trải nghiệm</a>
+      <a href="#dieu-phoi">Báo cáo</a>
+      <a href="#app-tai-xe">App tài xế</a>
+      <a href="#hoi-dap">Hỏi đáp</a>
+    </nav>
+    <a class="btn btn-quiet btn-lg" href="/app/login">Đăng nhập</a>
+  </div>
+</header>
+
+<main id="main">
+  <div class="hero">
+    <div class="wrap">
+      <div>
+        <h1><span class="nb">Phần mềm quản lý</span> <span class="nb">giao hàng và</span> <em class="nb">tối ưu tuyến đường</em> <span class="nb">cho đội xe</span></h1>
+        <p class="lede">PathWise giúp cửa hàng và doanh nghiệp nhỏ quản lý giao hàng, phân chia đơn cho nhiều tài xế và theo dõi tiến độ trên cùng một nền tảng. Tự động sắp xếp lộ trình theo mạng lưới đường thực tế, tính đến khung giờ giao hàng và khả năng của từng xe.</p>
+        <p class="lede">Từ khâu lập kế hoạch đến khi hoàn thành đơn hàng, bạn luôn nắm được đội giao hàng đang làm gì và kết quả ra sao.</p>
+        <div class="cta-row">
+          <a class="btn btn-primary btn-lg" href="/app/register">Đăng ký cửa hàng</a>
+          <a class="btn btn-quiet btn-lg" href="#cach-hoat-dong">Xem cách hoạt động</a>
+        </div>
+      </div>
+
+      <div class="hero-visual">
+      <figure class="map" style="margin:0" aria-label="Minh hoạ bản đồ Đà Nẵng: từ kho ở Hải Châu, một tuyến qua cầu Rồng sang Sơn Trà, một tuyến lên Thanh Khê, một tuyến qua cầu Trần Thị Lý xuống Ngũ Hành Sơn; điểm giao đánh số theo thứ tự">
+        <svg viewBox="0 -30 560 500" preserveAspectRatio="xMidYMid slice" role="img" aria-hidden="true">
+          <defs><path id="pin" d="M0 0C-3 -7 -13 -12 -13 -23A13 13 0 1 1 13 -23C13 -12 3 -7 0 0Z"/></defs>
+          <g class="street" stroke-width="5" opacity=".75">
+            <path d="M0 60H300M0 120H560M0 270H560M0 400H560M60 -30V470M110 50V470M250 0V470M380 0V470M440 0V470"/>
+          </g>
+          <g class="street" stroke-width="11">
+            <path d="M0 200H560M0 330H560M150 30V470M210 30V470M420 -30V470"/>
+          </g>
+          <!-- Vịnh Đà Nẵng (north), sông Hàn, biển Mỹ Khê (east) -->
+          <path class="water" d="M-10 -40H330V8C250 34 140 24 60 40C30 46 10 44 -10 48Z"/>
+          <path class="river" d="M314 -40C312 40 312 110 318 200C324 280 330 360 336 480"/>
+          <path class="water" d="M488 -40C474 60 494 150 482 250C472 330 478 400 494 480H580V-40Z"/>
+          <g class="street" stroke-width="11"><path d="M296 200H340M302 330H356"/></g>
+          <g class="street" stroke-width="5"><path d="M294 120H336"/></g>
+          <g class="place">
+            <text class="minor" x="14" y="16">VỊNH ĐÀ NẴNG</text>
+            <text x="22" y="186">THANH KHÊ</text>
+            <text class="hc" x="162" y="314">HẢI CHÂU</text>
+            <text x="350" y="58">SƠN TRÀ</text>
+            <text class="minor" x="350" y="456">NGŨ HÀNH SƠN</text>
+            <text class="sea minor" x="524" y="250" transform="rotate(90 524 250)">BIỂN MỸ KHÊ</text>
+            <text class="bridge" x="300" y="219">Cầu Rồng</text>
+            <text class="bridge ttl" x="306" y="349">Cầu Trần Thị Lý</text>
+            <text class="riv minor" x="303" y="420" transform="rotate(-84 303 420)">sông Hàn</text>
+          </g>
+          <path class="r r1 draw" d="M210 240H250V200H420V110H462"/>
+          <path class="r r2 draw" d="M210 240H150V120H60V62"/>
+          <path class="r r3 draw" d="M210 240V330H420V400H462"/>
+          <g class="depot"><rect x="194" y="224" width="32" height="32" rx="9"/><path d="M202 246v-8l8-6 8 6v8h-5v-5h-6v5z"/></g>
+          <g class="stop s1" transform="translate(250 222)"><g class="bob" style="--d:0.78s"><use class="pin" href="#pin"/><circle class="head" cy="-23" r="8.5"/><text y="-23">1</text></g></g>
+          <g class="stop s1" transform="translate(372 200)"><g class="bob" style="--d:1.06s"><use class="pin" href="#pin"/><circle class="head" cy="-23" r="8.5"/><text y="-23">2</text></g></g>
+          <g class="stop s1" transform="translate(420 150)"><ellipse class="ring" rx="9" ry="3.5"/><g class="bob next" style="--d:1.34s"><use class="pin" href="#pin"/><circle class="head" cy="-23" r="8.5"/><text y="-23">3</text></g></g>
+          <g class="stop s1" transform="translate(462 110)"><g class="bob" style="--d:1.62s"><use class="pin" href="#pin"/><circle class="head" cy="-23" r="8.5"/><text y="-23">4</text></g></g>
+          <g class="stop s2" transform="translate(150 196)"><g class="bob" style="--d:0.98s"><use class="pin" href="#pin"/><circle class="head" cy="-23" r="8.5"/><text y="-23">1</text></g></g>
+          <g class="stop s2" transform="translate(150 140)"><g class="bob" style="--d:1.26s"><use class="pin" href="#pin"/><circle class="head" cy="-23" r="8.5"/><text y="-23">2</text></g></g>
+          <g class="stop s2" transform="translate(100 120)"><g class="bob" style="--d:1.54s"><use class="pin" href="#pin"/><circle class="head" cy="-23" r="8.5"/><text y="-23">3</text></g></g>
+          <g class="stop s2" transform="translate(60 66)"><g class="bob" style="--d:1.82s"><use class="pin" href="#pin"/><circle class="head" cy="-23" r="8.5"/><text y="-23">4</text></g></g>
+          <g class="stop s3" transform="translate(210 300)"><g class="bob" style="--d:1.18s"><use class="pin" href="#pin"/><circle class="head" cy="-23" r="8.5"/><text y="-23">1</text></g></g>
+          <g class="stop s3" transform="translate(380 330)"><g class="bob" style="--d:1.46s"><use class="pin" href="#pin"/><circle class="head" cy="-23" r="8.5"/><text y="-23">2</text></g></g>
+          <g class="stop s3" transform="translate(420 372)"><g class="bob" style="--d:1.74s"><use class="pin" href="#pin"/><circle class="head" cy="-23" r="8.5"/><text y="-23">3</text></g></g>
+          <g class="stop s3" transform="translate(462 400)"><g class="bob" style="--d:2.02s"><use class="pin" href="#pin"/><circle class="head" cy="-23" r="8.5"/><text y="-23">4</text></g></g>
+        </svg>
+        <div class="eta-chip"><strong>Điểm 3<span class="eta-more"> · Tuyến Sơn Trà</span></strong><span class="eta-more">Dự kiến tới </span><span class="num">10:42</span><span class="eta-more"> · khung <span class="num">10:00–11:00</span></span> <span class="ok">✓</span></div>
+        <span class="example">Số liệu minh hoạ</span>
+      </figure>
+        <div class="plan-card">
+          <p class="plan-title">Kế hoạch thứ Sáu <span class="pill">Đã tối ưu</span></p>
+          <ul>
+            <li><i style="background:var(--r1)"></i><span>Sơn Trà · xe tải 1,5 tấn</span><span class="num">12 điểm · 18,4 km</span></li>
+            <li><i style="background:var(--r2)"></i><span>Thanh Khê · xe máy</span><span class="num">9 điểm · 11,2 km</span></li>
+            <li><i style="background:var(--r3)"></i><span>Ngũ Hành Sơn · xe máy</span><span class="num">10 điểm · 13,7 km</span></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <section id="da-nang" aria-labelledby="h-dn" style="padding-bottom:0">
+    <div class="wrap dn">
+      <div class="dn-head">
+      <div class="sec-head">
+        <h2 id="h-dn">Được xây dựng cho những tuyến đường địa phương</h2>
+        <p>Từ những con đường nội thành đến các tuyến giao hàng qua sông Hàn, PathWise giúp bạn sắp xếp lộ trình dựa trên mạng lưới đường thực tế tại Đà Nẵng và Hội An.</p>
+      </div>
+        <figure class="dn-visual" aria-hidden="true">
+          <svg viewBox="0 0 360 210">
+            <rect class="bg" width="360" height="210" rx="16"/>
+            <path class="st" d="M0 60H360M0 150H360M70 0V210M290 0V210" stroke-width="8"/>
+            <path class="rv" d="M196 -10C186 60 204 140 188 220" stroke-width="34"/>
+            <path class="st" d="M0 105H360" stroke-width="12"/>
+            <path class="rt" d="M70 150V105H290V60"/>
+            <g transform="translate(70 150)"><rect class="dp" x="-11" y="-11" width="22" height="22" rx="5"/><path class="dpi" d="M-6 1L0 -5L6 1V6H-6Z"/></g>
+            <g class="pinm" transform="translate(290 60)"><path d="M0 0C-3 -7 -13 -12 -13 -23A13 13 0 1 1 13 -23C13 -12 3 -7 0 0Z"/><circle cy="-23" r="5"/></g>
+            <text class="lb" x="200" y="124">Cầu Rồng</text>
+            <text class="rvl" x="150" y="40" text-anchor="end">sông Hàn</text>
+            <text class="pl" x="20" y="190">HẢI CHÂU</text>
+            <text class="pl" x="268" y="40" text-anchor="end">SƠN TRÀ</text>
+          </svg>
+          <div class="dn-chip"><strong>Tới dự kiến <span class="num">10:42</span></strong><span>Sơn Trà · khung <span class="num">10:00–11:00</span></span></div>
+        </figure>
+      </div>
+      <ul class="dn-points">
+        <li><div class="dn-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="19" r="3"/><path d="M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15"/><circle cx="18" cy="5" r="3"/></svg><span class="num">01</span></div><h3>Đi đúng đường, đến đúng nơi</h3><span>Lộ trình được tính theo đường xe đi được thực tế, kể cả những cây cầu nối hai bờ sông Hàn, thay vì đo đường chim bay.</span></li>
+        <li><div class="dn-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg><span class="num">02</span></div><h3>Tìm địa chỉ dễ dàng hơn</h3><span>Nhập địa chỉ để xác định vị trí giao hàng trên bản đồ. Nếu không tìm thấy địa chỉ chính xác, bạn có thể kiểm tra lại hoặc tự đặt ghim tại vị trí mong muốn.</span></li>
+        <li><div class="dn-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span class="num">03</span></div><h3>Đồng bộ với giờ làm việc địa phương</h3><span>Lịch nhận hàng, ca làm việc và báo cáo đều sử dụng múi giờ Việt Nam (UTC+7), giúp cửa hàng và tài xế theo dõi công việc thống nhất.</span></li>
+      </ul>
+      <div class="dn-area">
+        <span class="k">Vùng phục vụ</span>
+        <ul class="chips">
+          <li>Hải Châu</li><li>Thanh Khê</li><li>Sơn Trà</li><li>Ngũ Hành Sơn</li><li>Liên Chiểu</li><li>Cẩm Lệ</li><li>Hòa Vang</li><li>Hội An</li>
+        </ul>
+        <p>PathWise hiện đang tập trung hỗ trợ các tuyến giao hàng trong những khu vực trên. Chúng tôi sẽ tiếp tục mở rộng phạm vi phục vụ trong thời gian tới.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="cach-hoat-dong" aria-labelledby="h-how">
+    <div class="wrap">
+      <div class="sec-head">
+        <h2 id="h-how">Từ danh sách đơn hàng đến lộ trình giao hàng</h2>
+        <p>PathWise giúp bạn quản lý toàn bộ quy trình giao hàng, từ nhập địa chỉ, sắp xếp tuyến cho đến theo dõi kết quả của từng tài xế.</p>
+      </div>
+      <ol class="steps">
+        <li><span class="n">01</span><h3>Nhập đơn hàng</h3><p>Nhập từng địa chỉ hoặc tải lên danh sách đơn hàng từ Excel, CSV theo mẫu. PathWise tự động xác định vị trí giao hàng và thông báo những địa chỉ cần kiểm tra lại.</p><span class="tag">Excel · CSV</span></li>
+        <li><span class="n">02</span><h3>Sắp xếp tuyến giao hàng</h3><p>PathWise phân bổ các điểm giao cho từng xe và tìm thứ tự di chuyển phù hợp. Bạn có thể xem trước thời gian đến dự kiến, quãng đường của mỗi tuyến và những điểm chưa thể phân bổ.</p><span class="tag">Tối ưu tuyến</span></li>
+        <li><span class="n">03</span><h3>Kiểm tra và giao tuyến</h3><p>Chủ động điều chỉnh lộ trình bằng cách chuyển điểm giao giữa các tuyến hoặc thay đổi thứ tự giao hàng. Khi đã sẵn sàng, hãy công bố tuyến để tài xế nhận công việc của mình.</p><span class="tag">Công bố tuyến</span></li>
+        <li><span class="n">04</span><h3>Theo dõi giao hàng</h3><p>Theo dõi vị trí tài xế và tiến độ từng điểm giao. Bạn có thể biết đơn nào đã hoàn thành, đơn nào không giao được kèm lý do và những điểm bị bỏ qua.</p><span class="tag">Kết quả từng điểm</span></li>
+      </ol>
+    </div>
+  </section>
+
+
+  <section class="constraints" id="dieu-kien" aria-labelledby="rb">
+    <div class="wrap">
+      <div class="sec-head">
+        <h2 id="rb">Không chỉ tìm đường ngắn nhất, mà còn phải phù hợp với thực tế giao hàng</h2>
+        <p>PathWise tối ưu lộ trình dựa trên các ràng buộc về đơn hàng, phương tiện và thời gian làm việc. Nhờ đó, việc phân chia đơn không chỉ dựa vào khoảng cách mà còn phù hợp với khả năng vận hành của từng đội xe.</p>
+      </div>
+      <div class="grid">
+        <div class="constraint"><h3 class="k">Khung giờ giao hàng</h3><span class="v">Ví dụ: <span class="num">08:00–10:00</span></span><p>Sắp xếp lịch trình để xe đến từng địa chỉ trong khung giờ khách hẹn. Bạn có thể xem thời gian đến dự kiến của mỗi điểm giao.</p></div>
+        <div class="constraint"><h3 class="k">Sức chứa phương tiện</h3><span class="v">Kg · Thùng · Kiện · Đơn</span><p>Thiết lập sức chứa riêng cho từng xe. PathWise tự động phân bổ hàng hóa để không vượt ngưỡng giới hạn của từng xe.</p></div>
+        <div class="constraint"><h3 class="k">Ca làm việc của tài xế</h3><span class="v">Ví dụ: <span class="num">07:30–17:00</span></span><p>Sắp xếp công việc trong thời gian làm việc của tài xế, tránh phân công các tuyến có lịch trình chồng lấn.</p></div>
+        <div class="constraint"><h3 class="k">Giới hạn quãng đường</h3><span class="v">Tùy chỉnh theo từng xe</span><p>Đặt giới hạn quãng đường cho mỗi phương tiện, giúp kiểm soát độ dài tuyến và tránh giao cho xe nhỏ những hành trình quá dài.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="shot-sec" id="xem-thu" aria-labelledby="h-try" style="padding-bottom:0">
+    <div class="wrap">
+      <div class="sec-head">
+        <h2 id="h-try">Thử điều phối một chuyến giao hàng</h2>
+        <p>Khám phá cách PathWise giúp bạn quản lý một ngày giao hàng. Trải nghiệm lần lượt các bước tạo kế hoạch, tối ưu tuyến đường, phân công cho tài xế và thêm thành viên vào đội ngũ.</p>
+      </div>
+      <div class="try-web">
+        <ol class="try-steps web-steps" id="web-steps">
+          <li data-s="1"><strong>Tạo kế hoạch</strong><span>Ngày giao, tài xế, xe và các điểm giao.</span></li>
+          <li data-s="2"><strong>Tối ưu tuyến</strong><span>Chia điểm cho từng xe, kèm giờ tới dự kiến.</span></li>
+          <li data-s="3"><strong>Giao việc</strong><span>Tài xế thấy tuyến ngay trong app.</span></li>
+          <li data-s="4"><strong>Mời tài xế</strong><span>Gửi lời mời qua email.</span></li>
+        </ol>
+        <p class="try-hint" id="web-hint"></p>
+        <div class="browser web-browser">
+          <div class="chrome" aria-hidden="true"><i></i><i></i><i></i><span id="web-url">PathWise · Kế hoạch</span></div>
+          <div class="web-screen">
+            <img id="web-img" src="web/1.webp" width="1440" height="900" loading="lazy" decoding="async" alt="Danh sách kế hoạch: một kế hoạch Giao hoa buổi sáng đang giao.">
+            <div class="try-overlay" id="web-overlay"></div>
+          </div>
+        </div>
+        <p class="sr-only" id="web-live" aria-live="polite"></p>
+        <div class="web-foot">
+          <button class="btn btn-quiet" type="button" id="web-reset">Bấm thử lại từ đầu</button>
+          <p class="caption">Ảnh chụp màn web điều phối với dữ liệu thử. Bản đồ © MapTiler © OpenStreetMap contributors.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="shot-sec" id="dieu-phoi" aria-labelledby="h-report">
+    <div class="wrap">
+      <div class="report-row">
+        <div>
+          <h2 id="h-report">Hiểu rõ hiệu quả của từng chuyến giao</h2>
+          <p>Theo dõi tiến độ giao hàng, kết quả làm việc của từng tài xế và những đơn giao chưa thành công. Mọi thông tin được tổng hợp theo ngày, giúp bạn dễ dàng đánh giá và kiểm soát hoạt động giao hàng.</p>
+        </div>
+        <figure class="report-shot">
+          <img src="img/bao-cao.webp" width="1400" height="490" loading="lazy" decoding="async"
+               alt="Màn báo cáo: bốn ô số liệu (kế hoạch, điểm giao, tỉ lệ giao được, quãng đường), bảng theo tài xế và bảng lý do không giao được.">
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <section class="shot-sec" id="app-tai-xe" aria-labelledby="h-app" style="padding-bottom:0">
+    <div class="wrap">
+      <div class="sec-head">
+        <h2 id="h-app">Thử một ngày giao hàng với PathWise</h2>
+        <p>Đây là giao diện thực tế của ứng dụng tài xế. Hãy thử mở tuyến, cập nhật kết quả tại một điểm giao và tiếp tục hành trình đến địa chỉ tiếp theo.</p>
+      </div>
+      <div class="try-app">
+        <div class="try-phone">
+          <div class="frame">
+            <div class="try-screen" id="try-screen">
+              <img id="try-img" src="phone/1.webp" width="540" height="1200" loading="lazy" decoding="async" alt="Màn Tuyến của tôi: Giao hoa buổi sáng, đã xong 2 trên 6 điểm.">
+              <div class="try-overlay" id="try-overlay"></div>
+            </div>
+          </div>
+          <p class="sr-only" id="try-live" aria-live="polite"></p>
+        </div>
+        <div class="try-side">
+          <p class="try-hint" id="try-hint"></p>
+          <ol class="try-steps" id="try-steps">
+            <li data-s="1"><strong>Mở tuyến hôm nay</strong><span>Tiến độ, giờ xuất phát, số điểm giao.</span></li>
+            <li data-s="2"><strong>Xem điểm tiếp theo</strong><span>Địa chỉ, giờ dự kiến, gọi khách một chạm.</span></li>
+            <li data-s="3"><strong>Báo kết quả</strong><span>Đã giao, bỏ qua, hoặc không giao được kèm lý do (chạm lý do có sẵn hoặc tự ghi).</span></li>
+            <li data-s="4"><strong>Sang điểm kế</strong><span>Điều phối viên thấy kết quả ngay; chỉ đường tới điểm sau.</span></li>
+          </ol>
+          <div class="try-actions">
+            <!-- Caddy (templates) fills the link from PATHWISE_APK_URL when it serves the page; unset, there is no button. -->
+            {{- with env "PATHWISE_APK_URL"}}
+            <a class="btn btn-primary" id="apk-link" href="{{html .}}">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 20h14"/></svg>
+              Tải app tài xế cho Android
+            </a>
+            {{- end}}
+            <button class="btn btn-quiet" type="button" id="try-reset">Bấm thử lại từ đầu</button>
+          </div>
+          <p class="caption">Ảnh chụp app tài xế với dữ liệu thử. Bấm vào nút trên màn hình điện thoại như khi dùng app.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="tai-xe" aria-labelledby="h-who">
+    <div class="wrap">
+      <div class="sec-head">
+        <h2 id="h-who">Kết nối người điều phối và tài xế trên cùng một nền tảng</h2>
+        <p>Chủ cửa hàng và điều phối viên quản lý đơn hàng, sắp xếp tuyến giao trên web. Tài xế nhận công việc và cập nhật tình trạng giao hàng ngay trên ứng dụng di động.</p>
+      </div>
+      <div class="duo">
+        <div class="panel">
+          <span class="who">Chủ cửa hàng &amp; Điều phối viên</span>
+          <h3>Chủ động quản lý hoạt động giao hàng trên web</h3>
+          <ul class="feat">
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg><div><strong>Quản lý thành viên qua email</strong><span>Mời điều phối viên và tài xế tham gia cửa hàng. Chủ cửa hàng cũng có thể trực tiếp nhận và thực hiện tuyến giao hàng.</span></div></li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg><div><strong>Tái sử dụng kế hoạch giao hàng</strong><span>Sao chép kế hoạch sang ngày khác, từ toàn bộ danh sách điểm giao đến riêng những đơn chưa hoàn thành.</span></div></li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></svg><div><strong>Theo dõi kết quả và xuất báo cáo</strong><span>Xem thống kê giao hàng theo ngày, từng tài xế và lý do giao không thành công. Xuất dữ liệu CSV để đối soát, với phạm vi báo cáo tối đa 31 ngày.</span></div></li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg><div><strong>Không gian làm việc riêng cho từng cửa hàng</strong><span>Kế hoạch giao hàng, phương tiện và thành viên được quản lý độc lập. Mỗi cửa hàng chỉ truy cập được dữ liệu thuộc phạm vi của mình.</span></div></li>
+          </ul>
+        </div>
+        <div class="panel">
+          <span class="who">Tài xế</span>
+          <h3>Nhận tuyến và cập nhật kết quả ngay trên smartphone</h3>
+          <ul class="feat">
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l19-9-9 19-2-8-8-2z"/></svg><div><strong>Theo tuyến giao hàng từng chặng</strong><span>Xem danh sách điểm giao theo thứ tự được phân công, dẫn đường ngay trong ứng dụng hoặc mở Google Maps chỉ với một lần chạm.</span></div></li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg><div><strong>Cập nhật kết quả tại mỗi điểm giao</strong><span>Đánh dấu đã giao, không giao được kèm lý do hoặc bỏ qua. Kết quả được cập nhật để người điều phối theo dõi.</span></div></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="hoi-dap" aria-labelledby="h-faq" style="padding-top:0">
+    <div class="wrap faq-layout">
+      <div class="sec-head faq-head"><h2 id="h-faq">Câu hỏi thường gặp</h2><p>Những điều chủ cửa hàng cần biết trước khi bắt đầu sử dụng PathWise.</p></div>
+      <div class="faq">
+        <details><summary>PathWise dành cho ai?</summary><div class="ans"><p>PathWise dành cho các cửa hàng và doanh nghiệp tại Đà Nẵng có đội ngũ tài xế riêng, thường xuyên cần phân chia đơn hàng và sắp xếp tuyến giao cho nhiều xe mỗi ngày.</p><p>Phù hợp với tiệm bánh, cửa hàng hoa, đồ uống, thực phẩm, vật liệu và các mô hình kinh doanh tự tổ chức giao hàng.</p></div></details>
+        <details><summary>PathWise có miễn phí không?</summary><div class="ans"><p>Có. Hiện tại, bạn có thể đăng ký và sử dụng PathWise miễn phí. Chúng tôi đang trong giai đoạn hoàn thiện sản phẩm và rất mong nhận được trải nghiệm cũng như phản hồi từ những cửa hàng đầu tiên.</p></div></details>
+        <details><summary>PathWise hiện hỗ trợ khu vực nào?</summary><div class="ans"><p>PathWise hiện hỗ trợ hoạt động giao hàng tại Đà Nẵng và Hội An. Địa chỉ kho và các điểm giao cần nằm trong phạm vi này để hệ thống có thể xác định vị trí và tối ưu lộ trình.</p><p>Các địa chỉ ngoài khu vực hỗ trợ hiện chưa thể đưa vào kế hoạch tối ưu tuyến.</p></div></details>
+        <details><summary>Tài xế cần điện thoại gì để sử dụng PathWise?</summary><div class="ans"><p>Hiện tại, ứng dụng PathWise hỗ trợ điện thoại Android. Tài xế chỉ cần đăng nhập bằng tài khoản được chủ cửa hàng mời qua email là có thể nhận tuyến và cập nhật kết quả giao hàng.</p><p>Ứng dụng dành cho iOS đang được lên kế hoạch phát triển và sẽ ra mắt trong thời gian tới.</p></div></details>
+        <details><summary>Tôi có cần cài đặt phần mềm trên máy tính không?</summary><div class="ans"><p>Không cần cài đặt. Chủ cửa hàng và điều phối viên có thể sử dụng PathWise trực tiếp trên trình duyệt web, chỉ cần có kết nối Internet.</p></div></details>
+        <details><summary>Tôi có thể nhập nhiều đơn hàng cùng lúc không?</summary><div class="ans"><p>Có. Bạn có thể tải danh sách điểm giao từ file Excel hoặc CSV theo mẫu có sẵn. PathWise sẽ kiểm tra dữ liệu và chỉ ra những dòng cần chỉnh sửa trước khi đưa vào kế hoạch.</p></div></details>
+        <details><summary>Nếu tài xế mất kết nối Internet thì sao?</summary><div class="ans"><p>Khi mất kết nối, ứng dụng tạm giữ vị trí và gửi lên khi có mạng trở lại, bản đồ điều phối cập nhật vị trí mới nhất của tài xế.</p><p>Kết quả giao hàng chưa gửi được sẽ hiện nút “Gửi lại” để tài xế gửi khi có mạng.</p></div></details>
+      </div>
+    </div>
+  </section>
+
+  <section class="close-band" aria-labelledby="h-close">
+    <div class="wrap">
+      <div class="close-card">
+        <div><h2 id="h-close">Sẵn sàng cho kế hoạch giao hàng ngày mai?</h2><p>Đăng ký cửa hàng bằng email, mời tài xế và tạo kế hoạch giao hàng đầu tiên tại Đà Nẵng.</p></div>
+        <a class="btn btn-primary btn-lg" href="/app/register">Đăng ký cửa hàng</a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>© 2026 PathWise</span>
+    <nav aria-label="Liên kết cuối trang">
+      <a href="/app/login">Đăng nhập</a>
+      <a href="/app/invite">Nhận lời mời</a>
+      <a href="#hoi-dap">Hỏi đáp</a>
+      <a href="mailto:lienhe@pathwise.huy-vu.uk">lienhe@pathwise.huy-vu.uk</a>
+    </nav>
+  </div>
+</footer>
+
+<script>
+  const calm = window.matchMedia('(prefers-reduced-motion: reduce)');
+  const EASE = 'cubic-bezier(.2,.7,.2,1)';
+
+  // Walkthrough screens: the next screenshot is decoded first, then it slides in from the side it comes from (back
+  // from the left) while the old one has faded; the tap targets and the hint follow a moment later.
+  const swapScreen = (img, src, back, draw, after) => {
+    if (calm.matches || !img.animate) { draw(); return; }
+    const out = img.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 110, easing: 'ease-in', fill: 'forwards' });
+    const next = new Image(); next.src = src;
+    Promise.all([out.finished, (next.decode ? next.decode() : Promise.resolve()).catch(() => {})]).then(() => {
+      draw(); out.cancel();
+      img.animate([{ opacity: 0, transform: `translateX(${back ? -20 : 20}px)` }, { opacity: 1, transform: 'none' }], { duration: 300, easing: EASE });
+      after.forEach((el, i) => el.animate([{ opacity: 0, transform: 'translateY(4px)' }, { opacity: 1, transform: 'none' }], { duration: 240, delay: 140 + i * 50, easing: 'ease-out', fill: 'backwards' }));
+    });
+  };
+
+  // FAQ: the answer opens and closes by its height; without script (or with reduced motion) <details> works as usual.
+  document.querySelectorAll('.faq details').forEach((d) => {
+    const sum = d.querySelector('summary'), ans = d.querySelector('.ans');
+    let run = null;
+    sum.addEventListener('click', (e) => {
+      if (calm.matches || !ans.animate) return;
+      e.preventDefault();
+      const opening = !d.open || d.dataset.closing === '1';
+      // A closed <details> still lays its content out in Chrome (content-visibility), so closed means 0.
+      const from = d.open ? ans.getBoundingClientRect().height : 0;
+      run?.cancel();
+      if (opening) { d.open = true; d.dataset.closing = ''; }
+      else d.dataset.closing = '1';
+      const to = opening ? ans.scrollHeight : 0;
+      run = ans.animate([{ height: `${from}px`, opacity: opening ? 0.2 : 1 }, { height: `${to}px`, opacity: opening ? 1 : 0 }], { duration: opening ? 280 : 220, easing: EASE });
+      run.onfinish = () => { run = null; if (!opening) { d.open = false; d.dataset.closing = ''; } };
+    });
+  });
+
+  // Header menu below 1100 px: opens under the header, closes on a link, Escape, a tap outside or a wider window.
+  (() => {
+    const btn = document.getElementById('menu-btn'), panel = document.getElementById('menu-panel');
+    panel.hidden = false; panel.classList.add('ready');
+    const isOpen = () => panel.classList.contains('is-open');
+    const set = (open, focusBtn) => {
+      btn.setAttribute('aria-expanded', String(open)); btn.setAttribute('aria-label', open ? 'Đóng menu' : 'Mở menu');
+      panel.classList.toggle('is-open', open);
+      if (open) panel.querySelector('a').focus({ preventScroll: true }); else if (focusBtn) btn.focus();
+    };
+    btn.addEventListener('click', () => set(!isOpen()));
+    panel.addEventListener('click', (e) => { if (e.target.closest('a')) set(false); });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && isOpen()) set(false, true); });
+    document.addEventListener('click', (e) => { if (isOpen() && !e.target.closest('.site-head')) set(false); });
+    window.matchMedia('(min-width: 1101px)').addEventListener('change', (e) => { if (e.matches) set(false); });
+  })();
+
+  // "Bấm thử màn điều phối": the same idea on the web app, ten screens of one plan and one invitation.
+  (() => {
+    const S = {
+      1: { step: 1, url: 'Kế hoạch', alt: 'Danh sách kế hoạch: một kế hoạch Giao hoa buổi sáng đang giao.',
+           hint: 'Bấm <b>Tạo kế hoạch</b>', hot: [{ x: 91.91, y: 11.33, w: 10.76, h: 4, to: 2, label: 'Tạo kế hoạch', go: true }], mhot: [{ x: 90.26, y: 11.61, w: 11.28, h: 5.21, to: 2, label: 'Tạo kế hoạch', go: true }], mhint: 'Bấm nút <b>+</b> để tạo kế hoạch' },
+      2: { step: 1, url: 'Kế hoạch · Tạo kế hoạch', alt: 'Form tạo kế hoạch đã điền: hai tài xế với hai xe máy, sáu điểm giao ở Đà Nẵng.',
+           hint: 'Form đã điền sẵn 2 tài xế và 6 điểm giao. Bấm <b>Lưu và tìm toạ độ</b>', hot: [{ x: 91.01, y: 16.22, w: 12.57, h: 4, to: 3, label: 'Lưu và tìm toạ độ', go: true }], mhot: [{ x: 90.26, y: 11.61, w: 11.28, h: 5.21, to: 3, label: 'Lưu và tìm toạ độ', go: true }], mhint: 'Form đã điền sẵn 2 tài xế và 6 điểm giao. Bấm <b>✓</b> để lưu và tìm toạ độ' },
+      3: { step: 2, url: 'Kế hoạch · Giao bánh chiều thứ Sáu', alt: 'Kế hoạch nháp: sáu điểm giao đã có toạ độ, hiện trên bản đồ.',
+           hint: 'Mọi điểm đã có toạ độ. Bấm <b>Tối ưu lộ trình</b>', hot: [{ x: 26.61, y: 21.89, w: 9.98, h: 4, to: 4, label: 'Tối ưu lộ trình', go: true }], mhot: [{ x: 50, y: 69.31, w: 83.08, h: 5.21, to: 4, label: 'Tối ưu lộ trình', go: true }] },
+      4: { step: 2, url: 'Kế hoạch · Giao bánh chiều thứ Sáu', alt: 'Đã tối ưu: hai tuyến trên bản đồ, mỗi tuyến kèm thứ tự điểm và giờ tới dự kiến.',
+           hint: 'PathWise đã chia 6 điểm cho 2 xe kèm giờ tới. Bấm <b>Giao việc cho 2 tài xế</b>', hot: [{ x: 23.72, y: 27.22, w: 15.76, h: 4, to: 5, label: 'Giao việc cho 2 tài xế', go: true }], mhot: [{ x: 50, y: 81.64, w: 83.08, h: 5.21, to: 5, label: 'Giao việc cho 2 tài xế', go: true }] },
+      5: { step: 3, url: 'Kế hoạch · Giao bánh chiều thứ Sáu', alt: 'Hộp xác nhận giao việc cho hai tài xế, kèm ca làm và số điểm của từng người.',
+           hint: 'Bấm <b>Giao việc</b> để xác nhận', hot: [{ x: 63.75, y: 37.28, w: 6.94, h: 4, to: 6, label: 'Giao việc', go: true }, { x: 34.86, y: 37.28, w: 4.17, h: 4, to: 4, label: 'Huỷ' }], mhot: [{ x: 84.1, y: 66.94, w: 25.64, h: 5.21, to: 6, label: 'Giao việc', go: true }, { x: 10.77, y: 66.94, w: 15.38, h: 5.21, to: 4, label: 'Huỷ' }] },
+      6: { step: 3, url: 'Kế hoạch · Giao bánh chiều thứ Sáu', alt: 'Kế hoạch đã giao việc: tài xế thấy tuyến trong app; trang tự tải lại kết quả mỗi 30 giây.',
+           hint: 'Tài xế đã thấy tuyến trong app. Bấm <b>Kế hoạch</b> để về danh sách', hot: [{ x: 4.62, y: 10.11, w: 6.04, h: 3.11, to: 7, label: 'Về danh sách kế hoạch', go: true }], mhot: [{ x: 15.26, y: 3.55, w: 27.44, h: 5.21, to: 7, label: 'Về danh sách kế hoạch', go: true }] },
+      7: { step: 4, url: 'Kế hoạch', alt: 'Danh sách kế hoạch: Giao bánh chiều thứ Sáu đã giao việc.',
+           hint: 'Mời thêm tài xế: bấm <b>Thành viên</b>', hot: [{ x: 8.89, y: 17, w: 14.86, h: 4, to: 8, label: 'Thành viên', go: true }], mhot: [{ x: 64.67, y: 94.79, w: 21.33, h: 5.92, to: 8, label: 'Thành viên', go: true }] },
+      8: { step: 4, url: 'Thành viên', alt: 'Trang Thành viên: chủ cửa hàng và hai tài xế.',
+           hint: 'Bấm <b>Mời</b>', hot: [{ x: 94.27, y: 11.33, w: 6.04, h: 4, to: 9, label: 'Mời', go: true }], mhot: [{ x: 90.26, y: 11.61, w: 11.28, h: 5.21, to: 9, label: 'Mời', go: true }], mhint: 'Bấm nút <b>Mời thành viên</b> ở góc trên' },
+      9: { step: 4, url: 'Thành viên · Mời', alt: 'Hộp mời thành viên: email vo.hoa@example.com, vai trò Tài xế.',
+           hint: 'Email đã điền sẵn. Bấm <b>Gửi</b>', hot: [{ x: 64.72, y: 36.83, w: 3.96, h: 4, to: 10, label: 'Gửi', go: true }, { x: 34.34, y: 36.83, w: 4.17, h: 4, to: 8, label: 'Huỷ' }], mhot: [{ x: 89.62, y: 66.47, w: 14.62, h: 5.21, to: 10, label: 'Gửi', go: true }, { x: 10.77, y: 66.47, w: 15.38, h: 5.21, to: 8, label: 'Huỷ' }] },
+      10: { step: 5, url: 'Thành viên · Lời mời', alt: 'Đã gửi lời mời tới vo.hoa@example.com; lời mời đang chờ nhận.',
+           hint: 'Xong. Tài xế nhận mã mời qua email, đặt mật khẩu rồi đăng nhập app.', hot: [], mhot: [] },
+    };
+    const img = document.getElementById('web-img'), overlay = document.getElementById('web-overlay');
+    const hint = document.getElementById('web-hint'), live = document.getElementById('web-live'), url = document.getElementById('web-url');
+    const steps = [...document.querySelectorAll('#web-steps li')];
+    // Phone width: the same walk on the web app's own phone layout (screens shot at 390 × 844), in a phone frame.
+    const narrow = window.matchMedia('(max-width: 760px)');
+    const box = document.querySelector('.web-browser');
+    let cur = 1;
+    const show = (key, focus) => {
+      const st = S[key], prev = cur; cur = key;
+      const ph = narrow.matches, hot = ph ? st.mhot : st.hot;
+      const draw = () => {
+        box.classList.toggle('is-phone', ph);
+        img.width = ph ? 540 : 1440; img.height = ph ? 1169 : 900;
+        img.src = `${ph ? 'mweb' : 'web'}/${key}.webp`; img.alt = st.alt; img.classList.remove('swap');
+        url.textContent = `PathWise · ${st.url}`;
+        overlay.replaceChildren();
+        for (const h of hot) {
+          const b = document.createElement('button');
+          b.type = 'button'; b.className = 'hot' + (h.go ? ' go' : ''); b.setAttribute('aria-label', h.label);
+          Object.assign(b.style, { left: h.x + '%', top: h.y + '%', width: h.w + '%', height: h.h + '%' });
+          b.addEventListener('click', () => show(h.to, true));
+          overlay.append(b);
+        }
+        hint.innerHTML = (ph && st.mhint) || st.hint; live.textContent = st.alt;
+        steps.forEach((li) => { const n = Number(li.dataset.s); li.classList.toggle('now', n === st.step); li.classList.toggle('done', n < st.step); });
+        if (focus) (overlay.querySelector('.go') ?? document.getElementById('web-reset')).focus({ preventScroll: true });
+      };
+      if (focus) swapScreen(img, `${ph ? 'mweb' : 'web'}/${key}.webp`, key < prev, draw, [overlay, hint]); else draw();
+    };
+    // The other screens load once the section is near, not with the page.
+    const pre = () => { const d = narrow.matches ? 'mweb' : 'web'; for (let k = 2; k <= 10; k++) new Image().src = `${d}/${k}.webp`; };
+    if ('IntersectionObserver' in window) {
+      const io = new IntersectionObserver((e) => { if (e.some((x) => x.isIntersecting)) { pre(); io.disconnect(); } }, { rootMargin: '400px' });
+      io.observe(document.getElementById('xem-thu'));
+    } else pre();
+    document.getElementById('web-reset').addEventListener('click', () => show(1, true));
+    narrow.addEventListener('change', () => { show(cur, false); pre(); });
+    show(1, false);
+  })();
+
+  // "Bấm thử app tài xế": each state is a screenshot; tap targets sit over the app's buttons (x, y, w, h in % of the screen).
+  (() => {
+    const S = {
+      1: { img: 'phone/1.webp', step: 1, alt: 'Màn Tuyến của tôi: Giao hoa buổi sáng, đã xong 2 trên 6 điểm.',
+           hint: 'Bấm <b>Tiếp tục giao</b>', hot: [{ x: 50, y: 39.2, w: 88, h: 5.6, to: 2, label: 'Tiếp tục giao', go: true }] },
+      2: { img: 'phone/2.webp', step: 2, alt: 'Chi tiết tuyến: điểm tiếp theo số 3, Chị Lan, 879 Hùng Vương, dự kiến 17:31.',
+           hint: 'Bấm <b>Báo kết quả</b>', hot: [{ x: 73.4, y: 58, w: 45, h: 5.8, to: 3, label: 'Báo kết quả', go: true },
+                                                 { x: 6.7, y: 8.5, w: 12, h: 5.5, to: 1, label: 'Quay lại danh sách tuyến' }] },
+      3: { img: 'phone/3.webp', step: 3, alt: 'Báo kết quả điểm 3: Đã giao, Không giao được, Bỏ qua.',
+           hint: 'Chọn một kết quả: <b>Đã giao</b>, <b>Không giao được</b> hoặc <b>Bỏ qua</b>',
+           hot: [{ x: 50, y: 78.5, w: 92, h: 6, to: 5, result: 'delivered', label: 'Đã giao', go: true },
+                 { x: 50, y: 85.6, w: 92, h: 6, to: 4, label: 'Không giao được', go: true },
+                 { x: 50, y: 92.5, w: 92, h: 6, to: 5, result: 'skipped', label: 'Bỏ qua', go: true },
+                                                         { x: 6.7, y: 8.5, w: 12, h: 5.5, to: 2, label: 'Quay lại tuyến' }] },
+      4: { img: 'phone/4.webp', step: 3, alt: 'Bảng chọn lý do không giao được: Vắng nhà, Sai địa chỉ, Khách hẹn ngày khác, Khách từ chối nhận.',
+           hint: 'Chạm lý do <b>Vắng nhà</b>', hot: [{ x: 16.7, y: 73.7, w: 26, h: 5.4, to: '4b', label: 'Vắng nhà', go: true },
+                                                     { x: 50.5, y: 93, w: 20, h: 5.5, to: 3, label: 'Quay lại' }] },
+      '4b': { img: 'phone/4.webp', step: 3, alt: 'Đã chọn lý do Vắng nhà, nút Gửi kết quả sẵn sàng.', fill: true,
+           hint: 'Bấm <b>Gửi kết quả</b>', hot: [{ x: 79.8, y: 93, w: 33, h: 6, to: 5, result: 'failed', label: 'Gửi kết quả', go: true }] },
+      5: { img: 'phone/5.webp', step: 4, alt: 'Quay về tuyến; điểm tiếp theo là số 4.',
+           hint: 'Xong điểm 3. Bấm <b>Chỉ đường</b> tới điểm 4', hot: [{ x: 26.3, y: 65.8, w: 44, h: 5.6, to: 6, label: 'Chỉ đường', go: true }] },
+      6: { img: 'phone/6.webp', step: 4, alt: 'Dẫn đường: 670 mét nữa rẽ trái vào Lê Duẩn; 2,6 km, 6 phút tới điểm 4.',
+           hint: 'Đang dẫn đường. Bấm <b>mũi tên quay lại</b> để về tuyến', hot: [{ x: 7.8, y: 8.8, w: 12, h: 5.6, to: 5, label: 'Quay lại tuyến', go: true }] },
+    };
+    const img = document.getElementById('try-img'), overlay = document.getElementById('try-overlay');
+    const hint = document.getElementById('try-hint'), live = document.getElementById('try-live');
+    const steps = [...document.querySelectorAll('#try-steps li')];
+    // The screenshot after a report carries the app's snackbar for "Không giao được"; the other two results get the
+    // app's own wording (Vi.reportedDelivered / reportedSkipped) drawn over it.
+    const SNACK = { delivered: 'Đã giao điểm 3.', failed: 'Đã báo không giao được điểm 3.', skipped: 'Đã bỏ qua điểm 3.' };
+    let result = 'failed', at = '1';
+    const ORDER = ['1', '2', '3', '4', '4b', '5', '6'];
+    const show = (key, focus) => {
+      const st = S[key], back = ORDER.indexOf(String(key)) < ORDER.indexOf(at); at = String(key);
+      const draw = () => {
+        img.src = st.img; img.alt = key === 5 || key === '5' ? `${st.alt} Thông báo: ${SNACK[result]}` : st.alt;
+        img.classList.remove('swap');
+        overlay.replaceChildren();
+        if ((key === 5 || key === '5') && result !== 'failed') {
+          const n = document.createElement('span'); n.className = 'snack'; n.textContent = SNACK[result];
+          overlay.append(n);
+        }
+        if (st.fill) {
+          const t = document.createElement('span'); t.className = 'fill-text'; t.textContent = 'Vắng nhà';
+          const b = document.createElement('span'); b.className = 'fake-send'; b.textContent = 'Gửi kết quả';
+          overlay.append(t, b);
+        }
+        for (const h of st.hot) {
+          const b = document.createElement('button');
+          b.type = 'button'; b.className = 'hot' + (h.go ? ' go' : ''); b.setAttribute('aria-label', h.label);
+          Object.assign(b.style, { left: h.x + '%', top: h.y + '%', width: h.w + '%', height: h.h + '%' });
+          b.addEventListener('click', () => { if (h.result) result = h.result; show(h.to, true); });
+          overlay.append(b);
+        }
+        hint.innerHTML = st.hint;
+        live.textContent = img.alt;
+        steps.forEach((li) => { const n = Number(li.dataset.s); li.classList.toggle('now', n === st.step); li.classList.toggle('done', n < st.step); });
+        if (focus) overlay.querySelector('.go')?.focus({ preventScroll: true });
+      };
+      if (focus) swapScreen(img, st.img, back, draw, [overlay, hint]); else draw();
+    };
+    // The other screens load once the section is near, not with the page.
+    const preload = () => Object.values(S).forEach((st) => { const i = new Image(); i.src = st.img; });
+    if ('IntersectionObserver' in window) {
+      const io = new IntersectionObserver((e) => { if (e.some((x) => x.isIntersecting)) { preload(); io.disconnect(); } }, { rootMargin: '400px' });
+      io.observe(document.getElementById('app-tai-xe'));
+    } else preload();
+    document.getElementById('try-reset').addEventListener('click', () => { result = 'failed'; show(1, true); });
+    show(1, false);
+  })();
+</script>
+</body>
+</html>

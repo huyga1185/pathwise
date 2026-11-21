@@ -11,7 +11,7 @@ import {
   Dialog,
   ErrorBanner,
   MapMarker,
-  OtpInput,
+  CodeField,
   ProgressBar,
   StatusPill,
   StopCard,
@@ -57,7 +57,7 @@ function ComponentGallery() {
       />
       <MapMarker sequence={3} routeIndex={1} />
       <ErrorBanner title="Email hoặc mật khẩu không đúng." />
-      <OtpInput label="Mã xác thực" value="48" onChange={() => {}} />
+      <CodeField label="Mã xác thực" value="48" onChange={() => {}} />
       <Toast tone="success" onClose={() => {}}>
         Đã giao việc cho 2 tài xế.
       </Toast>
@@ -180,7 +180,8 @@ describe('accessibility', () => {
     );
     const { container } = renderApp(path);
     await screen.findByRole('heading', { name: heading, level: 1 });
-    await screen.findAllByRole('row');
+    // Tests run at phone width: vehicles, members and invitations are lists of rows there (G3).
+    await screen.findAllByRole('listitem');
     expect(await violations(container)).toEqual([]);
   });
 
@@ -192,7 +193,7 @@ describe('accessibility', () => {
   });
 
   it.each([
-    ['/plans', 'Kế hoạch giao hàng'],
+    ['/plans', 'Kế hoạch'],
     ['/plans/new', 'Tạo kế hoạch'],
     ['/plans/83', 'Giao sáng 01/12'],
   ])('màn %s không có lỗi axe', async (path, heading) => {
@@ -206,13 +207,20 @@ describe('accessibility', () => {
     );
     const { container } = renderApp(path);
     await screen.findByRole('heading', { name: heading, level: 1 });
-    await screen.findAllByRole('row');
+    // Tests run at phone width: the plan list, the plan form and a plan's stops show lists of rows there (G2.5,
+    // G4.8, G5.8), the other screens have tables.
+    if (path === '/plans/83') {
+      // Finding coordinates opens the first stop not found: its fix card (G5.15).
+      await screen.findByRole('heading', { name: /^Sửa /, level: 2 });
+    } else {
+      await screen.findAllByRole(path === '/plans' || path.startsWith('/plans/new') ? 'listitem' : 'row');
+    }
     expect(await violations(container)).toEqual([]);
   });
 
   it.each([
-    ['kết quả tối ưu', 'plan-detail-optimized', 'Tổng quan'],
-    ['theo dõi tiến độ', 'plan-detail-completed', 'Kết quả'],
+    ['kết quả tối ưu', 'plan-detail-optimized', 'Tuyến và điểm giao'],
+    ['theo dõi tiến độ', 'plan-detail-completed', 'Tuyến và điểm giao'],
   ])('màn %s không có lỗi axe', async (_name, file, region) => {
     server.use(
       http.get(`${API}/plans/83`, () => ok(sample(file).data)),

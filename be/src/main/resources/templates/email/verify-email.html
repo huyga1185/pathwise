@@ -1,4 +1,5 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org"
-      th:replace="~{email/fragments/otp :: email(title='Xác thực email', intro='Dùng mã dưới đây để xác thực địa chỉ email cho tài khoản ' + ${appName} + ' của bạn:')}">
+      th:replace="~{email/fragments/layout :: email(title='Xác thực email', tag='Xác thực tài khoản',
+          content=~{email/fragments/otp :: card(heading='Xác thực email của bạn', intro='Cảm ơn bạn đã đăng ký ' + ${appName} + '. Nhập mã dưới đây để xác thực địa chỉ email:', codeLabel='Mã xác thực', ignore='Nếu bạn không đăng ký ' + ${appName} + ', hãy bỏ qua email này.')})}">
 </html>

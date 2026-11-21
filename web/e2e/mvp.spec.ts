@@ -1,6 +1,11 @@
 import { expect, test } from '@playwright/test';
 import { blockThirdParties, driverApi, invitationCodeSentTo, otpSentTo, RUN, todayInVietnam } from './support';
 
+// The plan form's stops are a table of fields when the table fits its group, rows and sheets otherwise (G4.7). These
+// tests type into the table; third-party requests are blocked, so the app font (Google Fonts) does not load and the
+// wider fallback font no longer fits 1280px: a 1440×900 window, the table's case.
+test.use({ viewport: { width: 1440, height: 900 } });
+
 /**
  * The MVP path of docs/client/PLAN.md W07 on the real backend: register → verify (Mailpit) → depot → vehicle →
  * invite a driver → plan → coordinates → optimize → publish → the driver reports results (API) → COMPLETED.
@@ -18,7 +23,7 @@ test('chủ cửa hàng đi hết luồng MVP tới khi kế hoạch hoàn thàn
     await page.getByLabel(/^Mật khẩu/).fill(password);
     await page.getByRole('button', { name: /Tạo cửa hàng/ }).click();
     await expect(page.getByRole('heading', { name: 'Xác thực email' })).toBeVisible();
-    await page.getByLabel('Chữ số 1 trên 6').fill(await otpSentTo(owner));
+    await page.getByLabel('Mã xác thực').fill(await otpSentTo(owner));
     await page.getByRole('button', { name: 'Xác thực' }).click();
     await expect(page.getByText('Email đã được xác thực.')).toBeVisible();
   });
@@ -28,7 +33,7 @@ test('chủ cửa hàng đi hết luồng MVP tới khi kế hoạch hoàn thàn
     await page.getByLabel(/^Email/).fill(owner);
     await page.getByLabel(/^Mật khẩu/).fill(password);
     await page.getByRole('button', { name: /Đăng nhập/ }).click();
-    await expect(page.getByRole('heading', { name: 'Kế hoạch giao hàng' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Kế hoạch', level: 1 })).toBeVisible();
   });
 
   await test.step('đặt kho xuất phát bằng ghim', async () => {
@@ -42,21 +47,24 @@ test('chủ cửa hàng đi hết luồng MVP tới khi kế hoạch hoàn thàn
 
   await test.step('thêm xe', async () => {
     await page.getByRole('link', { name: 'Xe', exact: true }).click();
-    const form = page.getByRole('form', { name: 'Thêm xe' });
+    // "Thêm xe" on the title row (and in the empty list) opens a sheet (G3).
+    await page.getByRole('button', { name: 'Thêm xe' }).first().click();
+    const form = page.getByRole('dialog', { name: 'Thêm xe' });
     await form.getByLabel(/^Tên xe/).fill('Xe 1');
     await form.getByLabel(/^Sức chứa/).fill('30');
     await form.getByLabel(/^Đơn vị/).selectOption('BOX');
-    await form.getByRole('button', { name: 'Thêm xe' }).click();
+    await form.getByRole('button', { name: 'Thêm', exact: true }).click();
     await expect(page.getByText('Đã thêm xe.')).toBeVisible();
     await expect(page.getByRole('table', { name: 'Xe của cửa hàng' })).toContainText('30 thùng');
   });
 
   await test.step('mời tài xế; tài xế nhận lời mời bằng mã trong email', async () => {
     await page.getByRole('link', { name: 'Thành viên', exact: true }).click();
-    await page.getByRole('tab', { name: /^Lời mời/ }).click();
-    const form = page.getByRole('form', { name: 'Mời thành viên' });
+    // "Mời" on the title row opens a sheet (G3).
+    await page.getByRole('button', { name: 'Mời', exact: true }).click();
+    const form = page.getByRole('dialog', { name: 'Mời thành viên' });
     await form.getByLabel(/^Email/).fill(driverEmail);
-    await form.getByRole('button', { name: 'Gửi lời mời' }).click();
+    await form.getByRole('button', { name: 'Gửi', exact: true }).click();
     await expect(page.getByText(`Đã gửi lời mời tới ${driverEmail}.`)).toBeVisible();
 
     const code = await invitationCodeSentTo(driverEmail);
@@ -96,9 +104,8 @@ test('chủ cửa hàng đi hết luồng MVP tới khi kế hoạch hoàn thàn
 
   await test.step('tối ưu lộ trình rồi giao việc', async () => {
     await page.getByRole('button', { name: 'Tối ưu lộ trình' }).click();
-    await expect(page.getByRole('region', { name: 'Tổng quan' })).toContainText('3/3 đã xếp tuyến', {
-      timeout: 60_000,
-    });
+    // The summary line of the map panel (OWNER_UI_REDESIGN G5.5).
+    await expect(page.getByText(/^3\/3 điểm đã xếp · /)).toBeVisible({ timeout: 60_000 });
   });
 
   await test.step('chỉnh tay: kéo điểm đầu xuống cuối bằng bàn phím rồi lưu (W10)', async () => {
@@ -150,7 +157,9 @@ test('chủ cửa hàng đi hết luồng MVP tới khi kế hoạch hoàn thàn
   await test.step('theo dõi: kế hoạch hoàn thành, có lý do không giao được', async () => {
     await page.reload();
     await expect(page.getByText(/Kế hoạch đã kết thúc/)).toBeVisible();
-    await expect(page.getByRole('region', { name: 'Kết quả', exact: true })).toContainText('2 / 3 điểm');
+    // The whole plan's progress in words (G5-Q13).
+    // (One route: its own summary says the same; the first is the whole plan's.)
+    await expect(page.getByText(/^2\/3 đã giao · /).first()).toBeVisible();
     await expect(page.getByText('Lý do: Vắng nhà')).toBeVisible();
     await expect(page.getByText('HOÀN THÀNH').first()).toBeVisible();
   });

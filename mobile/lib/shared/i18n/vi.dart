@@ -24,13 +24,26 @@ abstract final class Vi {
   static const retry = 'Thử lại';
   static const logoutTitle = 'Đăng xuất khỏi app?';
   static const logoutBody = 'Bạn cần đăng nhập lại để xem tuyến của mình.';
-  static String accountMenu(String name) => '$name — tài khoản và giao diện';
-  static const appearance = 'Giao diện';
+  // The sheet has no appearance choice since P-73.
+  static String accountMenu(String name) => '$name — tài khoản';
+  // Thông tin của tôi (M06, D3; same words as the web's profile page).
+  static const myProfile = 'Thông tin của tôi';
+  static const fullName = 'Họ tên';
+  static const phone = 'Số điện thoại';
+  static const phoneHint = 'Tuỳ chọn. Chỉ nhận số Việt Nam.';
+  static const save = 'Lưu';
+  static const profileSaved = 'Đã lưu thông tin.';
+  static const profileLoadFailed = 'Không tải được thông tin của bạn';
+  static const discardTitle = 'Bỏ thay đổi chưa lưu?';
+  static const discardBody = 'Họ tên và số điện thoại sẽ giữ như trước.';
+  static const discard = 'Bỏ thay đổi';
+  static const keepEditing = 'Ở lại';
+  static String progressOf(int done, int total, String what) => '$done trên $total ${what.toLowerCase()}';
   // Location sharing (T32, P-54; prototype "Tài xế — chia sẻ vị trí").
   static const shareAskTitle = 'Chia sẻ vị trí cho tuyến này?';
   static String shareAskBody(String plan) =>
-      'Trong lúc giao tuyến $plan, PathWise gửi vị trí của bạn cho điều phối viên của cửa hàng, kể cả khi bạn đang '
-      'mở Google Maps để chỉ đường. App tự dừng khi tuyến xong hoặc bạn đăng xuất.';
+      'Trong lúc giao tuyến $plan, PathWise gửi vị trí của bạn cho điều phối viên của cửa hàng, kể cả khi app chạy '
+      'nền. App tự dừng khi tuyến xong hoặc bạn đăng xuất.';
   static const shareRemember = 'Ghi nhớ lựa chọn, không hỏi lại';
   static const shareRememberHint = 'Đổi lại trong menu tài khoản (chạm chữ viết tắt tên).';
   static const shareConfirm = 'Chia sẻ vị trí';
@@ -57,9 +70,6 @@ abstract final class Vi {
   static const shareChoiceAlwaysHint = 'Không hỏi, tự bật khi mở tuyến đang giao';
   static const shareChoiceNever = 'Không chia sẻ';
   static const shareChoiceNeverHint = 'Không hỏi; bật riêng từng tuyến ở chi tiết tuyến';
-  static const themeSystem = 'Theo máy';
-  static const themeLight = 'Sáng';
-  static const themeDark = 'Tối';
 
   // Tuyến hôm nay (M01)
   static const myRoutes = 'Tuyến của tôi';
@@ -90,6 +100,7 @@ abstract final class Vi {
   static const collapse = 'Thu gọn';
   static const expand = 'Xem';
   static const directions = 'Chỉ đường';
+  static String failureReasonLine(String reason) => 'Lý do: $reason';
   static const routeDone = 'Bạn đã xong tuyến này.';
   static String returnTo(String place) => 'Quay về kho: $place.';
   static String startAndEnd(String place) => 'Xuất phát và quay về: $place.';
@@ -169,6 +180,11 @@ abstract final class Vi {
   static String sentFailed(String label) => 'Đã báo không giao được $label';
   static String sentSkipped(String label) => 'Đã bỏ qua $label';
   static String reasonWas(String reason) => 'Lý do: $reason';
+
+  /// Snackbar on the route once the server took a result (D5).
+  static String reportedDelivered(int sequence) => 'Đã giao điểm $sequence.';
+  static String reportedFailed(int sequence) => 'Đã báo không giao được điểm $sequence.';
+  static String reportedSkipped(int sequence) => 'Đã bỏ qua điểm $sequence.';
   static const goNext = 'Sang điểm tiếp theo';
   static const notSentOffline = 'Chưa gửi được: mất kết nối.';
   static const notSent = 'Chưa gửi được.';
