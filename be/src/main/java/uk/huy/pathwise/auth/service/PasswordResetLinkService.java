@@ -75,8 +75,10 @@ public class PasswordResetLinkService {
         if (!otpManager.verifyOtp(OtpPurpose.RESET_PASSWORD, account.userId(), request.otp()))
             throw new AppException(ErrorCode.INVALID_OTP);
         transactionTemplate.executeWithoutResult(status -> {
-            userService.updateUserPassword(account.userId(), request.newPassword());
+            // Revoke first: after a plain read (and the slow hash) MariaDB would fail the revoke if a refresh of
+            // this user committed meanwhile (F-44, ARCHITECTURE §7).
             refreshTokenManager.revokeAllForUser(account.userId(), null);
+            userService.updateUserPassword(account.userId(), request.newPassword());
         });
         resetLinkStore.delete(account.userId(), tokenHash);
         log.info("Password reset with an ADMIN's link, all sessions revoked. userId={}", account.userId());
