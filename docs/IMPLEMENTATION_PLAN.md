@@ -78,7 +78,15 @@
 
 ## 2. Task đang mở
 
-Không có.
+### T64. Cookie đánh dấu đã đăng nhập cho web (P-80; thêm 2026-11-21, làm sau)
+
+- **Lý do:** người đã đăng nhập gõ tên miền thì dừng ở landing; Caddy không biết có phiên vì cookie refresh chỉ gửi tới `/api/v1/auth…` (P-80). Phần Caddy là W16 (`docs/client/PLAN.md`).
+- **Phạm vi:** khi đăng nhập và refresh thành công trên web (không có `X-Client-Platform: mobile`), trả thêm `Set-Cookie: pw_signed_in=1; HttpOnly; Secure; SameSite=Lax; Path=/`, hết hạn cùng refresh token (dùng `AuthCookieBuilder`); đăng xuất và refresh trả 401 thì xoá cookie này. App tài xế không nhận cookie.
+- **Ngoài phạm vi:** dùng cookie này để xác thực hay phân quyền (không bao giờ); Caddyfile (W16).
+- **File nóng:** `AuthController`, `AuthService`.
+- **Test:** log-in, refresh (web) có cookie với đúng thuộc tính; log-out và refresh 401 xoá cookie; request mobile không có cookie.
+- **Docs:** `API_SPEC.md` (header `Set-Cookie` của log-in, refresh, log-out), `docs/client/ARCHITECTURE.md` (phiên web).
+- **Acceptance:** như phần Test; `./mvnw test` xanh.
 
 ## 3. Sau MVP (Could, chưa lên lịch)
 

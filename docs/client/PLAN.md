@@ -57,6 +57,15 @@
   - Kiểm trên máy: actionlint; chạy lại các bước ký và `flutter build apk --release` với một keystore thử: APK ký `CN=PathWise CI test` (60 MB, mọi ABI).
   - Việc của chủ dự án: tạo keystore (`mobile/README.md`), đặt 2 secret + biến, publish một pre-release thử từ `main` (vd `vX.Y.Z-rc1`, cần `pubspec.yaml` khớp), tải APK cài thử, rồi đặt `APK_URL` trên VPS.
 
+### W16. Người đã đăng nhập mở `/` thì vào thẳng app (P-80; thêm 2026-11-21, làm sau)
+
+- **Lý do:** gõ tên miền khi đã đăng nhập vẫn dừng ở landing, phải bấm "Đăng nhập" mới vào app (chủ dự án báo 2026-11-21).
+- **Phụ thuộc:** T64 (backend đặt cookie `pw_signed_in`).
+- **Phạm vi:** `deploy/caddy/Caddyfile`: request `/` có cookie `pw_signed_in` thì 302 sang `/app/` (trước khi phục vụ landing); không áp cho `robots.txt`, `sitemap.xml`, `og.png` và ảnh. Cách xem lại landing khi đã đăng nhập theo câu trả lời của chủ dự án (P-80). Cập nhật `docs/DEPLOYMENT.md` §8 (Caddy trên host phải copy Caddyfile mới).
+- **Ngoài phạm vi:** đổi landing sang gọi API.
+- **File nóng:** `deploy/caddy/Caddyfile`.
+- **Acceptance:** chạy image web: `curl` `/` có cookie trả 302 `/app/`, không có cookie trả landing 200; bot (không cookie) vẫn đọc được thẻ `og:`; đăng xuất xong mở `/` thấy landing.
+
 ## 3. Sau MVP (chưa lên lịch)
 
 Thông báo đẩy · trang theo dõi đơn cho khách (client thứ ba) · đa ngôn ngữ.
