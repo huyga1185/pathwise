@@ -259,7 +259,7 @@ Caddy phục vụ trang landing ở `https://<domain>/` (`landing/` của repo, 
 
 Trước khi bắt đầu: bản ghi DNS `A` của domain trỏ về IP của VPS, cổng 80 và 443 (TCP, thêm 443/UDP cho HTTP/3) mở từ internet. Let's Encrypt kiểm tra domain qua cổng 80/443, nên chứng chỉ chỉ cấp được khi DNS đã trỏ đúng.
 
-Nút "Tải app tài xế cho Android" trên landing chỉ hiện khi đặt link APK: `APK_URL` trong `.env` (container) hoặc `PATHWISE_APK_URL` của service Caddy (host). Caddy điền link vào trang lúc phục vụ (`templates`), đổi link chỉ cần khởi động lại Caddy hoặc container `web`.
+Nút "Tải app tài xế cho Android" trên landing chỉ hiện khi đặt link APK: `APK_URL` trong `.env` (container) hoặc `PATHWISE_APK_URL` của service Caddy (host). Workflow `release` đính APK vào mỗi GitHub Release (W15, cài đặt secret ở `mobile/README.md`), nên link thường là `https://github.com/huyga1185/pathwise/releases/latest/download/pathwise-driver.apk`. Caddy điền link vào trang lúc phục vụ (`templates`), đổi link chỉ cần khởi động lại Caddy hoặc container `web`.
 
 Bản đồ nền của web cần key MapTiler (`MAPTILER_KEY`), đọc lúc chạy từ `/app/config.js` nên đổi key không cần build lại. Key nằm trong trình duyệt của người dùng, nên ở trang quản lý MapTiler phải giới hạn key theo domain. Không có key thì bản đồ không có nền, điểm giao vẫn hiện.
 
