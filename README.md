@@ -1,6 +1,9 @@
 # PathWise
 
-SaaS lập tuyến giao hàng đa tenant: backend Spring Boot 4.1 / Java 21 (`be/`), web dispatcher (`web/`) và app tài xế (`mobile/`) (client đang dựng, xem mục Client). Tài liệu thiết kế nằm trong `docs/`, quy tắc cho coding agent ở `AGENTS.md`.
+SaaS lập tuyến giao hàng đa tenant cho cửa hàng ở Đà Nẵng và Hội An: backend Spring Boot 4.1 / Java 21 (`be/`), web dispatcher (`web/`, React), app tài xế Android (`mobile/`, Flutter) và trang giới thiệu tĩnh (`landing/`). Tài liệu thiết kế nằm trong `docs/`, quy tắc cho coding agent ở `AGENTS.md`.
+
+- Bản chạy thật: https://pathwise.huy-vu.uk (trang giới thiệu ở `/`, web dispatcher ở `/app/`).
+- App tài xế: file `pathwise-driver.apk` đính trong [GitHub Release mới nhất](https://github.com/huyga1185/pathwise/releases/latest), cài trực tiếp (không có trên Play Store).
 
 ## Yêu cầu môi trường
 
@@ -93,6 +96,12 @@ pnpm e2e          # build web, vite preview :4173 proxy /api tới :8091, chạy
 docker compose -p pathwise-e2e --env-file web/e2e/e2e.env -f compose.yaml -f compose.e2e.yaml --profile app down -v
 ```
 
+Trang giới thiệu (`landing/`): HTML, CSS và JS viết tay, không build. Caddy phục vụ nó ở `/`, đi chung image `pathwise-web` và tarball của release. Xem thử như prod: `landing/README.md`.
+
+## Phát hành
+
+Push tag `vX.Y.Z` thì workflow `image` build image backend và web lên GHCR. Publish GitHub Release từ tag đó thì workflow `release` đính tarball web (kèm landing và `Caddyfile`) và `pathwise-driver.apk` (app tài xế ký bằng release key từ GitHub secret; chỉ build khi tag nằm trên `main`). Quy trình: `docs/CONTRIBUTING.md`; secret và cách tạo key: `mobile/README.md` (mục "APK trong GitHub Release").
+
 ## Xem email (OTP, lời mời)
 
 Mọi email khi dev được gửi tới Mailpit: mở http://localhost:8025.
@@ -101,7 +110,7 @@ Mọi email khi dev được gửi tới Mailpit: mở http://localhost:8025.
 
 Quy trình branch và CI: `docs/CONTRIBUTING.md`.
 
-Deploy lên VPS (staging/prod): `docs/DEPLOYMENT.md`. Web dispatcher và HTTPS chạy qua Caddy, trong container (`compose.web.yaml`) hoặc trên host (`deploy/caddy/Caddyfile`), xem §8.
+Deploy lên VPS (staging/prod): `docs/DEPLOYMENT.md`. Trang giới thiệu, web dispatcher và HTTPS chạy qua Caddy, trong container (`compose.web.yaml`) hoặc trên host (`deploy/caddy/Caddyfile`), xem §8; link tải APK trên trang giới thiệu đặt bằng `APK_URL` trong `.env`.
 
 ## Troubleshooting
 
