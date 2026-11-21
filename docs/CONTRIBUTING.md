@@ -17,6 +17,7 @@
 | `mobile` (workflow `ci`) | PR và push như `ci`, khi đổi `mobile/`, `api/`, `brand/`, `scripts/build_tokens.py`, `scripts/gen_dart_api.sh`, `scripts/build_mobile_brand.sh` hoặc `.github/` | Flutter theo `mobile/pubspec.yaml`, `flutter pub get`, kiểm `tokens.g.dart`, sinh lại `mobile/packages/pathwise_api` và so diff (Docker), `flutter analyze`, `flutter test` | Không (nên giữ xanh) |
 | `quality` | Mọi PR | `dependency-review` (chặn dependency mới có lỗ hổng high trở lên), `gitleaks` (quét secret trong các commit của PR). | Khuyến nghị |
 | `image` | Push lên `develop`; tag `v*` | Build image, Trivy (chặn CRITICAL có bản sửa), push `ghcr.io/huyga1185/pathwise`: `develop`, `develop-<sha>` hoặc `x.y.z`, `x.y`, `latest`. Xem `docs/DEPLOYMENT.md`. | — (chạy sau merge) |
+| `release` | Publish một GitHub Release | Đính vào release: `pathwise-web-<tag>.tar.gz` (web, landing, `Caddyfile` cho Caddy trên host, W08/W14) và `pathwise-driver.apk` (app tài xế ký key riêng, chỉ khi tag nằm trên `main`, W15; secret và biến ở `mobile/README.md`). | — (chạy sau release) |
 | Dependabot | Hằng tuần | Cập nhật `maven` (`be/`), `github-actions`, `docker` (`be/Dockerfile`), `npm` (`web/`, pnpm), `pub` (`mobile/`); PR vào `develop`. Maven, web, mobile: minor/patch gộp một PR mỗi ecosystem; GitHub Actions gộp một PR; web và mobile chỉ đề xuất bản đã phát hành 14 ngày (`cooldown`, quy tắc dependency của client); không đề xuất đổi Java của Docker image. | — |
 
 - Run cũ của cùng một PR bị huỷ khi có commit mới (concurrency group).

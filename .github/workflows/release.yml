@@ -1,6 +1,14 @@
 # Release assets (W08, P-56): when a GitHub release is published, attach the web app for a Caddy installed on the host
 # (docs/DEPLOYMENT.md §8.2): pathwise-web-<tag>.tar.gz with app/ (the build, configured at runtime by app/config.js),
 # the landing page at its root (W14) and the Caddyfile. The images themselves come from image.yml on the tag.
+# It also builds the driver app and attaches pathwise-driver.apk (W15, P-79), signed with the project's own key so a
+# new version installs over the previous one; the landing page links to releases/latest/download/pathwise-driver.apk.
+# The APK is built only for a release whose tag is on main (D-34): a release tagged on develop or another branch fails
+# this job and gets no APK.
+#   secrets  ANDROID_KEYSTORE_BASE64    the keystore (.jks, alias "upload"), base64; required
+#            ANDROID_KEYSTORE_PASSWORD  its password (PKCS12: also the key's password); required
+#            ANDROID_MAPTILER_KEY       map tiles of the navigation screen; optional (no key: no basemap)
+#   variable APK_API_BASE               origin of the API the app calls, https://…; required
 name: release
 
 on:
@@ -43,3 +51,86 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ github.event.release.tag_name }}
         run: gh release upload "$TAG" "pathwise-web-$TAG.tar.gz" --clobber
+
+  driver-apk:
+    runs-on: ubuntu-latest
+    env:
+      TAG: ${{ github.event.release.tag_name }}
+      API_BASE: ${{ vars.APK_API_BASE }}
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # the history of main, to check where the tag is
+      # Fail before the long build, with every problem at once.
+      - name: Check the settings
+        env:
+          KEYSTORE: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        run: |
+          fail=0
+          if ! git merge-base --is-ancestor HEAD origin/main; then
+            echo "::error::$TAG is not on main: the driver app is built only for releases tagged on main (D-34)."
+            fail=1
+          fi
+          if [ -z "$KEYSTORE" ] || [ -z "$PASSWORD" ]; then
+            echo "::error::Set the secrets ANDROID_KEYSTORE_BASE64 and ANDROID_KEYSTORE_PASSWORD (mobile/README.md)."
+            fail=1
+          fi
+          case "$API_BASE" in
+            https://*) ;;
+            *) echo "::error::Set the Actions variable APK_API_BASE to the API origin, e.g. https://pathwise.example.com."; fail=1 ;;
+          esac
+          # The app's version comes from pubspec.yaml (bumped by the release's chore commit): it must be the tag's.
+          version="$(sed -n 's/^version: *\([^+]*\)+.*/\1/p' pubspec.yaml)"
+          case "$TAG" in
+            "v$version" | "v$version"-*) ;;
+            *) echo "::error::pubspec.yaml has version $version but the release is $TAG."; fail=1 ;;
+          esac
+          exit "$fail"
+      - uses: actions/setup-java@v6
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version-file: mobile/pubspec.yaml
+          cache: true
+      # android/key.properties (gitignored) is what the Gradle build reads for a release key (M03).
+      - name: Signing key
+        env:
+          KEYSTORE: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        run: |
+          jks="$RUNNER_TEMP/pathwise-upload.jks"
+          printf '%s' "$KEYSTORE" | base64 -d > "$jks"
+          printf 'storeFile=%s\nstorePassword=%s\nkeyAlias=upload\nkeyPassword=%s\n' \
+            "$jks" "$PASSWORD" "$PASSWORD" > android/key.properties
+      - name: Build
+        env:
+          MAPTILER_KEY: ${{ secrets.ANDROID_MAPTILER_KEY }}
+        run: |
+          if [ -z "$MAPTILER_KEY" ]; then
+            echo "::warning::No ANDROID_MAPTILER_KEY: the navigation screen has no basemap (the route still shows)."
+          fi
+          flutter build apk --release --dart-define=API_BASE="$API_BASE" --dart-define=MAPTILER_KEY="$MAPTILER_KEY"
+          cp build/app/outputs/flutter-apk/app-release.apk "$RUNNER_TEMP/pathwise-driver.apk"
+      # A debug signature would not install over the previous release: refuse it.
+      - name: Check the signature
+        run: |
+          apksigner="$(find "$ANDROID_HOME/build-tools" -name apksigner -type f | sort -V | tail -n 1)"
+          "$apksigner" verify --print-certs "$RUNNER_TEMP/pathwise-driver.apk" > "$RUNNER_TEMP/certs.txt"
+          grep 'certificate DN' "$RUNNER_TEMP/certs.txt"
+          if grep -q 'CN=Android Debug' "$RUNNER_TEMP/certs.txt"; then
+            echo "::error::The APK is signed with a debug key."
+            exit 1
+          fi
+      - name: Remove the signing key
+        if: always()
+        run: rm -f android/key.properties "$RUNNER_TEMP/pathwise-upload.jks"
+      - name: Upload to the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "$TAG" "$RUNNER_TEMP/pathwise-driver.apk" --clobber
