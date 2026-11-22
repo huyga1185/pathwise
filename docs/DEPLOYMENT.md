@@ -162,7 +162,7 @@ Dòng đã xoá chỉ lấy lại được từ backup.
 | Log trong 1 giờ qua | `docker compose -f compose.prod.yaml logs --since 1h app` |
 | Dung lượng log của các container | `sudo du -ch /var/lib/docker/containers/*/*-json.log \| tail -1` |
 
-**Giới hạn log (T51):** mọi service trong các file compose giữ tối đa `LOG_MAX_FILE` file × `LOG_MAX_SIZE` (mặc định 3 × 10 MB, tức 30 MB mỗi container); dòng cũ hơn bị bỏ. Muốn giữ nhiều hơn để điều tra thì tăng hai biến trong `.env` rồi `up -d` lại (container được tạo lại mới nhận giới hạn mới). Log đã bị bỏ không lấy lại được: cần lưu lâu thì gom log ra ngoài (chưa làm). Kiểm tra một container: `docker inspect -f '{{json .HostConfig.LogConfig}}' <container>`.
+**Giới hạn log (T51):** mọi service trong các file compose giữ tối đa `LOG_MAX_FILE` file × `LOG_MAX_SIZE` (mặc định 3 × 10 MB, tức 30 MB mỗi container); dòng cũ hơn bị bỏ. Muốn giữ nhiều hơn để điều tra thì tăng hai biến trong `.env` rồi `up -d` lại (container được tạo lại mới nhận giới hạn mới). Log đã bị bỏ không lấy lại được, và log của container mất theo container khi `down` (container bị xoá). Riêng access log của Caddy ghi ra file trong volume, sống qua `down` (§8.4); log của app thì chưa gom ra ngoài. Kiểm tra một container: `docker inspect -f '{{json .HostConfig.LogConfig}}' <container>`.
 
 ## 7. OSRM và Nominatim tự host (`compose.routing.yaml`, P-55)
 
@@ -320,6 +320,28 @@ Khi bản ghi DNS bật proxy của Cloudflare, Caddy nhận kết nối từ m�
 3. Kiểm tra: đăng nhập web từ máy của mình rồi xem danh sách thiết bị ở Hồ sơ (`GET /api/v1/auth/sessions`): cột IP phải là IP công khai của mình, không phải `162.158.x.x`, `172.64.x.x`, `104.x.x.x`…
 
 Caddy chỉ tin header `CF-Connecting-IP` (rồi `X-Forwarded-For`) của request đến từ các dải này; request đến thẳng VPS mà không qua Cloudflare vẫn dùng IP của bên kết nối, nên không giả được IP bằng header. Muốn chặn hẳn truy cập thẳng vào VPS thì chỉ mở cổng 80/443 cho các dải của Cloudflare (lưu ý: Let's Encrypt cần tới được cổng 80/443; với Cloudflare proxy, dùng chế độ SSL "Full (strict)").
+
+### 8.4 Access log của Caddy (F-88)
+
+Caddy ghi mỗi request một dòng JSON vào file: `/var/log/caddy/access.log` (đổi bằng `PATHWISE_ACCESS_LOG`). Container `web` để file này trong volume `caddy-logs`, nên không mất khi `down` hay tạo lại container; Caddy trên host dùng `/var/log/caddy` mà gói cài Caddy đã tạo sẵn. File được cuộn ở 20 MiB, nén gzip, giữ tối đa 10 file và 90 ngày (sửa trong `log` của `Caddyfile`).
+
+- `request.client_ip` là IP thật của người dùng (lấy từ `CF-Connecting-IP` khi đi qua Cloudflare, §8.3); `request.remote_ip` là IP của bên kết nối (máy của Cloudflare).
+- Không có bí mật trong log: Caddy tự che `Cookie`, `Set-Cookie`, `Authorization`; mã mời (`/app/invite?code=`, `/api/v1/invitations/{code}`) và token của link đặt lại mật khẩu (`/app/reset-password?token=`) bị thay bằng `REDACTED`, cả trong URL lẫn header `Referer`. Body của request không được ghi.
+- Log có IP và user agent của người dùng: chỉ dùng để điều tra, không gửi cho bên ngoài.
+
+Đọc log:
+```bash
+# Caddy trong container
+docker compose -f compose.prod.yaml -f compose.web.yaml exec web tail -f /var/log/caddy/access.log
+sudo ls /var/lib/docker/volumes/pathwise-prod_caddy-logs/_data/        # cùng file, nhìn từ host (tên project theo thư mục)
+# Lọc: request tới API trong 1 giờ qua, theo IP thật
+sudo tail -n 5000 /var/lib/docker/volumes/pathwise-prod_caddy-logs/_data/access.log \
+  | jq -r 'select(.request.uri|startswith("/api/")) | [.ts|todate, .request.client_ip, .request.method, .request.uri, .status] | @tsv'
+# Caddy trên host
+sudo tail -f /var/log/caddy/access.log
+```
+
+CrowdSec trên host đọc được file này (collection `crowdsecurity/caddy`, khai báo đường dẫn trên trong `acquis.yaml` với `labels: type: caddy`), để chặn cả máy quét web chứ không chỉ SSH.
 
 ## 9. Giám sát và cảnh báo (T54)
 
