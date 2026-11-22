@@ -18,7 +18,9 @@ COPY --from=build /workspace/app.jar app.jar
 RUN java -Djarmode=tools -jar app.jar extract --layers --launcher --destination extracted
 
 # Ubuntu-based JRE: OR-Tools needs glibc, so no Alpine.
-FROM eclipse-temurin:21-jre AS runtime
+# Pinned to a patched build: 21.0.13.1 fixes CVE-2026-114938 (Java4Shell, AVX-512 Base64 intrinsic; F-87).
+# Dependabot proposes later patch tags.
+FROM eclipse-temurin:21.0.13.1_2-jre AS runtime
 RUN groupadd --system app && useradd --system --gid app --no-create-home app
 WORKDIR /app
 COPY --from=extract --chown=app:app /workspace/extracted/dependencies/ ./
