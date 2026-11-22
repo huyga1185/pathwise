@@ -273,6 +273,7 @@ Bản đồ nền của web cần key MapTiler (`MAPTILER_KEY`), đọc lúc ch�
    ufw-docker allow pathwise-prod-web-1 443/udp
    ```
    (Tên container theo `docker compose ps`; thư mục `/opt/pathwise-prod` cho tên project `pathwise-prod`.)
+   Ba lệnh này mở cổng cho **mọi IP**, gắn với IP hiện tại của container (đổi sau `down`/`up`, khi đó web trả 522 tới khi chạy lại). Domain đi qua Cloudflare thì không dùng chúng: làm theo §8.3 bước 4 để chỉ mở cho các dải của Cloudflare. Hai cách không dùng chung được: còn một luật `ufw-docker allow` cho 80/443 là luật giới hạn theo Cloudflare mất tác dụng (F-89).
 3. Chạy:
    ```bash
    docker compose -f compose.prod.yaml -f compose.web.yaml pull
@@ -319,7 +320,21 @@ Khi bản ghi DNS bật proxy của Cloudflare, Caddy nhận kết nối từ m�
 2. Tạo lại container web (`docker compose -f compose.prod.yaml -f compose.web.yaml up -d web`) hoặc `systemctl restart caddy`. Image web cần có `Caddyfile` mới (bản sau F-59).
 3. Kiểm tra: đăng nhập web từ máy của mình rồi xem danh sách thiết bị ở Hồ sơ (`GET /api/v1/auth/sessions`): cột IP phải là IP công khai của mình, không phải `162.158.x.x`, `172.64.x.x`, `104.x.x.x`…
 
-Caddy chỉ tin header `CF-Connecting-IP` (rồi `X-Forwarded-For`) của request đến từ các dải này; request đến thẳng VPS mà không qua Cloudflare vẫn dùng IP của bên kết nối, nên không giả được IP bằng header. Muốn chặn hẳn truy cập thẳng vào VPS thì chỉ mở cổng 80/443 cho các dải của Cloudflare (lưu ý: Let's Encrypt cần tới được cổng 80/443; với Cloudflare proxy, dùng chế độ SSL "Full (strict)").
+4. Chỉ cho Cloudflare vào 80/443 (F-89). `TRUSTED_PROXIES` chỉ quyết định tin header IP của ai, **không chặn** gì: không có bước này thì ai biết IP của VPS gọi thẳng được, đi vòng qua WAF, Bot Fight Mode và Security Events của Cloudflare. Docker publish cổng qua chuỗi FORWARD nên `ufw allow` thường không áp cho container; với `ufw-docker` (chuỗi `DOCKER-USER`) dùng `ufw route`:
+   ```bash
+   sudo ufw-docker status                                   # còn luật "Anywhere" của container web thì xoá:
+   sudo ufw-docker delete allow pathwise-prod-web-1         # xoá 80/tcp, 443/tcp
+   sudo ufw-docker delete allow pathwise-prod-web-1 443/udp
+   for r in $(curl -s https://www.cloudflare.com/ips-v4) $(curl -s https://www.cloudflare.com/ips-v6); do
+     sudo ufw route allow proto tcp from "$r" to any port 443
+     sudo ufw route allow proto tcp from "$r" to any port 80
+   done
+   sudo ufw status numbered | grep -E " (80|443)"           # chỉ còn các dải Cloudflare
+   ```
+   Luật khớp theo cổng của container (`to any port`), nên không lệch khi container đổi IP. Không cần 443/udp: Cloudflare gọi về VPS bằng TCP. Cổng 80 giữ cho Let's Encrypt (xác minh đi qua Cloudflare); SSL của Cloudflare để "Full (strict)". Cloudflare đổi dải IP thì chạy lại vòng lặp (luật có sẵn được bỏ qua) và xoá luật của dải cũ.
+   Kiểm tra từ một máy ngoài: `curl -sI https://<domain>/` trả 200; `curl -s --max-time 10 --resolve <domain>:443:<IP của VPS> https://<domain>/` hết thời gian chờ.
+
+Caddy chỉ tin header `CF-Connecting-IP` (rồi `X-Forwarded-For`) của request đến từ các dải này; request đến thẳng VPS mà không qua Cloudflare vẫn dùng IP của bên kết nối, nên không giả được IP bằng header.
 
 ### 8.4 Access log của Caddy (F-88)
 
