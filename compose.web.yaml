@@ -34,9 +34,12 @@ services:
       # Certificates and ACME account: keep them, or Let's Encrypt rate limits hit on every recreate.
       - caddy-data:/data
       - caddy-config:/config
+      # Access log (F-88, Caddyfile): kept across recreates; on the host under /var/lib/docker/volumes/<project>_caddy-logs.
+      - caddy-logs:/var/log/caddy
     depends_on:
       - app
 
 volumes:
   caddy-data:
   caddy-config:
+  caddy-logs:
