@@ -339,7 +339,7 @@ Quy tắc:
 |---|---|---|
 | `build` | `maven:3.9-eclipse-temurin-21` | Copy `pom.xml` trước rồi chạy `dependency:go-offline` để cache layer dependency, sau đó copy source và `package -DskipTests`. Test chạy ở CI, không chạy trong build image. |
 | `extract` | cùng image build | Tách Spring Boot jar thành các layer (`java -Djarmode=tools -jar app.jar extract --layers --launcher`) để rebuild nhanh. |
-| `runtime` | `eclipse-temurin:21-jre` (Ubuntu, có glibc vì OR-Tools cần; **không dùng Alpine**) | Chạy bằng user không phải root, `JAVA_OPTS` cấu hình được, `HEALTHCHECK` gọi `/actuator/health`, `EXPOSE 8080`. |
+| `runtime` | `eclipse-temurin:21.0.13.1_2-jre` (Ubuntu, có glibc vì OR-Tools cần; **không dùng Alpine**). Ghim bản vá cụ thể, không dùng tag trôi `21-jre`: image chỉ nhận bản vá JRE khi build lại, mà tag trôi không cho biết đang chạy bản nào (F-87). Dependabot đề xuất tag vá mới | Chạy bằng user không phải root, `JAVA_OPTS` cấu hình được, `HEALTHCHECK` gọi `/actuator/health`, `EXPOSE 8080`. |
 
 - Thêm `spring-boot-starter-actuator`, chỉ expose `health` (gồm liveness và readiness). Mọi endpoint actuator khác tắt.
 - Image không chứa secret hay `application-dev.yaml`. Toàn bộ cấu hình đi qua biến môi trường.
