@@ -8,6 +8,7 @@
 #   PATHWISE_TRUSTED_PROXIES  proxies in front of Caddy whose client IP header is believed, space separated CIDRs:
 #                      the Cloudflare ranges when the domain is proxied by Cloudflare (docs/DEPLOYMENT.md §8.3). Empty
 #                      (default): no proxy, the peer of Caddy is the client.
+#   PATHWISE_ACCESS_LOG  file of the access log (F-88): /var/log/caddy/access.log (default)
 # Caddy sends the app one X-Forwarded-For, the client IP it worked out (F-59): CF-Connecting-IP or X-Forwarded-For of a
 # trusted proxy, otherwise the peer address, so a client cannot choose it. The app trusts it from private addresses only.
 
@@ -21,6 +22,32 @@
 
 {$PATHWISE_DOMAIN} {
 	encode zstd gzip
+
+	# Access log (F-88): one JSON line per request, client_ip is the user's IP (trusted_proxies above). A file, so it
+	# outlives the container (volume caddy-logs in compose.web.yaml; /var/log/caddy of a Caddy on the host) and CrowdSec
+	# can read it. Rolled at 20 MiB, gzipped, at most 10 files and 90 days. Caddy already hides Cookie, Set-Cookie and
+	# Authorization; the invitation code and the reset-link token travel in URLs (and in Referer of the pages after them),
+	# so they are replaced by REDACTED.
+	log {
+		output file {$PATHWISE_ACCESS_LOG:/var/log/caddy/access.log} {
+			roll_size 20MiB
+			roll_keep 10
+			roll_keep_for 2160h
+		}
+		format filter {
+			wrap json
+			fields {
+				request>uri multi_regexp {
+					regexp "^(/api/v1/invitations/)[A-Za-z0-9_-]{20,}" "${1}REDACTED"
+					regexp "([?&](?:code|token)=)[^&#]*" "${1}REDACTED"
+				}
+				request>headers>Referer multi_regexp {
+					regexp "(/api/v1/invitations/)[A-Za-z0-9_-]{20,}" "${1}REDACTED"
+					regexp "([?&](?:code|token)=)[^&#]*" "${1}REDACTED"
+				}
+			}
+		}
+	}
 
 	header {
 		Strict-Transport-Security "max-age=31536000"
